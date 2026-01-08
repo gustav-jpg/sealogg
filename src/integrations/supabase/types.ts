@@ -315,6 +315,7 @@ export type Database = {
       user_vessel_inductions: {
         Row: {
           created_at: string
+          document_url: string | null
           id: string
           inducted_at: string
           profile_id: string
@@ -322,6 +323,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          document_url?: string | null
           id?: string
           inducted_at?: string
           profile_id: string
@@ -329,6 +331,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          document_url?: string | null
           id?: string
           inducted_at?: string
           profile_id?: string
