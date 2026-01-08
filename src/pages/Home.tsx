@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Anchor,
   BookOpen,
   ClipboardCheck,
   Wrench,
@@ -42,7 +41,7 @@ export default function Home() {
       <header className="maritime-gradient sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Anchor className="h-7 w-7 text-primary-foreground" />
+            <Waves className="h-7 w-7 text-primary-foreground" />
             <span className="font-logo text-xl font-extrabold text-primary-foreground">
               SeaLogg
             </span>
@@ -190,7 +189,7 @@ export default function Home() {
         <div className="container py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <Anchor className="h-5 w-5 text-primary" />
+              <Waves className="h-5 w-5 text-primary" />
               <span className="font-logo font-extrabold">SeaLogg</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">

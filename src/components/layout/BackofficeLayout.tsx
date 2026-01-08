@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Anchor, Building2, LogOut, LayoutDashboard, Menu } from 'lucide-react';
+import { Waves, Building2, LogOut, LayoutDashboard, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BackofficeLayoutProps {
@@ -77,7 +77,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
     <>
       <div className="p-4 border-b">
         <Link to="/backoffice" className="flex items-center gap-2">
-          <Anchor className="h-6 w-6 text-primary" />
+          <Waves className="h-6 w-6 text-primary" />
           <span className="font-logo font-extrabold">SeaLogg</span>
           <span className="text-xs text-muted-foreground ml-1">Admin</span>
         </Link>
@@ -126,7 +126,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
       {/* Mobile header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b bg-muted/30">
         <Link to="/backoffice" className="flex items-center gap-2">
-          <Anchor className="h-6 w-6 text-primary" />
+          <Waves className="h-6 w-6 text-primary" />
           <span className="font-logo font-extrabold">SeaLogg</span>
           <span className="text-xs text-muted-foreground ml-1">Admin</span>
         </Link>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Anchor, ArrowLeft } from 'lucide-react';
+import { Waves, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Privacy() {
@@ -9,7 +9,7 @@ export default function Privacy() {
       <header className="maritime-gradient sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Anchor className="h-7 w-7 text-primary-foreground" />
+            <Waves className="h-7 w-7 text-primary-foreground" />
             <span className="font-logo text-xl font-extrabold text-primary-foreground">
               SeaLogg
             </span>
@@ -149,7 +149,7 @@ export default function Privacy() {
         <div className="container py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <Anchor className="h-5 w-5 text-primary" />
+              <Waves className="h-5 w-5 text-primary" />
               <span className="font-logo font-extrabold">SeaLogg</span>
             </div>
             <p className="text-xs text-muted-foreground">
