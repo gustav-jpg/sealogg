@@ -60,7 +60,7 @@ export default function LogbookDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('logbook_crew')
-        .select(`*, profile:profiles!logbook_crew_user_id_fkey(*)`)
+        .select(`*, profile:profiles!logbook_crew_profile_id_fkey(*)`)
         .eq('logbook_id', id);
       if (error) throw error;
       return data;
