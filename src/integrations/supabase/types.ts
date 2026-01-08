@@ -101,6 +101,13 @@ export type Database = {
             referencedRelation: "control_point_records"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "control_point_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       control_point_records: {
@@ -151,6 +158,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vessel_engine_hours"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "control_point_records_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "control_point_records_vessel_id_fkey"
@@ -263,6 +277,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "deviation_actions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "deviation_actions_deviation_id_fkey"
             columns: ["deviation_id"]
             isOneToOne: false
@@ -304,6 +325,13 @@ export type Database = {
             referencedRelation: "deviations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deviation_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       deviation_responses: {
@@ -335,6 +363,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "deviations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deviation_responses_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -385,6 +420,13 @@ export type Database = {
           vessel_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "deviations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "deviations_logbook_id_fkey"
             columns: ["logbook_id"]
@@ -444,6 +486,13 @@ export type Database = {
             referencedRelation: "fault_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fault_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       fault_cases: {
@@ -485,6 +534,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fault_cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "fault_cases_vessel_id_fkey"
             columns: ["vessel_id"]
             isOneToOne: false
@@ -522,6 +578,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fault_cases"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fault_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
