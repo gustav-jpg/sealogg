@@ -11,19 +11,21 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePrint } from '@/hooks/usePrint';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer } from 'lucide-react';
 
 export default function LogbookDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, canEdit, isAdmin } = useAuth();
   const { toast } = useToast();
+  const { printContent } = usePrint();
   const queryClient = useQueryClient();
 
   const [weather, setWeather] = useState('');
@@ -266,9 +268,19 @@ export default function LogbookDetail() {
               {format(new Date(logbook.date), 'PPPP', { locale: sv })}
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => printContent('logbook-print-content', {
+              title: `Loggbok - ${(logbook as any).vessel?.name}`,
+              subtitle: format(new Date(logbook.date), 'PPPP', { locale: sv }),
+            })}
+          >
+            <Printer className="h-5 w-5" />
+          </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div id="logbook-print-content" className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>

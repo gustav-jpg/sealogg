@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePrint } from '@/hooks/usePrint';
 import {
   FAULT_PRIORITY_LABELS,
   FAULT_STATUS_LABELS,
@@ -25,13 +26,14 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer } from 'lucide-react';
 
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAdmin, canEdit } = useAuth();
   const { toast } = useToast();
+  const { printContent } = usePrint();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
@@ -222,9 +224,19 @@ export default function FaultCaseDetail() {
               {(faultCase as any).vessel?.name} • Skapad {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => printContent('faultcase-print-content', {
+              title: `Felärende - ${faultCase.title}`,
+              subtitle: `${(faultCase as any).vessel?.name} • Skapad ${format(new Date(faultCase.created_at), 'PPP', { locale: sv })}`,
+            })}
+          >
+            <Printer className="h-5 w-5" />
+          </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div id="faultcase-print-content" className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
