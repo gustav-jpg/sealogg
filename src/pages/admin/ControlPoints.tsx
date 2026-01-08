@@ -281,12 +281,12 @@ export default function ControlPoints() {
           </div>
           <div className="space-y-2">
             <Label>Välj maskin</Label>
-            <Select value={machineName} onValueChange={setMachineName}>
+            <Select value={machineName || "__all__"} onValueChange={(v) => setMachineName(v === "__all__" ? "" : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Välj maskin..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alla maskiner</SelectItem>
+                <SelectItem value="__all__">Alla maskiner</SelectItem>
                 {allEngines?.map((engine) => {
                   const vesselName = (engine.vessels as any)?.name || '';
                   const engineLabel = engine.name || 
