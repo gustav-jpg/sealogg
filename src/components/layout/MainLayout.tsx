@@ -39,7 +39,6 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const navItems = [
     { href: '/', label: 'Loggböcker', icon: BookOpen },
-    ...(canEdit ? [{ href: '/logbook/new', label: 'Ny loggbok', icon: Plus }] : []),
   ];
 
   const adminItems = [
