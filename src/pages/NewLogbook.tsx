@@ -472,21 +472,25 @@ export default function NewLogbook() {
           </div>
 
           <div className="space-y-6">
-            <ValidationPanel validation={validation} />
+            {vesselId && (
+              <>
+                <ValidationPanel validation={validation} />
 
-            {!validation.isValid && (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="override"
-                  checked={overrideValidation}
-                  onChange={e => setOverrideValidation(e.target.checked)}
-                  className="h-4 w-4 rounded border-input"
-                />
-                <Label htmlFor="override" className="text-sm text-muted-foreground cursor-pointer">
-                  Bekräfta ändå (skapa trots valideringsfel)
-                </Label>
-              </div>
+                {!validation.isValid && validation.errors.length > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="override"
+                      checked={overrideValidation}
+                      onChange={e => setOverrideValidation(e.target.checked)}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    <Label htmlFor="override" className="text-sm text-muted-foreground cursor-pointer">
+                      Bekräfta ändå (skapa trots valideringsfel)
+                    </Label>
+                  </div>
+                )}
+              </>
             )}
 
             <Button
