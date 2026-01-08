@@ -43,7 +43,7 @@ export default function Home() {
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Anchor className="h-7 w-7 text-primary-foreground" />
-            <span className="font-display text-xl font-bold text-primary-foreground">
+            <span className="font-logo text-xl font-extrabold text-primary-foreground">
               SeaLogg
             </span>
           </Link>
@@ -191,7 +191,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <Anchor className="h-5 w-5 text-primary" />
-              <span className="font-display font-bold">SeaLogg</span>
+              <span className="font-logo font-extrabold">SeaLogg</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link to="/portal" className="hover:text-foreground transition-colors">Portal</Link>

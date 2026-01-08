@@ -78,7 +78,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
       <div className="p-4 border-b">
         <Link to="/backoffice" className="flex items-center gap-2">
           <Anchor className="h-6 w-6 text-primary" />
-          <span className="font-display font-bold">SeaLogg</span>
+          <span className="font-logo font-extrabold">SeaLogg</span>
           <span className="text-xs text-muted-foreground ml-1">Admin</span>
         </Link>
       </div>
@@ -127,7 +127,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
       <header className="md:hidden flex items-center justify-between p-4 border-b bg-muted/30">
         <Link to="/backoffice" className="flex items-center gap-2">
           <Anchor className="h-6 w-6 text-primary" />
-          <span className="font-display font-bold">SeaLogg</span>
+          <span className="font-logo font-extrabold">SeaLogg</span>
           <span className="text-xs text-muted-foreground ml-1">Admin</span>
         </Link>
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

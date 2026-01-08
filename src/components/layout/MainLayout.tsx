@@ -76,7 +76,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="flex items-center gap-6">
             <Link to="/portal" className="flex items-center gap-2">
               <Anchor className="h-7 w-7 text-primary-foreground" />
-              <span className="font-display text-xl font-bold text-primary-foreground">
+              <span className="font-logo text-xl font-extrabold text-primary-foreground">
                 SeaLogg
               </span>
             </Link>
