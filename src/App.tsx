@@ -21,6 +21,10 @@ import AdminCertificates from "./pages/admin/Certificates";
 import VesselCertificates from "./pages/admin/VesselCertificates";
 import ControlPoints from "./pages/admin/ControlPoints";
 import NotFound from "./pages/NotFound";
+import BackofficeLayout from "./components/layout/BackofficeLayout";
+import BackofficeDashboard from "./pages/backoffice/Dashboard";
+import Organizations from "./pages/backoffice/Organizations";
+import OrganizationDetail from "./pages/backoffice/OrganizationDetail";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +90,11 @@ function AppRoutes() {
       <Route path="/portal/admin/certificates" element={<ProtectedRoute adminOnly><AdminCertificates /></ProtectedRoute>} />
       <Route path="/portal/admin/rules" element={<ProtectedRoute adminOnly><VesselCertificates /></ProtectedRoute>} />
       <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
+      
+      {/* Backoffice routes (superadmin only) */}
+      <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />
+      <Route path="/backoffice/organizations" element={<BackofficeLayout><Organizations /></BackofficeLayout>} />
+      <Route path="/backoffice/organizations/:id" element={<BackofficeLayout><OrganizationDetail /></BackofficeLayout>} />
       
       {/* Legacy redirects */}
       <Route path="/login" element={<Navigate to="/portal/login" replace />} />
