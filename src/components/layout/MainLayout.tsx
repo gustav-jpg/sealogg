@@ -1,6 +1,7 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,6 +25,7 @@ import {
   ClipboardCheck,
   Anchor,
   Home,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,9 +34,19 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const { profile, isAdmin, canEdit, signOut } = useAuth();
+  const { user, profile, isAdmin, canEdit, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
+
+  useEffect(() => {
+    const checkSuperadmin = async () => {
+      if (!user) return;
+      const { data } = await supabase.rpc('is_superadmin', { _user_id: user.id });
+      setIsSuperadmin(!!data);
+    };
+    checkSuperadmin();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -157,6 +169,17 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <DropdownMenuSeparator />
                 </div>
                 
+                {isSuperadmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/backoffice" className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Back Office
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem asChild>
                   <Link to="/" className="flex items-center gap-2">
                     <Home className="h-4 w-4" />
