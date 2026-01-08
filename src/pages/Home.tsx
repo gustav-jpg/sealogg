@@ -195,6 +195,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link to="/portal" className="hover:text-foreground transition-colors">Portal</Link>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Integritetspolicy</Link>
               <a href="mailto:info@sealogg.se" className="hover:text-foreground transition-colors">info@sealogg.se</a>
             </div>
             <p className="text-xs text-muted-foreground">
