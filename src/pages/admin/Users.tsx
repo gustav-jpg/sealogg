@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2 } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AdminUsers() {
@@ -100,11 +100,31 @@ export default function AdminUsers() {
   });
 
   const addCertificate = useMutation({
-    mutationFn: async (data: { userId: string; certTypeId: string; expiryDate: string }) => {
+    mutationFn: async (data: { userId: string; certTypeId: string; expiryDate: string; file?: File }) => {
+      let fileUrl: string | null = null;
+      
+      if (data.file) {
+        const fileExt = data.file.name.split('.').pop();
+        const fileName = `${data.userId}/${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('certificates')
+          .upload(fileName, data.file);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from('certificates')
+          .getPublicUrl(fileName);
+        
+        fileUrl = fileName; // Store the path, not the public URL since bucket is private
+      }
+      
       const { error } = await supabase.from('user_certificates').insert({
         user_id: data.userId,
         certificate_type_id: data.certTypeId,
         expiry_date: data.expiryDate,
+        file_url: fileUrl,
       });
       if (error) throw error;
     },
@@ -114,6 +134,32 @@ export default function AdminUsers() {
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const uploadCertificateFile = useMutation({
+    mutationFn: async ({ certId, userId, file }: { certId: string; userId: string; file: File }) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('certificates')
+        .upload(fileName, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { error } = await supabase.from('user_certificates')
+        .update({ file_url: fileName })
+        .eq('id', certId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-certificates'] });
+      toast({ title: 'Fil uppladdad' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel vid uppladdning', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -243,22 +289,27 @@ export default function AdminUsers() {
                     <TabsContent value="certificates" className="space-y-4 mt-4">
                       <div className="space-y-2">
                         {selectedUserCerts.map(cert => (
-                          <div key={cert.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                            <div>
-                              <p className="font-medium">{(cert as any).certificate_type?.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
-                              </p>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={() => removeCertificate.mutate(cert.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
+                          <CertificateItem
+                            key={cert.id}
+                            cert={cert}
+                            userId={selectedUserId!}
+                            onRemove={() => removeCertificate.mutate(cert.id)}
+                            onUpload={(file) => uploadCertificateFile.mutate({ 
+                              certId: cert.id, 
+                              userId: selectedUserId!, 
+                              file 
+                            })}
+                          />
                         ))}
                       </div>
                       <AddCertificateDialog
                         certificateTypes={certificateTypes || []}
-                        onAdd={(certTypeId, expiryDate) => addCertificate.mutate({ userId: selectedUserId!, certTypeId, expiryDate })}
+                        onAdd={(certTypeId, expiryDate, file) => addCertificate.mutate({ 
+                          userId: selectedUserId!, 
+                          certTypeId, 
+                          expiryDate,
+                          file 
+                        })}
                       />
                     </TabsContent>
 
@@ -305,23 +356,101 @@ export default function AdminUsers() {
   );
 }
 
+function CertificateItem({
+  cert,
+  userId,
+  onRemove,
+  onUpload,
+}: {
+  cert: any;
+  userId: string;
+  onRemove: () => void;
+  onUpload: (file: File) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onUpload(file);
+    }
+  };
+
+  const handleViewFile = async () => {
+    if (cert.file_url) {
+      const { data, error } = await supabase.storage
+        .from('certificates')
+        .createSignedUrl(cert.file_url, 3600); // 1 hour expiry
+      
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-3 rounded bg-muted/50">
+      <div className="flex-1">
+        <p className="font-medium">{cert.certificate_type?.name}</p>
+        <p className="text-xs text-muted-foreground">
+          Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
+        </p>
+        {cert.file_url && (
+          <button 
+            onClick={handleViewFile}
+            className="text-xs text-primary flex items-center gap-1 mt-1 hover:underline"
+          >
+            <FileText className="h-3 w-3" />
+            Visa fil
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept=".pdf,.jpg,.jpeg,.png"
+          className="hidden"
+        />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => fileInputRef.current?.click()}
+          title={cert.file_url ? "Ersätt fil" : "Ladda upp fil"}
+        >
+          <Upload className="h-4 w-4 text-muted-foreground" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={onRemove}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function AddCertificateDialog({
   certificateTypes,
   onAdd,
 }: {
   certificateTypes: { id: string; name: string }[];
-  onAdd: (certTypeId: string, expiryDate: string) => void;
+  onAdd: (certTypeId: string, expiryDate: string, file?: File) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [certTypeId, setCertTypeId] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [file, setFile] = useState<File | undefined>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAdd = () => {
     if (certTypeId && expiryDate) {
-      onAdd(certTypeId, expiryDate);
+      onAdd(certTypeId, expiryDate, file);
       setOpen(false);
       setCertTypeId('');
       setExpiryDate('');
+      setFile(undefined);
     }
   };
 
@@ -354,6 +483,28 @@ function AddCertificateDialog({
           <div className="space-y-2">
             <Label>Utgångsdatum</Label>
             <Input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Certifikatfil (valfritt)</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={e => setFile(e.target.files?.[0])}
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {file ? file.name : 'Välj fil'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">PDF, JPG eller PNG</p>
           </div>
           <Button onClick={handleAdd} disabled={!certTypeId || !expiryDate} className="w-full">
             Lägg till
