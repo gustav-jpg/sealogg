@@ -1,11 +1,12 @@
 // Enums matching database
 export type AppRole = 'admin' | 'skeppare' | 'readonly';
-export type CrewRole = 'befalhavare' | 'matros' | 'jungman' | 'restaurangpersonal';
+export type CrewRole = 'befalhavare' | 'styrman' | 'matros' | 'jungman' | 'restaurangpersonal';
 export type LogbookStatus = 'oppen' | 'stangd';
 
 // Helper labels in Swedish
 export const CREW_ROLE_LABELS: Record<CrewRole, string> = {
   befalhavare: 'Befälhavare',
+  styrman: 'Styrman',
   matros: 'Matros',
   jungman: 'Jungman',
   restaurangpersonal: 'Restaurangpersonal',
