@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePrint } from '@/hooks/usePrint';
 import {
   DEVIATION_TYPE_LABELS,
   DEVIATION_SEVERITY_LABELS,
@@ -28,13 +29,14 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, Plus, FileText, MessageSquare, Image, X } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, MessageSquare, Image, X, Printer } from 'lucide-react';
 
 export default function DeviationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAdmin, canEdit } = useAuth();
   const { toast } = useToast();
+  const { printContent } = usePrint();
   const queryClient = useQueryClient();
   const [newAction, setNewAction] = useState('');
   const [newResponse, setNewResponse] = useState('');
@@ -232,9 +234,19 @@ export default function DeviationDetail() {
               {(deviation as any).vessel?.name} • {format(new Date(deviation.date), 'PPP', { locale: sv })}
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => printContent('deviation-print-content', {
+              title: `Avvikelse - ${deviation.title}`,
+              subtitle: `${(deviation as any).vessel?.name} • ${format(new Date(deviation.date), 'PPP', { locale: sv })}`,
+            })}
+          >
+            <Printer className="h-5 w-5" />
+          </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div id="deviation-print-content" className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
