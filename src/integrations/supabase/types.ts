@@ -110,6 +110,7 @@ export type Database = {
       logbook_engine_hours: {
         Row: {
           created_at: string
+          engine_name: string | null
           engine_number: number | null
           engine_type: string | null
           id: string
@@ -121,6 +122,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          engine_name?: string | null
           engine_number?: number | null
           engine_type?: string | null
           id?: string
@@ -132,6 +134,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          engine_name?: string | null
           engine_number?: number | null
           engine_type?: string | null
           id?: string
@@ -398,6 +401,7 @@ export type Database = {
           engine_number: number
           engine_type: string
           id: string
+          name: string | null
           updated_at: string
           vessel_id: string
         }
@@ -406,6 +410,7 @@ export type Database = {
           engine_number?: number
           engine_type: string
           id?: string
+          name?: string | null
           updated_at?: string
           vessel_id: string
         }
@@ -414,6 +419,7 @@ export type Database = {
           engine_number?: number
           engine_type?: string
           id?: string
+          name?: string | null
           updated_at?: string
           vessel_id?: string
         }
