@@ -70,7 +70,7 @@ export default function Deviations() {
     queryFn: async () => {
       let query = supabase
         .from('deviations')
-        .select(`*, vessel:vessels(*), creator:profiles!deviations_created_by_fkey(*)`)
+        .select(`*, vessel:vessels(*)`)
         .order('date', { ascending: false });
 
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);

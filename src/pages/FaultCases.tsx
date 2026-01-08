@@ -66,7 +66,7 @@ export default function FaultCases() {
     queryFn: async () => {
       let query = supabase
         .from('fault_cases')
-        .select(`*, vessel:vessels(*), creator:profiles!fault_cases_created_by_fkey(*)`)
+        .select(`*, vessel:vessels(*)`)
         .order('created_at', { ascending: false });
 
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);
