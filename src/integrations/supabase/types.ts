@@ -73,22 +73,22 @@ export type Database = {
           created_at: string
           id: string
           logbook_id: string
+          profile_id: string
           role: Database["public"]["Enums"]["crew_role"]
-          user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           logbook_id: string
+          profile_id: string
           role: Database["public"]["Enums"]["crew_role"]
-          user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           logbook_id?: string
+          profile_id?: string
           role?: Database["public"]["Enums"]["crew_role"]
-          user_id?: string
         }
         Relationships: [
           {
@@ -212,24 +212,27 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          is_external: boolean
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           email?: string | null
           full_name: string
           id?: string
+          is_external?: boolean
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           email?: string | null
           full_name?: string
           id?: string
+          is_external?: boolean
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -282,8 +285,8 @@ export type Database = {
           file_url: string | null
           id: string
           issue_date: string | null
+          profile_id: string
           updated_at: string
-          user_id: string
         }
         Insert: {
           certificate_type_id: string
@@ -292,8 +295,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           issue_date?: string | null
+          profile_id: string
           updated_at?: string
-          user_id: string
         }
         Update: {
           certificate_type_id?: string
@@ -302,8 +305,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           issue_date?: string | null
+          profile_id?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
@@ -341,21 +344,21 @@ export type Database = {
           created_at: string
           id: string
           inducted_at: string
-          user_id: string
+          profile_id: string
           vessel_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           inducted_at?: string
-          user_id: string
+          profile_id: string
           vessel_id: string
         }
         Update: {
           created_at?: string
           id?: string
           inducted_at?: string
-          user_id?: string
+          profile_id?: string
           vessel_id?: string
         }
         Relationships: [

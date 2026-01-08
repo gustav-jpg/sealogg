@@ -51,35 +51,35 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
   });
 
   // Fetch certificates for crew members
-  const crewUserIds = crew.map(c => c.userId);
+  const crewProfileIds = crew.map(c => c.userId);
   const { data: certificates } = useQuery({
-    queryKey: ['user-certificates', crewUserIds],
+    queryKey: ['user-certificates', crewProfileIds],
     queryFn: async () => {
-      if (crewUserIds.length === 0) return [];
+      if (crewProfileIds.length === 0) return [];
       const { data, error } = await supabase
         .from('user_certificates')
         .select('*, certificate_type:certificate_types(*)')
-        .in('user_id', crewUserIds);
+        .in('profile_id', crewProfileIds);
       if (error) throw error;
       return data;
     },
-    enabled: crewUserIds.length > 0 && enabled,
+    enabled: crewProfileIds.length > 0 && enabled,
   });
 
   // Fetch inductions for crew members
   const { data: inductions } = useQuery({
-    queryKey: ['user-inductions', vesselId, crewUserIds],
+    queryKey: ['user-inductions', vesselId, crewProfileIds],
     queryFn: async () => {
-      if (!vesselId || crewUserIds.length === 0) return [];
+      if (!vesselId || crewProfileIds.length === 0) return [];
       const { data, error } = await supabase
         .from('user_vessel_inductions')
         .select('*')
         .eq('vessel_id', vesselId)
-        .in('user_id', crewUserIds);
+        .in('profile_id', crewProfileIds);
       if (error) throw error;
       return data;
     },
-    enabled: !!vesselId && crewUserIds.length > 0 && enabled,
+    enabled: !!vesselId && crewProfileIds.length > 0 && enabled,
   });
 
   const validation = useMemo<ValidationResult>(() => {
@@ -111,8 +111,8 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
 
     for (const member of crew) {
       const memberRules = rules?.filter(r => r.role === member.role) || [];
-      const memberCerts = certificates?.filter(c => c.user_id === member.userId) || [];
-      const hasInduction = inductions?.some(i => i.user_id === member.userId);
+      const memberCerts = certificates?.filter(c => c.profile_id === member.userId) || [];
+      const hasInduction = inductions?.some(i => i.profile_id === member.userId);
 
       // Check if role requires induction
       const requiresInduction = memberRules.some(r => r.requires_induction);
