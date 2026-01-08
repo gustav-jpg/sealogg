@@ -10,7 +10,7 @@ export default function Privacy() {
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Anchor className="h-7 w-7 text-primary-foreground" />
-            <span className="font-display text-xl font-bold text-primary-foreground">
+            <span className="font-logo text-xl font-extrabold text-primary-foreground">
               SeaLogg
             </span>
           </Link>
