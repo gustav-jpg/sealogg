@@ -34,6 +34,7 @@ export default function LogbookDetail() {
   const [departureTime, setDepartureTime] = useState('');
   const [arrivalTime, setArrivalTime] = useState('');
   const [initialized, setInitialized] = useState(false);
+  const [overrideValidation, setOverrideValidation] = useState(false);
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -136,7 +137,7 @@ export default function LogbookDetail() {
 
   const closeLogbook = useMutation({
     mutationFn: async () => {
-      if (!validation.isValid) throw new Error('Valideringsfel måste åtgärdas innan loggboken kan stängas.');
+      if (!validation.isValid && !overrideValidation) throw new Error('Valideringsfel måste åtgärdas innan loggboken kan stängas.');
       
       // Save all data before closing
       const { error } = await supabase
@@ -402,13 +403,28 @@ export default function LogbookDetail() {
           <div className="space-y-6">
             <ValidationPanel validation={validation} />
 
+            {canEditThis && !validation.isValid && validation.errors.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="override"
+                  checked={overrideValidation}
+                  onChange={e => setOverrideValidation(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="override" className="text-sm text-muted-foreground cursor-pointer">
+                  Bekräfta ändå (stäng trots valideringsfel)
+                </Label>
+              </div>
+            )}
+
             {canEditThis && (
               <Button
                 className="w-full"
                 variant="secondary"
                 size="lg"
                 onClick={() => closeLogbook.mutate()}
-                disabled={closeLogbook.isPending || !validation.isValid}
+                disabled={closeLogbook.isPending || (!validation.isValid && !overrideValidation)}
               >
                 <Lock className="h-4 w-4 mr-2" />
                 {closeLogbook.isPending ? 'Stänger...' : 'Stäng loggbok'}
