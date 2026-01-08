@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { CrewRole, CREW_ROLE_LABELS } from '@/lib/types';
-import { Plus, Trash2, Ship, Users, Save, MapPin, Clock } from 'lucide-react';
+import { Plus, Trash2, Ship, Users, Save, MapPin, Clock, Gauge } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CrewMember {
@@ -354,6 +354,58 @@ export default function NewLogbook() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
+                    <Gauge className="h-5 w-5" />
+                    Maskintimmar
+                  </span>
+                  {vesselId && engineHours.length === 0 && (
+                    <Button variant="outline" size="sm" onClick={initializeEngineHours}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Ladda maskiner
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!vesselId ? (
+                  <p className="text-muted-foreground text-center py-4">Välj ett fartyg först.</p>
+                ) : engineHours.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Klicka på "Ladda maskiner" för att hämta aktuella maskintimmar.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {engineHours.map(entry => (
+                      <div key={entry.tempId} className="space-y-2">
+                        <Label className="text-sm font-medium">{entry.engineLabel}</Label>
+                        <div className="flex gap-2 items-end">
+                          <div className="w-24 space-y-1">
+                            <Label className="text-xs">Start</Label>
+                            <Input type="number" value={entry.startHours} onChange={e => updateEngineHour(entry.tempId, 'startHours', parseInt(e.target.value) || 0)} />
+                          </div>
+                          <div className="w-24 space-y-1">
+                            <Label className="text-xs">Stopp</Label>
+                            <Input type="number" value={entry.stopHours} onChange={e => updateEngineHour(entry.tempId, 'stopHours', parseInt(e.target.value) || 0)} />
+                          </div>
+                          <div className="w-20 space-y-1">
+                            <Label className="text-xs">Diff</Label>
+                            <div className="h-10 flex items-center px-3 bg-muted rounded-md text-sm font-mono">
+                              {entry.stopHours - entry.startHours}h
+                            </div>
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Anteckning</Label>
+                            <Input value={entry.notes} onChange={e => updateEngineHour(entry.tempId, 'notes', e.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
                     Besättning
                   </span>
@@ -414,55 +466,6 @@ export default function NewLogbook() {
                         </div>
                       );
                     })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Maskintimmar</span>
-                  {vesselId && engineHours.length === 0 && (
-                    <Button variant="outline" size="sm" onClick={initializeEngineHours}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Ladda maskiner
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!vesselId ? (
-                  <p className="text-muted-foreground text-center py-4">Välj ett fartyg först.</p>
-                ) : engineHours.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Klicka på "Ladda maskiner" för att hämta aktuella maskintimmar.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {engineHours.map(entry => (
-                      <div key={entry.tempId} className="space-y-2">
-                        <Label className="text-sm font-medium">{entry.engineLabel}</Label>
-                        <div className="flex gap-2 items-end">
-                          <div className="w-24 space-y-1">
-                            <Label className="text-xs">Start</Label>
-                            <Input type="number" value={entry.startHours} onChange={e => updateEngineHour(entry.tempId, 'startHours', parseInt(e.target.value) || 0)} />
-                          </div>
-                          <div className="w-24 space-y-1">
-                            <Label className="text-xs">Stopp</Label>
-                            <Input type="number" value={entry.stopHours} onChange={e => updateEngineHour(entry.tempId, 'stopHours', parseInt(e.target.value) || 0)} />
-                          </div>
-                          <div className="w-20 space-y-1">
-                            <Label className="text-xs">Diff</Label>
-                            <div className="h-10 flex items-center px-3 bg-muted rounded-md text-sm font-mono">
-                              {entry.stopHours - entry.startHours}h
-                            </div>
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <Label className="text-xs">Anteckning</Label>
-                            <Input value={entry.notes} onChange={e => updateEngineHour(entry.tempId, 'notes', e.target.value)} />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 )}
               </CardContent>
