@@ -145,7 +145,7 @@ export default function Home() {
                   <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Check className="h-4 w-4 text-primary" />
                   </div>
-                  <span>Säker datalagring i Sverige</span>
+                  <span>Säker datalagring inom EU</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
