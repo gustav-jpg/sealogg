@@ -226,39 +226,52 @@ export default function NewLogbook() {
                   <p className="text-muted-foreground text-center py-4">Ingen besättning tillagd ännu.</p>
                 ) : (
                   <div className="space-y-3">
-                    {crew.map(member => (
-                      <div key={member.tempId} className="flex gap-2 items-end">
-                        <div className="flex-1 space-y-1">
-                          <Label className="text-xs">Person</Label>
-                          <Select value={member.userId} onValueChange={v => updateCrewMember(member.tempId, 'userId', v)}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Välj person" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {profiles?.map(p => (
-                                <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                    {crew.map(member => {
+                      // Get user IDs already selected by other crew members
+                      const selectedUserIds = crew
+                        .filter(c => c.tempId !== member.tempId && c.userId)
+                        .map(c => c.userId);
+                      
+                      return (
+                        <div key={member.tempId} className="flex gap-2 items-end">
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Person</Label>
+                            <Select value={member.userId} onValueChange={v => updateCrewMember(member.tempId, 'userId', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Välj person" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {profiles?.map(p => (
+                                  <SelectItem 
+                                    key={p.user_id} 
+                                    value={p.user_id}
+                                    disabled={selectedUserIds.includes(p.user_id)}
+                                  >
+                                    {p.full_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Roll</Label>
+                            <Select value={member.role} onValueChange={v => updateCrewMember(member.tempId, 'role', v as CrewRole)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => removeCrewMember(member.tempId)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <Label className="text-xs">Roll</Label>
-                          <Select value={member.role} onValueChange={v => updateCrewMember(member.tempId, 'role', v as CrewRole)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeCrewMember(member.tempId)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
