@@ -10,21 +10,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { toast } from 'sonner';
-import { ArrowLeft, UserPlus, Ship, Trash2, Mail } from 'lucide-react';
+import { ArrowLeft, Trash2, Mail } from 'lucide-react';
 
 type OrgRole = 'org_admin' | 'org_user';
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [isAddVesselOpen, setIsAddVesselOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFullName, setInviteFullName] = useState('');
   const [inviteRole, setInviteRole] = useState<OrgRole>('org_admin');
-  const [vesselName, setVesselName] = useState('');
-  const [vesselDescription, setVesselDescription] = useState('');
   const queryClient = useQueryClient();
 
   const { data: organization } = useQuery({
@@ -58,18 +55,6 @@ export default function OrganizationDetail() {
     },
   });
 
-  const { data: vessels } = useQuery({
-    queryKey: ['organization-vessels', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vessels')
-        .select('*')
-        .eq('organization_id', id)
-        .order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, fullName, role }: { email: string; fullName: string; role: OrgRole }) => {
@@ -139,28 +124,6 @@ export default function OrganizationDetail() {
     },
   });
 
-  const addVesselMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('vessels')
-        .insert([{ 
-          name: vesselName, 
-          description: vesselDescription || null,
-          organization_id: id 
-        }]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization-vessels', id] });
-      toast.success('Fartyg tillagt');
-      setIsAddVesselOpen(false);
-      setVesselName('');
-      setVesselDescription('');
-    },
-    onError: (error) => {
-      toast.error('Kunde inte lägga till fartyg: ' + error.message);
-    },
-  });
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,13 +161,9 @@ export default function OrganizationDetail() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="members">
-        <TabsList>
-          <TabsTrigger value="members">Medlemmar ({members?.length || 0})</TabsTrigger>
-          <TabsTrigger value="vessels">Fartyg ({vessels?.length || 0})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="members" className="space-y-4">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Medlemmar ({members?.length || 0})</h2>
           <div className="flex justify-end">
             <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
               <DialogTrigger asChild>
@@ -319,85 +278,8 @@ export default function OrganizationDetail() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="vessels" className="space-y-4">
-          <div className="flex justify-end">
-            <Dialog open={isAddVesselOpen} onOpenChange={setIsAddVesselOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Ship className="h-4 w-4 mr-2" />
-                  Lägg till fartyg
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <form onSubmit={(e) => { e.preventDefault(); addVesselMutation.mutate(); }}>
-                  <DialogHeader>
-                    <DialogTitle>Lägg till fartyg</DialogTitle>
-                    <DialogDescription>
-                      Skapa ett nytt fartyg för denna organisation
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="vessel-name">Namn *</Label>
-                      <Input
-                        id="vessel-name"
-                        value={vesselName}
-                        onChange={(e) => setVesselName(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="vessel-description">Beskrivning</Label>
-                      <Input
-                        id="vessel-description"
-                        value={vesselDescription}
-                        onChange={(e) => setVesselDescription(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" disabled={!vesselName || addVesselMutation.isPending}>
-                      {addVesselMutation.isPending ? 'Skapar...' : 'Skapa'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Namn</TableHead>
-                  <TableHead>Beskrivning</TableHead>
-                  <TableHead>Motorer</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vessels?.map((vessel) => (
-                  <TableRow key={vessel.id}>
-                    <TableCell className="font-medium">{vessel.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{vessel.description || '-'}</TableCell>
-                    <TableCell>
-                      {vessel.main_engine_count} huvud, {vessel.auxiliary_engine_count} hjälp
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {vessels?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                      Inga fartyg än
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }
