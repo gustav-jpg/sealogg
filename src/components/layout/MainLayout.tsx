@@ -64,7 +64,6 @@ export function MainLayout({ children }: MainLayoutProps) {
   const adminItems = [
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Användare', icon: Users },
-    { href: '/portal/admin/certificates', label: 'Certifikat', icon: Award },
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
     { href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
   ];
