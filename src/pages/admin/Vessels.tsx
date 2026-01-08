@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { Plus, Ship, Trash2, Users, Settings, Gauge } from 'lucide-react';
@@ -25,6 +26,7 @@ export default function AdminVessels() {
   const [auxiliaryEngineCount, setAuxiliaryEngineCount] = useState(0);
   const [requirements, setRequirements] = useState<{ role: CrewRole; count: number }[]>([]);
   const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number }[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -273,7 +275,7 @@ export default function AdminVessels() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteVessel.mutate(vessel.id)}
+                      onClick={() => setDeleteConfirm({ open: true, vessel: { id: vessel.id, name: vessel.name } })}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -347,6 +349,20 @@ export default function AdminVessels() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <ConfirmDialog
+          open={deleteConfirm.open}
+          onOpenChange={(open) => setDeleteConfirm({ open, vessel: open ? deleteConfirm.vessel : null })}
+          title="Ta bort fartyg"
+          description={`Är du säker på att du vill ta bort "${deleteConfirm.vessel?.name}"? Detta går inte att ångra och all relaterad data (loggböcker, bemanningskrav, maskintimmar) kan påverkas.`}
+          confirmLabel="Ta bort"
+          onConfirm={() => {
+            if (deleteConfirm.vessel) {
+              deleteVessel.mutate(deleteConfirm.vessel.id);
+              setDeleteConfirm({ open: false, vessel: null });
+            }
+          }}
+        />
       </div>
     </MainLayout>
   );
