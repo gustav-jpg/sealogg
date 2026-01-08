@@ -13,10 +13,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2 } from 'lucide-react';
 
 export default function LogbookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,7 @@ export default function LogbookDetail() {
   const [arrivalTime, setArrivalTime] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [overrideValidation, setOverrideValidation] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -181,6 +183,38 @@ export default function LogbookDetail() {
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
       toast({ title: 'Stängd', description: 'Loggboken har sparats och stängts. Maskintimmar har uppdaterats.' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteLogbook = useMutation({
+    mutationFn: async () => {
+      // First delete related records
+      const { error: crewError } = await supabase
+        .from('logbook_crew')
+        .delete()
+        .eq('logbook_id', id);
+      if (crewError) throw crewError;
+
+      const { error: engineError } = await supabase
+        .from('logbook_engine_hours')
+        .delete()
+        .eq('logbook_id', id);
+      if (engineError) throw engineError;
+
+      // Then delete the logbook
+      const { error } = await supabase
+        .from('logbooks')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logbooks'] });
+      toast({ title: 'Raderad', description: 'Loggboken har raderats.' });
+      navigate('/');
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -419,16 +453,29 @@ export default function LogbookDetail() {
             )}
 
             {canEditThis && (
-              <Button
-                className="w-full"
-                variant="secondary"
-                size="lg"
-                onClick={() => closeLogbook.mutate()}
-                disabled={closeLogbook.isPending || (!validation.isValid && !overrideValidation)}
-              >
-                <Lock className="h-4 w-4 mr-2" />
-                {closeLogbook.isPending ? 'Stänger...' : 'Stäng loggbok'}
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  className="w-full"
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => closeLogbook.mutate()}
+                  disabled={closeLogbook.isPending || (!validation.isValid && !overrideValidation)}
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  {closeLogbook.isPending ? 'Stänger...' : 'Stäng loggbok'}
+                </Button>
+                
+                <Button
+                  className="w-full"
+                  variant="destructive"
+                  size="lg"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={deleteLogbook.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {deleteLogbook.isPending ? 'Raderar...' : 'Radera loggbok'}
+                </Button>
+              </div>
             )}
 
             {!isOpen && (
@@ -447,6 +494,15 @@ export default function LogbookDetail() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Radera loggbok"
+        description="Är du säker på att du vill radera denna loggbok? All data inklusive besättning och maskintimmar kommer att tas bort permanent."
+        confirmLabel="Radera"
+        onConfirm={() => deleteLogbook.mutate()}
+      />
     </MainLayout>
   );
 }
