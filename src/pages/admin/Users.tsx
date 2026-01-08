@@ -212,16 +212,41 @@ export default function AdminUsers() {
   });
 
   const renewCertificate = useMutation({
-    mutationFn: async ({ certId, newExpiryDate }: { certId: string; newExpiryDate: string }) => {
+    mutationFn: async ({ certId, newExpiryDate, oldFileUrl, newFile, profileId }: { 
+      certId: string; 
+      newExpiryDate: string; 
+      oldFileUrl: string | null;
+      newFile: File;
+      profileId: string;
+    }) => {
+      // Delete old file if exists
+      if (oldFileUrl) {
+        await supabase.storage.from('certificates').remove([oldFileUrl]);
+      }
+      
+      // Upload new file
+      const fileExt = newFile.name.split('.').pop();
+      const fileName = `${profileId}/${crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('certificates')
+        .upload(fileName, newFile);
+      
+      if (uploadError) throw uploadError;
+      
+      // Update certificate record
       const { error } = await supabase
         .from('user_certificates')
-        .update({ expiry_date: newExpiryDate })
+        .update({ 
+          expiry_date: newExpiryDate,
+          file_url: fileName
+        })
         .eq('id', certId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-certificates'] });
-      toast({ title: 'Certifikat förnyat', description: 'Utgångsdatumet har uppdaterats.' });
+      toast({ title: 'Certifikat förnyat', description: 'Nytt certifikat har laddats upp.' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -445,9 +470,12 @@ export default function AdminUsers() {
                               oderId: selectedProfile.id, 
                               file 
                             })}
-                            onRenew={(newDate) => renewCertificate.mutate({
+                            onRenew={(newDate, newFile) => renewCertificate.mutate({
                               certId: cert.id,
-                              newExpiryDate: newDate
+                              newExpiryDate: newDate,
+                              oldFileUrl: cert.file_url,
+                              newFile,
+                              profileId: selectedProfile.id
                             })}
                           />
                         ))}
@@ -548,17 +576,26 @@ function CertificateItem({
   oderId: string;
   onRemove: () => void;
   onUpload: (file: File) => void;
-  onRenew: (newDate: string) => void;
+  onRenew: (newDate: string, newFile: File) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const renewFileInputRef = useRef<HTMLInputElement>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [newExpiryDate, setNewExpiryDate] = useState('');
+  const [renewFile, setRenewFile] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       onUpload(file);
+    }
+  };
+
+  const handleRenewFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setRenewFile(file);
     }
   };
 
@@ -575,10 +612,11 @@ function CertificateItem({
   };
 
   const handleRenew = () => {
-    if (newExpiryDate) {
-      onRenew(newExpiryDate);
+    if (newExpiryDate && renewFile) {
+      onRenew(newExpiryDate, renewFile);
       setRenewDialogOpen(false);
       setNewExpiryDate('');
+      setRenewFile(null);
     }
   };
 
@@ -622,7 +660,20 @@ function CertificateItem({
           accept=".pdf,.jpg,.jpeg,.png"
           className="hidden"
         />
-        <Dialog open={renewDialogOpen} onOpenChange={setRenewDialogOpen}>
+        <input
+          type="file"
+          ref={renewFileInputRef}
+          onChange={handleRenewFileChange}
+          accept=".pdf,.jpg,.jpeg,.png"
+          className="hidden"
+        />
+        <Dialog open={renewDialogOpen} onOpenChange={(open) => {
+          setRenewDialogOpen(open);
+          if (!open) {
+            setNewExpiryDate('');
+            setRenewFile(null);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button 
               variant="ghost" 
@@ -639,10 +690,10 @@ function CertificateItem({
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Förnya <strong>{cert.certificate_type?.name}</strong> genom att ange nytt utgångsdatum.
+                Förnya <strong>{cert.certificate_type?.name}</strong> genom att ladda upp nytt certifikat och ange nytt utgångsdatum. Det gamla certifikatet raderas automatiskt.
               </p>
               <div className="space-y-2">
-                <Label>Nytt utgångsdatum</Label>
+                <Label>Nytt utgångsdatum *</Label>
                 <Input 
                   type="date" 
                   value={newExpiryDate} 
@@ -650,9 +701,26 @@ function CertificateItem({
                   min={today}
                 />
               </div>
-              <Button onClick={handleRenew} disabled={!newExpiryDate} className="w-full">
+              <div className="space-y-2">
+                <Label>Nytt certifikat (fil) *</Label>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => renewFileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Välj fil
+                  </Button>
+                  {renewFile && (
+                    <span className="text-sm text-muted-foreground">{renewFile.name}</span>
+                  )}
+                </div>
+              </div>
+              <Button onClick={handleRenew} disabled={!newExpiryDate || !renewFile} className="w-full">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Förnya
+                Förnya certifikat
               </Button>
             </div>
           </DialogContent>
