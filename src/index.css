@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fartygsloggbok Design System - Maritime Theme */
+
+@layer base {
+  :root {
+    /* Maritime color palette */
+    --background: 210 25% 97%;
+    --foreground: 210 50% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 50% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 50% 10%;
+
+    /* Deep navy blue - primary */
+    --primary: 210 70% 25%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Light steel blue - secondary */
+    --secondary: 210 30% 90%;
+    --secondary-foreground: 210 50% 15%;
+
+    /* Soft gray-blue - muted */
+    --muted: 210 20% 94%;
+    --muted-foreground: 210 15% 45%;
+
+    /* Ocean accent */
+    --accent: 195 80% 40%;
+    --accent-foreground: 0 0% 98%;
+
+    /* Alert red */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Success green */
+    --success: 145 60% 40%;
+    --success-foreground: 0 0% 98%;
+
+    /* Warning amber */
+    --warning: 40 90% 50%;
+    --warning-foreground: 40 90% 10%;
+
+    --border: 210 25% 85%;
+    --input: 210 25% 85%;
+    --ring: 210 70% 25%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 210 50% 15%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 195 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 25%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 210 40% 25%;
+    --sidebar-ring: 195 80% 50%;
+  }
+
+  .dark {
+    --background: 210 50% 8%;
+    --foreground: 210 20% 95%;
+
+    --card: 210 45% 12%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 210 45% 12%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 195 70% 50%;
+    --primary-foreground: 210 50% 8%;
+
+    --secondary: 210 30% 20%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 210 30% 18%;
+    --muted-foreground: 210 15% 60%;
+
+    --accent: 195 80% 45%;
+    --accent-foreground: 210 50% 8%;
+
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 145 50% 45%;
+    --success-foreground: 0 0% 98%;
+
+    --warning: 40 80% 55%;
+    --warning-foreground: 40 90% 10%;
+
+    --border: 210 30% 25%;
+    --input: 210 30% 25%;
+    --ring: 195 70% 50%;
+
+    --sidebar-background: 210 50% 6%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 195 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 15%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 210 40% 15%;
+    --sidebar-ring: 195 80% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .maritime-gradient {
+    background: linear-gradient(135deg, hsl(210 70% 25%) 0%, hsl(195 80% 40%) 100%);
+  }
+  
+  .maritime-gradient-subtle {
+    background: linear-gradient(135deg, hsl(210 25% 97%) 0%, hsl(210 30% 93%) 100%);
+  }
+  
+  .card-maritime {
+    @apply bg-card border border-border rounded-lg shadow-sm;
+    box-shadow: 0 1px 3px 0 hsl(210 50% 10% / 0.05), 0 1px 2px -1px hsl(210 50% 10% / 0.05);
+  }
+  
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .status-open {
+    @apply bg-success/10 text-success;
+  }
+  
+  .status-closed {
+    @apply bg-muted text-muted-foreground;
+  }
+  
+  .validation-success {
+    @apply bg-success/10 border-success/30 text-success;
+  }
+  
+  .validation-error {
+    @apply bg-destructive/10 border-destructive/30 text-destructive;
+  }
+  
+  .validation-warning {
+    @apply bg-warning/10 border-warning/30 text-warning-foreground;
+  }
+}
