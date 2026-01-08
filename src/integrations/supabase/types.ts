@@ -98,6 +98,13 @@ export type Database = {
             referencedRelation: "logbooks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "logbook_crew_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       logbook_engine_hours: {
@@ -316,6 +323,13 @@ export type Database = {
             referencedRelation: "certificate_types"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_certificates_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -362,6 +376,13 @@ export type Database = {
           vessel_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_vessel_inductions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_vessel_inductions_vessel_id_fkey"
             columns: ["vessel_id"]
