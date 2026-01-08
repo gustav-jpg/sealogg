@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
-import { Plus, Ship, Trash2, Users, Settings, Gauge } from 'lucide-react';
+import { Plus, Ship, Trash2, Users, Settings, Gauge, Pencil } from 'lucide-react';
 
 export default function AdminVessels() {
   const { toast } = useToast();
@@ -27,6 +27,9 @@ export default function AdminVessels() {
   const [requirements, setRequirements] = useState<{ role: CrewRole; count: number; group: string }[]>([]);
   const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
+  const [crewDialogOpen, setCrewDialogOpen] = useState(false);
+  const [editingVesselId, setEditingVesselId] = useState<string | null>(null);
+  const [editRequirements, setEditRequirements] = useState<{ id?: string; role: CrewRole; count: number; group: string }[]>([]);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -183,8 +186,70 @@ export default function AdminVessels() {
     },
   });
 
+  const openCrewDialog = (vesselId: string) => {
+    const vesselReqs = crewRequirements?.filter(r => r.vessel_id === vesselId) || [];
+    setEditRequirements(vesselReqs.map(r => ({
+      id: r.id,
+      role: r.role as CrewRole,
+      count: r.minimum_count,
+      group: (r as any).requirement_group || ''
+    })));
+    setEditingVesselId(vesselId);
+    setCrewDialogOpen(true);
+  };
+
+  const updateCrewRequirements = useMutation({
+    mutationFn: async () => {
+      if (!editingVesselId) throw new Error('Inget fartyg valt');
+      
+      // Delete existing requirements
+      const { error: deleteError } = await supabase
+        .from('vessel_crew_requirements')
+        .delete()
+        .eq('vessel_id', editingVesselId);
+      if (deleteError) throw deleteError;
+      
+      // Insert new requirements
+      if (editRequirements.length > 0) {
+        const { error: insertError } = await supabase
+          .from('vessel_crew_requirements')
+          .insert(editRequirements.map(r => ({
+            vessel_id: editingVesselId,
+            role: r.role,
+            minimum_count: r.count,
+            requirement_group: r.group || null
+          })));
+        if (insertError) throw insertError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vessel-crew-requirements'] });
+      toast({ title: 'Sparat', description: 'Bemanningskrav uppdaterade.' });
+      setCrewDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const addRequirement = (group: string = '') => {
     setRequirements([...requirements, { role: 'matros', count: 1, group }]);
+  };
+
+  const addEditRequirement = () => {
+    setEditRequirements([...editRequirements, { role: 'matros', count: 1, group: '' }]);
+  };
+
+  const updateEditRequirement = (index: number, field: 'role' | 'count' | 'group', value: string | number) => {
+    const updated = [...editRequirements];
+    if (field === 'role') updated[index].role = value as CrewRole;
+    else if (field === 'count') updated[index].count = value as number;
+    else if (field === 'group') updated[index].group = value as string;
+    setEditRequirements(updated);
+  };
+
+  const removeEditRequirement = (index: number) => {
+    setEditRequirements(editRequirements.filter((_, i) => i !== index));
   };
 
   const updateRequirement = (index: number, field: 'role' | 'count' | 'group', value: string | number) => {
@@ -326,14 +391,20 @@ export default function AdminVessels() {
                     </Button>
                   </div>
                   
-                  {vesselReqs.length > 0 && (
-                    <div className="space-y-1">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
                       <p className="text-xs font-medium flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         Bemanningskrav
                       </p>
-                      {(() => {
-                        // Group requirements
+                      <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => openCrewDialog(vessel.id)}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {vesselReqs.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">Inga krav</p>
+                    ) : (
+                      (() => {
                         const grouped: Record<string, typeof vesselReqs> = {};
                         const ungrouped: typeof vesselReqs = [];
                         for (const req of vesselReqs) {
@@ -360,9 +431,9 @@ export default function AdminVessels() {
                             ))}
                           </>
                         );
-                      })()}
-                    </div>
-                  )}
+                      })()
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -411,6 +482,61 @@ export default function AdminVessels() {
               )}
               <Button onClick={() => updateEngineHours.mutate()} disabled={updateEngineHours.isPending} className="w-full">
                 {updateEngineHours.isPending ? 'Sparar...' : 'Spara maskintimmar'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={crewDialogOpen} onOpenChange={setCrewDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Redigera bemanningskrav</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Lämna "Grupp" tomt för krav som alltid gäller. Använd samma gruppnamn (t.ex. "A", "B") för alternativ.
+              </p>
+              
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {editRequirements.map((req, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Grupp"
+                      className="w-16"
+                      value={req.group}
+                      onChange={e => updateEditRequirement(i, 'group', e.target.value)}
+                    />
+                    <Select value={req.role} onValueChange={v => updateEditRequirement(i, 'role', v)}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      className="w-16"
+                      min={1}
+                      value={req.count}
+                      onChange={e => updateEditRequirement(i, 'count', parseInt(e.target.value) || 1)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeEditRequirement(i)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              
+              <Button variant="outline" size="sm" onClick={addEditRequirement} className="w-full">
+                <Plus className="h-4 w-4 mr-1" />
+                Lägg till krav
+              </Button>
+              
+              <Button onClick={() => updateCrewRequirements.mutate()} disabled={updateCrewRequirements.isPending} className="w-full">
+                {updateCrewRequirements.isPending ? 'Sparar...' : 'Spara bemanningskrav'}
               </Button>
             </div>
           </DialogContent>
