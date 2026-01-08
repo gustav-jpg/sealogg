@@ -64,7 +64,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link to="/" className="flex items-center gap-2">
               <Anchor className="h-7 w-7 text-primary-foreground" />
               <span className="font-display text-xl font-bold text-primary-foreground">
-                SeaLog
+                SeaLogg
               </span>
             </Link>
             
@@ -174,7 +174,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Footer */}
       <footer className="border-t border-border/40 bg-muted/30">
         <div className="container py-4 text-center text-sm text-muted-foreground">
-          Sealog.se en del av AhrensGroup AB • Org.nr 559553-5443
+          Sealogg.se en del av AhrensGroup AB • Org.nr 559553-5443
         </div>
       </footer>
     </div>
