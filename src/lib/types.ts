@@ -151,6 +151,7 @@ export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
   warnings: ValidationWarning[];
+  noVesselSelected?: boolean;
 }
 
 export interface ValidationError {

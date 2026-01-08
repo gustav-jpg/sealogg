@@ -87,7 +87,7 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
     const warnings: ValidationWarning[] = [];
 
     if (!vesselId) {
-      return { isValid: true, errors, warnings };
+      return { isValid: false, errors: [], warnings: [], noVesselSelected: true };
     }
 
     // Check crew requirements
