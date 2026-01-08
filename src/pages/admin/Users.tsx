@@ -210,8 +210,27 @@ export default function AdminUsers() {
   });
 
   const addInduction = useMutation({
-    mutationFn: async ({ profileId, vesselId }: { profileId: string; vesselId: string }) => {
-      const { error } = await supabase.from('user_vessel_inductions').insert({ profile_id: profileId, vessel_id: vesselId });
+    mutationFn: async ({ profileId, vesselId, inductedAt, file }: { profileId: string; vesselId: string; inductedAt: string; file?: File }) => {
+      let documentUrl: string | null = null;
+      
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${profileId}/${vesselId}/${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('inductions')
+          .upload(fileName, file);
+        
+        if (uploadError) throw uploadError;
+        documentUrl = fileName;
+      }
+      
+      const { error } = await supabase.from('user_vessel_inductions').insert({ 
+        profile_id: profileId, 
+        vessel_id: vesselId,
+        inducted_at: inductedAt,
+        document_url: documentUrl,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -379,29 +398,23 @@ export default function AdminUsers() {
                     <TabsContent value="inductions" className="space-y-4 mt-4">
                       <div className="space-y-2">
                         {selectedUserInductions.map(ind => (
-                          <div key={ind.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                            <div>
-                              <p className="font-medium">{(ind as any).vessel?.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Inskolad: {format(new Date(ind.inducted_at), 'yyyy-MM-dd')}
-                              </p>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={() => removeInduction.mutate(ind.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
+                          <InductionItem 
+                            key={ind.id}
+                            induction={ind}
+                            onRemove={() => removeInduction.mutate(ind.id)}
+                          />
                         ))}
                       </div>
-                      <Select onValueChange={v => addInduction.mutate({ profileId: selectedProfile.id, vesselId: v })}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Lägg till inskolning" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vessels?.map(v => (
-                            <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <AddInductionDialog
+                        vessels={vessels || []}
+                        existingVesselIds={selectedUserInductions.map(i => i.vessel_id)}
+                        onAdd={(vesselId, inductedAt, file) => addInduction.mutate({ 
+                          profileId: selectedProfile.id, 
+                          vesselId,
+                          inductedAt,
+                          file 
+                        })}
+                      />
                     </TabsContent>
                   </Tabs>
                 </CardContent>
@@ -614,6 +627,138 @@ function AddExternalUserDialog({ onAdd }: { onAdd: (name: string) => void }) {
             Personen kan tilldelas valfri roll i loggböcker. Certifikatkrav valideras per fartyg.
           </p>
           <Button onClick={handleAdd} disabled={!name.trim()} className="w-full">
+            Lägg till
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InductionItem({
+  induction,
+  onRemove,
+}: {
+  induction: any;
+  onRemove: () => void;
+}) {
+  const handleViewFile = async () => {
+    if (induction.document_url) {
+      const { data } = await supabase.storage
+        .from('inductions')
+        .createSignedUrl(induction.document_url, 3600);
+      
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-3 rounded bg-muted/50">
+      <div className="flex-1">
+        <p className="font-medium">{induction.vessel?.name}</p>
+        <p className="text-xs text-muted-foreground">
+          Inskolad: {format(new Date(induction.inducted_at), 'yyyy-MM-dd')}
+        </p>
+        {induction.document_url && (
+          <button 
+            onClick={handleViewFile}
+            className="text-xs text-primary flex items-center gap-1 mt-1 hover:underline"
+          >
+            <FileText className="h-3 w-3" />
+            Visa dokument
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      <Button variant="ghost" size="icon" onClick={onRemove}>
+        <Trash2 className="h-4 w-4 text-destructive" />
+      </Button>
+    </div>
+  );
+}
+
+function AddInductionDialog({
+  vessels,
+  existingVesselIds,
+  onAdd,
+}: {
+  vessels: { id: string; name: string }[];
+  existingVesselIds: string[];
+  onAdd: (vesselId: string, inductedAt: string, file?: File) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [vesselId, setVesselId] = useState('');
+  const [inductedAt, setInductedAt] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [file, setFile] = useState<File | undefined>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAdd = () => {
+    if (vesselId && inductedAt) {
+      onAdd(vesselId, inductedAt, file);
+      setOpen(false);
+      setVesselId('');
+      setInductedAt(format(new Date(), 'yyyy-MM-dd'));
+      setFile(undefined);
+    }
+  };
+
+  const availableVessels = vessels.filter(v => !existingVesselIds.includes(v.id));
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" disabled={availableVessels.length === 0}>
+          <Plus className="h-4 w-4 mr-1" />
+          Lägg till inskolning
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Lägg till inskolning</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Fartyg</Label>
+            <Select value={vesselId} onValueChange={setVesselId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Välj fartyg" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableVessels.map(v => (
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Inskolningsdatum</Label>
+            <Input type="date" value={inductedAt} onChange={e => setInductedAt(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Inskolningsdokument (valfritt)</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={e => setFile(e.target.files?.[0])}
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {file ? file.name : 'Välj fil'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">PDF, JPG eller PNG</p>
+          </div>
+          <Button onClick={handleAdd} disabled={!vesselId || !inductedAt} className="w-full">
             Lägg till
           </Button>
         </div>
