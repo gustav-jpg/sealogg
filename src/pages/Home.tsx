@@ -52,17 +52,14 @@ export default function Home() {
             <a href="#funktioner" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm">
               Funktioner
             </a>
-            <a href="#priser" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm">
-              Priser
+            <a href="#kontakt" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm">
+              Kontakt
             </a>
           </nav>
 
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
               <Link to="/portal/login">Logga in</Link>
-            </Button>
-            <Button asChild size="sm" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-              <Link to="/portal/register">Kom igång</Link>
             </Button>
           </div>
         </div>
@@ -83,8 +80,8 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-                <Link to="/portal/register">
-                  Prova gratis
+                <Link to="/portal/login">
+                  Logga in
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -168,49 +165,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="priser" className="py-16 md:py-24">
+      {/* Contact */}
+      <section id="kontakt" className="py-16 md:py-24">
         <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Priser
+          <div className="max-w-xl mx-auto text-center">
+            <h2 className="font-display text-3xl font-bold text-foreground mb-4">
+              Kontakt
             </h2>
-            <p className="text-muted-foreground">
-              Årsavgift per fartyg. Prova kostnadsfritt.
+            <p className="text-muted-foreground mb-6">
+              Vill du veta mer eller komma igång? Hör av dig!
             </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-            <Card className="border-border/50">
-              <CardContent className="pt-6 text-center">
-                <p className="text-sm text-muted-foreground mb-2">Under 12m</p>
-                <p className="text-3xl font-bold">2 900 kr</p>
-                <p className="text-xs text-muted-foreground">/år</p>
-              </CardContent>
-            </Card>
-            <Card className="border-primary ring-1 ring-primary">
-              <CardContent className="pt-6 text-center">
-                <p className="text-sm text-muted-foreground mb-2">12-24m</p>
-                <p className="text-3xl font-bold">4 900 kr</p>
-                <p className="text-xs text-muted-foreground">/år</p>
-              </CardContent>
-            </Card>
-            <Card className="border-border/50">
-              <CardContent className="pt-6 text-center">
-                <p className="text-sm text-muted-foreground mb-2">Över 24m</p>
-                <p className="text-3xl font-bold">6 900 kr</p>
-                <p className="text-xs text-muted-foreground">/år</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center mt-8">
-            <Button asChild size="lg">
-              <Link to="/portal/register">
-                Skapa konto
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+            <a 
+              href="mailto:info@sealogg.se" 
+              className="text-primary hover:underline text-lg"
+            >
+              info@sealogg.se
+            </a>
           </div>
         </div>
       </section>
