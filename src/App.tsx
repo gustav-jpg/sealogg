@@ -12,7 +12,7 @@ import LogbookDetail from "./pages/LogbookDetail";
 import AdminVessels from "./pages/admin/Vessels";
 import AdminUsers from "./pages/admin/Users";
 import AdminCertificates from "./pages/admin/Certificates";
-import AdminRoleRules from "./pages/admin/RoleRules";
+import VesselCertificates from "./pages/admin/VesselCertificates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,7 +68,7 @@ function AppRoutes() {
       <Route path="/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
       <Route path="/admin/certificates" element={<ProtectedRoute adminOnly><AdminCertificates /></ProtectedRoute>} />
-      <Route path="/admin/role-rules" element={<ProtectedRoute adminOnly><AdminRoleRules /></ProtectedRoute>} />
+      <Route path="/admin/rules" element={<ProtectedRoute adminOnly><VesselCertificates /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -22,7 +22,7 @@ interface UseValidationProps {
 }
 
 export function useValidation({ vesselId, crew, enabled = true }: UseValidationProps) {
-  // Fetch vessel crew requirements
+  // Fetch vessel crew requirements (minimum crew counts)
   const { data: requirements } = useQuery({
     queryKey: ['vessel-crew-requirements', vesselId],
     queryFn: async () => {
@@ -37,17 +37,19 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
     enabled: !!vesselId && enabled,
   });
 
-  // Fetch role certificate rules
-  const { data: rules } = useQuery({
-    queryKey: ['role-certificate-rules'],
+  // Fetch vessel-specific certificate rules
+  const { data: vesselRules } = useQuery({
+    queryKey: ['vessel-role-certificates', vesselId],
     queryFn: async () => {
+      if (!vesselId) return [];
       const { data, error } = await supabase
-        .from('role_certificate_rules')
-        .select('*, certificate_type:certificate_types(*)');
+        .from('vessel_role_certificates')
+        .select('*, certificate_type:certificate_types(*)')
+        .eq('vessel_id', vesselId);
       if (error) throw error;
       return data;
     },
-    enabled,
+    enabled: !!vesselId && enabled,
   });
 
   // Fetch certificates for crew members
@@ -110,30 +112,31 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
     const warningDateStr = warningDate.toISOString().split('T')[0];
 
     for (const member of crew) {
-      const memberRules = rules?.filter(r => r.role === member.role) || [];
       const memberCerts = certificates?.filter(c => c.profile_id === member.userId) || [];
       const hasInduction = inductions?.some(i => i.profile_id === member.userId);
 
-      // Check if role requires induction
-      const requiresInduction = memberRules.some(r => r.requires_induction);
-      if (requiresInduction && !hasInduction) {
+      // All crew members need induction
+      if (!hasInduction) {
         errors.push({
           type: 'induction',
           message: `${member.fullName} är inte inskolad på detta fartyg.`,
         });
       }
 
+      // Get certificate rules for this role on this vessel
+      const memberRules = vesselRules?.filter(r => r.role === member.role) || [];
+
       // Group rules by group_name for OR logic
       const groupedRules: Record<string, typeof memberRules> = {};
       const standaloneRules: typeof memberRules = [];
 
       for (const rule of memberRules) {
-        if (rule.group_name && rule.group_logic === 'OR') {
+        if (rule.group_name) {
           if (!groupedRules[rule.group_name]) {
             groupedRules[rule.group_name] = [];
           }
           groupedRules[rule.group_name].push(rule);
-        } else if (rule.is_required) {
+        } else {
           standaloneRules.push(rule);
         }
       }
@@ -192,7 +195,7 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
       errors,
       warnings,
     };
-  }, [vesselId, crew, requirements, rules, certificates, inductions]);
+  }, [vesselId, crew, requirements, vesselRules, certificates, inductions]);
 
   return validation;
 }

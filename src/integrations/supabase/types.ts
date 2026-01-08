@@ -213,35 +213,6 @@ export type Database = {
           },
         ]
       }
-      profile_crew_roles: {
-        Row: {
-          created_at: string
-          id: string
-          profile_id: string
-          role: Database["public"]["Enums"]["crew_role"]
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          profile_id: string
-          role: Database["public"]["Enums"]["crew_role"]
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          profile_id?: string
-          role?: Database["public"]["Enums"]["crew_role"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_crew_roles_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           created_at: string
@@ -271,47 +242,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      role_certificate_rules: {
-        Row: {
-          certificate_type_id: string
-          created_at: string
-          group_logic: string | null
-          group_name: string | null
-          id: string
-          is_required: boolean
-          requires_induction: boolean
-          role: Database["public"]["Enums"]["crew_role"]
-        }
-        Insert: {
-          certificate_type_id: string
-          created_at?: string
-          group_logic?: string | null
-          group_name?: string | null
-          id?: string
-          is_required?: boolean
-          requires_induction?: boolean
-          role: Database["public"]["Enums"]["crew_role"]
-        }
-        Update: {
-          certificate_type_id?: string
-          created_at?: string
-          group_logic?: string | null
-          group_name?: string | null
-          id?: string
-          is_required?: boolean
-          requires_induction?: boolean
-          role?: Database["public"]["Enums"]["crew_role"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "role_certificate_rules_certificate_type_id_fkey"
-            columns: ["certificate_type_id"]
-            isOneToOne: false
-            referencedRelation: "certificate_types"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_certificates: {
         Row: {
@@ -446,6 +376,48 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vessel_crew_requirements_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vessel_role_certificates: {
+        Row: {
+          certificate_type_id: string
+          created_at: string
+          group_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["crew_role"]
+          vessel_id: string
+        }
+        Insert: {
+          certificate_type_id: string
+          created_at?: string
+          group_name?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["crew_role"]
+          vessel_id: string
+        }
+        Update: {
+          certificate_type_id?: string
+          created_at?: string
+          group_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["crew_role"]
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vessel_role_certificates_certificate_type_id_fkey"
+            columns: ["certificate_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vessel_role_certificates_vessel_id_fkey"
             columns: ["vessel_id"]
             isOneToOne: false
             referencedRelation: "vessels"
