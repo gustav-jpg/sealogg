@@ -9,6 +9,8 @@ import { Anchor, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Register() {
+  const [pin, setPin] = useState('');
+  const [isPinVerified, setIsPinVerified] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +19,19 @@ export default function Register() {
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin === '1234') {
+      setIsPinVerified(true);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Felaktig PIN-kod',
+        description: 'Ange rätt PIN-kod för att fortsätta.',
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +74,51 @@ export default function Register() {
 
     setIsLoading(false);
   };
+
+  if (!isPinVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background maritime-gradient-subtle">
+        <Card className="w-full max-w-md mx-4 animate-fade-in">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 rounded-full maritime-gradient">
+                <Anchor className="h-8 w-8 text-primary-foreground" />
+              </div>
+            </div>
+            <CardTitle className="font-display text-2xl">Skapa konto</CardTitle>
+            <CardDescription>Ange PIN-kod för att fortsätta</CardDescription>
+          </CardHeader>
+          <form onSubmit={handlePinSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="pin">PIN-kod</Label>
+                <Input
+                  id="pin"
+                  type="password"
+                  placeholder="••••"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  required
+                  maxLength={4}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full">
+                Fortsätt
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Har du redan ett konto?{' '}
+                <Link to="/login" className="text-primary hover:underline">
+                  Logga in
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background maritime-gradient-subtle">
