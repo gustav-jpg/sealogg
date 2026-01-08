@@ -83,7 +83,7 @@ export default function LogbookDetail() {
   });
 
   const crewForValidation = crewMembers?.map(c => ({
-    userId: c.user_id,
+    userId: c.profile_id,
     role: c.role as CrewRole,
     fullName: (c as any).profile?.full_name || 'Okänd',
   })) || [];

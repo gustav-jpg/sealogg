@@ -65,7 +65,7 @@ export default function NewLogbook() {
   const crewForValidation = crew
     .filter(c => c.userId)
     .map(c => {
-      const profile = profiles?.find(p => p.user_id === c.userId);
+      const profile = profiles?.find(p => p.id === c.userId);
       return { userId: c.userId, role: c.role, fullName: profile?.full_name || 'Okänd' };
     });
 
@@ -97,7 +97,7 @@ export default function NewLogbook() {
         const { error: crewError } = await supabase.from('logbook_crew').insert(
           crew.map(c => ({
             logbook_id: logbook.id,
-            user_id: c.userId,
+            profile_id: c.userId,
             role: c.role,
           }))
         );
@@ -243,11 +243,11 @@ export default function NewLogbook() {
                               <SelectContent>
                                 {profiles?.map(p => (
                                   <SelectItem 
-                                    key={p.user_id} 
-                                    value={p.user_id}
-                                    disabled={selectedUserIds.includes(p.user_id)}
+                                    key={p.id} 
+                                    value={p.id}
+                                    disabled={selectedUserIds.includes(p.id)}
                                   >
-                                    {p.full_name}
+                                    {p.full_name}{p.is_external ? ' (extern)' : ''}
                                   </SelectItem>
                                 ))}
                               </SelectContent>

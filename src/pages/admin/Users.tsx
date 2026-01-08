@@ -12,13 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
+import { z } from 'zod';
 
 export default function AdminUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   const { data: profiles } = useQuery({
     queryKey: ['profiles'],
@@ -74,6 +75,39 @@ export default function AdminUsers() {
     },
   });
 
+  const addExternalUser = useMutation({
+    mutationFn: async (fullName: string) => {
+      const { error } = await supabase.from('profiles').insert({
+        full_name: fullName,
+        is_external: true,
+        user_id: null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      toast({ title: 'Extern besättning tillagd' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteExternalUser = useMutation({
+    mutationFn: async (profileId: string) => {
+      const { error } = await supabase.from('profiles').delete().eq('id', profileId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      setSelectedProfileId(null);
+      toast({ title: 'Extern besättning borttagen' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const addRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
       const { error } = await supabase.from('user_roles').insert({ user_id: userId, role });
@@ -121,7 +155,7 @@ export default function AdminUsers() {
       }
       
       const { error } = await supabase.from('user_certificates').insert({
-        user_id: data.userId,
+        profile_id: data.userId,
         certificate_type_id: data.certTypeId,
         expiry_date: data.expiryDate,
         file_url: fileUrl,
@@ -138,9 +172,9 @@ export default function AdminUsers() {
   });
 
   const uploadCertificateFile = useMutation({
-    mutationFn: async ({ certId, userId, file }: { certId: string; userId: string; file: File }) => {
+    mutationFn: async ({ certId, oderId, file }: { certId: string; oderId: string; file: File }) => {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`;
+      const fileName = `${oderId}/${crypto.randomUUID()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('certificates')
@@ -175,8 +209,8 @@ export default function AdminUsers() {
   });
 
   const addInduction = useMutation({
-    mutationFn: async ({ userId, vesselId }: { userId: string; vesselId: string }) => {
-      const { error } = await supabase.from('user_vessel_inductions').insert({ user_id: userId, vessel_id: vesselId });
+    mutationFn: async ({ profileId, vesselId }: { profileId: string; vesselId: string }) => {
+      const { error } = await supabase.from('user_vessel_inductions').insert({ profile_id: profileId, vessel_id: vesselId });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -199,10 +233,11 @@ export default function AdminUsers() {
     },
   });
 
-  const selectedUser = profiles?.find(p => p.user_id === selectedUserId);
-  const selectedUserRoles = userRoles?.filter(r => r.user_id === selectedUserId) || [];
-  const selectedUserCerts = userCertificates?.filter(c => c.user_id === selectedUserId) || [];
-  const selectedUserInductions = inductions?.filter(i => i.user_id === selectedUserId) || [];
+  const selectedProfile = profiles?.find(p => p.id === selectedProfileId);
+  const selectedUserRoles = selectedProfile?.user_id ? userRoles?.filter(r => r.user_id === selectedProfile.user_id) || [] : [];
+  const selectedUserCerts = userCertificates?.filter(c => c.profile_id === selectedProfile?.id) || [];
+  const selectedUserInductions = inductions?.filter(i => i.profile_id === selectedProfile?.id) || [];
+  const isExternalUser = selectedProfile?.is_external === true;
 
   return (
     <MainLayout>
@@ -215,23 +250,31 @@ export default function AdminUsers() {
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Användare
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Användare
+                </span>
+                <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate(name)} />
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {profiles?.map(profile => (
                   <button
-                    key={profile.user_id}
-                    onClick={() => setSelectedUserId(profile.user_id)}
+                    key={profile.id}
+                    onClick={() => setSelectedProfileId(profile.id)}
                     className={`w-full text-left p-2 rounded transition-colors ${
-                      selectedUserId === profile.user_id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      selectedProfileId === profile.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                     }`}
                   >
-                    <p className="font-medium">{profile.full_name}</p>
-                    <p className="text-xs opacity-70">{profile.email}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{profile.full_name}</p>
+                      {profile.is_external && (
+                        <Badge variant="outline" className="text-xs">Extern</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs opacity-70">{profile.email || 'Ingen e-post'}</p>
                   </button>
                 ))}
               </div>
@@ -239,18 +282,35 @@ export default function AdminUsers() {
           </Card>
 
           <Card className="lg:col-span-2">
-            {selectedUser ? (
+            {selectedProfile ? (
               <>
-                <CardHeader>
-                  <CardTitle>{selectedUser.full_name}</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>{selectedProfile.full_name}</CardTitle>
+                    {isExternalUser && (
+                      <p className="text-sm text-muted-foreground mt-1">Extern besättning (ingen inloggning)</p>
+                    )}
+                  </div>
+                  {isExternalUser && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => deleteExternalUser.mutate(selectedProfile.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Ta bort
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="roles">
+                  <Tabs defaultValue={isExternalUser ? "certificates" : "roles"}>
                     <TabsList>
-                      <TabsTrigger value="roles">
-                        <Shield className="h-4 w-4 mr-1" />
-                        Roller
-                      </TabsTrigger>
+                      {!isExternalUser && (
+                        <TabsTrigger value="roles">
+                          <Shield className="h-4 w-4 mr-1" />
+                          Roller
+                        </TabsTrigger>
+                      )}
                       <TabsTrigger value="certificates">
                         <Award className="h-4 w-4 mr-1" />
                         Certifikat
@@ -261,30 +321,32 @@ export default function AdminUsers() {
                       </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="roles" className="space-y-4 mt-4">
-                      <div className="flex gap-2 flex-wrap">
-                        {selectedUserRoles.map(role => (
-                          <Badge key={role.id} variant="secondary" className="gap-1">
-                            {APP_ROLE_LABELS[role.role as AppRole]}
-                            <button onClick={() => removeRole.mutate(role.id)} className="ml-1 hover:text-destructive">
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <Select onValueChange={v => addRole.mutate({ userId: selectedUserId!, role: v as AppRole })}>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Lägg till roll" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(APP_ROLE_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TabsContent>
+                    {!isExternalUser && (
+                      <TabsContent value="roles" className="space-y-4 mt-4">
+                        <div className="flex gap-2 flex-wrap">
+                          {selectedUserRoles.map(role => (
+                            <Badge key={role.id} variant="secondary" className="gap-1">
+                              {APP_ROLE_LABELS[role.role as AppRole]}
+                              <button onClick={() => removeRole.mutate(role.id)} className="ml-1 hover:text-destructive">
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Select onValueChange={v => addRole.mutate({ userId: selectedProfile.user_id!, role: v as AppRole })}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Lägg till roll" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(APP_ROLE_LABELS).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>{label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TabsContent>
+                    )}
 
                     <TabsContent value="certificates" className="space-y-4 mt-4">
                       <div className="space-y-2">
@@ -292,11 +354,11 @@ export default function AdminUsers() {
                           <CertificateItem
                             key={cert.id}
                             cert={cert}
-                            userId={selectedUserId!}
+                            oderId={selectedProfile.id}
                             onRemove={() => removeCertificate.mutate(cert.id)}
                             onUpload={(file) => uploadCertificateFile.mutate({ 
                               certId: cert.id, 
-                              userId: selectedUserId!, 
+                              oderId: selectedProfile.id, 
                               file 
                             })}
                           />
@@ -305,7 +367,7 @@ export default function AdminUsers() {
                       <AddCertificateDialog
                         certificateTypes={certificateTypes || []}
                         onAdd={(certTypeId, expiryDate, file) => addCertificate.mutate({ 
-                          userId: selectedUserId!, 
+                          userId: selectedProfile.id, 
                           certTypeId, 
                           expiryDate,
                           file 
@@ -329,7 +391,7 @@ export default function AdminUsers() {
                           </div>
                         ))}
                       </div>
-                      <Select onValueChange={v => addInduction.mutate({ userId: selectedUserId!, vesselId: v })}>
+                      <Select onValueChange={v => addInduction.mutate({ profileId: selectedProfile.id, vesselId: v })}>
                         <SelectTrigger className="w-48">
                           <SelectValue placeholder="Lägg till inskolning" />
                         </SelectTrigger>
@@ -358,12 +420,12 @@ export default function AdminUsers() {
 
 function CertificateItem({
   cert,
-  userId,
+  oderId,
   onRemove,
   onUpload,
 }: {
   cert: any;
-  userId: string;
+  oderId: string;
   onRemove: () => void;
   onUpload: (file: File) => void;
 }) {
@@ -507,6 +569,50 @@ function AddCertificateDialog({
             <p className="text-xs text-muted-foreground">PDF, JPG eller PNG</p>
           </div>
           <Button onClick={handleAdd} disabled={!certTypeId || !expiryDate} className="w-full">
+            Lägg till
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddExternalUserDialog({ onAdd }: { onAdd: (name: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+
+  const handleAdd = () => {
+    if (name.trim()) {
+      onAdd(name.trim());
+      setOpen(false);
+      setName('');
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <UserPlus className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Lägg till extern besättning</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Namn</Label>
+            <Input 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="Ange fullständigt namn"
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Externa besättningsmedlemmar kan läggas till i loggböcker men har ingen inloggning.
+          </p>
+          <Button onClick={handleAdd} disabled={!name.trim()} className="w-full">
             Lägg till
           </Button>
         </div>
