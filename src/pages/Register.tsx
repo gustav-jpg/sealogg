@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,9 +66,18 @@ export default function Register() {
         description: error.message,
       });
     } else {
+      // Send welcome email via edge function
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: { email, fullName },
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+
       toast({
         title: 'Konto skapat',
-        description: 'Du kan nu logga in med dina uppgifter.',
+        description: 'Du kan nu logga in med dina uppgifter. Ett välkomstmejl har skickats.',
       });
       navigate('/portal/login');
     }
