@@ -16,6 +16,7 @@ import FaultCases from "./pages/FaultCases";
 import FaultCaseDetail from "./pages/FaultCaseDetail";
 import SelfControl from "./pages/SelfControl";
 import Qualifications from "./pages/Qualifications";
+import Privacy from "./pages/Privacy";
 import AdminVessels from "./pages/admin/Vessels";
 import AdminUsers from "./pages/admin/Users";
 import RoleRules from "./pages/admin/RoleRules";
@@ -71,8 +72,9 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public landing page */}
+      {/* Public pages */}
       <Route path="/" element={<Home />} />
+      <Route path="/privacy" element={<Privacy />} />
       
       {/* Portal routes */}
       <Route path="/portal/login" element={<PublicRoute><Login /></PublicRoute>} />
