@@ -139,11 +139,30 @@ export default function LogbookDetail() {
         })
         .eq('id', id);
       if (error) throw error;
+      
+      // Uppdatera vessel_engine_hours med stop_hours från denna loggbok
+      if (engineHours && engineHours.length > 0 && logbook?.vessel_id) {
+        for (const entry of engineHours) {
+          if (entry.stop_hours !== null) {
+            const { error: engineError } = await supabase
+              .from('vessel_engine_hours')
+              .upsert({
+                vessel_id: logbook.vessel_id,
+                engine_type: entry.engine_type || 'main',
+                engine_number: entry.engine_number || 1,
+                current_hours: entry.stop_hours,
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'vessel_id,engine_type,engine_number' });
+            if (engineError) console.error('Failed to update engine hours:', engineError);
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logbook', id] });
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
-      toast({ title: 'Stängd', description: 'Loggboken har sparats och stängts.' });
+      queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
+      toast({ title: 'Stängd', description: 'Loggboken har sparats och stängts. Maskintimmar har uppdaterats.' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -329,9 +348,14 @@ export default function LogbookDetail() {
                   <div className="space-y-2">
                     {engineHours.map(entry => (
                       <div key={entry.id} className="flex items-center gap-4 p-2 rounded bg-muted/50">
+                        <span className="text-sm font-medium min-w-28">
+                          {entry.engine_type === 'auxiliary' 
+                            ? `Hjälpmaskin ${entry.engine_number}` 
+                            : `Huvudmaskin ${entry.engine_number || 1}`}
+                        </span>
                         <span className="font-mono">{entry.start_hours} → {entry.stop_hours}</span>
                         <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
-                        <span className="text-muted-foreground">{entry.notes || '-'}</span>
+                        {entry.notes && <span className="text-muted-foreground text-sm">{entry.notes}</span>}
                       </div>
                     ))}
                   </div>

@@ -110,6 +110,8 @@ export type Database = {
       logbook_engine_hours: {
         Row: {
           created_at: string
+          engine_number: number | null
+          engine_type: string | null
           id: string
           logbook_id: string
           notes: string | null
@@ -119,6 +121,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          engine_number?: number | null
+          engine_type?: string | null
           id?: string
           logbook_id: string
           notes?: string | null
@@ -128,6 +132,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          engine_number?: number | null
+          engine_type?: string | null
           id?: string
           logbook_id?: string
           notes?: string | null
@@ -386,6 +392,41 @@ export type Database = {
           },
         ]
       }
+      vessel_engine_hours: {
+        Row: {
+          current_hours: number
+          engine_number: number
+          engine_type: string
+          id: string
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          current_hours?: number
+          engine_number?: number
+          engine_type: string
+          id?: string
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          current_hours?: number
+          engine_number?: number
+          engine_type?: string
+          id?: string
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vessel_engine_hours_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vessel_role_certificates: {
         Row: {
           certificate_type_id: string
@@ -430,23 +471,29 @@ export type Database = {
       }
       vessels: {
         Row: {
+          auxiliary_engine_count: number
           created_at: string
           description: string | null
           id: string
+          main_engine_count: number
           name: string
           updated_at: string
         }
         Insert: {
+          auxiliary_engine_count?: number
           created_at?: string
           description?: string | null
           id?: string
+          main_engine_count?: number
           name: string
           updated_at?: string
         }
         Update: {
+          auxiliary_engine_count?: number
           created_at?: string
           description?: string | null
           id?: string
+          main_engine_count?: number
           name?: string
           updated_at?: string
         }
