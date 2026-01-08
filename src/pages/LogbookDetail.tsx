@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ValidationPanel } from '@/components/ValidationPanel';
@@ -15,7 +16,7 @@ import { useValidation } from '@/hooks/useValidation';
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, Calendar, User, MapPin, Users, Lock, ArrowLeft, Save } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save } from 'lucide-react';
 
 export default function LogbookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,11 +25,15 @@ export default function LogbookDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [weather, setWeather] = useState('');
+  const [wind, setWind] = useState('');
+  const [generalNotes, setGeneralNotes] = useState('');
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
   const [passengerCount, setPassengerCount] = useState('');
   const [departureTime, setDepartureTime] = useState('');
   const [arrivalTime, setArrivalTime] = useState('');
+  const [initialized, setInitialized] = useState(false);
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -49,18 +54,24 @@ export default function LogbookDetail() {
         .maybeSingle();
       
       return { ...data, created_by_profile: profile };
-      if (error) throw error;
-      
-      setFromLocation(data.from_location || '');
-      setToLocation(data.to_location || '');
-      setPassengerCount(data.passenger_count?.toString() || '');
-      setDepartureTime(data.departure_time || '');
-      setArrivalTime(data.arrival_time || '');
-      
-      return data;
     },
     enabled: !!id,
   });
+
+  // Initialize form fields when logbook data is loaded
+  useEffect(() => {
+    if (logbook && !initialized) {
+      setWeather(logbook.weather || '');
+      setWind(logbook.wind || '');
+      setGeneralNotes(logbook.general_notes || '');
+      setFromLocation(logbook.from_location || '');
+      setToLocation(logbook.to_location || '');
+      setPassengerCount(logbook.passenger_count?.toString() || '');
+      setDepartureTime(logbook.departure_time || '');
+      setArrivalTime(logbook.arrival_time || '');
+      setInitialized(true);
+    }
+  }, [logbook, initialized]);
 
   const { data: crewMembers } = useQuery({
     queryKey: ['logbook-crew', id],
@@ -101,6 +112,9 @@ export default function LogbookDetail() {
       const { error } = await supabase
         .from('logbooks')
         .update({
+          weather: weather || null,
+          wind: wind || null,
+          general_notes: generalNotes || null,
           from_location: fromLocation || null,
           to_location: toLocation || null,
           passenger_count: passengerCount ? parseInt(passengerCount) : null,
@@ -128,6 +142,9 @@ export default function LogbookDetail() {
       const { error } = await supabase
         .from('logbooks')
         .update({
+          weather: weather || null,
+          wind: wind || null,
+          general_notes: generalNotes || null,
           from_location: fromLocation || null,
           to_location: toLocation || null,
           passenger_count: passengerCount ? parseInt(passengerCount) : null,
@@ -227,18 +244,36 @@ export default function LogbookDetail() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Väder</Label>
-                    <p>{logbook.weather || '-'}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="weather">Väder</Label>
+                    <Input
+                      id="weather"
+                      value={weather}
+                      onChange={e => setWeather(e.target.value)}
+                      disabled={!canEditThis}
+                      placeholder="T.ex. Soligt, 18°C"
+                    />
                   </div>
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Vind</Label>
-                    <p>{logbook.wind || '-'}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="wind">Vind</Label>
+                    <Input
+                      id="wind"
+                      value={wind}
+                      onChange={e => setWind(e.target.value)}
+                      disabled={!canEditThis}
+                      placeholder="T.ex. SV 5 m/s"
+                    />
                   </div>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Allmänna anteckningar</Label>
-                  <p>{logbook.general_notes || '-'}</p>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Allmänna anteckningar</Label>
+                  <Textarea
+                    id="notes"
+                    value={generalNotes}
+                    onChange={e => setGeneralNotes(e.target.value)}
+                    disabled={!canEditThis}
+                    rows={3}
+                  />
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
@@ -308,7 +343,7 @@ export default function LogbookDetail() {
                   </div>
                 </div>
                 {canEditThis && (
-                  <Button onClick={() => updateLogbook.mutate()} disabled={updateLogbook.isPending}>
+                  <Button onClick={() => updateLogbook.mutate()} disabled={updateLogbook.isPending} className="w-full sm:w-auto">
                     <Save className="h-4 w-4 mr-2" />
                     {updateLogbook.isPending ? 'Sparar...' : 'Spara ändringar'}
                   </Button>
