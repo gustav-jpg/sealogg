@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
@@ -90,6 +90,34 @@ export default function AdminUsers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       toast({ title: 'Extern besättning tillagd' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const invitePortalUserMutation = useMutation({
+    mutationFn: async ({ email, fullName, role }: { email: string; fullName: string; role: AppRole }) => {
+      const response = await supabase.functions.invoke('invite-portal-user', {
+        body: { email, fullName, role },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['user-roles'] });
+      toast({ 
+        title: data.isNewUser 
+          ? 'Nytt konto skapat!' 
+          : 'Roll tillagd',
+        description: data.isNewUser 
+          ? 'Användaren får ett e-postmeddelande för att sätta lösenord.' 
+          : 'Rollen har lagts till för befintlig användare.'
+      });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -319,7 +347,13 @@ export default function AdminUsers() {
                   <User className="h-5 w-5" />
                   Användare
                 </span>
-                <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
+                <div className="flex gap-1">
+                  <InviteUserDialog 
+                    onInvite={(data) => invitePortalUserMutation.mutate(data)} 
+                    isLoading={invitePortalUserMutation.isPending}
+                  />
+                  <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -825,6 +859,82 @@ function AddCertificateDialog({
   );
 }
 
+function InviteUserDialog({ 
+  onInvite, 
+  isLoading 
+}: { 
+  onInvite: (data: { email: string; fullName: string; role: AppRole }) => void;
+  isLoading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState<AppRole>('skeppare');
+
+  const handleInvite = () => {
+    if (email.trim() && fullName.trim()) {
+      onInvite({ email: email.trim(), fullName: fullName.trim(), role });
+      setOpen(false);
+      setEmail('');
+      setFullName('');
+      setRole('skeppare');
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" title="Bjud in med e-post">
+          <Mail className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Bjud in användare</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Namn</Label>
+            <Input 
+              value={fullName} 
+              onChange={e => setFullName(e.target.value)} 
+              placeholder="Ange fullständigt namn"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>E-post</Label>
+            <Input 
+              type="email"
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="anna@example.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Roll</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">{APP_ROLE_LABELS.admin}</SelectItem>
+                <SelectItem value="skeppare">{APP_ROLE_LABELS.skeppare}</SelectItem>
+                <SelectItem value="readonly">{APP_ROLE_LABELS.readonly}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Användaren får ett e-postmeddelande för att sätta lösenord och kan sedan logga in.
+          </p>
+          <Button onClick={handleInvite} disabled={!email.trim() || !fullName.trim() || isLoading} className="w-full">
+            {isLoading ? 'Bjuder in...' : 'Bjud in'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function AddExternalUserDialog({ onAdd }: { onAdd: (name: string) => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -840,7 +950,7 @@ function AddExternalUserDialog({ onAdd }: { onAdd: (name: string) => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" title="Lägg till extern (utan e-post)">
           <UserPlus className="h-4 w-4" />
         </Button>
       </DialogTrigger>
