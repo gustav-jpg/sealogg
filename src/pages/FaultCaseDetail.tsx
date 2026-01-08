@@ -42,7 +42,7 @@ export default function FaultCaseDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fault_cases')
-        .select(`*, vessel:vessels(*), creator:profiles!fault_cases_created_by_fkey(*)`)
+        .select(`*, vessel:vessels(*)`)
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -56,7 +56,7 @@ export default function FaultCaseDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fault_comments')
-        .select(`*, user:profiles!fault_comments_user_id_fkey(*)`)
+        .select(`*`)
         .eq('fault_case_id', id)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -236,7 +236,7 @@ export default function FaultCaseDetail() {
               <CardContent>
                 <p className="whitespace-pre-wrap">{faultCase.description}</p>
                 <p className="text-sm text-muted-foreground mt-4">
-                  Rapporterad av {(faultCase as any).creator?.full_name || 'Okänd'}
+                  Rapporterad av {faultCase.created_by ? `User ${String(faultCase.created_by).slice(0, 8)}` : 'Okänd'}
                 </p>
               </CardContent>
             </Card>
@@ -302,7 +302,7 @@ export default function FaultCaseDetail() {
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground mt-2">
-                            {(comment as any).user?.full_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
+                            {comment.user_id ? `User ${String(comment.user_id).slice(0, 8)}` : 'Okänd'} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
                           </p>
                         </div>
                       );
