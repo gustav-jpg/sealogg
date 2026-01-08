@@ -32,8 +32,9 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Wrench, Plus, Filter, Eye } from 'lucide-react';
+import { Wrench, Plus, Filter, Eye, Archive } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function FaultCases() {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ export default function FaultCases() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
+  const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
 
   // Form state
   const [vesselId, setVesselId] = useState('');
@@ -62,12 +64,19 @@ export default function FaultCases() {
   });
 
   const { data: faultCases, isLoading } = useQuery({
-    queryKey: ['fault-cases', filterVessel, filterStatus, filterPriority, searchText],
+    queryKey: ['fault-cases', filterVessel, filterStatus, filterPriority, searchText, activeTab],
     queryFn: async () => {
       let query = supabase
         .from('fault_cases')
         .select(`*, vessel:vessels(*)`)
         .order('created_at', { ascending: false });
+
+      // Filter by active/archive tab
+      if (activeTab === 'active') {
+        query = query.neq('status', 'avslutad');
+      } else {
+        query = query.eq('status', 'avslutad');
+      }
 
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);
       if (filterStatus !== 'all') query = query.eq('status', filterStatus as FaultStatus);
@@ -250,6 +259,20 @@ export default function FaultCases() {
           </Dialog>
         </div>
 
+        {/* Tabs for active/archive */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'archive')}>
+          <TabsList>
+            <TabsTrigger value="active" className="flex items-center gap-2">
+              <Wrench className="h-4 w-4" />
+              Aktiva
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="flex items-center gap-2">
+              <Archive className="h-4 w-4" />
+              Arkiv
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Filters */}
         <Card>
           <CardHeader className="py-4">
@@ -272,17 +295,21 @@ export default function FaultCases() {
                 </SelectContent>
               </Select>
 
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Alla statusar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alla statusar</SelectItem>
-                  {Object.entries(FAULT_STATUS_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {activeTab === 'active' && (
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Alla statusar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alla statusar</SelectItem>
+                    {Object.entries(FAULT_STATUS_LABELS)
+                      .filter(([key]) => key !== 'avslutad')
+                      .map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select value={filterPriority} onValueChange={setFilterPriority}>
                 <SelectTrigger>
