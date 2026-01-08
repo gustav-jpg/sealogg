@@ -51,6 +51,7 @@ export default function NewLogbook() {
   const [passengerCount, setPassengerCount] = useState('');
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [engineHours, setEngineHours] = useState<EngineHourEntry[]>([]);
+  const [overrideValidation, setOverrideValidation] = useState(false);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -142,7 +143,7 @@ export default function NewLogbook() {
     mutationFn: async () => {
       if (!user) throw new Error('Ej inloggad');
       if (!vesselId) throw new Error('Välj ett fartyg');
-      if (!validation.isValid) throw new Error('Valideringsfel måste åtgärdas');
+      if (!validation.isValid && !overrideValidation) throw new Error('Valideringsfel måste åtgärdas');
 
       const { data: logbook, error: logbookError } = await supabase
         .from('logbooks')
@@ -457,11 +458,26 @@ export default function NewLogbook() {
           <div className="space-y-6">
             <ValidationPanel validation={validation} />
 
+            {!validation.isValid && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="override"
+                  checked={overrideValidation}
+                  onChange={e => setOverrideValidation(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="override" className="text-sm text-muted-foreground cursor-pointer">
+                  Bekräfta ändå (skapa trots valideringsfel)
+                </Label>
+              </div>
+            )}
+
             <Button
               className="w-full"
               size="lg"
               onClick={() => createLogbook.mutate()}
-              disabled={createLogbook.isPending || !vesselId || !validation.isValid}
+              disabled={createLogbook.isPending || !vesselId || (!validation.isValid && !overrideValidation)}
             >
               <Save className="h-4 w-4 mr-2" />
               {createLogbook.isPending ? 'Skapar...' : 'Skapa loggbok'}
