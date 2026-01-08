@@ -18,8 +18,7 @@ import SelfControl from "./pages/SelfControl";
 import Qualifications from "./pages/Qualifications";
 import AdminVessels from "./pages/admin/Vessels";
 import AdminUsers from "./pages/admin/Users";
-import AdminCertificates from "./pages/admin/Certificates";
-import VesselCertificates from "./pages/admin/VesselCertificates";
+import RoleRules from "./pages/admin/RoleRules";
 import ControlPoints from "./pages/admin/ControlPoints";
 import NotFound from "./pages/NotFound";
 import BackofficeLayout from "./components/layout/BackofficeLayout";
@@ -89,8 +88,7 @@ function AppRoutes() {
         <Route path="/portal/qualifications" element={<ProtectedRoute><Qualifications /></ProtectedRoute>} />
         <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
       <Route path="/portal/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
-      <Route path="/portal/admin/certificates" element={<ProtectedRoute adminOnly><AdminCertificates /></ProtectedRoute>} />
-      <Route path="/portal/admin/rules" element={<ProtectedRoute adminOnly><VesselCertificates /></ProtectedRoute>} />
+      <Route path="/portal/admin/rules" element={<ProtectedRoute adminOnly><RoleRules /></ProtectedRoute>} />
       <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
       
       {/* Backoffice routes (superadmin only) */}
