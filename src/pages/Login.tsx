@@ -44,7 +44,7 @@ export default function Login() {
               <Anchor className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="font-display text-2xl">SeaLogg</CardTitle>
+          <CardTitle className="font-logo text-2xl font-extrabold">SeaLogg</CardTitle>
           <CardDescription>Logga in för att fortsätta</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

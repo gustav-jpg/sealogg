@@ -150,7 +150,7 @@ export default function Privacy() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <Anchor className="h-5 w-5 text-primary" />
-              <span className="font-display font-bold">SeaLogg</span>
+              <span className="font-logo font-extrabold">SeaLogg</span>
             </div>
             <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} AhrensGroup AB
