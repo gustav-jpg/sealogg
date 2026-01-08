@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { APP_ROLE_LABELS, AppRole, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, Users } from 'lucide-react';
+import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
@@ -66,14 +66,6 @@ export default function AdminUsers() {
     },
   });
 
-  const { data: profileCrewRoles } = useQuery({
-    queryKey: ['profile-crew-roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profile_crew_roles').select('*');
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const { data: certificateTypes } = useQuery({
     queryKey: ['certificate-types'],
@@ -85,54 +77,20 @@ export default function AdminUsers() {
   });
 
   const addExternalUser = useMutation({
-    mutationFn: async ({ fullName, crewRoles }: { fullName: string; crewRoles: CrewRole[] }) => {
-      const { data: profile, error } = await supabase.from('profiles').insert({
+    mutationFn: async ({ fullName }: { fullName: string }) => {
+      const { error } = await supabase.from('profiles').insert({
         full_name: fullName,
         is_external: true,
         user_id: null,
-      }).select().single();
+      });
       if (error) throw error;
-      
-      // Add crew roles
-      if (crewRoles.length > 0) {
-        const { error: rolesError } = await supabase.from('profile_crew_roles').insert(
-          crewRoles.map(role => ({ profile_id: profile.id, role }))
-        );
-        if (rolesError) throw rolesError;
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      queryClient.invalidateQueries({ queryKey: ['profile-crew-roles'] });
       toast({ title: 'Extern besättning tillagd' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const addCrewRole = useMutation({
-    mutationFn: async ({ profileId, role }: { profileId: string; role: CrewRole }) => {
-      const { error } = await supabase.from('profile_crew_roles').insert({ profile_id: profileId, role });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile-crew-roles'] });
-      toast({ title: 'Besättningsroll tillagd' });
-    },
-    onError: (error) => {
-      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const removeCrewRole = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('profile_crew_roles').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile-crew-roles'] });
-      toast({ title: 'Besättningsroll borttagen' });
     },
   });
 
@@ -280,7 +238,6 @@ export default function AdminUsers() {
   const selectedUserRoles = selectedProfile?.user_id ? userRoles?.filter(r => r.user_id === selectedProfile.user_id) || [] : [];
   const selectedUserCerts = userCertificates?.filter(c => c.profile_id === selectedProfile?.id) || [];
   const selectedUserInductions = inductions?.filter(i => i.profile_id === selectedProfile?.id) || [];
-  const selectedUserCrewRoles = profileCrewRoles?.filter(r => r.profile_id === selectedProfile?.id) || [];
   const isExternalUser = selectedProfile?.is_external === true;
 
   return (
@@ -299,7 +256,7 @@ export default function AdminUsers() {
                   <User className="h-5 w-5" />
                   Användare
                 </span>
-                <AddExternalUserDialog onAdd={(name, roles) => addExternalUser.mutate({ fullName: name, crewRoles: roles })} />
+                <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -347,7 +304,7 @@ export default function AdminUsers() {
                   )}
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue={isExternalUser ? "crew_roles" : "roles"}>
+                  <Tabs defaultValue={isExternalUser ? "certificates" : "roles"}>
                     <TabsList>
                       {!isExternalUser && (
                         <TabsTrigger value="roles">
@@ -355,10 +312,6 @@ export default function AdminUsers() {
                           Approller
                         </TabsTrigger>
                       )}
-                      <TabsTrigger value="crew_roles">
-                        <Users className="h-4 w-4 mr-1" />
-                        Besättning
-                      </TabsTrigger>
                       <TabsTrigger value="certificates">
                         <Award className="h-4 w-4 mr-1" />
                         Certifikat
@@ -395,36 +348,6 @@ export default function AdminUsers() {
                         </div>
                       </TabsContent>
                     )}
-
-                    <TabsContent value="crew_roles" className="space-y-4 mt-4">
-                      <div className="flex gap-2 flex-wrap">
-                        {selectedUserCrewRoles.map(cr => (
-                          <Badge key={cr.id} variant="secondary" className="gap-1">
-                            {CREW_ROLE_LABELS[cr.role as CrewRole]}
-                            <button onClick={() => removeCrewRole.mutate(cr.id)} className="ml-1 hover:text-destructive">
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                        {selectedUserCrewRoles.length === 0 && (
-                          <p className="text-sm text-muted-foreground">Inga besättningsroller tilldelade</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Select onValueChange={v => addCrewRole.mutate({ profileId: selectedProfile.id, role: v as CrewRole })}>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Lägg till roll" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(CREW_ROLE_LABELS)
-                              .filter(([value]) => !selectedUserCrewRoles.some(r => r.role === value))
-                              .map(([value, label]) => (
-                                <SelectItem key={value} value={value}>{label}</SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TabsContent>
 
                     <TabsContent value="certificates" className="space-y-4 mt-4">
                       <div className="space-y-2">
@@ -655,26 +578,16 @@ function AddCertificateDialog({
   );
 }
 
-function AddExternalUserDialog({ onAdd }: { onAdd: (name: string, roles: CrewRole[]) => void }) {
+function AddExternalUserDialog({ onAdd }: { onAdd: (name: string) => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
-  const [selectedRoles, setSelectedRoles] = useState<CrewRole[]>([]);
 
   const handleAdd = () => {
-    if (name.trim() && selectedRoles.length > 0) {
-      onAdd(name.trim(), selectedRoles);
+    if (name.trim()) {
+      onAdd(name.trim());
       setOpen(false);
       setName('');
-      setSelectedRoles([]);
     }
-  };
-
-  const toggleRole = (role: CrewRole) => {
-    setSelectedRoles(prev => 
-      prev.includes(role) 
-        ? prev.filter(r => r !== role)
-        : [...prev, role]
-    );
   };
 
   return (
@@ -697,25 +610,10 @@ function AddExternalUserDialog({ onAdd }: { onAdd: (name: string, roles: CrewRol
               placeholder="Ange fullständigt namn"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Tillåtna besättningsroller</Label>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                <Badge
-                  key={value}
-                  variant={selectedRoles.includes(value as CrewRole) ? "default" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => toggleRole(value as CrewRole)}
-                >
-                  {label}
-                </Badge>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Välj vilka roller personen får ha i loggböcker
-            </p>
-          </div>
-          <Button onClick={handleAdd} disabled={!name.trim() || selectedRoles.length === 0} className="w-full">
+          <p className="text-sm text-muted-foreground">
+            Personen kan tilldelas valfri roll i loggböcker. Certifikatkrav valideras per fartyg.
+          </p>
+          <Button onClick={handleAdd} disabled={!name.trim()} className="w-full">
             Lägg till
           </Button>
         </div>
