@@ -5,23 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-
 import { toast } from 'sonner';
-import { ArrowLeft, Trash2, Mail } from 'lucide-react';
-
-type OrgRole = 'org_admin' | 'org_user';
+import { ArrowLeft, Mail, User, Building2 } from 'lucide-react';
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFullName, setInviteFullName] = useState('');
-  const [inviteRole, setInviteRole] = useState<OrgRole>('org_admin');
   const queryClient = useQueryClient();
 
   const { data: organization } = useQuery({
@@ -37,8 +31,9 @@ export default function OrganizationDetail() {
     },
   });
 
-  const { data: members } = useQuery({
-    queryKey: ['organization-members', id],
+  // Only fetch the owner (first org_admin)
+  const { data: owner } = useQuery({
+    queryKey: ['organization-owner', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('organization_members')
@@ -49,15 +44,18 @@ export default function OrganizationDetail() {
             email
           )
         `)
-        .eq('organization_id', id);
+        .eq('organization_id', id)
+        .eq('role', 'org_admin')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
   });
 
-
   const inviteUserMutation = useMutation({
-    mutationFn: async ({ email, fullName, role }: { email: string; fullName: string; role: OrgRole }) => {
+    mutationFn: async ({ email, fullName }: { email: string; fullName: string }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
@@ -66,7 +64,7 @@ export default function OrganizationDetail() {
           email,
           fullName,
           organizationId: id,
-          role,
+          role: 'org_admin', // Always org_admin from backoffice
         },
       });
 
@@ -76,54 +74,18 @@ export default function OrganizationDetail() {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['organization-members', id] });
+      queryClient.invalidateQueries({ queryKey: ['organization-owner', id] });
       toast.success(data.isNewUser 
-        ? 'Nytt konto skapat! Användaren får ett e-postmeddelande för att sätta lösenord.' 
-        : 'Befintlig användare tillagd i organisationen.');
+        ? 'Ägare skapad! De får ett e-postmeddelande för att sätta lösenord.' 
+        : 'Befintlig användare satt som ägare.');
       setIsInviteOpen(false);
       setInviteEmail('');
       setInviteFullName('');
-      setInviteRole('org_admin');
     },
     onError: (error) => {
-      toast.error('Kunde inte bjuda in användare: ' + error.message);
+      toast.error('Kunde inte skapa ägare: ' + error.message);
     },
   });
-
-  const removeMemberMutation = useMutation({
-    mutationFn: async (memberId: string) => {
-      const { error } = await supabase
-        .from('organization_members')
-        .delete()
-        .eq('id', memberId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization-members', id] });
-      toast.success('Medlem borttagen');
-    },
-    onError: (error) => {
-      toast.error('Kunde inte ta bort medlem: ' + error.message);
-    },
-  });
-
-  const updateMemberRoleMutation = useMutation({
-    mutationFn: async ({ memberId, role }: { memberId: string; role: OrgRole }) => {
-      const { error } = await supabase
-        .from('organization_members')
-        .update({ role })
-        .eq('id', memberId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization-members', id] });
-      toast.success('Roll uppdaterad');
-    },
-    onError: (error) => {
-      toast.error('Kunde inte uppdatera roll: ' + error.message);
-    },
-  });
-
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,7 +93,7 @@ export default function OrganizationDetail() {
       toast.error('Fyll i både namn och e-post');
       return;
     }
-    inviteUserMutation.mutate({ email: inviteEmail, fullName: inviteFullName, role: inviteRole });
+    inviteUserMutation.mutate({ email: inviteEmail, fullName: inviteFullName });
   };
 
   if (!organization) {
@@ -161,124 +123,110 @@ export default function OrganizationDetail() {
         </Badge>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Medlemmar ({members?.length || 0})</h2>
-          <div className="flex justify-end">
-            <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Mail className="h-4 w-4 mr-2" />
-                  Bjud in användare
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <form onSubmit={handleInvite}>
-                  <DialogHeader>
-                    <DialogTitle>Bjud in användare</DialogTitle>
-                    <DialogDescription>
-                      Skapa ett konto eller lägg till en befintlig användare i organisationen.
-                      De får automatiskt admin-rättigheter i portalen.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Namn *</Label>
-                      <Input
-                        id="fullName"
-                        value={inviteFullName}
-                        onChange={(e) => setInviteFullName(e.target.value)}
-                        placeholder="Anna Andersson"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-post *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="anna@example.com"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Roll i organisationen</Label>
-                      <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as OrgRole)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="org_admin">Admin (full åtkomst i portalen)</SelectItem>
-                          <SelectItem value="org_user">Användare (kan skapa loggböcker)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" disabled={inviteUserMutation.isPending}>
-                      {inviteUserMutation.isPending ? 'Bjuder in...' : 'Bjud in'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Organisationsinfo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div>
+              <span className="text-sm text-muted-foreground">Namn:</span>
+              <p className="font-medium">{organization.name}</p>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Org.nummer:</span>
+              <p className="font-medium">{organization.org_number || '-'}</p>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Kontakt e-post:</span>
+              <p className="font-medium">{organization.contact_email || '-'}</p>
+            </div>
+            <div>
+              <span className="text-sm text-muted-foreground">Kontakt telefon:</span>
+              <p className="font-medium">{organization.contact_phone || '-'}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Namn</TableHead>
-                  <TableHead>E-post</TableHead>
-                  <TableHead>Roll</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members?.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">
-                      {(member.profiles as any)?.full_name || 'Okänd'}
-                    </TableCell>
-                    <TableCell>{(member.profiles as any)?.email || '-'}</TableCell>
-                    <TableCell>
-                      <Select 
-                        value={member.role} 
-                        onValueChange={(v) => updateMemberRoleMutation.mutate({ memberId: member.id, role: v as OrgRole })}
-                      >
-                        <SelectTrigger className="w-40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="org_admin">Admin</SelectItem>
-                          <SelectItem value="org_user">Användare</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => removeMemberMutation.mutate(member.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {members?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      Inga medlemmar än. Bjud in den första!
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Ägare
+            </CardTitle>
+            <CardDescription>
+              Ägaren får admin-rättigheter och hanterar resten i portalen
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {owner ? (
+              <div className="space-y-2">
+                <div>
+                  <span className="text-sm text-muted-foreground">Namn:</span>
+                  <p className="font-medium">{(owner.profiles as any)?.full_name || 'Okänd'}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">E-post:</span>
+                  <p className="font-medium">{(owner.profiles as any)?.email || '-'}</p>
+                </div>
+                <Badge variant="outline" className="mt-2">Admin i portalen</Badge>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground mb-4">Ingen ägare ännu</p>
+                <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Skapa ägare
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <form onSubmit={handleInvite}>
+                      <DialogHeader>
+                        <DialogTitle>Skapa organisationsägare</DialogTitle>
+                        <DialogDescription>
+                          Ägaren får admin-rättigheter i portalen och kan sedan själv hantera användare, fartyg och allt annat.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="fullName">Namn *</Label>
+                          <Input
+                            id="fullName"
+                            value={inviteFullName}
+                            onChange={(e) => setInviteFullName(e.target.value)}
+                            placeholder="Anna Andersson"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">E-post *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="anna@example.com"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" disabled={inviteUserMutation.isPending}>
+                          {inviteUserMutation.isPending ? 'Skapar...' : 'Skapa ägare'}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
