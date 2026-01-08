@@ -15,6 +15,7 @@ import DeviationDetail from "./pages/DeviationDetail";
 import FaultCases from "./pages/FaultCases";
 import FaultCaseDetail from "./pages/FaultCaseDetail";
 import SelfControl from "./pages/SelfControl";
+import Qualifications from "./pages/Qualifications";
 import AdminVessels from "./pages/admin/Vessels";
 import AdminUsers from "./pages/admin/Users";
 import AdminCertificates from "./pages/admin/Certificates";
@@ -84,8 +85,9 @@ function AppRoutes() {
       <Route path="/portal/deviations/:id" element={<ProtectedRoute><DeviationDetail /></ProtectedRoute>} />
       <Route path="/portal/fault-cases" element={<ProtectedRoute><FaultCases /></ProtectedRoute>} />
       <Route path="/portal/fault-cases/:id" element={<ProtectedRoute><FaultCaseDetail /></ProtectedRoute>} />
-      <Route path="/portal/self-control" element={<ProtectedRoute><SelfControl /></ProtectedRoute>} />
-      <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
+        <Route path="/portal/self-control" element={<ProtectedRoute><SelfControl /></ProtectedRoute>} />
+        <Route path="/portal/qualifications" element={<ProtectedRoute><Qualifications /></ProtectedRoute>} />
+        <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
       <Route path="/portal/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
       <Route path="/portal/admin/certificates" element={<ProtectedRoute adminOnly><AdminCertificates /></ProtectedRoute>} />
       <Route path="/portal/admin/rules" element={<ProtectedRoute adminOnly><VesselCertificates /></ProtectedRoute>} />
