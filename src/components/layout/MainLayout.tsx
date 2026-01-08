@@ -20,6 +20,9 @@ import {
   Users,
   Award,
   Anchor,
+  AlertTriangle,
+  Wrench,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +42,9 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const navItems = [
     { href: '/', label: 'Loggböcker', icon: BookOpen },
+    { href: '/deviations', label: 'Avvikelser', icon: AlertTriangle },
+    { href: '/fault-cases', label: 'Felärenden', icon: Wrench },
+    { href: '/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
   ];
 
   const adminItems = [
@@ -46,6 +52,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     { href: '/admin/users', label: 'Användare', icon: Users },
     { href: '/admin/certificates', label: 'Certifikat', icon: Award },
     { href: '/admin/rules', label: 'Rollregler', icon: Settings },
+    { href: '/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
   ];
 
   return (

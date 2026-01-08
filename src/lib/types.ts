@@ -2,6 +2,13 @@
 export type AppRole = 'admin' | 'skeppare' | 'readonly';
 export type CrewRole = 'befalhavare' | 'styrman' | 'matros' | 'jungman' | 'restaurangpersonal';
 export type LogbookStatus = 'oppen' | 'stangd';
+export type DeviationType = 'incident' | 'tillbud' | 'avvikelse' | 'ovrigt';
+export type DeviationSeverity = 'lag' | 'medel' | 'hog';
+export type DeviationStatus = 'oppen' | 'under_utredning' | 'aterrapporterad' | 'stangd';
+export type FaultPriority = 'lag' | 'normal' | 'hog' | 'kritisk';
+export type FaultStatus = 'ny' | 'varvsatgard' | 'arbete_pagar' | 'atgardad' | 'avslutad';
+export type ControlType = 'calendar' | 'engine_hours';
+export type ControlStatus = 'ok' | 'kommande' | 'forfallen';
 
 // Helper labels in Swedish
 export const CREW_ROLE_LABELS: Record<CrewRole, string> = {
@@ -21,6 +28,52 @@ export const APP_ROLE_LABELS: Record<AppRole, string> = {
 export const LOGBOOK_STATUS_LABELS: Record<LogbookStatus, string> = {
   oppen: 'Öppen',
   stangd: 'Stängd',
+};
+
+export const DEVIATION_TYPE_LABELS: Record<DeviationType, string> = {
+  incident: 'Incident',
+  tillbud: 'Tillbud',
+  avvikelse: 'Avvikelse',
+  ovrigt: 'Övrigt',
+};
+
+export const DEVIATION_SEVERITY_LABELS: Record<DeviationSeverity, string> = {
+  lag: 'Låg',
+  medel: 'Medel',
+  hog: 'Hög',
+};
+
+export const DEVIATION_STATUS_LABELS: Record<DeviationStatus, string> = {
+  oppen: 'Öppen',
+  under_utredning: 'Under utredning',
+  aterrapporterad: 'Återrapporterad',
+  stangd: 'Stängd',
+};
+
+export const FAULT_PRIORITY_LABELS: Record<FaultPriority, string> = {
+  lag: 'Låg',
+  normal: 'Normal',
+  hog: 'Hög',
+  kritisk: 'Kritisk',
+};
+
+export const FAULT_STATUS_LABELS: Record<FaultStatus, string> = {
+  ny: 'Ny',
+  varvsatgard: 'Varvsåtgärd',
+  arbete_pagar: 'Arbete pågår',
+  atgardad: 'Åtgärdad',
+  avslutad: 'Avslutad',
+};
+
+export const CONTROL_TYPE_LABELS: Record<ControlType, string> = {
+  calendar: 'Kalender',
+  engine_hours: 'Maskintimmar',
+};
+
+export const CONTROL_STATUS_LABELS: Record<ControlStatus, string> = {
+  ok: 'OK',
+  kommande: 'Kommande',
+  forfallen: 'Förfallen',
 };
 
 // Interfaces

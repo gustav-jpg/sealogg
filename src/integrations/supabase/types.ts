@@ -68,6 +68,463 @@ export type Database = {
         }
         Relationships: []
       }
+      control_point_attachments: {
+        Row: {
+          file_name: string
+          file_url: string
+          id: string
+          record_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          file_name: string
+          file_url: string
+          id?: string
+          record_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          file_name?: string
+          file_url?: string
+          id?: string
+          record_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "control_point_attachments_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "control_point_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      control_point_records: {
+        Row: {
+          control_point_id: string
+          created_at: string
+          engine_hours_at_perform: number | null
+          engine_id: string | null
+          id: string
+          notes: string | null
+          performed_at: string
+          performed_by: string
+          vessel_id: string
+        }
+        Insert: {
+          control_point_id: string
+          created_at?: string
+          engine_hours_at_perform?: number | null
+          engine_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_at: string
+          performed_by: string
+          vessel_id: string
+        }
+        Update: {
+          control_point_id?: string
+          created_at?: string
+          engine_hours_at_perform?: number | null
+          engine_id?: string | null
+          id?: string
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "control_point_records_control_point_id_fkey"
+            columns: ["control_point_id"]
+            isOneToOne: false
+            referencedRelation: "control_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "control_point_records_engine_id_fkey"
+            columns: ["engine_id"]
+            isOneToOne: false
+            referencedRelation: "vessel_engine_hours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "control_point_records_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      control_point_vessels: {
+        Row: {
+          control_point_id: string
+          created_at: string
+          id: string
+          vessel_id: string
+        }
+        Insert: {
+          control_point_id: string
+          created_at?: string
+          id?: string
+          vessel_id: string
+        }
+        Update: {
+          control_point_id?: string
+          created_at?: string
+          id?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "control_point_vessels_control_point_id_fkey"
+            columns: ["control_point_id"]
+            isOneToOne: false
+            referencedRelation: "control_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "control_point_vessels_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      control_points: {
+        Row: {
+          applies_to_all_vessels: boolean
+          created_at: string
+          description: string | null
+          id: string
+          interval_engine_hours: number | null
+          interval_months: number | null
+          is_active: boolean
+          machine_name: string | null
+          name: string
+          type: Database["public"]["Enums"]["control_type"]
+          updated_at: string
+        }
+        Insert: {
+          applies_to_all_vessels?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          interval_engine_hours?: number | null
+          interval_months?: number | null
+          is_active?: boolean
+          machine_name?: string | null
+          name: string
+          type: Database["public"]["Enums"]["control_type"]
+          updated_at?: string
+        }
+        Update: {
+          applies_to_all_vessels?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          interval_engine_hours?: number | null
+          interval_months?: number | null
+          is_active?: boolean
+          machine_name?: string | null
+          name?: string
+          type?: Database["public"]["Enums"]["control_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      deviation_actions: {
+        Row: {
+          action_text: string
+          created_at: string
+          created_by: string
+          deviation_id: string
+          id: string
+        }
+        Insert: {
+          action_text: string
+          created_at?: string
+          created_by: string
+          deviation_id: string
+          id?: string
+        }
+        Update: {
+          action_text?: string
+          created_at?: string
+          created_by?: string
+          deviation_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deviation_actions_deviation_id_fkey"
+            columns: ["deviation_id"]
+            isOneToOne: false
+            referencedRelation: "deviations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deviation_attachments: {
+        Row: {
+          deviation_id: string
+          file_name: string
+          file_url: string
+          id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          deviation_id: string
+          file_name: string
+          file_url: string
+          id?: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          deviation_id?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deviation_attachments_deviation_id_fkey"
+            columns: ["deviation_id"]
+            isOneToOne: false
+            referencedRelation: "deviations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deviation_responses: {
+        Row: {
+          deviation_id: string
+          id: string
+          responded_at: string
+          responded_by: string
+          response_text: string
+        }
+        Insert: {
+          deviation_id: string
+          id?: string
+          responded_at?: string
+          responded_by: string
+          response_text: string
+        }
+        Update: {
+          deviation_id?: string
+          id?: string
+          responded_at?: string
+          responded_by?: string
+          response_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deviation_responses_deviation_id_fkey"
+            columns: ["deviation_id"]
+            isOneToOne: false
+            referencedRelation: "deviations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deviations: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string
+          date: string
+          description: string
+          id: string
+          logbook_id: string | null
+          severity: Database["public"]["Enums"]["deviation_severity"]
+          status: Database["public"]["Enums"]["deviation_status"]
+          title: string
+          type: Database["public"]["Enums"]["deviation_type"]
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by: string
+          date: string
+          description: string
+          id?: string
+          logbook_id?: string | null
+          severity: Database["public"]["Enums"]["deviation_severity"]
+          status?: Database["public"]["Enums"]["deviation_status"]
+          title: string
+          type: Database["public"]["Enums"]["deviation_type"]
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string
+          date?: string
+          description?: string
+          id?: string
+          logbook_id?: string | null
+          severity?: Database["public"]["Enums"]["deviation_severity"]
+          status?: Database["public"]["Enums"]["deviation_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["deviation_type"]
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deviations_logbook_id_fkey"
+            columns: ["logbook_id"]
+            isOneToOne: false
+            referencedRelation: "logbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deviations_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fault_attachments: {
+        Row: {
+          comment_id: string | null
+          fault_case_id: string
+          file_name: string
+          file_url: string
+          id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          comment_id?: string | null
+          fault_case_id: string
+          file_name: string
+          file_url: string
+          id?: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          comment_id?: string | null
+          fault_case_id?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fault_attachments_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "fault_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fault_attachments_fault_case_id_fkey"
+            columns: ["fault_case_id"]
+            isOneToOne: false
+            referencedRelation: "fault_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fault_cases: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          priority: Database["public"]["Enums"]["fault_priority"]
+          status: Database["public"]["Enums"]["fault_status"]
+          title: string
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          priority?: Database["public"]["Enums"]["fault_priority"]
+          status?: Database["public"]["Enums"]["fault_status"]
+          title: string
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["fault_priority"]
+          status?: Database["public"]["Enums"]["fault_status"]
+          title?: string
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fault_cases_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fault_comments: {
+        Row: {
+          comment_text: string
+          created_at: string
+          fault_case_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string
+          fault_case_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string
+          fault_case_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fault_comments_fault_case_id_fkey"
+            columns: ["fault_case_id"]
+            isOneToOne: false
+            referencedRelation: "fault_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logbook_crew: {
         Row: {
           created_at: string
@@ -363,6 +820,67 @@ export type Database = {
           },
         ]
       }
+      vessel_control_point_state: {
+        Row: {
+          control_point_id: string
+          engine_id: string | null
+          id: string
+          last_done_at_engine_hours: number | null
+          last_done_date: string | null
+          next_due_at_engine_hours: number | null
+          next_due_date: string | null
+          status: Database["public"]["Enums"]["control_status"]
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          control_point_id: string
+          engine_id?: string | null
+          id?: string
+          last_done_at_engine_hours?: number | null
+          last_done_date?: string | null
+          next_due_at_engine_hours?: number | null
+          next_due_date?: string | null
+          status?: Database["public"]["Enums"]["control_status"]
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          control_point_id?: string
+          engine_id?: string | null
+          id?: string
+          last_done_at_engine_hours?: number | null
+          last_done_date?: string | null
+          next_due_at_engine_hours?: number | null
+          next_due_date?: string | null
+          status?: Database["public"]["Enums"]["control_status"]
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vessel_control_point_state_control_point_id_fkey"
+            columns: ["control_point_id"]
+            isOneToOne: false
+            referencedRelation: "control_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vessel_control_point_state_engine_id_fkey"
+            columns: ["engine_id"]
+            isOneToOne: false
+            referencedRelation: "vessel_engine_hours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vessel_control_point_state_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vessel_crew_requirements: {
         Row: {
           created_at: string
@@ -534,12 +1052,28 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "skeppare" | "readonly"
+      control_status: "ok" | "kommande" | "forfallen"
+      control_type: "calendar" | "engine_hours"
       crew_role:
         | "befalhavare"
         | "matros"
         | "jungman"
         | "restaurangpersonal"
         | "styrman"
+      deviation_severity: "lag" | "medel" | "hog"
+      deviation_status:
+        | "oppen"
+        | "under_utredning"
+        | "aterrapporterad"
+        | "stangd"
+      deviation_type: "incident" | "tillbud" | "avvikelse" | "ovrigt"
+      fault_priority: "lag" | "normal" | "hog" | "kritisk"
+      fault_status:
+        | "ny"
+        | "varvsatgard"
+        | "arbete_pagar"
+        | "atgardad"
+        | "avslutad"
       logbook_status: "oppen" | "stangd"
     }
     CompositeTypes: {
@@ -669,12 +1203,30 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "skeppare", "readonly"],
+      control_status: ["ok", "kommande", "forfallen"],
+      control_type: ["calendar", "engine_hours"],
       crew_role: [
         "befalhavare",
         "matros",
         "jungman",
         "restaurangpersonal",
         "styrman",
+      ],
+      deviation_severity: ["lag", "medel", "hog"],
+      deviation_status: [
+        "oppen",
+        "under_utredning",
+        "aterrapporterad",
+        "stangd",
+      ],
+      deviation_type: ["incident", "tillbud", "avvikelse", "ovrigt"],
+      fault_priority: ["lag", "normal", "hog", "kritisk"],
+      fault_status: [
+        "ny",
+        "varvsatgard",
+        "arbete_pagar",
+        "atgardad",
+        "avslutad",
       ],
       logbook_status: ["oppen", "stangd"],
     },
