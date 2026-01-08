@@ -10,13 +10,15 @@ interface BackofficeLayoutProps {
 }
 
 export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
-  const { user, signOut } = useAuth();
+  const { user, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+
     const checkSuperadmin = async () => {
       if (!user) {
         setIsLoading(false);
@@ -38,7 +40,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
     };
 
     checkSuperadmin();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -95,7 +97,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
 
         <div className="p-4 border-t space-y-2">
           <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
-            <Link to="/portal/dashboard">
+            <Link to="/portal">
               <LayoutDashboard className="h-4 w-4 mr-2" />
               Till portalen
             </Link>
