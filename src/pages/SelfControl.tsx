@@ -32,7 +32,7 @@ import {
 } from '@/lib/types';
 import { format, addMonths, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ClipboardCheck, AlertTriangle, CheckCircle, Clock, Calendar, Gauge, Eye, Check, History, Printer } from 'lucide-react';
+import { ClipboardCheck, AlertTriangle, CheckCircle, Clock, Calendar, Gauge, Eye, Check, History, Printer, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -55,6 +55,8 @@ export default function SelfControl() {
   const [performEngineHours, setPerformEngineHours] = useState('');
   const [performFiles, setPerformFiles] = useState<File[]>([]);
   const [selectedEngineId, setSelectedEngineId] = useState<string>('');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [groupByCategory, setGroupByCategory] = useState(true);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -211,6 +213,39 @@ export default function SelfControl() {
 
   const overdueCount = controlPointsWithState.filter((cp) => cp.status === 'forfallen').length;
   const upcomingCount = controlPointsWithState.filter((cp) => cp.status === 'kommande').length;
+
+  // Group by category (using description field as category)
+  const groupedControlPoints = filteredControlPoints.reduce((groups, cp) => {
+    const category = cp.description || 'ÖVRIGT';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(cp);
+    return groups;
+  }, {} as Record<string, typeof filteredControlPoints>);
+
+  // Sort categories alphabetically
+  const sortedCategories = Object.keys(groupedControlPoints).sort((a, b) => a.localeCompare(b, 'sv'));
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  const expandAllCategories = () => {
+    setExpandedCategories(new Set(sortedCategories));
+  };
+
+  const collapseAllCategories = () => {
+    setExpandedCategories(new Set());
+  };
 
   const performControl = useMutation({
     mutationFn: async () => {
@@ -458,59 +493,115 @@ export default function SelfControl() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-3">
-                    {filteredControlPoints.map((cp) => (
-                      <Card key={cp.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium">{cp.name}</span>
-                                <Badge variant={getStatusColor(cp.status)}>
-                                  {getStatusIcon(cp.status)}
-                                  <span className="ml-1">{CONTROL_STATUS_LABELS[cp.status]}</span>
-                                </Badge>
-                                <Badge variant="outline">
-                                  {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
-                                  {CONTROL_TYPE_LABELS[cp.type as ControlType]}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span>
-                                  Intervall: {cp.type === 'calendar' 
-                                    ? `${cp.interval_months} mån` 
-                                    : `${cp.interval_engine_hours}h`}
-                                </span>
-                                <span>Nästa: {cp.nextDue}</span>
-                                {cp.daysRemaining !== null && (
-                                  <span className={cp.daysRemaining < 0 ? 'text-destructive' : ''}>
-                                    {cp.daysRemaining < 0 
-                                      ? `${Math.abs(cp.daysRemaining)} dagar sedan` 
-                                      : `${cp.daysRemaining} dagar kvar`}
-                                  </span>
-                                )}
-                                {cp.hoursRemaining !== null && (
-                                  <span className={cp.hoursRemaining < 0 ? 'text-destructive' : ''}>
-                                    {cp.hoursRemaining < 0 
-                                      ? `${Math.abs(cp.hoursRemaining)}h sedan` 
-                                      : `${cp.hoursRemaining}h kvar`}
-                                  </span>
-                                )}
-                              </div>
-                              {cp.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{cp.description}</p>
+                  <div className="space-y-4">
+                    {/* Category controls */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={expandAllCategories}
+                        >
+                          Expandera alla
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={collapseAllCategories}
+                        >
+                          Kollapsa alla
+                        </Button>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {sortedCategories.length} kategorier, {filteredControlPoints.length} kontroller
+                      </span>
+                    </div>
+
+                    {/* Grouped control points */}
+                    {sortedCategories.map((category) => {
+                      const categoryPoints = groupedControlPoints[category];
+                      const isExpanded = expandedCategories.has(category);
+                      const categoryOverdue = categoryPoints.filter(cp => cp.status === 'forfallen').length;
+                      const categoryUpcoming = categoryPoints.filter(cp => cp.status === 'kommande').length;
+
+                      return (
+                        <Card key={category} className="overflow-hidden">
+                          <div
+                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => toggleCategory(category)}
+                          >
+                            <div className="flex items-center gap-3">
+                              {isExpanded ? (
+                                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                              )}
+                              <FolderOpen className="h-5 w-5 text-primary" />
+                              <span className="font-medium">{category}</span>
+                              <Badge variant="secondary">{categoryPoints.length}</Badge>
+                              {categoryOverdue > 0 && (
+                                <Badge variant="destructive">{categoryOverdue} förfallna</Badge>
+                              )}
+                              {categoryUpcoming > 0 && (
+                                <Badge variant="default">{categoryUpcoming} kommande</Badge>
                               )}
                             </div>
-                            <div className="flex gap-2">
-                              <Button variant="default" size="sm" onClick={() => openPerformDialog(cp)}>
-                                <Check className="h-4 w-4 mr-1" />
-                                Utför
-                              </Button>
-                            </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          
+                          {isExpanded && (
+                            <div className="border-t">
+                              {categoryPoints.map((cp) => (
+                                <div key={cp.id} className="p-4 border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-medium">{cp.name}</span>
+                                        <Badge variant={getStatusColor(cp.status)}>
+                                          {getStatusIcon(cp.status)}
+                                          <span className="ml-1">{CONTROL_STATUS_LABELS[cp.status]}</span>
+                                        </Badge>
+                                        <Badge variant="outline">
+                                          {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
+                                          {CONTROL_TYPE_LABELS[cp.type as ControlType]}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                        <span>
+                                          Intervall: {cp.type === 'calendar' 
+                                            ? `${cp.interval_months} mån` 
+                                            : `${cp.interval_engine_hours}h`}
+                                        </span>
+                                        <span>Nästa: {cp.nextDue}</span>
+                                        {cp.daysRemaining !== null && (
+                                          <span className={cp.daysRemaining < 0 ? 'text-destructive' : ''}>
+                                            {cp.daysRemaining < 0 
+                                              ? `${Math.abs(cp.daysRemaining)} dagar sedan` 
+                                              : `${cp.daysRemaining} dagar kvar`}
+                                          </span>
+                                        )}
+                                        {cp.hoursRemaining !== null && (
+                                          <span className={cp.hoursRemaining < 0 ? 'text-destructive' : ''}>
+                                            {cp.hoursRemaining < 0 
+                                              ? `${Math.abs(cp.hoursRemaining)}h sedan` 
+                                              : `${cp.hoursRemaining}h kvar`}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button variant="default" size="sm" onClick={(e) => { e.stopPropagation(); openPerformDialog(cp); }}>
+                                        <Check className="h-4 w-4 mr-1" />
+                                        Utför
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>
