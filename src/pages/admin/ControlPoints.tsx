@@ -58,6 +58,20 @@ export default function ControlPoints() {
     },
   });
 
+  const { data: allEngines } = useQuery({
+    queryKey: ['all-engines'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vessel_engine_hours')
+        .select('*, vessels(name)')
+        .order('vessel_id')
+        .order('engine_type')
+        .order('engine_number');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: controlPoints, isLoading } = useQuery({
     queryKey: ['control-points-admin'],
     queryFn: async () => {
@@ -266,8 +280,28 @@ export default function ControlPoints() {
             <Input type="number" value={intervalEngineHours} onChange={(e) => setIntervalEngineHours(e.target.value)} min="1" placeholder="250" />
           </div>
           <div className="space-y-2">
-            <Label>Maskinnamn (valfritt)</Label>
-            <Input value={machineName} onChange={(e) => setMachineName(e.target.value)} placeholder="T.ex. Huvudmaskin, Generator 1" />
+            <Label>Välj maskin</Label>
+            <Select value={machineName} onValueChange={setMachineName}>
+              <SelectTrigger>
+                <SelectValue placeholder="Välj maskin..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Alla maskiner</SelectItem>
+                {allEngines?.map((engine) => {
+                  const vesselName = (engine.vessels as any)?.name || '';
+                  const engineLabel = engine.name || 
+                    `${engine.engine_type === 'main' ? 'Huvudmaskin' : 'Generator'} ${engine.engine_number}`;
+                  return (
+                    <SelectItem key={engine.id} value={`${vesselName}: ${engineLabel}`}>
+                      {vesselName}: {engineLabel}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Lämna tomt om kontrollen gäller alla maskiner
+            </p>
           </div>
         </>
       )}
