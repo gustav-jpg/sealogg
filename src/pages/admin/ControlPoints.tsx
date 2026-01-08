@@ -219,7 +219,7 @@ export default function ControlPoints() {
     );
   };
 
-  const FormContent = () => (
+  const formContent = (
     <div className="space-y-4">
       <div className="space-y-2">
         <Label>Namn *</Label>
@@ -328,7 +328,7 @@ export default function ControlPoints() {
                   createControlPoint.mutate();
                 }}
               >
-                <FormContent />
+                {formContent}
                 <div className="flex justify-end gap-2 mt-6">
                   <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
                     Avbryt
@@ -420,7 +420,7 @@ export default function ControlPoints() {
                 updateControlPoint.mutate();
               }}
             >
-              <FormContent />
+              {formContent}
               <div className="flex justify-end gap-2 mt-6">
                 <Button type="button" variant="outline" onClick={() => setEditingControlPoint(null)}>
                   Avbryt
