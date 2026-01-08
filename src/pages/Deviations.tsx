@@ -34,12 +34,14 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { AlertTriangle, Plus, Filter, X, Upload, Eye } from 'lucide-react';
+import { AlertTriangle, Plus, Filter, X, Upload, Eye, Printer } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usePrint } from '@/hooks/usePrint';
 
 export default function Deviations() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { printContent } = usePrint();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [filterVessel, setFilterVessel] = useState<string>('all');
@@ -203,13 +205,24 @@ export default function Deviations() {
             <h1 className="text-3xl font-display font-bold">Avvikelser</h1>
             <p className="text-muted-foreground mt-1">Hantera incidenter, tillbud och avvikelser</p>
           </div>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Ny avvikelse
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => printContent('deviations-list', { 
+                title: 'Avvikelser', 
+                subtitle: 'Alla avvikelser'
+              })}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Skriv ut
+            </Button>
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ny avvikelse
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Skapa ny avvikelse</DialogTitle>
@@ -323,6 +336,7 @@ export default function Deviations() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Filters */}
@@ -387,53 +401,68 @@ export default function Deviations() {
         </Card>
 
         {/* List */}
-        {isLoading ? (
-          <div className="animate-pulse space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-muted rounded-lg" />
-            ))}
-          </div>
-        ) : deviations?.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Inga avvikelser hittades</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {deviations?.map((deviation) => (
-              <Card key={deviation.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium truncate">{deviation.title}</span>
-                        <Badge variant={getSeverityColor(deviation.severity as DeviationSeverity)}>
-                          {DEVIATION_SEVERITY_LABELS[deviation.severity as DeviationSeverity]}
-                        </Badge>
-                        <Badge variant={getStatusColor(deviation.status as DeviationStatus)}>
-                          {DEVIATION_STATUS_LABELS[deviation.status as DeviationStatus]}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{format(new Date(deviation.date), 'PPP', { locale: sv })}</span>
-                        <span>{(deviation as any).vessel?.name}</span>
-                        <Badge variant="outline">{DEVIATION_TYPE_LABELS[deviation.type as DeviationType]}</Badge>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/deviations/${deviation.id}`}>
-                        <Eye className="h-4 w-4 mr-1" />
-                        Visa
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <div id="deviations-list">
+          {isLoading ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 bg-muted rounded-lg" />
+              ))}
+            </div>
+          ) : deviations?.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">Inga avvikelser hittades</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="text-left p-2 border-b">Rubrik</th>
+                  <th className="text-left p-2 border-b">Fartyg</th>
+                  <th className="text-left p-2 border-b">Typ</th>
+                  <th className="text-left p-2 border-b">Allvarlighet</th>
+                  <th className="text-left p-2 border-b">Status</th>
+                  <th className="text-left p-2 border-b">Datum</th>
+                  <th className="text-left p-2 border-b print:hidden"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {deviations?.map((deviation) => (
+                  <tr key={deviation.id} className="hover:bg-muted/50">
+                    <td className="p-2 border-b font-medium">{deviation.title}</td>
+                    <td className="p-2 border-b">{(deviation as any).vessel?.name}</td>
+                    <td className="p-2 border-b">
+                      <Badge variant="outline">{DEVIATION_TYPE_LABELS[deviation.type as DeviationType]}</Badge>
+                    </td>
+                    <td className="p-2 border-b">
+                      <Badge variant={getSeverityColor(deviation.severity as DeviationSeverity)}>
+                        {DEVIATION_SEVERITY_LABELS[deviation.severity as DeviationSeverity]}
+                      </Badge>
+                    </td>
+                    <td className="p-2 border-b">
+                      <Badge variant={getStatusColor(deviation.status as DeviationStatus)}>
+                        {DEVIATION_STATUS_LABELS[deviation.status as DeviationStatus]}
+                      </Badge>
+                    </td>
+                    <td className="p-2 border-b text-muted-foreground text-sm">
+                      {format(new Date(deviation.date), 'PPP', { locale: sv })}
+                    </td>
+                    <td className="p-2 border-b print:hidden">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/deviations/${deviation.id}`}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Visa
+                        </Link>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </MainLayout>
   );

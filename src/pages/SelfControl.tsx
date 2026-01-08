@@ -32,17 +32,19 @@ import {
 } from '@/lib/types';
 import { format, addMonths, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ClipboardCheck, AlertTriangle, CheckCircle, Clock, Calendar, Gauge, Eye, Check, History } from 'lucide-react';
+import { ClipboardCheck, AlertTriangle, CheckCircle, Clock, Calendar, Gauge, Eye, Check, History, Printer } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { usePrint } from '@/hooks/usePrint';
 
 export default function SelfControl() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { printContent } = usePrint();
   const queryClient = useQueryClient();
   const [selectedVessel, setSelectedVessel] = useState<string>('');
   const [activeTab, setActiveTab] = useState('all');
@@ -364,6 +366,18 @@ export default function SelfControl() {
             <h1 className="text-3xl font-display font-bold">Egenkontroll</h1>
             <p className="text-muted-foreground mt-1">Planerade kontroller och service</p>
           </div>
+          {selectedVessel && (
+            <Button 
+              variant="outline" 
+              onClick={() => printContent('self-control-list', { 
+                title: 'Egenkontrollprogram', 
+                subtitle: vessels?.find(v => v.id === selectedVessel)?.name || ''
+              })}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Skriv ut
+            </Button>
+          )}
         </div>
 
         {/* Vessel selector */}
@@ -423,6 +437,7 @@ export default function SelfControl() {
             )}
 
             {/* Tabs and list */}
+            <div id="self-control-list">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="all">Alla ({controlPointsWithState.length})</TabsTrigger>
@@ -626,6 +641,7 @@ export default function SelfControl() {
                 )}
               </TabsContent>
             </Tabs>
+            </div>
           </>
         )}
 
