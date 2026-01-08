@@ -19,18 +19,20 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
   useEffect(() => {
     const checkSuperadmin = async () => {
       if (!user) {
+        setIsLoading(false);
         navigate('/portal/login');
         return;
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('superadmins')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (!data) {
-        navigate('/portal/dashboard');
+      if (error || !data) {
+        setIsLoading(false);
+        navigate('/portal');
         return;
       }
 
