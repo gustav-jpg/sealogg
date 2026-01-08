@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -7,18 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
-import { Plus, Ship, Trash2, Users, Settings, Gauge, Pencil } from 'lucide-react';
+import { Plus, Ship, Trash2, Users, Settings, Gauge, Pencil, Award, Upload, FileText, ExternalLink, AlertTriangle } from 'lucide-react';
+import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminVessels() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [engineDialogOpen, setEngineDialogOpen] = useState(false);
+  const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [selectedVessel, setSelectedVessel] = useState<{ id: string; name: string; main_engine_count: number; auxiliary_engine_count: number } | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -53,6 +58,15 @@ export default function AdminVessels() {
     queryKey: ['vessel-engine-hours'],
     queryFn: async () => {
       const { data, error } = await supabase.from('vessel_engine_hours').select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: vesselCertificates } = useQuery({
+    queryKey: ['vessel-certificates'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('vessel_certificates').select('*').order('expiry_date');
       if (error) throw error;
       return data;
     },
@@ -359,6 +373,14 @@ export default function AdminVessels() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {vessels?.map(vessel => {
             const vesselReqs = crewRequirements?.filter(r => r.vessel_id === vessel.id) || [];
+            const vesselCerts = vesselCertificates?.filter(c => c.vessel_id === vessel.id) || [];
+            const today = new Date().toISOString().split('T')[0];
+            const warningDate = new Date();
+            warningDate.setMonth(warningDate.getMonth() + 2);
+            const warningDateStr = warningDate.toISOString().split('T')[0];
+            const hasExpiredCert = vesselCerts.some(c => c.expiry_date < today);
+            const hasExpiringCert = vesselCerts.some(c => c.expiry_date >= today && c.expiry_date <= warningDateStr);
+            
             return (
               <Card key={vessel.id}>
                 <CardHeader className="pb-2">
@@ -432,6 +454,38 @@ export default function AdminVessels() {
                           </>
                         );
                       })()
+                    )}
+                  </div>
+                  
+                  {/* Certifikat */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium flex items-center gap-1">
+                        <Award className="h-3 w-3" />
+                        Certifikat ({vesselCerts.length})
+                        {hasExpiredCert && <Badge variant="destructive" className="text-[10px] h-4 px-1">Utgånget</Badge>}
+                        {!hasExpiredCert && hasExpiringCert && <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-amber-100 text-amber-800">Snart</Badge>}
+                      </p>
+                      <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => {
+                        setSelectedVessel(vessel);
+                        setCertDialogOpen(true);
+                      }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {vesselCerts.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">Inga certifikat</p>
+                    ) : (
+                      <div className="space-y-0.5">
+                        {vesselCerts.slice(0, 3).map(cert => (
+                          <p key={cert.id} className={`text-sm ${cert.expiry_date < today ? 'text-destructive' : cert.expiry_date <= warningDateStr ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                            {cert.name} ({cert.expiry_date})
+                          </p>
+                        ))}
+                        {vesselCerts.length > 3 && (
+                          <p className="text-xs text-muted-foreground">+{vesselCerts.length - 3} till...</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 </CardContent>
@@ -542,6 +596,17 @@ export default function AdminVessels() {
           </DialogContent>
         </Dialog>
 
+        <VesselCertificatesDialog 
+          open={certDialogOpen}
+          onOpenChange={setCertDialogOpen}
+          vessel={selectedVessel}
+          certificates={vesselCertificates?.filter(c => c.vessel_id === selectedVessel?.id) || []}
+          userId={user?.id}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['vessel-certificates'] });
+          }}
+        />
+
         <ConfirmDialog
           open={deleteConfirm.open}
           onOpenChange={(open) => setDeleteConfirm({ open, vessel: open ? deleteConfirm.vessel : null })}
@@ -557,5 +622,211 @@ export default function AdminVessels() {
         />
       </div>
     </MainLayout>
+  );
+}
+
+function VesselCertificatesDialog({
+  open,
+  onOpenChange,
+  vessel,
+  certificates,
+  userId,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  vessel: { id: string; name: string } | null;
+  certificates: any[];
+  userId?: string;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [file, setFile] = useState<File | undefined>();
+  const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const today = new Date().toISOString().split('T')[0];
+  const warningDate = new Date();
+  warningDate.setMonth(warningDate.getMonth() + 2);
+  const warningDateStr = warningDate.toISOString().split('T')[0];
+
+  const handleAdd = async () => {
+    if (!vessel || !name || !expiryDate) return;
+    
+    setIsAdding(true);
+    try {
+      let fileUrl: string | null = null;
+      
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${vessel.id}/${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('vessel-certificates')
+          .upload(fileName, file);
+        
+        if (uploadError) throw uploadError;
+        fileUrl = fileName;
+      }
+      
+      const { error } = await supabase.from('vessel_certificates').insert({
+        vessel_id: vessel.id,
+        name,
+        description: description || null,
+        expiry_date: expiryDate,
+        file_url: fileUrl,
+        created_by: userId,
+      });
+      
+      if (error) throw error;
+      
+      toast({ title: 'Certifikat tillagt' });
+      setName('');
+      setDescription('');
+      setExpiryDate('');
+      setFile(undefined);
+      onSuccess();
+    } catch (error: any) {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleDelete = async (certId: string) => {
+    setIsDeleting(certId);
+    try {
+      const cert = certificates.find(c => c.id === certId);
+      if (cert?.file_url) {
+        await supabase.storage.from('vessel-certificates').remove([cert.file_url]);
+      }
+      
+      const { error } = await supabase.from('vessel_certificates').delete().eq('id', certId);
+      if (error) throw error;
+      
+      toast({ title: 'Certifikat borttaget' });
+      onSuccess();
+    } catch (error: any) {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleViewFile = async (fileUrl: string) => {
+    const { data } = await supabase.storage.from('vessel-certificates').createSignedUrl(fileUrl, 3600);
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, '_blank');
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Fartygscertifikat - {vessel?.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {/* Existing certificates */}
+          {certificates.length > 0 && (
+            <div className="space-y-2">
+              <Label>Befintliga certifikat</Label>
+              {certificates.map(cert => {
+                const isExpired = cert.expiry_date < today;
+                const isExpiring = cert.expiry_date >= today && cert.expiry_date <= warningDateStr;
+                
+                return (
+                  <div key={cert.id} className={`flex items-center justify-between p-3 rounded-lg ${isExpired ? 'bg-destructive/10' : isExpiring ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-muted/50'}`}>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{cert.name}</span>
+                        {isExpired && <Badge variant="destructive" className="text-xs">Utgånget</Badge>}
+                        {isExpiring && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">Går ut snart</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
+                      </p>
+                      {cert.description && <p className="text-xs text-muted-foreground">{cert.description}</p>}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {cert.file_url && (
+                        <Button variant="ghost" size="icon" onClick={() => handleViewFile(cert.file_url)}>
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDelete(cert.id)}
+                        disabled={isDeleting === cert.id}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Add new certificate */}
+          <div className="border-t pt-4 space-y-3">
+            <Label>Lägg till nytt certifikat</Label>
+            <div className="space-y-2">
+              <Input 
+                placeholder="Certifikatnamn *" 
+                value={name} 
+                onChange={e => setName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Input 
+                placeholder="Beskrivning (valfritt)" 
+                value={description} 
+                onChange={e => setDescription(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Utgångsdatum *</Label>
+              <Input 
+                type="date" 
+                value={expiryDate} 
+                onChange={e => setExpiryDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Fil (valfritt)</Label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={e => setFile(e.target.files?.[0])}
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {file ? file.name : 'Välj fil'}
+              </Button>
+            </div>
+            <Button 
+              onClick={handleAdd} 
+              disabled={!name || !expiryDate || isAdding}
+              className="w-full"
+            >
+              {isAdding ? 'Lägger till...' : 'Lägg till certifikat'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

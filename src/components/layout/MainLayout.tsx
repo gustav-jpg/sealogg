@@ -58,6 +58,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
     { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
     { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
+    { href: '/portal/qualifications', label: 'Behörigheter', icon: Award },
   ];
 
   const adminItems = [

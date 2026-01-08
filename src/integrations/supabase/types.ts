@@ -966,6 +966,50 @@ export type Database = {
           },
         ]
       }
+      vessel_certificates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          expiry_date: string
+          file_url: string | null
+          id: string
+          name: string
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expiry_date: string
+          file_url?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expiry_date?: string
+          file_url?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vessel_certificates_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vessel_control_point_state: {
         Row: {
           control_point_id: string
