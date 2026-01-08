@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
@@ -20,6 +21,7 @@ export default function AdminUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: string; id: string; name: string } | null>(null);
 
   const { data: profiles } = useQuery({
     queryKey: ['profiles'],
@@ -315,7 +317,12 @@ export default function AdminUsers() {
                     <Button 
                       variant="destructive" 
                       size="sm"
-                      onClick={() => deleteExternalUser.mutate(selectedProfile.id)}
+                      onClick={() => setDeleteConfirm({ 
+                        open: true, 
+                        type: 'user', 
+                        id: selectedProfile.id, 
+                        name: selectedProfile.full_name 
+                      })}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Ta bort
@@ -347,7 +354,15 @@ export default function AdminUsers() {
                           {selectedUserRoles.map(role => (
                             <Badge key={role.id} variant="secondary" className="gap-1">
                               {APP_ROLE_LABELS[role.role as AppRole]}
-                              <button onClick={() => removeRole.mutate(role.id)} className="ml-1 hover:text-destructive">
+                              <button 
+                                onClick={() => setDeleteConfirm({ 
+                                  open: true, 
+                                  type: 'role', 
+                                  id: role.id, 
+                                  name: APP_ROLE_LABELS[role.role as AppRole] 
+                                })} 
+                                className="ml-1 hover:text-destructive"
+                              >
                                 <Trash2 className="h-3 w-3" />
                               </button>
                             </Badge>
@@ -375,7 +390,12 @@ export default function AdminUsers() {
                             key={cert.id}
                             cert={cert}
                             oderId={selectedProfile.id}
-                            onRemove={() => removeCertificate.mutate(cert.id)}
+                            onRemove={() => setDeleteConfirm({ 
+                              open: true, 
+                              type: 'certificate', 
+                              id: cert.id, 
+                              name: cert.certificate_type?.name || 'Certifikat' 
+                            })}
                             onUpload={(file) => uploadCertificateFile.mutate({ 
                               certId: cert.id, 
                               oderId: selectedProfile.id, 
@@ -401,7 +421,12 @@ export default function AdminUsers() {
                           <InductionItem 
                             key={ind.id}
                             induction={ind}
-                            onRemove={() => removeInduction.mutate(ind.id)}
+                            onRemove={() => setDeleteConfirm({ 
+                              open: true, 
+                              type: 'induction', 
+                              id: ind.id, 
+                              name: (ind as any).vessel?.name || 'Inskolning' 
+                            })}
                           />
                         ))}
                       </div>
@@ -427,6 +452,38 @@ export default function AdminUsers() {
             )}
           </Card>
         </div>
+
+        <ConfirmDialog
+          open={deleteConfirm?.open || false}
+          onOpenChange={(open) => !open && setDeleteConfirm(null)}
+          title={
+            deleteConfirm?.type === 'user' ? 'Ta bort extern besättning' :
+            deleteConfirm?.type === 'role' ? 'Ta bort roll' :
+            deleteConfirm?.type === 'certificate' ? 'Ta bort certifikat' :
+            deleteConfirm?.type === 'induction' ? 'Ta bort inskolning' : 'Bekräfta borttagning'
+          }
+          description={`Är du säker på att du vill ta bort "${deleteConfirm?.name}"? Detta går inte att ångra.`}
+          confirmLabel="Ta bort"
+          onConfirm={() => {
+            if (deleteConfirm) {
+              switch (deleteConfirm.type) {
+                case 'user':
+                  deleteExternalUser.mutate(deleteConfirm.id);
+                  break;
+                case 'role':
+                  removeRole.mutate(deleteConfirm.id);
+                  break;
+                case 'certificate':
+                  removeCertificate.mutate(deleteConfirm.id);
+                  break;
+                case 'induction':
+                  removeInduction.mutate(deleteConfirm.id);
+                  break;
+              }
+              setDeleteConfirm(null);
+            }
+          }}
+        />
       </div>
     </MainLayout>
   );
