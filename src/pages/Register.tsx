@@ -69,7 +69,7 @@ export default function Register() {
         title: 'Konto skapat',
         description: 'Du kan nu logga in med dina uppgifter.',
       });
-      navigate('/login');
+      navigate('/portal/login');
     }
 
     setIsLoading(false);
@@ -109,7 +109,7 @@ export default function Register() {
               </Button>
               <p className="text-sm text-muted-foreground">
                 Har du redan ett konto?{' '}
-                <Link to="/login" className="text-primary hover:underline">
+                <Link to="/portal/login" className="text-primary hover:underline">
                   Logga in
                 </Link>
               </p>
@@ -130,7 +130,7 @@ export default function Register() {
             </div>
           </div>
           <CardTitle className="font-display text-2xl">Skapa konto</CardTitle>
-          <CardDescription>Registrera dig för att använda Fartygsloggbok</CardDescription>
+          <CardDescription>Registrera dig för att använda SeaLogg</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -186,7 +186,7 @@ export default function Register() {
             </Button>
             <p className="text-sm text-muted-foreground">
               Har du redan ett konto?{' '}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link to="/portal/login" className="text-primary hover:underline">
                 Logga in
               </Link>
             </p>

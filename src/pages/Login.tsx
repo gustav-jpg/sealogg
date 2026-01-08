@@ -29,7 +29,7 @@ export default function Login() {
         description: 'Kontrollera e-post och lösenord.',
       });
     } else {
-      navigate('/');
+      navigate('/portal');
     }
 
     setIsLoading(false);
@@ -44,7 +44,7 @@ export default function Login() {
               <Anchor className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="font-display text-2xl">Fartygsloggbok</CardTitle>
+          <CardTitle className="font-display text-2xl">SeaLogg</CardTitle>
           <CardDescription>Logga in för att fortsätta</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -79,7 +79,7 @@ export default function Login() {
             </Button>
             <p className="text-sm text-muted-foreground">
               Har du inget konto?{' '}
-              <Link to="/register" className="text-primary hover:underline">
+              <Link to="/portal/register" className="text-primary hover:underline">
                 Registrera dig
               </Link>
             </p>

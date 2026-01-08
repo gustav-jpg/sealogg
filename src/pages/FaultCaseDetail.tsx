@@ -190,7 +190,7 @@ export default function FaultCaseDetail() {
       <MainLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Felärendet hittades inte.</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate('/fault-cases')}>
+          <Button variant="outline" className="mt-4" onClick={() => navigate('/portal/fault-cases')}>
             Tillbaka
           </Button>
         </div>
@@ -205,7 +205,7 @@ export default function FaultCaseDetail() {
     <MainLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/fault-cases')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/portal/fault-cases')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">

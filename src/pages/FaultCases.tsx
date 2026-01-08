@@ -393,7 +393,7 @@ export default function FaultCases() {
                     </td>
                     <td className="p-2 border-b print:hidden">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/fault-cases/${faultCase.id}`}>
+                        <Link to={`/portal/fault-cases/${faultCase.id}`}>
                           <Eye className="h-4 w-4 mr-1" />
                           Visa
                         </Link>

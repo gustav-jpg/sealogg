@@ -70,7 +70,7 @@ export default function Dashboard() {
             </Button>
             {canEdit && (
               <Button asChild>
-                <Link to="/logbook/new">
+                <Link to="/portal/logbook/new">
                   <Plus className="h-4 w-4 mr-2" />
                   Ny loggbok
                 </Link>
@@ -97,7 +97,7 @@ export default function Dashboard() {
                 <p className="text-muted-foreground mb-4">Skapa din första loggbok för att komma igång.</p>
                 {canEdit && (
                   <Button asChild>
-                    <Link to="/logbook/new">
+                    <Link to="/portal/logbook/new">
                       <Plus className="h-4 w-4 mr-2" />
                       Skapa loggbok
                     </Link>
@@ -118,7 +118,7 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {logbooks?.map((logbook) => (
-                  <tr key={logbook.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => window.location.href = `/logbook/${logbook.id}`}>
+                  <tr key={logbook.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => window.location.href = `/portal/logbook/${logbook.id}`}>
                     <td className="p-2 border-b font-medium">{(logbook as any).vessel?.name || 'Okänt fartyg'}</td>
                     <td className="p-2 border-b text-muted-foreground text-sm">
                       {format(new Date(logbook.date), 'PPP', { locale: sv })}

@@ -201,7 +201,7 @@ export default function DeviationDetail() {
       <MainLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Avvikelsen hittades inte.</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate('/deviations')}>
+          <Button variant="outline" className="mt-4" onClick={() => navigate('/portal/deviations')}>
             Tillbaka
           </Button>
         </div>
@@ -215,7 +215,7 @@ export default function DeviationDetail() {
     <MainLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/deviations')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/portal/deviations')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">

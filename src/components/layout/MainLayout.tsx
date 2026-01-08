@@ -23,6 +23,7 @@ import {
   Wrench,
   ClipboardCheck,
   Anchor,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,22 +38,22 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    navigate('/portal/login');
   };
 
   const navItems = [
-    { href: '/', label: 'Loggböcker', icon: BookOpen },
-    { href: '/deviations', label: 'Avvikelser', icon: AlertTriangle },
-    { href: '/fault-cases', label: 'Felärenden', icon: Wrench },
-    { href: '/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
+    { href: '/portal', label: 'Loggböcker', icon: BookOpen },
+    { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
+    { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
+    { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
   ];
 
   const adminItems = [
-    { href: '/admin/vessels', label: 'Fartyg', icon: Ship },
-    { href: '/admin/users', label: 'Användare', icon: Users },
-    { href: '/admin/certificates', label: 'Certifikat', icon: Award },
-    { href: '/admin/rules', label: 'Rollregler', icon: Settings },
-    { href: '/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
+    { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
+    { href: '/portal/admin/users', label: 'Användare', icon: Users },
+    { href: '/portal/admin/certificates', label: 'Certifikat', icon: Award },
+    { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
+    { href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
   ];
 
   return (
@@ -61,7 +62,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <header className="maritime-gradient sticky top-0 z-50 border-b border-primary/20">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/portal" className="flex items-center gap-2">
               <Anchor className="h-7 w-7 text-primary-foreground" />
               <span className="font-display text-xl font-bold text-primary-foreground">
                 SeaLogg
@@ -156,6 +157,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <DropdownMenuSeparator />
                 </div>
                 
+                <DropdownMenuItem asChild>
+                  <Link to="/" className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    Till startsidan
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logga ut

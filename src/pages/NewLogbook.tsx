@@ -197,7 +197,7 @@ export default function NewLogbook() {
     onSuccess: (logbook) => {
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
       toast({ title: 'Loggbok skapad', description: 'Loggboken har skapats.' });
-      navigate(`/logbook/${logbook.id}`);
+      navigate(`/portal/logbook/${logbook.id}`);
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });

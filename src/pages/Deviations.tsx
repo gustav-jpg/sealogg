@@ -451,7 +451,7 @@ export default function Deviations() {
                     </td>
                     <td className="p-2 border-b print:hidden">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/deviations/${deviation.id}`}>
+                        <Link to={`/portal/deviations/${deviation.id}`}>
                           <Eye className="h-4 w-4 mr-1" />
                           Visa
                         </Link>
