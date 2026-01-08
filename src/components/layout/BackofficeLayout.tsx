@@ -24,13 +24,10 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('superadmins')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Prefer server-side function (security definer) to avoid any RLS edge cases
+      const { data: isSa, error } = await supabase.rpc('is_superadmin', { _user_id: user.id });
 
-      if (error || !data) {
+      if (error || !isSa) {
         setIsLoading(false);
         navigate('/portal');
         return;
