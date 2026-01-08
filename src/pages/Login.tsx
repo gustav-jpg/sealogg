@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Anchor, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import sealogLogo from '@/assets/sealog-logo.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -40,11 +41,8 @@ export default function Login() {
       <Card className="w-full max-w-md mx-4 animate-fade-in">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 rounded-full maritime-gradient">
-              <Anchor className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img src={sealogLogo} alt="SeaLog.se" className="h-16" />
           </div>
-          <CardTitle className="font-display text-2xl">Fartygsloggbok</CardTitle>
           <CardDescription>Logga in för att fortsätta</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
