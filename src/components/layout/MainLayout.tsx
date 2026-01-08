@@ -57,7 +57,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link to="/" className="flex items-center gap-2">
               <Anchor className="h-7 w-7 text-primary-foreground" />
               <span className="font-display text-xl font-bold text-primary-foreground">
-                SeaLogg
+                SeaLog
               </span>
             </Link>
             
