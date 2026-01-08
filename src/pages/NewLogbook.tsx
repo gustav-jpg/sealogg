@@ -14,7 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { CrewRole, CREW_ROLE_LABELS } from '@/lib/types';
-import { Plus, Trash2, Ship, Users, Save, MapPin, Clock } from 'lucide-react';
+import { Plus, Trash2, Ship, Users, Save, MapPin, Clock, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
 interface CrewMember {
@@ -71,6 +72,17 @@ export default function NewLogbook() {
     },
   });
 
+  const { data: userCertificates } = useQuery({
+    queryKey: ['user-certificates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_certificates')
+        .select('profile_id, expiry_date');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: vesselEngineHours } = useQuery({
     queryKey: ['vessel-engine-hours', vesselId],
     queryFn: async () => {
@@ -86,6 +98,20 @@ export default function NewLogbook() {
     },
     enabled: !!vesselId,
   });
+
+  // Helper function to check certificate status for a user
+  const getCertificateStatus = (userId: string) => {
+    const certs = userCertificates?.filter(c => c.profile_id === userId) || [];
+    const today = new Date().toISOString().split('T')[0];
+    const warningDate = new Date();
+    warningDate.setMonth(warningDate.getMonth() + 2);
+    const warningDateStr = warningDate.toISOString().split('T')[0];
+    
+    const hasExpired = certs.some(c => c.expiry_date && c.expiry_date < today);
+    const hasExpiring = certs.some(c => c.expiry_date && c.expiry_date >= today && c.expiry_date <= warningDateStr);
+    
+    return { hasExpired, hasExpiring };
+  };
 
   // Automatiskt skapa engine hour entries när fartyg väljs
   const selectedVessel = vessels?.find(v => v.id === vesselId);
@@ -374,24 +400,52 @@ export default function NewLogbook() {
                         .filter(c => c.tempId !== member.tempId && c.userId)
                         .map(c => c.userId);
                       
+                      const certStatus = member.userId ? getCertificateStatus(member.userId) : { hasExpired: false, hasExpiring: false };
+                      const selectedProfile = profiles?.find(p => p.id === member.userId);
+                      
                       return (
                         <div key={member.tempId} className="flex gap-2 items-end">
                           <div className="flex-1 space-y-1">
-                            <Label className="text-xs">Person</Label>
+                            <Label className="text-xs flex items-center gap-2">
+                              Person
+                              {certStatus.hasExpired && (
+                                <Badge variant="destructive" className="text-xs gap-1 py-0">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Utgånget cert
+                                </Badge>
+                              )}
+                              {!certStatus.hasExpired && certStatus.hasExpiring && (
+                                <Badge variant="secondary" className="text-xs gap-1 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Cert går ut snart
+                                </Badge>
+                              )}
+                            </Label>
                             <Select value={member.userId} onValueChange={v => updateCrewMember(member.tempId, 'userId', v)}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Välj person" />
                               </SelectTrigger>
                               <SelectContent>
-                                {profiles?.map(p => (
-                                  <SelectItem 
-                                    key={p.id} 
-                                    value={p.id}
-                                    disabled={selectedUserIds.includes(p.id)}
-                                  >
-                                    {p.full_name}{p.is_external ? ' (extern)' : ''}
-                                  </SelectItem>
-                                ))}
+                                {profiles?.map(p => {
+                                  const pCertStatus = getCertificateStatus(p.id);
+                                  return (
+                                    <SelectItem 
+                                      key={p.id} 
+                                      value={p.id}
+                                      disabled={selectedUserIds.includes(p.id)}
+                                    >
+                                      <span className="flex items-center gap-2">
+                                        {p.full_name}{p.is_external ? ' (extern)' : ''}
+                                        {pCertStatus.hasExpired && (
+                                          <AlertTriangle className="h-3 w-3 text-destructive" />
+                                        )}
+                                        {!pCertStatus.hasExpired && pCertStatus.hasExpiring && (
+                                          <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                        )}
+                                      </span>
+                                    </SelectItem>
+                                  );
+                                })}
                               </SelectContent>
                             </Select>
                           </div>
