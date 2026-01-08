@@ -742,6 +742,71 @@ export type Database = {
           },
         ]
       }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          org_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          org_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -769,6 +834,24 @@ export type Database = {
           is_external?: boolean
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      superadmins: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1067,6 +1150,7 @@ export type Database = {
           id: string
           main_engine_count: number
           name: string
+          organization_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1076,6 +1160,7 @@ export type Database = {
           id?: string
           main_engine_count?: number
           name: string
+          organization_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1085,15 +1170,25 @@ export type Database = {
           id?: string
           main_engine_count?: number
           name?: string
+          organization_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vessels_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1102,6 +1197,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_skeppare: { Args: { _user_id: string }; Returns: boolean }
+      is_org_admin: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       log_audit: {
         Args: {
           p_action: string
@@ -1138,6 +1238,7 @@ export type Database = {
         | "atgardad"
         | "avslutad"
       logbook_status: "oppen" | "stangd"
+      org_role: "org_admin" | "org_user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1292,6 +1393,7 @@ export const Constants = {
         "avslutad",
       ],
       logbook_status: ["oppen", "stangd"],
+      org_role: ["org_admin", "org_user"],
     },
   },
 } as const
