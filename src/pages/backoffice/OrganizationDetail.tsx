@@ -5,23 +5,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, UserPlus, Ship, Trash2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, Ship, Trash2, Mail } from 'lucide-react';
 
 type OrgRole = 'org_admin' | 'org_user';
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
-  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isAddVesselOpen, setIsAddVesselOpen] = useState(false);
-  const [memberEmail, setMemberEmail] = useState('');
-  const [memberRole, setMemberRole] = useState<OrgRole>('org_user');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteFullName, setInviteFullName] = useState('');
+  const [inviteRole, setInviteRole] = useState<OrgRole>('org_admin');
   const [vesselName, setVesselName] = useState('');
   const [vesselDescription, setVesselDescription] = useState('');
   const queryClient = useQueryClient();
@@ -70,35 +71,37 @@ export default function OrganizationDetail() {
     },
   });
 
-  const { data: allProfiles } = useQuery({
-    queryKey: ['all-profiles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('is_external', false)
-        .order('full_name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  const inviteUserMutation = useMutation({
+    mutationFn: async ({ email, fullName, role }: { email: string; fullName: string; role: OrgRole }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-  const addMemberMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: OrgRole }) => {
-      const { error } = await supabase
-        .from('organization_members')
-        .insert([{ organization_id: id, user_id: userId, role }]);
-      if (error) throw error;
+      const response = await supabase.functions.invoke('invite-user', {
+        body: {
+          email,
+          fullName,
+          organizationId: id,
+          role,
+        },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['organization-members', id] });
-      toast.success('Medlem tillagd');
-      setIsAddMemberOpen(false);
-      setMemberEmail('');
-      setMemberRole('org_user');
+      toast.success(data.isNewUser 
+        ? 'Nytt konto skapat! Användaren får ett e-postmeddelande för att sätta lösenord.' 
+        : 'Befintlig användare tillagd i organisationen.');
+      setIsInviteOpen(false);
+      setInviteEmail('');
+      setInviteFullName('');
+      setInviteRole('org_admin');
     },
     onError: (error) => {
-      toast.error('Kunde inte lägga till medlem: ' + error.message);
+      toast.error('Kunde inte bjuda in användare: ' + error.message);
     },
   });
 
@@ -159,18 +162,14 @@ export default function OrganizationDetail() {
     },
   });
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    const profile = allProfiles?.find(p => p.email === memberEmail);
-    if (!profile?.user_id) {
-      toast.error('Ingen användare hittades med den e-postadressen');
+    if (!inviteEmail || !inviteFullName) {
+      toast.error('Fyll i både namn och e-post');
       return;
     }
-    addMemberMutation.mutate({ userId: profile.user_id, role: memberRole });
+    inviteUserMutation.mutate({ email: inviteEmail, fullName: inviteFullName, role: inviteRole });
   };
-
-  const existingMemberUserIds = members?.map(m => m.user_id) || [];
-  const availableProfiles = allProfiles?.filter(p => p.user_id && !existingMemberUserIds.includes(p.user_id)) || [];
 
   if (!organization) {
     return (
@@ -207,53 +206,60 @@ export default function OrganizationDetail() {
 
         <TabsContent value="members" className="space-y-4">
           <div className="flex justify-end">
-            <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+            <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
               <DialogTrigger asChild>
                 <Button>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Lägg till medlem
+                  <Mail className="h-4 w-4 mr-2" />
+                  Bjud in användare
                 </Button>
               </DialogTrigger>
               <DialogContent>
-                <form onSubmit={handleAddMember}>
+                <form onSubmit={handleInvite}>
                   <DialogHeader>
-                    <DialogTitle>Lägg till medlem</DialogTitle>
+                    <DialogTitle>Bjud in användare</DialogTitle>
                     <DialogDescription>
-                      Välj en befintlig användare att lägga till i organisationen
+                      Skapa ett konto eller lägg till en befintlig användare i organisationen.
+                      De får automatiskt admin-rättigheter i portalen.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email">Användare</Label>
-                      <Select value={memberEmail} onValueChange={setMemberEmail}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Välj användare..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableProfiles.map((profile) => (
-                            <SelectItem key={profile.id} value={profile.email || ''}>
-                              {profile.full_name} ({profile.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="fullName">Namn *</Label>
+                      <Input
+                        id="fullName"
+                        value={inviteFullName}
+                        onChange={(e) => setInviteFullName(e.target.value)}
+                        placeholder="Anna Andersson"
+                        required
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="role">Roll</Label>
-                      <Select value={memberRole} onValueChange={(v) => setMemberRole(v as OrgRole)}>
+                      <Label htmlFor="email">E-post *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="anna@example.com"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Roll i organisationen</Label>
+                      <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as OrgRole)}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="org_admin">Admin</SelectItem>
-                          <SelectItem value="org_user">Användare</SelectItem>
+                          <SelectItem value="org_admin">Admin (full åtkomst i portalen)</SelectItem>
+                          <SelectItem value="org_user">Användare (kan skapa loggböcker)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="submit" disabled={!memberEmail || addMemberMutation.isPending}>
-                      {addMemberMutation.isPending ? 'Lägger till...' : 'Lägg till'}
+                    <Button type="submit" disabled={inviteUserMutation.isPending}>
+                      {inviteUserMutation.isPending ? 'Bjuder in...' : 'Bjud in'}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -283,7 +289,7 @@ export default function OrganizationDetail() {
                         value={member.role} 
                         onValueChange={(v) => updateMemberRoleMutation.mutate({ memberId: member.id, role: v as OrgRole })}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-40">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -306,7 +312,7 @@ export default function OrganizationDetail() {
                 {members?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      Inga medlemmar än
+                      Inga medlemmar än. Bjud in den första!
                     </TableCell>
                   </TableRow>
                 )}
