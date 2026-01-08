@@ -368,6 +368,7 @@ export type Database = {
           created_at: string
           id: string
           minimum_count: number
+          requirement_group: string | null
           role: Database["public"]["Enums"]["crew_role"]
           vessel_id: string
         }
@@ -375,6 +376,7 @@ export type Database = {
           created_at?: string
           id?: string
           minimum_count?: number
+          requirement_group?: string | null
           role: Database["public"]["Enums"]["crew_role"]
           vessel_id: string
         }
@@ -382,6 +384,7 @@ export type Database = {
           created_at?: string
           id?: string
           minimum_count?: number
+          requirement_group?: string | null
           role?: Database["public"]["Enums"]["crew_role"]
           vessel_id?: string
         }
