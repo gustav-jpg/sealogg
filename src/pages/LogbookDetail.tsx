@@ -35,13 +35,20 @@ export default function LogbookDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('logbooks')
-        .select(`
-          *,
-          vessel:vessels(*),
-          created_by_profile:profiles!logbooks_created_by_fkey(*)
-        `)
+        .select(`*, vessel:vessels(*)`)
         .eq('id', id)
         .single();
+      
+      if (error) throw error;
+      
+      // Fetch profile separately since created_by references auth.users, not profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', data.created_by)
+        .maybeSingle();
+      
+      return { ...data, created_by_profile: profile };
       if (error) throw error;
       
       setFromLocation(data.from_location || '');
