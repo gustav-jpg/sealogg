@@ -124,9 +124,15 @@ export default function LogbookDetail() {
     mutationFn: async () => {
       if (!validation.isValid) throw new Error('Valideringsfel måste åtgärdas innan loggboken kan stängas.');
       
+      // Save all data before closing
       const { error } = await supabase
         .from('logbooks')
         .update({
+          from_location: fromLocation || null,
+          to_location: toLocation || null,
+          passenger_count: passengerCount ? parseInt(passengerCount) : null,
+          departure_time: departureTime || null,
+          arrival_time: arrivalTime || null,
           status: 'stangd',
           closed_at: new Date().toISOString(),
           closed_by: user?.id,
@@ -137,7 +143,7 @@ export default function LogbookDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logbook', id] });
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
-      toast({ title: 'Stängd', description: 'Loggboken har stängts och är nu låst.' });
+      toast({ title: 'Stängd', description: 'Loggboken har sparats och stängts.' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
