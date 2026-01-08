@@ -92,14 +92,64 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
       return { isValid: false, errors: [], warnings: [], noVesselSelected: true };
     }
 
-    // Check crew requirements
-    if (requirements) {
+    // Check crew requirements with support for alternative groups
+    if (requirements && requirements.length > 0) {
+      // Group requirements by requirement_group
+      const groupedRequirements: Record<string, typeof requirements> = {};
+      const ungroupedRequirements: typeof requirements = [];
+
       for (const req of requirements) {
+        if (req.requirement_group) {
+          if (!groupedRequirements[req.requirement_group]) {
+            groupedRequirements[req.requirement_group] = [];
+          }
+          groupedRequirements[req.requirement_group].push(req);
+        } else {
+          ungroupedRequirements.push(req);
+        }
+      }
+
+      // Check ungrouped requirements (all must be met)
+      for (const req of ungroupedRequirements) {
         const crewCount = crew.filter(c => c.role === req.role).length;
         if (crewCount < req.minimum_count) {
           errors.push({
             type: 'crew_requirement',
             message: `Fartyget kräver minst ${req.minimum_count} ${CREW_ROLE_LABELS[req.role as CrewRole]} – du har ${crewCount}.`,
+          });
+        }
+      }
+
+      // Check grouped requirements (at least one group must be fully satisfied)
+      const groups = Object.keys(groupedRequirements);
+      if (groups.length > 0) {
+        const groupResults: { group: string; satisfied: boolean; missing: string[] }[] = [];
+
+        for (const groupName of groups) {
+          const groupReqs = groupedRequirements[groupName];
+          const missing: string[] = [];
+
+          for (const req of groupReqs) {
+            const crewCount = crew.filter(c => c.role === req.role).length;
+            if (crewCount < req.minimum_count) {
+              missing.push(`${req.minimum_count} ${CREW_ROLE_LABELS[req.role as CrewRole]}`);
+            }
+          }
+
+          groupResults.push({
+            group: groupName,
+            satisfied: missing.length === 0,
+            missing,
+          });
+        }
+
+        const anySatisfied = groupResults.some(g => g.satisfied);
+        if (!anySatisfied) {
+          // Build a readable error message showing the alternatives
+          const alternatives = groupResults.map(g => g.group).join(' eller ');
+          errors.push({
+            type: 'crew_requirement',
+            message: `Bemanningskraven är inte uppfyllda. Uppfyll ett av alternativen: ${alternatives}.`,
           });
         }
       }

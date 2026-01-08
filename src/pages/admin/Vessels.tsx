@@ -24,7 +24,7 @@ export default function AdminVessels() {
   const [description, setDescription] = useState('');
   const [mainEngineCount, setMainEngineCount] = useState(1);
   const [auxiliaryEngineCount, setAuxiliaryEngineCount] = useState(0);
-  const [requirements, setRequirements] = useState<{ role: CrewRole; count: number }[]>([]);
+  const [requirements, setRequirements] = useState<{ role: CrewRole; count: number; group: string }[]>([]);
   const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
 
@@ -71,7 +71,12 @@ export default function AdminVessels() {
 
       if (requirements.length > 0) {
         const { error: reqError } = await supabase.from('vessel_crew_requirements').insert(
-          requirements.map(r => ({ vessel_id: vessel.id, role: r.role, minimum_count: r.count }))
+          requirements.map(r => ({ 
+            vessel_id: vessel.id, 
+            role: r.role, 
+            minimum_count: r.count,
+            requirement_group: r.group || null
+          }))
         );
         if (reqError) throw reqError;
       }
@@ -178,14 +183,15 @@ export default function AdminVessels() {
     },
   });
 
-  const addRequirement = () => {
-    setRequirements([...requirements, { role: 'matros', count: 1 }]);
+  const addRequirement = (group: string = '') => {
+    setRequirements([...requirements, { role: 'matros', count: 1, group }]);
   };
 
-  const updateRequirement = (index: number, field: 'role' | 'count', value: string | number) => {
+  const updateRequirement = (index: number, field: 'role' | 'count' | 'group', value: string | number) => {
     const updated = [...requirements];
     if (field === 'role') updated[index].role = value as CrewRole;
-    else updated[index].count = value as number;
+    else if (field === 'count') updated[index].count = value as number;
+    else if (field === 'group') updated[index].group = value as string;
     setRequirements(updated);
   };
 
@@ -231,38 +237,51 @@ export default function AdminVessels() {
                     <Input id="auxEngines" type="number" min={0} value={auxiliaryEngineCount} onChange={e => setAuxiliaryEngineCount(parseInt(e.target.value) || 0)} />
                   </div>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label>Minimikrav bemanning</Label>
-                    <Button variant="outline" size="sm" onClick={addRequirement}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Lägg till
-                    </Button>
+                    <Label>Bemanningskrav</Label>
                   </div>
-                  {requirements.map((req, i) => (
-                    <div key={i} className="flex gap-2 items-center">
-                      <Select value={req.role} onValueChange={v => updateRequirement(i, 'role', v)}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="number"
-                        className="w-20"
-                        min={1}
-                        value={req.count}
-                        onChange={e => updateRequirement(i, 'count', parseInt(e.target.value) || 1)}
-                      />
-                      <Button variant="ghost" size="icon" onClick={() => removeRequirement(i)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    Lämna "Grupp" tomt för krav som alltid gäller. Använd samma gruppnamn (t.ex. "A", "B") för alternativ – om minst ett alternativ uppfylls godkänns bemanningen.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    {requirements.map((req, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <Input
+                          placeholder="Grupp"
+                          className="w-16"
+                          value={req.group}
+                          onChange={e => updateRequirement(i, 'group', e.target.value)}
+                        />
+                        <Select value={req.role} onValueChange={v => updateRequirement(i, 'role', v)}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          className="w-16"
+                          min={1}
+                          value={req.count}
+                          onChange={e => updateRequirement(i, 'count', parseInt(e.target.value) || 1)}
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => removeRequirement(i)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <Button variant="outline" size="sm" onClick={() => addRequirement('')} className="w-full">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Lägg till krav
+                  </Button>
                 </div>
                 <Button onClick={() => createVessel.mutate()} disabled={!name || createVessel.isPending} className="w-full">
                   {createVessel.isPending ? 'Skapar...' : 'Skapa fartyg'}
@@ -311,13 +330,37 @@ export default function AdminVessels() {
                     <div className="space-y-1">
                       <p className="text-xs font-medium flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        Minimibemanning
+                        Bemanningskrav
                       </p>
-                      {vesselReqs.map(req => (
-                        <p key={req.id} className="text-sm text-muted-foreground">
-                          {CREW_ROLE_LABELS[req.role as CrewRole]}: {req.minimum_count}
-                        </p>
-                      ))}
+                      {(() => {
+                        // Group requirements
+                        const grouped: Record<string, typeof vesselReqs> = {};
+                        const ungrouped: typeof vesselReqs = [];
+                        for (const req of vesselReqs) {
+                          if ((req as any).requirement_group) {
+                            const g = (req as any).requirement_group;
+                            if (!grouped[g]) grouped[g] = [];
+                            grouped[g].push(req);
+                          } else {
+                            ungrouped.push(req);
+                          }
+                        }
+                        return (
+                          <>
+                            {ungrouped.map(req => (
+                              <p key={req.id} className="text-sm text-muted-foreground">
+                                {CREW_ROLE_LABELS[req.role as CrewRole]}: {req.minimum_count}
+                              </p>
+                            ))}
+                            {Object.entries(grouped).map(([group, reqs]) => (
+                              <p key={group} className="text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground">Alt {group}:</span>{' '}
+                                {reqs.map(r => `${r.minimum_count} ${CREW_ROLE_LABELS[r.role as CrewRole]}`).join(' + ')}
+                              </p>
+                            ))}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </CardContent>
