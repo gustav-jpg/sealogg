@@ -234,45 +234,59 @@ export default function NewLogbook() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Ship className="h-5 w-5" />
-                  Grunduppgifter
+                  Välj fartyg
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="vessel">Fartyg *</Label>
-                    <Select value={vesselId} onValueChange={handleVesselChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Välj fartyg" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vessels?.map(v => (
-                          <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Datum *</Label>
-                    <Input id="date" type="date" value={date} onChange={e => setDate(e.target.value)} />
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="weather">Väder</Label>
-                    <Input id="weather" value={weather} onChange={e => setWeather(e.target.value)} placeholder="T.ex. Soligt, 18°C" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="wind">Vind</Label>
-                    <Input id="wind" value={wind} onChange={e => setWind(e.target.value)} placeholder="T.ex. SV 5 m/s" />
-                  </div>
-                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Allmänna anteckningar</Label>
-                  <Textarea id="notes" value={generalNotes} onChange={e => setGeneralNotes(e.target.value)} rows={3} />
+                  <Label htmlFor="vessel">Fartyg *</Label>
+                  <Select value={vesselId} onValueChange={handleVesselChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Välj fartyg" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vessels?.map(v => (
+                        <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+                {!vesselId && (
+                  <p className="text-muted-foreground text-sm">Välj ett fartyg för att fortsätta.</p>
+                )}
               </CardContent>
             </Card>
+
+            {vesselId && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Ship className="h-5 w-5" />
+                      Grunduppgifter
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Datum *</Label>
+                      <Input id="date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="weather">Väder</Label>
+                        <Input id="weather" value={weather} onChange={e => setWeather(e.target.value)} placeholder="T.ex. Soligt, 18°C" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="wind">Vind</Label>
+                        <Input id="wind" value={wind} onChange={e => setWind(e.target.value)} placeholder="T.ex. SV 5 m/s" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Allmänna anteckningar</Label>
+                      <Textarea id="notes" value={generalNotes} onChange={e => setGeneralNotes(e.target.value)} rows={3} />
+                    </div>
+                  </CardContent>
+                </Card>
 
             <Card>
               <CardHeader>
@@ -453,6 +467,8 @@ export default function NewLogbook() {
                 )}
               </CardContent>
             </Card>
+              </>
+            )}
           </div>
 
           <div className="space-y-6">
