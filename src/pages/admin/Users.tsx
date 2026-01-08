@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
@@ -208,6 +208,23 @@ export default function AdminUsers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-certificates'] });
       toast({ title: 'Certifikat borttaget' });
+    },
+  });
+
+  const renewCertificate = useMutation({
+    mutationFn: async ({ certId, newExpiryDate }: { certId: string; newExpiryDate: string }) => {
+      const { error } = await supabase
+        .from('user_certificates')
+        .update({ expiry_date: newExpiryDate })
+        .eq('id', certId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-certificates'] });
+      toast({ title: 'Certifikat förnyat', description: 'Utgångsdatumet har uppdaterats.' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -428,6 +445,10 @@ export default function AdminUsers() {
                               oderId: selectedProfile.id, 
                               file 
                             })}
+                            onRenew={(newDate) => renewCertificate.mutate({
+                              certId: cert.id,
+                              newExpiryDate: newDate
+                            })}
                           />
                         ))}
                       </div>
@@ -521,14 +542,18 @@ function CertificateItem({
   oderId,
   onRemove,
   onUpload,
+  onRenew,
 }: {
   cert: any;
   oderId: string;
   onRemove: () => void;
   onUpload: (file: File) => void;
+  onRenew: (newDate: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [renewDialogOpen, setRenewDialogOpen] = useState(false);
+  const [newExpiryDate, setNewExpiryDate] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -549,10 +574,32 @@ function CertificateItem({
     }
   };
 
+  const handleRenew = () => {
+    if (newExpiryDate) {
+      onRenew(newExpiryDate);
+      setRenewDialogOpen(false);
+      setNewExpiryDate('');
+    }
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+  const isExpired = cert.expiry_date < today;
+  const warningDate = new Date();
+  warningDate.setMonth(warningDate.getMonth() + 2);
+  const isExpiring = cert.expiry_date >= today && cert.expiry_date <= warningDate.toISOString().split('T')[0];
+
   return (
-    <div className="flex items-center justify-between p-3 rounded bg-muted/50">
+    <div className={`flex items-center justify-between p-3 rounded ${isExpired ? 'bg-destructive/10 border border-destructive/30' : isExpiring ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' : 'bg-muted/50'}`}>
       <div className="flex-1">
-        <p className="font-medium">{cert.certificate_type?.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium">{cert.certificate_type?.name}</p>
+          {isExpired && (
+            <Badge variant="destructive" className="text-xs">Utgånget</Badge>
+          )}
+          {isExpiring && !isExpired && (
+            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Går ut snart</Badge>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">
           Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
         </p>
@@ -575,6 +622,41 @@ function CertificateItem({
           accept=".pdf,.jpg,.jpeg,.png"
           className="hidden"
         />
+        <Dialog open={renewDialogOpen} onOpenChange={setRenewDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              title="Förnya certifikat"
+              className={isExpired || isExpiring ? 'text-amber-600 hover:text-amber-700' : ''}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Förnya certifikat</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Förnya <strong>{cert.certificate_type?.name}</strong> genom att ange nytt utgångsdatum.
+              </p>
+              <div className="space-y-2">
+                <Label>Nytt utgångsdatum</Label>
+                <Input 
+                  type="date" 
+                  value={newExpiryDate} 
+                  onChange={e => setNewExpiryDate(e.target.value)}
+                  min={today}
+                />
+              </div>
+              <Button onClick={handleRenew} disabled={!newExpiryDate} className="w-full">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Förnya
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
         <Button 
           variant="ghost" 
           size="icon" 
