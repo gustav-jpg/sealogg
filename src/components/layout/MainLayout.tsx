@@ -50,7 +50,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="maritime-gradient sticky top-0 z-50 border-b border-primary/20">
         <div className="container flex h-16 items-center justify-between">
@@ -58,7 +58,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <Link to="/" className="flex items-center gap-2">
               <Anchor className="h-7 w-7 text-primary-foreground" />
               <span className="font-display text-xl font-bold text-primary-foreground">
-                Fartygsloggbok
+                SeaLogg
               </span>
             </Link>
             
@@ -161,9 +161,16 @@ export function MainLayout({ children }: MainLayoutProps) {
       </header>
 
       {/* Main content */}
-      <main className="container py-6 animate-fade-in">
+      <main className="container py-6 animate-fade-in flex-1">
         {children}
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/40 bg-muted/30">
+        <div className="container py-4 text-center text-sm text-muted-foreground">
+          en del av AhrensGroup AB • Org.nr 559553-5443
+        </div>
+      </footer>
     </div>
   );
 }
