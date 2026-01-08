@@ -62,6 +62,15 @@ export default function NewLogbook() {
     },
   });
 
+  const { data: profileCrewRoles } = useQuery({
+    queryKey: ['profile-crew-roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profile_crew_roles').select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const crewForValidation = crew
     .filter(c => c.userId)
     .map(c => {
@@ -260,9 +269,17 @@ export default function NewLogbook() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                                ))}
+                                {(() => {
+                                  // Get allowed roles for this user
+                                  const allowedRoles = profileCrewRoles?.filter(r => r.profile_id === member.userId).map(r => r.role) || [];
+                                  // If no roles defined, show all (for backwards compatibility)
+                                  const rolesToShow = allowedRoles.length > 0 
+                                    ? Object.entries(CREW_ROLE_LABELS).filter(([value]) => allowedRoles.includes(value as CrewRole))
+                                    : Object.entries(CREW_ROLE_LABELS);
+                                  return rolesToShow.map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                                  ));
+                                })()}
                               </SelectContent>
                             </Select>
                           </div>
