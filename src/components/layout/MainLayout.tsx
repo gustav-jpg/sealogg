@@ -23,7 +23,7 @@ import {
   AlertTriangle,
   Wrench,
   ClipboardCheck,
-  Anchor,
+  Waves,
   Home,
   Building2,
 } from 'lucide-react';
@@ -75,7 +75,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link to="/portal" className="flex items-center gap-2">
-              <Anchor className="h-7 w-7 text-primary-foreground" />
+              <Waves className="h-7 w-7 text-primary-foreground" />
               <span className="font-logo text-xl font-extrabold text-primary-foreground">
                 SeaLogg
               </span>
