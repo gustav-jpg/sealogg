@@ -11,15 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
-import { Plus, Ship, Trash2, Users } from 'lucide-react';
+import { Plus, Ship, Trash2, Users, Settings, Gauge } from 'lucide-react';
 
 export default function AdminVessels() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [engineDialogOpen, setEngineDialogOpen] = useState(false);
+  const [selectedVessel, setSelectedVessel] = useState<{ id: string; name: string; main_engine_count: number; auxiliary_engine_count: number } | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [mainEngineCount, setMainEngineCount] = useState(1);
+  const [auxiliaryEngineCount, setAuxiliaryEngineCount] = useState(0);
   const [requirements, setRequirements] = useState<{ role: CrewRole; count: number }[]>([]);
+  const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number }[]>([]);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -39,11 +44,25 @@ export default function AdminVessels() {
     },
   });
 
+  const { data: vesselEngineHours } = useQuery({
+    queryKey: ['vessel-engine-hours'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('vessel_engine_hours').select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const createVessel = useMutation({
     mutationFn: async () => {
       const { data: vessel, error: vesselError } = await supabase
         .from('vessels')
-        .insert({ name, description: description || null })
+        .insert({ 
+          name, 
+          description: description || null,
+          main_engine_count: mainEngineCount,
+          auxiliary_engine_count: auxiliaryEngineCount
+        })
         .select()
         .single();
       if (vesselError) throw vesselError;
@@ -55,21 +74,82 @@ export default function AdminVessels() {
         if (reqError) throw reqError;
       }
 
+      // Skapa engine hours records för alla maskiner
+      const engineRecords = [];
+      for (let i = 1; i <= mainEngineCount; i++) {
+        engineRecords.push({ vessel_id: vessel.id, engine_type: 'main', engine_number: i, current_hours: 0 });
+      }
+      for (let i = 1; i <= auxiliaryEngineCount; i++) {
+        engineRecords.push({ vessel_id: vessel.id, engine_type: 'auxiliary', engine_number: i, current_hours: 0 });
+      }
+      if (engineRecords.length > 0) {
+        const { error: engineError } = await supabase.from('vessel_engine_hours').insert(engineRecords);
+        if (engineError) throw engineError;
+      }
+
       return vessel;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vessels'] });
       queryClient.invalidateQueries({ queryKey: ['vessel-crew-requirements'] });
+      queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
       toast({ title: 'Skapat', description: 'Fartyget har skapats.' });
       setDialogOpen(false);
       setName('');
       setDescription('');
+      setMainEngineCount(1);
+      setAuxiliaryEngineCount(0);
       setRequirements([]);
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     },
   });
+
+  const updateEngineHours = useMutation({
+    mutationFn: async () => {
+      if (!selectedVessel) throw new Error('Inget fartyg valt');
+      
+      for (const input of engineHoursInputs) {
+        const { error } = await supabase
+          .from('vessel_engine_hours')
+          .upsert({
+            vessel_id: selectedVessel.id,
+            engine_type: input.engine_type,
+            engine_number: input.engine_number,
+            current_hours: input.current_hours,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'vessel_id,engine_type,engine_number' });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
+      toast({ title: 'Sparat', description: 'Maskintimmar uppdaterade.' });
+      setEngineDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const openEngineDialog = (vessel: { id: string; name: string; main_engine_count: number; auxiliary_engine_count: number }) => {
+    setSelectedVessel(vessel);
+    const existingHours = vesselEngineHours?.filter(h => h.vessel_id === vessel.id) || [];
+    const inputs: { engine_type: string; engine_number: number; current_hours: number }[] = [];
+    
+    for (let i = 1; i <= vessel.main_engine_count; i++) {
+      const existing = existingHours.find(h => h.engine_type === 'main' && h.engine_number === i);
+      inputs.push({ engine_type: 'main', engine_number: i, current_hours: existing?.current_hours || 0 });
+    }
+    for (let i = 1; i <= vessel.auxiliary_engine_count; i++) {
+      const existing = existingHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
+      inputs.push({ engine_type: 'auxiliary', engine_number: i, current_hours: existing?.current_hours || 0 });
+    }
+    
+    setEngineHoursInputs(inputs);
+    setEngineDialogOpen(true);
+  };
 
   const deleteVessel = useMutation({
     mutationFn: async (vesselId: string) => {
@@ -127,6 +207,16 @@ export default function AdminVessels() {
                 <div className="space-y-2">
                   <Label htmlFor="desc">Beskrivning</Label>
                   <Textarea id="desc" value={description} onChange={e => setDescription(e.target.value)} />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="mainEngines">Antal huvudmaskiner</Label>
+                    <Input id="mainEngines" type="number" min={0} value={mainEngineCount} onChange={e => setMainEngineCount(parseInt(e.target.value) || 0)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="auxEngines">Antal hjälpmaskiner</Label>
+                    <Input id="auxEngines" type="number" min={0} value={auxiliaryEngineCount} onChange={e => setAuxiliaryEngineCount(parseInt(e.target.value) || 0)} />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -189,8 +279,21 @@ export default function AdminVessels() {
                     </Button>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {vessel.description && <p className="text-sm text-muted-foreground mb-3">{vessel.description}</p>}
+              <CardContent className="space-y-3">
+                  {vessel.description && <p className="text-sm text-muted-foreground">{vessel.description}</p>}
+                  
+                  <div className="flex items-center gap-2 text-sm">
+                    <Gauge className="h-4 w-4 text-muted-foreground" />
+                    <span>{vessel.main_engine_count} huvudmaskin(er)</span>
+                    {vessel.auxiliary_engine_count > 0 && (
+                      <span className="text-muted-foreground">+ {vessel.auxiliary_engine_count} hjälp</span>
+                    )}
+                    <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => openEngineDialog(vessel)}>
+                      <Settings className="h-3 w-3 mr-1" />
+                      Timmar
+                    </Button>
+                  </div>
+                  
                   {vesselReqs.length > 0 && (
                     <div className="space-y-1">
                       <p className="text-xs font-medium flex items-center gap-1">
@@ -209,6 +312,41 @@ export default function AdminVessels() {
             );
           })}
         </div>
+
+        <Dialog open={engineDialogOpen} onOpenChange={setEngineDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Maskintimmar - {selectedVessel?.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {engineHoursInputs.map((input, index) => (
+                <div key={`${input.engine_type}-${input.engine_number}`} className="flex items-center gap-3">
+                  <span className="text-sm font-medium min-w-32">
+                    {input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
+                  </span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={input.current_hours}
+                    onChange={e => {
+                      const updated = [...engineHoursInputs];
+                      updated[index].current_hours = parseInt(e.target.value) || 0;
+                      setEngineHoursInputs(updated);
+                    }}
+                    className="w-32"
+                  />
+                  <span className="text-sm text-muted-foreground">timmar</span>
+                </div>
+              ))}
+              {engineHoursInputs.length === 0 && (
+                <p className="text-muted-foreground text-center py-4">Inga maskiner konfigurerade för detta fartyg.</p>
+              )}
+              <Button onClick={() => updateEngineHours.mutate()} disabled={updateEngineHours.isPending} className="w-full">
+                {updateEngineHours.isPending ? 'Sparar...' : 'Spara maskintimmar'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

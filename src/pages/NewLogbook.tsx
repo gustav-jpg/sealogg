@@ -25,6 +25,9 @@ interface CrewMember {
 
 interface EngineHourEntry {
   tempId: string;
+  engineType: 'main' | 'auxiliary';
+  engineNumber: number;
+  engineLabel: string;
   startHours: number;
   stopHours: number;
   notes: string;
@@ -61,6 +64,65 @@ export default function NewLogbook() {
       return data;
     },
   });
+
+  const { data: vesselEngineHours } = useQuery({
+    queryKey: ['vessel-engine-hours', vesselId],
+    queryFn: async () => {
+      if (!vesselId) return [];
+      const { data, error } = await supabase
+        .from('vessel_engine_hours')
+        .select('*')
+        .eq('vessel_id', vesselId)
+        .order('engine_type')
+        .order('engine_number');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!vesselId,
+  });
+
+  // Automatiskt skapa engine hour entries när fartyg väljs
+  const selectedVessel = vessels?.find(v => v.id === vesselId);
+  
+  const initializeEngineHours = () => {
+    if (!selectedVessel || !vesselEngineHours) return;
+    
+    const entries: EngineHourEntry[] = [];
+    
+    for (let i = 1; i <= selectedVessel.main_engine_count; i++) {
+      const existing = vesselEngineHours.find(h => h.engine_type === 'main' && h.engine_number === i);
+      entries.push({
+        tempId: crypto.randomUUID(),
+        engineType: 'main',
+        engineNumber: i,
+        engineLabel: `Huvudmaskin ${i}`,
+        startHours: existing?.current_hours || 0,
+        stopHours: existing?.current_hours || 0,
+        notes: ''
+      });
+    }
+    
+    for (let i = 1; i <= selectedVessel.auxiliary_engine_count; i++) {
+      const existing = vesselEngineHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
+      entries.push({
+        tempId: crypto.randomUUID(),
+        engineType: 'auxiliary',
+        engineNumber: i,
+        engineLabel: `Hjälpmaskin ${i}`,
+        startHours: existing?.current_hours || 0,
+        stopHours: existing?.current_hours || 0,
+        notes: ''
+      });
+    }
+    
+    setEngineHours(entries);
+  };
+
+  // Återställ engine hours när fartyg ändras
+  const handleVesselChange = (newVesselId: string) => {
+    setVesselId(newVesselId);
+    setEngineHours([]);
+  };
 
   const crewForValidation = crew
     .filter(c => c.userId)
@@ -108,6 +170,8 @@ export default function NewLogbook() {
         const { error: engineError } = await supabase.from('logbook_engine_hours').insert(
           engineHours.map(e => ({
             logbook_id: logbook.id,
+            engine_type: e.engineType,
+            engine_number: e.engineNumber,
             start_hours: e.startHours,
             stop_hours: e.stopHours,
             notes: e.notes || null,
@@ -140,18 +204,8 @@ export default function NewLogbook() {
     setCrew(crew.filter(c => c.tempId !== tempId));
   };
 
-  const addEngineHour = () => {
-    const lastEntry = engineHours[engineHours.length - 1];
-    const nextStart = lastEntry ? lastEntry.stopHours : 0;
-    setEngineHours([...engineHours, { tempId: crypto.randomUUID(), startHours: nextStart, stopHours: nextStart, notes: '' }]);
-  };
-
   const updateEngineHour = (tempId: string, field: keyof EngineHourEntry, value: string | number) => {
     setEngineHours(engineHours.map(e => (e.tempId === tempId ? { ...e, [field]: value } : e)));
-  };
-
-  const removeEngineHour = (tempId: string) => {
-    setEngineHours(engineHours.filter(e => e.tempId !== tempId));
   };
 
   return (
@@ -175,7 +229,7 @@ export default function NewLogbook() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="vessel">Fartyg *</Label>
-                    <Select value={vesselId} onValueChange={setVesselId}>
+                    <Select value={vesselId} onValueChange={handleVesselChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Välj fartyg" />
                       </SelectTrigger>
@@ -281,40 +335,44 @@ export default function NewLogbook() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Maskintimmar</span>
-                  <Button variant="outline" size="sm" onClick={addEngineHour}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Lägg till
-                  </Button>
+                  {vesselId && engineHours.length === 0 && (
+                    <Button variant="outline" size="sm" onClick={initializeEngineHours}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Ladda maskiner
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {engineHours.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Inga maskintimmar registrerade.</p>
+                {!vesselId ? (
+                  <p className="text-muted-foreground text-center py-4">Välj ett fartyg först.</p>
+                ) : engineHours.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Klicka på "Ladda maskiner" för att hämta aktuella maskintimmar.</p>
                 ) : (
                   <div className="space-y-3">
                     {engineHours.map(entry => (
-                      <div key={entry.tempId} className="flex gap-2 items-end">
-                        <div className="w-24 space-y-1">
-                          <Label className="text-xs">Start</Label>
-                          <Input type="number" value={entry.startHours} onChange={e => updateEngineHour(entry.tempId, 'startHours', parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="w-24 space-y-1">
-                          <Label className="text-xs">Stopp</Label>
-                          <Input type="number" value={entry.stopHours} onChange={e => updateEngineHour(entry.tempId, 'stopHours', parseInt(e.target.value) || 0)} />
-                        </div>
-                        <div className="w-20 space-y-1">
-                          <Label className="text-xs">Diff</Label>
-                          <div className="h-10 flex items-center px-3 bg-muted rounded-md text-sm font-mono">
-                            {entry.stopHours - entry.startHours}h
+                      <div key={entry.tempId} className="space-y-2">
+                        <Label className="text-sm font-medium">{entry.engineLabel}</Label>
+                        <div className="flex gap-2 items-end">
+                          <div className="w-24 space-y-1">
+                            <Label className="text-xs">Start</Label>
+                            <Input type="number" value={entry.startHours} onChange={e => updateEngineHour(entry.tempId, 'startHours', parseInt(e.target.value) || 0)} />
+                          </div>
+                          <div className="w-24 space-y-1">
+                            <Label className="text-xs">Stopp</Label>
+                            <Input type="number" value={entry.stopHours} onChange={e => updateEngineHour(entry.tempId, 'stopHours', parseInt(e.target.value) || 0)} />
+                          </div>
+                          <div className="w-20 space-y-1">
+                            <Label className="text-xs">Diff</Label>
+                            <div className="h-10 flex items-center px-3 bg-muted rounded-md text-sm font-mono">
+                              {entry.stopHours - entry.startHours}h
+                            </div>
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Anteckning</Label>
+                            <Input value={entry.notes} onChange={e => updateEngineHour(entry.tempId, 'notes', e.target.value)} />
                           </div>
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <Label className="text-xs">Anteckning</Label>
-                          <Input value={entry.notes} onChange={e => updateEngineHour(entry.tempId, 'notes', e.target.value)} />
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeEngineHour(entry.tempId)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
                       </div>
                     ))}
                   </div>
