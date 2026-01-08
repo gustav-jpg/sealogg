@@ -384,9 +384,9 @@ export default function LogbookDetail() {
                     {engineHours.map(entry => (
                       <div key={entry.id} className="flex items-center gap-4 p-2 rounded bg-muted/50">
                         <span className="text-sm font-medium min-w-28">
-                          {entry.engine_type === 'auxiliary' 
+                          {entry.engine_name || (entry.engine_type === 'auxiliary' 
                             ? `Hjälpmaskin ${entry.engine_number}` 
-                            : `Huvudmaskin ${entry.engine_number || 1}`}
+                            : `Huvudmaskin ${entry.engine_number || 1}`)}
                         </span>
                         <span className="font-mono">{entry.start_hours} → {entry.stop_hours}</span>
                         <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>

@@ -25,7 +25,7 @@ export default function AdminVessels() {
   const [mainEngineCount, setMainEngineCount] = useState(1);
   const [auxiliaryEngineCount, setAuxiliaryEngineCount] = useState(0);
   const [requirements, setRequirements] = useState<{ role: CrewRole; count: number }[]>([]);
-  const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number }[]>([]);
+  const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
 
   const { data: vessels } = useQuery({
@@ -79,10 +79,10 @@ export default function AdminVessels() {
       // Skapa engine hours records för alla maskiner
       const engineRecords = [];
       for (let i = 1; i <= mainEngineCount; i++) {
-        engineRecords.push({ vessel_id: vessel.id, engine_type: 'main', engine_number: i, current_hours: 0 });
+        engineRecords.push({ vessel_id: vessel.id, engine_type: 'main', engine_number: i, current_hours: 0, name: `Huvudmaskin ${i}` });
       }
       for (let i = 1; i <= auxiliaryEngineCount; i++) {
-        engineRecords.push({ vessel_id: vessel.id, engine_type: 'auxiliary', engine_number: i, current_hours: 0 });
+        engineRecords.push({ vessel_id: vessel.id, engine_type: 'auxiliary', engine_number: i, current_hours: 0, name: `Hjälpmaskin ${i}` });
       }
       if (engineRecords.length > 0) {
         const { error: engineError } = await supabase.from('vessel_engine_hours').insert(engineRecords);
@@ -120,6 +120,7 @@ export default function AdminVessels() {
             engine_type: input.engine_type,
             engine_number: input.engine_number,
             current_hours: input.current_hours,
+            name: input.name || null,
             updated_at: new Date().toISOString()
           }, { onConflict: 'vessel_id,engine_type,engine_number' });
         if (error) throw error;
@@ -138,15 +139,25 @@ export default function AdminVessels() {
   const openEngineDialog = (vessel: { id: string; name: string; main_engine_count: number; auxiliary_engine_count: number }) => {
     setSelectedVessel(vessel);
     const existingHours = vesselEngineHours?.filter(h => h.vessel_id === vessel.id) || [];
-    const inputs: { engine_type: string; engine_number: number; current_hours: number }[] = [];
+    const inputs: { engine_type: string; engine_number: number; current_hours: number; name: string }[] = [];
     
     for (let i = 1; i <= vessel.main_engine_count; i++) {
       const existing = existingHours.find(h => h.engine_type === 'main' && h.engine_number === i);
-      inputs.push({ engine_type: 'main', engine_number: i, current_hours: existing?.current_hours || 0 });
+      inputs.push({ 
+        engine_type: 'main', 
+        engine_number: i, 
+        current_hours: existing?.current_hours || 0,
+        name: existing?.name || `Huvudmaskin ${i}`
+      });
     }
     for (let i = 1; i <= vessel.auxiliary_engine_count; i++) {
       const existing = existingHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
-      inputs.push({ engine_type: 'auxiliary', engine_number: i, current_hours: existing?.current_hours || 0 });
+      inputs.push({ 
+        engine_type: 'auxiliary', 
+        engine_number: i, 
+        current_hours: existing?.current_hours || 0,
+        name: existing?.name || `Hjälpmaskin ${i}`
+      });
     }
     
     setEngineHoursInputs(inputs);
@@ -322,22 +333,34 @@ export default function AdminVessels() {
             </DialogHeader>
             <div className="space-y-4">
               {engineHoursInputs.map((input, index) => (
-                <div key={`${input.engine_type}-${input.engine_number}`} className="flex items-center gap-3">
-                  <span className="text-sm font-medium min-w-32">
-                    {input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
-                  </span>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={input.current_hours}
-                    onChange={e => {
-                      const updated = [...engineHoursInputs];
-                      updated[index].current_hours = parseInt(e.target.value) || 0;
-                      setEngineHoursInputs(updated);
-                    }}
-                    className="w-32"
-                  />
-                  <span className="text-sm text-muted-foreground">timmar</span>
+                <div key={`${input.engine_type}-${input.engine_number}`} className="space-y-2 p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-muted-foreground min-w-20">Namn</Label>
+                    <Input
+                      value={input.name}
+                      onChange={e => {
+                        const updated = [...engineHoursInputs];
+                        updated[index].name = e.target.value;
+                        setEngineHoursInputs(updated);
+                      }}
+                      placeholder={input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-muted-foreground min-w-20">Timmar</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={input.current_hours}
+                      onChange={e => {
+                        const updated = [...engineHoursInputs];
+                        updated[index].current_hours = parseInt(e.target.value) || 0;
+                        setEngineHoursInputs(updated);
+                      }}
+                      className="w-32"
+                    />
+                  </div>
                 </div>
               ))}
               {engineHoursInputs.length === 0 && (

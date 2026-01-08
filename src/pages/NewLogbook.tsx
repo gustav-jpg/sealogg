@@ -100,7 +100,7 @@ export default function NewLogbook() {
         tempId: crypto.randomUUID(),
         engineType: 'main',
         engineNumber: i,
-        engineLabel: `Huvudmaskin ${i}`,
+        engineLabel: existing?.name || `Huvudmaskin ${i}`,
         startHours: existing?.current_hours || 0,
         stopHours: existing?.current_hours || 0,
         notes: ''
@@ -113,7 +113,7 @@ export default function NewLogbook() {
         tempId: crypto.randomUUID(),
         engineType: 'auxiliary',
         engineNumber: i,
-        engineLabel: `Hjälpmaskin ${i}`,
+        engineLabel: existing?.name || `Hjälpmaskin ${i}`,
         startHours: existing?.current_hours || 0,
         stopHours: existing?.current_hours || 0,
         notes: ''
@@ -182,6 +182,7 @@ export default function NewLogbook() {
             logbook_id: logbook.id,
             engine_type: e.engineType,
             engine_number: e.engineNumber,
+            engine_name: e.engineLabel,
             start_hours: e.startHours,
             stop_hours: e.stopHours,
             notes: e.notes || null,
