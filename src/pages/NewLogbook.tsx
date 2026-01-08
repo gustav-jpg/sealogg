@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { CrewRole, CREW_ROLE_LABELS } from '@/lib/types';
-import { Plus, Trash2, Ship, Users, Save } from 'lucide-react';
+import { Plus, Trash2, Ship, Users, Save, MapPin, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CrewMember {
@@ -44,6 +44,11 @@ export default function NewLogbook() {
   const [weather, setWeather] = useState('');
   const [wind, setWind] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
+  const [fromLocation, setFromLocation] = useState('');
+  const [toLocation, setToLocation] = useState('');
+  const [departureTime, setDepartureTime] = useState('');
+  const [arrivalTime, setArrivalTime] = useState('');
+  const [passengerCount, setPassengerCount] = useState('');
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [engineHours, setEngineHours] = useState<EngineHourEntry[]>([]);
 
@@ -147,6 +152,11 @@ export default function NewLogbook() {
           weather: weather || null,
           wind: wind || null,
           general_notes: generalNotes || null,
+          from_location: fromLocation || null,
+          to_location: toLocation || null,
+          departure_time: departureTime || null,
+          arrival_time: arrivalTime || null,
+          passenger_count: passengerCount ? parseInt(passengerCount) : null,
           created_by: user.id,
           status: 'oppen',
         })
@@ -258,6 +268,68 @@ export default function NewLogbook() {
                 <div className="space-y-2">
                   <Label htmlFor="notes">Allmänna anteckningar</Label>
                   <Textarea id="notes" value={generalNotes} onChange={e => setGeneralNotes(e.target.value)} rows={3} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Reseinformation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="from">Från hamn/plats</Label>
+                    <Input
+                      id="from"
+                      value={fromLocation}
+                      onChange={e => setFromLocation(e.target.value)}
+                      placeholder="T.ex. Skeppsbron"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="to">Till hamn/plats</Label>
+                    <Input
+                      id="to"
+                      value={toLocation}
+                      onChange={e => setToLocation(e.target.value)}
+                      placeholder="T.ex. Djurgården"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="passengers">Antal passagerare</Label>
+                    <Input
+                      id="passengers"
+                      type="number"
+                      min={0}
+                      value={passengerCount}
+                      onChange={e => setPassengerCount(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="departure">Avgångstid</Label>
+                    <Input
+                      id="departure"
+                      type="time"
+                      value={departureTime}
+                      onChange={e => setDepartureTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="arrival">Ankomsttid</Label>
+                    <Input
+                      id="arrival"
+                      type="time"
+                      value={arrivalTime}
+                      onChange={e => setArrivalTime(e.target.value)}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
