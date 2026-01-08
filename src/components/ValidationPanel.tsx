@@ -1,5 +1,5 @@
 import { ValidationResult } from '@/lib/types';
-import { AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Ship } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ValidationPanelProps {
@@ -8,7 +8,21 @@ interface ValidationPanelProps {
 }
 
 export function ValidationPanel({ validation, className }: ValidationPanelProps) {
-  const { isValid, errors, warnings } = validation;
+  const { isValid, errors, warnings, noVesselSelected } = validation;
+
+  if (noVesselSelected) {
+    return (
+      <div className={cn('rounded-lg border p-4 bg-muted/50', className)}>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Ship className="h-5 w-5" />
+          <span className="font-medium">Välj fartyg</span>
+        </div>
+        <p className="text-sm mt-1 text-muted-foreground">
+          Välj ett fartyg för att se bemanningskrav och validering.
+        </p>
+      </div>
+    );
+  }
 
   if (errors.length === 0 && warnings.length === 0) {
     return (
