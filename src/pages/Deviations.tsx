@@ -54,6 +54,7 @@ export default function Deviations() {
   const [severity, setSeverity] = useState<DeviationSeverity>('medel');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [logbookId, setLogbookId] = useState<string>('');
   const [files, setFiles] = useState<File[]>([]);
 
   const { data: vessels } = useQuery({
@@ -63,6 +64,23 @@ export default function Deviations() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch logbooks for the selected vessel
+  const { data: logbooks } = useQuery({
+    queryKey: ['logbooks-for-vessel', vesselId],
+    queryFn: async () => {
+      if (!vesselId) return [];
+      const { data, error } = await supabase
+        .from('logbooks')
+        .select('*')
+        .eq('vessel_id', vesselId)
+        .order('date', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!vesselId,
   });
 
   const { data: deviations, isLoading } = useQuery({
@@ -105,6 +123,7 @@ export default function Deviations() {
           title,
           description,
           created_by: user?.id,
+          logbook_id: logbookId || null,
         })
         .select()
         .single();
@@ -155,6 +174,7 @@ export default function Deviations() {
     setSeverity('medel');
     setTitle('');
     setDescription('');
+    setLogbookId('');
     setFiles([]);
   };
 
@@ -248,6 +268,26 @@ export default function Deviations() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Logbook link - optional */}
+                {vesselId && logbooks && logbooks.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Koppla till loggbok (valfritt)</Label>
+                    <Select value={logbookId || "__none__"} onValueChange={(v) => setLogbookId(v === "__none__" ? "" : v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Välj loggbok..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Ingen loggbok</SelectItem>
+                        {logbooks.map((lb) => (
+                          <SelectItem key={lb.id} value={lb.id}>
+                            {format(new Date(lb.date), 'yyyy-MM-dd')} - {lb.from_location || 'Okänd'} → {lb.to_location || 'Okänd'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Rubrik *</Label>
