@@ -209,12 +209,6 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
             type: 'certificate',
             message: `${member.fullName} har utgånget ${certName} (utgick ${cert.expiry_date}).`,
           });
-        } else if (cert.expiry_date <= warningDateStr) {
-          const certName = (rule as any).certificate_type?.name || 'certifikat';
-          warnings.push({
-            type: 'certificate_expiring',
-            message: `${member.fullName}s ${certName} går ut ${cert.expiry_date}.`,
-          });
         }
       }
 
@@ -235,6 +229,17 @@ export function useValidation({ vesselId, crew, enabled = true }: UseValidationP
           errors.push({
             type: 'certificate',
             message: `${member.fullName} saknar giltig ${certNames}.`,
+          });
+        }
+      }
+
+      // Check ALL certificates for expiring warnings (not just required ones)
+      for (const cert of memberCerts) {
+        if (cert.expiry_date >= today && cert.expiry_date <= warningDateStr) {
+          const certName = (cert as any).certificate_type?.name || 'certifikat';
+          warnings.push({
+            type: 'certificate_expiring',
+            message: `${member.fullName}s certifikat ${certName} går ut ${cert.expiry_date}.`,
           });
         }
       }
