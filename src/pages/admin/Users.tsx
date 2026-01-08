@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
@@ -282,23 +282,50 @@ export default function AdminUsers() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {profiles?.map(profile => (
-                  <button
-                    key={profile.id}
-                    onClick={() => setSelectedProfileId(profile.id)}
-                    className={`w-full text-left p-2 rounded transition-colors ${
-                      selectedProfileId === profile.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{profile.full_name}</p>
-                      {profile.is_external && (
-                        <Badge variant="outline" className="text-xs">Extern</Badge>
-                      )}
-                    </div>
-                    <p className="text-xs opacity-70">{profile.email || 'Ingen e-post'}</p>
-                  </button>
-                ))}
+                {profiles?.map(profile => {
+                  // Check for expiring certificates
+                  const profileCerts = userCertificates?.filter(c => c.profile_id === profile.id) || [];
+                  const today = new Date().toISOString().split('T')[0];
+                  const warningDate = new Date();
+                  warningDate.setMonth(warningDate.getMonth() + 2);
+                  const warningDateStr = warningDate.toISOString().split('T')[0];
+                  
+                  const expiredCerts = profileCerts.filter(c => c.expiry_date < today);
+                  const expiringCerts = profileCerts.filter(c => c.expiry_date >= today && c.expiry_date <= warningDateStr);
+                  
+                  const hasExpired = expiredCerts.length > 0;
+                  const hasExpiring = expiringCerts.length > 0;
+                  
+                  return (
+                    <button
+                      key={profile.id}
+                      onClick={() => setSelectedProfileId(profile.id)}
+                      className={`w-full text-left p-2 rounded transition-colors ${
+                        selectedProfileId === profile.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{profile.full_name}</p>
+                        {profile.is_external && (
+                          <Badge variant="outline" className="text-xs">Extern</Badge>
+                        )}
+                        {hasExpired && (
+                          <Badge variant="destructive" className="text-xs gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Utgånget
+                          </Badge>
+                        )}
+                        {!hasExpired && hasExpiring && (
+                          <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                            <AlertTriangle className="h-3 w-3" />
+                            Går ut snart
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs opacity-70">{profile.email || 'Ingen e-post'}</p>
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
