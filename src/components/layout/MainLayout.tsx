@@ -22,9 +22,9 @@ import {
   AlertTriangle,
   Wrench,
   ClipboardCheck,
+  Anchor,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import sealogLogo from '@/assets/sealog-logo.png';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -61,8 +61,11 @@ export function MainLayout({ children }: MainLayoutProps) {
       <header className="maritime-gradient sticky top-0 z-50 border-b border-primary/20">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center">
-              <img src={sealogLogo} alt="SeaLog.se" className="h-10" />
+            <Link to="/" className="flex items-center gap-2">
+              <Anchor className="h-7 w-7 text-primary-foreground" />
+              <span className="font-display text-xl font-bold text-primary-foreground">
+                SeaLog
+              </span>
             </Link>
             
             <nav className="hidden md:flex items-center gap-1">
