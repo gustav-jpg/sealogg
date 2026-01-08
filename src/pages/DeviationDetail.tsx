@@ -45,7 +45,7 @@ export default function DeviationDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('deviations')
-        .select(`*, vessel:vessels(*), creator:profiles!deviations_created_by_fkey(*)`)
+        .select(`*, vessel:vessels(*)`)
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -59,7 +59,7 @@ export default function DeviationDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('deviation_actions')
-        .select(`*, creator:profiles!deviation_actions_created_by_fkey(*)`)
+        .select(`*`)
         .eq('deviation_id', id)
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -73,7 +73,7 @@ export default function DeviationDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('deviation_responses')
-        .select(`*, responder:profiles!deviation_responses_responded_by_fkey(*)`)
+        .select(`*`)
         .eq('deviation_id', id)
         .order('responded_at', { ascending: true });
       if (error) throw error;
@@ -251,7 +251,7 @@ export default function DeviationDetail() {
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Rapporterad av</Label>
-                    <p className="font-medium">{(deviation as any).creator?.full_name || 'Okänd'}</p>
+                    <p className="font-medium">{deviation.created_by ? `User ${String(deviation.created_by).slice(0, 8)}` : 'Okänd'}</p>
                   </div>
                 </div>
                 <div>
@@ -301,7 +301,7 @@ export default function DeviationDetail() {
                       <div key={action.id} className="p-3 rounded bg-muted/50">
                         <p>{action.action_text}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {(action as any).creator?.full_name} • {format(new Date(action.created_at), 'PPP HH:mm', { locale: sv })}
+                          {action.created_by ? `User ${String(action.created_by).slice(0, 8)}` : 'Okänd'} • {format(new Date(action.created_at), 'PPP HH:mm', { locale: sv })}
                         </p>
                       </div>
                     ))}
@@ -340,7 +340,7 @@ export default function DeviationDetail() {
                       <div key={response.id} className="p-3 rounded bg-primary/10 border border-primary/20">
                         <p>{response.response_text}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {(response as any).responder?.full_name} • {format(new Date(response.responded_at), 'PPP HH:mm', { locale: sv })}
+                          {response.responded_by ? `User ${String(response.responded_by).slice(0, 8)}` : 'Okänd'} • {format(new Date(response.responded_at), 'PPP HH:mm', { locale: sv })}
                         </p>
                       </div>
                     ))}
