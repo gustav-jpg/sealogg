@@ -48,6 +48,7 @@ export default function ControlPoints() {
   const [selectedVessels, setSelectedVessels] = useState<string[]>([]);
   const [machineName, setMachineName] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [category, setCategory] = useState('');
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -108,6 +109,7 @@ export default function ControlPoints() {
           applies_to_all_vessels: appliesToAll,
           is_active: isActive,
           machine_name: machineName || null,
+          category: category || null,
         })
         .select()
         .single();
@@ -152,6 +154,7 @@ export default function ControlPoints() {
           applies_to_all_vessels: appliesToAll,
           is_active: isActive,
           machine_name: machineName || null,
+          category: category || null,
         })
         .eq('id', editingControlPoint.id);
 
@@ -208,6 +211,7 @@ export default function ControlPoints() {
     setSelectedVessels([]);
     setMachineName('');
     setIsActive(true);
+    setCategory('');
   };
 
   const openEditDialog = (cp: any) => {
@@ -220,6 +224,7 @@ export default function ControlPoints() {
     setAppliesToAll(cp.applies_to_all_vessels);
     setMachineName(cp.machine_name || '');
     setIsActive(cp.is_active);
+    setCategory(cp.category || '');
     
     const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
     setSelectedVessels(cpVessels.map((cpv) => cpv.vessel_id));
@@ -238,6 +243,11 @@ export default function ControlPoints() {
       <div className="space-y-2">
         <Label>Namn *</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="T.ex. Oljebyte huvudmaskin" />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Kategori</Label>
+        <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="T.ex. Motor, Säkerhet, Skrov..." />
       </div>
 
       <div className="space-y-2">

@@ -214,13 +214,13 @@ export default function SelfControl() {
   const overdueCount = controlPointsWithState.filter((cp) => cp.status === 'forfallen').length;
   const upcomingCount = controlPointsWithState.filter((cp) => cp.status === 'kommande').length;
 
-  // Group by category (using description field as category)
+  // Group by category
   const groupedControlPoints = filteredControlPoints.reduce((groups, cp) => {
-    const category = cp.description || 'ÖVRIGT';
-    if (!groups[category]) {
-      groups[category] = [];
+    const categoryName = cp.category || 'Övrigt';
+    if (!groups[categoryName]) {
+      groups[categoryName] = [];
     }
-    groups[category].push(cp);
+    groups[categoryName].push(cp);
     return groups;
   }, {} as Record<string, typeof filteredControlPoints>);
 
