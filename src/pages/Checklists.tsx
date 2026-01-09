@@ -30,10 +30,13 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
-import { format, differenceInDays, addDays } from 'date-fns';
+import { format, differenceInDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ClipboardList, Play, AlertTriangle, Clock, CheckCircle, Calendar, RefreshCw, History, Eye, Check, X, MessageSquare, Camera } from 'lucide-react';
+import { ClipboardList, Play, AlertTriangle, Clock, CheckCircle, Calendar, RefreshCw, History, Eye, Check, X, MessageSquare, Camera, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 
 type ChecklistStatus = 'ok' | 'due_soon' | 'overdue';
 
@@ -55,6 +58,12 @@ export default function Checklists() {
   const [selectedVessel, setSelectedVessel] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
+  
+  // History filters
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterTemplate, setFilterTemplate] = useState<string>('all');
+  const [filterDateFrom, setFilterDateFrom] = useState<Date | undefined>(undefined);
+  const [filterDateTo, setFilterDateTo] = useState<Date | undefined>(undefined);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -384,18 +393,129 @@ export default function Checklists() {
             <TabsContent value="history" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
-                    Checklisthistorik
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <History className="h-5 w-5" />
+                      Checklisthistorik
+                    </CardTitle>
+                    {(filterStatus !== 'all' || filterTemplate !== 'all' || filterDateFrom || filterDateTo) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setFilterStatus('all');
+                          setFilterTemplate('all');
+                          setFilterDateFrom(undefined);
+                          setFilterDateTo(undefined);
+                        }}
+                      >
+                        Rensa filter
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  {!executions || executions.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <History className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">Ingen historik finns för detta fartyg</p>
+                <CardContent className="space-y-4">
+                  {/* Filters */}
+                  <div className="flex flex-wrap gap-3 p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Filter:</span>
                     </div>
-                  ) : (
+                    
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="w-[140px] h-9">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Alla statusar</SelectItem>
+                        <SelectItem value="completed">Slutförd</SelectItem>
+                        <SelectItem value="in_progress">Pågår</SelectItem>
+                        <SelectItem value="failed">Misslyckad</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select value={filterTemplate} onValueChange={setFilterTemplate}>
+                      <SelectTrigger className="w-[180px] h-9">
+                        <SelectValue placeholder="Checklista" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Alla checklistor</SelectItem>
+                        {applicableChecklists.map((ct) => (
+                          <SelectItem key={ct.id} value={ct.id}>{ct.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {filterDateFrom ? format(filterDateFrom, 'd MMM', { locale: sv }) : 'Från'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={filterDateFrom}
+                          onSelect={setFilterDateFrom}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {filterDateTo ? format(filterDateTo, 'd MMM', { locale: sv }) : 'Till'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={filterDateTo}
+                          onSelect={setFilterDateTo}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {(() => {
+                    const filteredExecutions = executions?.filter((execution) => {
+                      // Status filter
+                      if (filterStatus !== 'all' && execution.status !== filterStatus) return false;
+                      
+                      // Template filter
+                      if (filterTemplate !== 'all' && execution.checklist_template_id !== filterTemplate) return false;
+                      
+                      // Date filters
+                      const executionDate = new Date(execution.started_at);
+                      if (filterDateFrom && isBefore(executionDate, startOfDay(filterDateFrom))) return false;
+                      if (filterDateTo && isAfter(executionDate, endOfDay(filterDateTo))) return false;
+                      
+                      return true;
+                    }) || [];
+
+                    if (!executions || executions.length === 0) {
+                      return (
+                        <div className="py-8 text-center">
+                          <History className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                          <p className="text-muted-foreground">Ingen historik finns för detta fartyg</p>
+                        </div>
+                      );
+                    }
+
+                    if (filteredExecutions.length === 0) {
+                      return (
+                        <div className="py-8 text-center">
+                          <Filter className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                          <p className="text-muted-foreground">Inga resultat matchar filtren</p>
+                        </div>
+                      );
+                    }
+
+                    return (
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -408,7 +528,7 @@ export default function Checklists() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {executions.map((execution) => (
+                        {filteredExecutions.map((execution) => (
                           <TableRow key={execution.id}>
                             <TableCell className="font-medium">
                               {(execution.checklist_templates as any)?.name || 'Okänd'}
@@ -438,7 +558,8 @@ export default function Checklists() {
                         ))}
                       </TableBody>
                     </Table>
-                  )}
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
