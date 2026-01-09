@@ -377,7 +377,7 @@ export default function LogbookDetail() {
     setFetchingWind(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-wind-data', {
-        body: { stationId: '97400' }, // Stockholm-Bromma (SMHI)
+        body: { stationId: '98040' }, // Berga (SMHI) - nära Stockholms inlopp
       });
       
       if (error) throw error;
