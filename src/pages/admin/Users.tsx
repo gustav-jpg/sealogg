@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
@@ -157,6 +157,23 @@ export default function AdminUsers() {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       setSelectedProfileId(null);
       toast({ title: 'Extern besättning borttagen' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const updateProfileName = useMutation({
+    mutationFn: async ({ profileId, fullName }: { profileId: string; fullName: string }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName })
+        .eq('id', profileId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      toast({ title: 'Namn uppdaterat' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -434,11 +451,21 @@ export default function AdminUsers() {
             {selectedProfile ? (
               <>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>{selectedProfile.full_name}</CardTitle>
-                    {isExternalUser && (
-                      <p className="text-sm text-muted-foreground mt-1">Extern besättning (ingen inloggning)</p>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        {selectedProfile.full_name}
+                        <EditNameDialog 
+                          profileId={selectedProfile.id}
+                          currentName={selectedProfile.full_name}
+                          onSave={(data) => updateProfileName.mutate(data)}
+                          isLoading={updateProfileName.isPending}
+                        />
+                      </CardTitle>
+                      {isExternalUser && (
+                        <p className="text-sm text-muted-foreground mt-1">Extern besättning (ingen inloggning)</p>
+                      )}
+                    </div>
                   </div>
                   {isExternalUser && (
                     <div className="flex gap-2">
@@ -1207,6 +1234,59 @@ function LinkEmailDialog({
           </div>
           <Button onClick={handleLink} disabled={!email.trim() || isLoading} className="w-full">
             {isLoading ? 'Kopplar...' : 'Koppla e-post'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditNameDialog({
+  profileId,
+  currentName,
+  onSave,
+  isLoading,
+}: {
+  profileId: string;
+  currentName: string;
+  onSave: (data: { profileId: string; fullName: string }) => void;
+  isLoading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(currentName);
+
+  const handleSave = () => {
+    if (name.trim() && name.trim() !== currentName) {
+      onSave({ profileId, fullName: name.trim() });
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (isOpen) setName(currentName);
+    }}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6">
+          <Pencil className="h-3 w-3" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Ändra namn</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Fullständigt namn</Label>
+            <Input 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="Anna Andersson"
+            />
+          </div>
+          <Button onClick={handleSave} disabled={!name.trim() || name.trim() === currentName || isLoading} className="w-full">
+            {isLoading ? 'Sparar...' : 'Spara'}
           </Button>
         </div>
       </DialogContent>
