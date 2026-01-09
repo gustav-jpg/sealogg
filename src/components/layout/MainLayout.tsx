@@ -28,6 +28,7 @@ import {
   Home,
   Building2,
   Activity,
+  Anchor,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -66,6 +67,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const adminItems = [
     { href: '/portal/admin/status', label: 'Statusöversikt', icon: Activity },
+    { href: '/portal/admin/sea-days', label: 'Sjödagar', icon: Anchor },
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Användare', icon: Users },
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },

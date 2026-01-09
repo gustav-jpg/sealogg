@@ -1085,6 +1085,7 @@ export type Database = {
           full_name: string
           id: string
           is_external: boolean
+          preferred_vessel_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -1094,6 +1095,7 @@ export type Database = {
           full_name: string
           id?: string
           is_external?: boolean
+          preferred_vessel_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1103,10 +1105,19 @@ export type Database = {
           full_name?: string
           id?: string
           is_external?: boolean
+          preferred_vessel_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_preferred_vessel_id_fkey"
+            columns: ["preferred_vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       superadmins: {
         Row: {
