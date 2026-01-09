@@ -26,7 +26,7 @@ import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/Logbo
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2 } from 'lucide-react';
 
 interface CrewMember {
   tempId: string;
@@ -54,6 +54,7 @@ export default function LogbookDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCrewDialog, setShowCrewDialog] = useState(false);
   const [editableCrew, setEditableCrew] = useState<CrewMember[]>([]);
+  const [fetchingWind, setFetchingWind] = useState(false);
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -372,6 +373,39 @@ export default function LogbookDetail() {
     setEditableCrew(editableCrew.filter(c => c.tempId !== tempId));
   };
 
+  const fetchWindData = async () => {
+    setFetchingWind(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-wind-data', {
+        body: { stationId: '141' }, // Blockhusudden
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success && data?.data) {
+        const windInfo = data.data;
+        // Format: "NO 54° medel 8.6 m/s (byvind 12.1 m/s)"
+        const windString = `${windInfo.direction} medel ${windInfo.averageSpeed} (byvind ${windInfo.gustSpeed})`;
+        setWind(windString);
+        toast({ 
+          title: 'Vinddata hämtad', 
+          description: `Från ${windInfo.stationName} kl ${windInfo.timestamp}` 
+        });
+      } else {
+        throw new Error(data?.error || 'Kunde inte hämta vinddata');
+      }
+    } catch (error) {
+      console.error('Error fetching wind:', error);
+      toast({ 
+        title: 'Fel', 
+        description: 'Kunde inte hämta vinddata från Sjöfartsverket', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setFetchingWind(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -442,13 +476,32 @@ export default function LogbookDetail() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="wind">Vind</Label>
-                    <Input
-                      id="wind"
-                      value={wind}
-                      onChange={e => setWind(e.target.value)}
-                      disabled={!canEditThis}
-                      placeholder="T.ex. SV 5 m/s"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="wind"
+                        value={wind}
+                        onChange={e => setWind(e.target.value)}
+                        disabled={!canEditThis}
+                        placeholder="T.ex. SV 5 m/s"
+                        className="flex-1"
+                      />
+                      {canEditThis && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={fetchWindData}
+                          disabled={fetchingWind}
+                          title="Hämta vinddata från Blockhusudden (Sjöfartsverket)"
+                        >
+                          {fetchingWind ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Wind className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
