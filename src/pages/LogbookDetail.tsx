@@ -214,8 +214,24 @@ export default function LogbookDetail() {
 
   const closeLogbook = useMutation({
     mutationFn: async () => {
-      if (!validation.isValid && !overrideValidation) throw new Error('Valideringsfel måste åtgärdas innan loggboken kan stängas.');
+      // Validate required fields before closing
+      const missingFields: string[] = [];
       
+      if (!weather?.trim()) missingFields.push('Väder');
+      if (!wind?.trim()) missingFields.push('Vind');
+      if (!bunkerLiters?.trim()) missingFields.push('Bunker');
+      if (!crewMembers || crewMembers.length === 0) missingFields.push('Besättning');
+      
+      // Check engine hours - at least one engine must have stop_hours filled
+      const hasEngineHours = engineHours && engineHours.length > 0 && 
+        engineHours.some(e => e.stop_hours !== null && e.stop_hours !== undefined);
+      if (!hasEngineHours) missingFields.push('Maskintimmar (sluttimmar)');
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Följande fält måste fyllas i: ${missingFields.join(', ')}`);
+      }
+      
+      if (!validation.isValid && !overrideValidation) throw new Error('Valideringsfel måste åtgärdas innan loggboken kan stängas.');
       // Save stops before closing
       const { error: deleteStopsError } = await supabase
         .from('logbook_stops')
