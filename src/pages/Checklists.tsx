@@ -352,16 +352,23 @@ export default function Checklists() {
                             {checklist.description && (
                               <p className="text-sm text-muted-foreground line-clamp-1">{checklist.description}</p>
                             )}
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            <div className="flex items-center gap-4 text-sm mt-1">
                               {checklist.lastCompleted && (
-                                <span>Senast: {format(new Date(checklist.lastCompleted), 'd MMM yyyy', { locale: sv })}</span>
+                                <span className="text-muted-foreground">Senast: {format(new Date(checklist.lastCompleted), 'd MMM yyyy', { locale: sv })}</span>
                               )}
-                              {checklist.nextDue && checklist.interval_days && (
-                                <span>
-                                  Nästa: {checklist.nextDue === 'Ej utförd' ? checklist.nextDue : format(new Date(checklist.nextDue), 'd MMM yyyy', { locale: sv })}
-                                  {checklist.daysRemaining !== null && checklist.daysRemaining >= 0 && ` (${checklist.daysRemaining} dagar)`}
-                                  {checklist.daysRemaining !== null && checklist.daysRemaining < 0 && ` (${Math.abs(checklist.daysRemaining)} dagar sedan)`}
-                                </span>
+                              {checklist.interval_days && checklist.daysRemaining !== null && (
+                                checklist.daysRemaining >= 0 ? (
+                                  <span className="text-muted-foreground">
+                                    Utför inom: <span className="font-medium text-foreground">{checklist.daysRemaining} dagar</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-destructive font-medium">
+                                    Försenat: {Math.abs(checklist.daysRemaining)} dagar
+                                  </span>
+                                )
+                              )}
+                              {checklist.nextDue === 'Ej utförd' && (
+                                <span className="text-destructive font-medium">Ej utförd</span>
                               )}
                             </div>
                           </div>
