@@ -31,6 +31,7 @@ export default function SeaDays() {
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [selectedVessel, setSelectedVessel] = useState<string>('all');
   const [selectedProfile, setSelectedProfile] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
 
   // Fetch vessels
   const { data: vessels } = useQuery({
@@ -126,6 +127,9 @@ export default function SeaDays() {
     if (selectedProfile !== 'all') {
       filteredDays = filteredDays.filter((d) => d.profileId === selectedProfile);
     }
+    if (selectedRole !== 'all') {
+      filteredDays = filteredDays.filter((d) => d.role === selectedRole);
+    }
 
     // Group by profile + vessel + role for flat rows
     const rowMap = new Map<string, SeaDayRow>();
@@ -149,7 +153,7 @@ export default function SeaDays() {
       if (vesselCompare !== 0) return vesselCompare;
       return CREW_ROLE_LABELS[a.role].localeCompare(CREW_ROLE_LABELS[b.role], 'sv');
     });
-  }, [logbookCrew, selectedVessel, selectedProfile]);
+  }, [logbookCrew, selectedVessel, selectedProfile, selectedRole]);
 
   const totalSeaDays = seaDayRows.reduce((sum, r) => sum + r.days, 0);
 
@@ -218,7 +222,7 @@ export default function SeaDays() {
             <CardTitle className="text-lg">Filter</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <Label>År</Label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
@@ -261,6 +265,22 @@ export default function SeaDays() {
                     {profiles?.map((profile) => (
                       <SelectItem key={profile.id} value={profile.id}>
                         {profile.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Befattning</Label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alla befattningar</SelectItem>
+                    {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
                       </SelectItem>
                     ))}
                   </SelectContent>
