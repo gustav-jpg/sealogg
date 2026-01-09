@@ -37,6 +37,7 @@ export default function ControlPoints() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingControlPoint, setEditingControlPoint] = useState<any>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [selectedVesselFilter, setSelectedVesselFilter] = useState<string>('');
 
   // Form state
   const [name, setName] = useState('');
@@ -347,6 +348,17 @@ export default function ControlPoints() {
     </div>
   );
 
+  // Filter control points by selected vessel
+  const filteredControlPoints = controlPoints?.filter((cp) => {
+    if (!selectedVesselFilter) return true;
+    
+    // Check if this control point applies to the selected vessel
+    if (cp.applies_to_all_vessels) return true;
+    
+    const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
+    return cpVessels.some((cpv) => cpv.vessel_id === selectedVesselFilter);
+  });
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -386,6 +398,33 @@ export default function ControlPoints() {
           </Dialog>
         </div>
 
+        {/* Vessel Filter */}
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              <Label className="text-sm font-medium whitespace-nowrap">Visa kontrollpunkter för:</Label>
+              <Select value={selectedVesselFilter} onValueChange={setSelectedVesselFilter}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Välj fartyg..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Alla fartyg</SelectItem>
+                  {vessels?.map((vessel) => (
+                    <SelectItem key={vessel.id} value={vessel.id}>
+                      {vessel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedVesselFilter && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedVesselFilter('')}>
+                  Rensa filter
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* List */}
         {isLoading ? (
           <div className="animate-pulse space-y-4">
@@ -393,16 +432,20 @@ export default function ControlPoints() {
               <div key={i} className="h-20 bg-muted rounded-lg" />
             ))}
           </div>
-        ) : controlPoints?.length === 0 ? (
+        ) : filteredControlPoints?.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Inga kontrollpunkter skapade</p>
+              <p className="text-muted-foreground">
+                {selectedVesselFilter 
+                  ? 'Inga kontrollpunkter för detta fartyg' 
+                  : 'Inga kontrollpunkter skapade'}
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
-            {controlPoints?.map((cp) => {
+            {filteredControlPoints?.map((cp) => {
               const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
               const vesselNames = vessels?.filter((v) => cpVessels.some((cpv) => cpv.vessel_id === v.id)).map((v) => v.name) || [];
               
