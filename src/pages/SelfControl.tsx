@@ -556,38 +556,37 @@ export default function SelfControl() {
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap mb-1">
                                         <span className="font-medium">{cp.name}</span>
-                                        {/* Show status badges based on state */}
-                                        {cp.status === 'forfallen' && cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining < 0 && (
-                                          <Badge variant="destructive" className="gap-1">
-                                            <AlertTriangle className="h-3 w-3" />
-                                            Försenad {Math.abs(cp.daysRemaining)} dagar
-                                          </Badge>
-                                        )}
-                                        {cp.status === 'forfallen' && cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining < 0 && (
-                                          <Badge variant="destructive" className="gap-1">
-                                            <AlertTriangle className="h-3 w-3" />
-                                            Försenad {Math.abs(cp.hoursRemaining)}h
-                                          </Badge>
-                                        )}
+                                        {/* Show badges like checklists: green for days remaining, red for overdue */}
                                         {cp.nextDue === 'Ej utförd' && (
                                           <Badge variant="destructive" className="gap-1">
                                             <AlertTriangle className="h-3 w-3" />
                                             Ej utförd
                                           </Badge>
                                         )}
-                                        {cp.status === 'kommande' && cp.daysRemaining !== null && cp.daysRemaining >= 0 && (
+                                        {cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining < 0 && (
+                                          <Badge variant="destructive" className="gap-1">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            Försenad {Math.abs(cp.daysRemaining)} dagar
+                                          </Badge>
+                                        )}
+                                        {cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining < 0 && (
+                                          <Badge variant="destructive" className="gap-1">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            Försenad {Math.abs(cp.hoursRemaining)}h
+                                          </Badge>
+                                        )}
+                                        {cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining >= 0 && (
                                           <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
                                             <Clock className="h-3 w-3" />
                                             Utför inom {cp.daysRemaining} dagar
                                           </Badge>
                                         )}
-                                        {cp.status === 'kommande' && cp.hoursRemaining !== null && cp.hoursRemaining >= 0 && (
+                                        {cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining >= 0 && (
                                           <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
                                             <Clock className="h-3 w-3" />
                                             Utför inom {cp.hoursRemaining}h
                                           </Badge>
                                         )}
-                                        {/* No badge for 'ok' status - implied by lack of other badges */}
                                       </div>
                                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                         <span>
