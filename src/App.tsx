@@ -26,6 +26,7 @@ import RoleRules from "./pages/admin/RoleRules";
 import ControlPoints from "./pages/admin/ControlPoints";
 import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
 import AdminStatus from "./pages/admin/Status";
+import SeaDays from "./pages/admin/SeaDays";
 import NotFound from "./pages/NotFound";
 import BackofficeLayout from "./components/layout/BackofficeLayout";
 import BackofficeDashboard from "./pages/backoffice/Dashboard";
@@ -103,6 +104,7 @@ function AppRoutes() {
       <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
       <Route path="/portal/admin/checklists" element={<ProtectedRoute adminOnly><ChecklistTemplates /></ProtectedRoute>} />
       <Route path="/portal/admin/status" element={<ProtectedRoute adminOnly><AdminStatus /></ProtectedRoute>} />
+      <Route path="/portal/admin/sea-days" element={<ProtectedRoute adminOnly><SeaDays /></ProtectedRoute>} />
       
       {/* Backoffice routes (superadmin only) */}
       <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />

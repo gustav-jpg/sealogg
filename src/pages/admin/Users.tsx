@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
@@ -174,6 +174,24 @@ export default function AdminUsers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       toast({ title: 'Namn uppdaterat' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const updatePreferredVessel = useMutation({
+    mutationFn: async ({ profileId, vesselId }: { profileId: string; vesselId: string | null }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ preferred_vessel_id: vesselId })
+        .eq('id', profileId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles-with-preferred'] });
+      toast({ title: 'Föredragen båt uppdaterad' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -508,6 +526,10 @@ export default function AdminUsers() {
                         <Ship className="h-4 w-4 mr-1" />
                         Inskolningar
                       </TabsTrigger>
+                      <TabsTrigger value="settings">
+                        <Settings className="h-4 w-4 mr-1" />
+                        Inställningar
+                      </TabsTrigger>
                     </TabsList>
 
                     {!isExternalUser && (
@@ -609,6 +631,36 @@ export default function AdminUsers() {
                           file 
                         })}
                       />
+                    </TabsContent>
+
+                    <TabsContent value="settings" className="space-y-4 mt-4">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="preferred-vessel">Föredragen båt för sjödagar</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Används vid rapportering till Transportstyrelsen om personen arbetat på flera båtar samma dag.
+                          </p>
+                          <Select 
+                            value={selectedProfile.preferred_vessel_id || 'none'} 
+                            onValueChange={(v) => updatePreferredVessel.mutate({ 
+                              profileId: selectedProfile.id, 
+                              vesselId: v === 'none' ? null : v 
+                            })}
+                          >
+                            <SelectTrigger className="w-64">
+                              <SelectValue placeholder="Välj båt" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Ingen föredragen båt</SelectItem>
+                              {vessels?.map(vessel => (
+                                <SelectItem key={vessel.id} value={vessel.id}>
+                                  {vessel.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </TabsContent>
                   </Tabs>
                 </CardContent>
