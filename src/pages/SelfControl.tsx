@@ -554,12 +554,45 @@ export default function SelfControl() {
                                 <div key={cp.id} className="p-4 border-b last:border-b-0 hover:bg-muted/30 transition-colors">
                                   <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 mb-1">
+                                      <div className="flex items-center gap-2 flex-wrap mb-1">
                                         <span className="font-medium">{cp.name}</span>
-                                        <Badge variant={getStatusColor(cp.status)}>
-                                          {getStatusIcon(cp.status)}
-                                          <span className="ml-1">{CONTROL_STATUS_LABELS[cp.status]}</span>
-                                        </Badge>
+                                        {/* Show status badges based on state */}
+                                        {cp.status === 'forfallen' && cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining < 0 && (
+                                          <Badge variant="destructive" className="gap-1">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            Försenad {Math.abs(cp.daysRemaining)} dagar
+                                          </Badge>
+                                        )}
+                                        {cp.status === 'forfallen' && cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining < 0 && (
+                                          <Badge variant="destructive" className="gap-1">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            Försenad {Math.abs(cp.hoursRemaining)}h
+                                          </Badge>
+                                        )}
+                                        {cp.nextDue === 'Ej utförd' && (
+                                          <Badge variant="destructive" className="gap-1">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            Ej utförd
+                                          </Badge>
+                                        )}
+                                        {cp.status === 'kommande' && cp.daysRemaining !== null && cp.daysRemaining >= 0 && (
+                                          <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                                            <Clock className="h-3 w-3" />
+                                            Utför inom {cp.daysRemaining} dagar
+                                          </Badge>
+                                        )}
+                                        {cp.status === 'kommande' && cp.hoursRemaining !== null && cp.hoursRemaining >= 0 && (
+                                          <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                                            <Clock className="h-3 w-3" />
+                                            Utför inom {cp.hoursRemaining}h
+                                          </Badge>
+                                        )}
+                                        {cp.status === 'ok' && (
+                                          <Badge variant="secondary" className="gap-1">
+                                            <CheckCircle className="h-3 w-3" />
+                                            OK
+                                          </Badge>
+                                        )}
                                         <Badge variant="outline">
                                           {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
                                           {CONTROL_TYPE_LABELS[cp.type as ControlType]}
@@ -571,20 +604,8 @@ export default function SelfControl() {
                                             ? `${cp.interval_months} mån` 
                                             : `${cp.interval_engine_hours}h`}
                                         </span>
-                                        <span>Nästa: {cp.nextDue}</span>
-                                        {cp.daysRemaining !== null && (
-                                          <span className={cp.daysRemaining < 0 ? 'text-destructive' : ''}>
-                                            {cp.daysRemaining < 0 
-                                              ? `${Math.abs(cp.daysRemaining)} dagar sedan` 
-                                              : `${cp.daysRemaining} dagar kvar`}
-                                          </span>
-                                        )}
-                                        {cp.hoursRemaining !== null && (
-                                          <span className={cp.hoursRemaining < 0 ? 'text-destructive' : ''}>
-                                            {cp.hoursRemaining < 0 
-                                              ? `${Math.abs(cp.hoursRemaining)}h sedan` 
-                                              : `${cp.hoursRemaining}h kvar`}
-                                          </span>
+                                        {cp.nextDue !== 'Ej utförd' && (
+                                          <span>Nästa: {cp.nextDue}</span>
                                         )}
                                       </div>
                                     </div>
@@ -620,20 +641,26 @@ export default function SelfControl() {
                       <Card key={cp.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium">{cp.name}</span>
-                                <Badge variant={getStatusColor(cp.status)}>
-                                  {getStatusIcon(cp.status)}
-                                  <span className="ml-1">{CONTROL_STATUS_LABELS[cp.status]}</span>
-                                </Badge>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <span className="font-medium">{cp.name}</span>
+                                  {cp.daysRemaining !== null && cp.daysRemaining >= 0 && (
+                                    <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                                      <Clock className="h-3 w-3" />
+                                      Utför inom {cp.daysRemaining} dagar
+                                    </Badge>
+                                  )}
+                                  {cp.hoursRemaining !== null && cp.hoursRemaining >= 0 && (
+                                    <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                                      <Clock className="h-3 w-3" />
+                                      Utför inom {cp.hoursRemaining}h
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span>Nästa: {cp.nextDue}</span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span>Nästa: {cp.nextDue}</span>
-                                {cp.daysRemaining !== null && <span>{cp.daysRemaining} dagar kvar</span>}
-                                {cp.hoursRemaining !== null && <span>{cp.hoursRemaining}h kvar</span>}
-                              </div>
-                            </div>
                             <Button variant="default" size="sm" onClick={() => openPerformDialog(cp)}>
                               <Check className="h-4 w-4 mr-1" />
                               Utför
@@ -661,18 +688,35 @@ export default function SelfControl() {
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
                                 <span className="font-medium">{cp.name}</span>
-                                <Badge variant="destructive">
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  Förfallen
-                                </Badge>
+                                {cp.nextDue === 'Ej utförd' ? (
+                                  <Badge variant="destructive" className="gap-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    Ej utförd
+                                  </Badge>
+                                ) : (
+                                  <>
+                                    {cp.daysRemaining !== null && cp.daysRemaining < 0 && (
+                                      <Badge variant="destructive" className="gap-1">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        Försenad {Math.abs(cp.daysRemaining)} dagar
+                                      </Badge>
+                                    )}
+                                    {cp.hoursRemaining !== null && cp.hoursRemaining < 0 && (
+                                      <Badge variant="destructive" className="gap-1">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        Försenad {Math.abs(cp.hoursRemaining)}h
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-destructive">
-                                <span>Förföll: {cp.nextDue}</span>
-                                {cp.daysRemaining !== null && <span>{Math.abs(cp.daysRemaining)} dagar sedan</span>}
-                                {cp.hoursRemaining !== null && <span>{Math.abs(cp.hoursRemaining)}h sedan</span>}
-                              </div>
+                              {cp.nextDue !== 'Ej utförd' && (
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span>Förföll: {cp.nextDue}</span>
+                                </div>
+                              )}
                             </div>
                             <Button variant="destructive" size="sm" onClick={() => openPerformDialog(cp)}>
                               <Check className="h-4 w-4 mr-1" />
