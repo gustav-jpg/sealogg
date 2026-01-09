@@ -592,10 +592,14 @@ export default function ChecklistExecute() {
                 ) : (
                   <div />
                 )}
+              </div>
+              
+              {/* Abort & Delete - Separate section */}
+              <div className="pt-4 border-t">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="text-destructive hover:text-destructive"
+                  className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                   onClick={() => setShowDeleteDialog(true)}
                   disabled={deleteExecution.isPending}
                 >
@@ -604,7 +608,7 @@ export default function ChecklistExecute() {
                   ) : (
                     <Trash2 className="h-4 w-4 mr-2" />
                   )}
-                  Radera
+                  Avbryt & radera
                 </Button>
               </div>
             </CardContent>
@@ -614,8 +618,9 @@ export default function ChecklistExecute() {
         <ConfirmDialog
           open={showDeleteDialog}
           onOpenChange={setShowDeleteDialog}
-          title="Radera kontroll"
-          description="Är du säker på att du vill radera denna kontroll? Alla svar kommer att försvinna."
+          title="Avbryt & radera kontroll"
+          description="Är du säker på att du vill avbryta och radera denna kontroll? Alla svar kommer att försvinna."
+          confirmLabel="Avbryt & radera"
           onConfirm={() => deleteExecution.mutate()}
           variant="destructive"
         />
