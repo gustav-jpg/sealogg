@@ -410,7 +410,7 @@ export default function ChecklistExecute() {
         {/* Current Step */}
         {currentStep && !allStepsCompleted && (
           <Card>
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between mb-2">
                 <Badge variant="outline">Steg {currentStepIndex + 1} av {steps.length}</Badge>
                 <Progress value={progress} className="w-24 h-2" />
@@ -419,59 +419,8 @@ export default function ChecklistExecute() {
               <CardDescription className="whitespace-pre-wrap">{currentStep.instruction}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Comment/Photo Section */}
-              {(showCommentField || currentStep.requires_comment || photoPreview) && (
-                <div className="space-y-3">
-                  <Textarea
-                    value={currentComment}
-                    onChange={(e) => setCurrentComment(e.target.value)}
-                    placeholder="Lägg till kommentar..."
-                    rows={2}
-                  />
-                  {photoPreview && (
-                    <img src={photoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
-                  )}
-                </div>
-              )}
-              
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (!showCommentField) {
-                      setShowCommentField(true);
-                    } else {
-                      saveStepResult.mutate('deviation');
-                    }
-                  }}
-                  disabled={saveStepResult.isPending}
-                  className="h-14 border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-                >
-                  {saveStepResult.isPending && currentValue === 'deviation' ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  ) : (
-                    <AlertTriangle className="h-5 w-5 mr-2" />
-                  )}
-                  {showCommentField ? 'Bekräfta' : 'Avvikelse'}
-                </Button>
-                
-                <Button
-                  onClick={() => saveStepResult.mutate('ok')}
-                  disabled={saveStepResult.isPending}
-                  className="h-14 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {saveStepResult.isPending && currentValue === 'ok' ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  ) : (
-                    <Check className="h-5 w-5 mr-2" />
-                  )}
-                  OK
-                </Button>
-              </div>
-              
-              {/* Extra Actions */}
-              <div className="flex justify-center gap-2 pt-2">
+              {/* Photo & Comment - Always visible at top */}
+              <div className="flex gap-2">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -481,20 +430,22 @@ export default function ChecklistExecute() {
                   className="hidden"
                 />
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
+                  className="flex-1"
                 >
                   <Camera className="h-4 w-4 mr-2" />
-                  Foto
+                  {photoPreview ? 'Byt foto' : 'Lägg till foto'}
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowCommentField(!showCommentField)}
+                  className="flex-1"
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  Kommentar
+                  {currentComment ? 'Redigera' : 'Kommentar'}
                 </Button>
                 {currentStepIndex > 0 && (
                   <Button
@@ -502,10 +453,61 @@ export default function ChecklistExecute() {
                     size="sm"
                     onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
                   >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Föregående
+                    <ArrowLeft className="h-4 w-4" />
                   </Button>
                 )}
+              </div>
+              
+              {/* Photo preview */}
+              {photoPreview && (
+                <img src={photoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
+              )}
+              
+              {/* Comment field */}
+              {(showCommentField || currentStep.requires_comment) && (
+                <Textarea
+                  value={currentComment}
+                  onChange={(e) => setCurrentComment(e.target.value)}
+                  placeholder="Lägg till kommentar..."
+                  rows={2}
+                />
+              )}
+              
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (!currentComment && !showCommentField) {
+                      setShowCommentField(true);
+                      toast({ title: 'Beskriv felet', description: 'Lägg till en kommentar som beskriver problemet' });
+                    } else {
+                      saveStepResult.mutate('deviation');
+                    }
+                  }}
+                  disabled={saveStepResult.isPending}
+                  className="h-16 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-base"
+                >
+                  {saveStepResult.isPending && currentValue === 'deviation' ? (
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 mr-2" />
+                  )}
+                  Felärende
+                </Button>
+                
+                <Button
+                  onClick={() => saveStepResult.mutate('ok')}
+                  disabled={saveStepResult.isPending}
+                  className="h-16 bg-green-600 hover:bg-green-700 text-white font-semibold text-base"
+                >
+                  {saveStepResult.isPending && currentValue === 'ok' ? (
+                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-6 w-6 mr-2" />
+                  )}
+                  OK
+                </Button>
               </div>
             </CardContent>
           </Card>
