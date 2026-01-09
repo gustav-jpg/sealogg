@@ -48,7 +48,15 @@ export default function FaultCaseDetail() {
         .eq('id', id)
         .single();
       if (error) throw error;
-      return data;
+      
+      // Fetch creator profile
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', data.created_by)
+        .maybeSingle();
+      
+      return { ...data, creator_profile: creatorProfile };
     },
     enabled: !!id,
   });
@@ -62,7 +70,16 @@ export default function FaultCaseDetail() {
         .eq('fault_case_id', id)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return data;
+      
+      // Fetch profiles for all commenters
+      const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+      return data.map(c => ({ ...c, commenter_name: profileMap.get(c.user_id) || 'Okänd' }));
     },
     enabled: !!id,
   });
@@ -248,7 +265,7 @@ export default function FaultCaseDetail() {
               <CardContent>
                 <p className="whitespace-pre-wrap">{faultCase.description}</p>
                 <p className="text-sm text-muted-foreground mt-4">
-                  Rapporterad av {faultCase.created_by ? `User ${String(faultCase.created_by).slice(0, 8)}` : 'Okänd'}
+                  Rapporterad av {(faultCase as any).creator_profile?.full_name || 'Okänd'}
                 </p>
               </CardContent>
             </Card>
@@ -314,7 +331,7 @@ export default function FaultCaseDetail() {
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground mt-2">
-                            {comment.user_id ? `User ${String(comment.user_id).slice(0, 8)}` : 'Okänd'} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
+                            {(comment as any).commenter_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
                           </p>
                         </div>
                       );
