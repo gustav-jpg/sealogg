@@ -452,8 +452,8 @@ export default function ChecklistExecute() {
           </div>
         </div>
 
-        {/* Current Step */}
-        {currentStep && !allStepsCompleted && (
+        {/* Current Step - show even when all steps completed so user can edit */}
+        {currentStep && (
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between mb-2">
