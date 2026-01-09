@@ -228,62 +228,75 @@ export default function ChecklistExecute() {
     }
   };
 
+  type SaveStepPayload = {
+    value: 'ok' | 'deviation';
+    stepId: string;
+    comment: string;
+    photoFile: File | null;
+    photoPreviewUrl: string | null;
+  };
+
   const saveStepResult = useMutation({
-    mutationFn: async (value: 'ok' | 'deviation') => {
-      if (!execution?.id || !currentStep || !user?.id) throw new Error('Missing data');
-      
+    mutationFn: async (payload: SaveStepPayload) => {
+      if (!execution?.id || !user?.id) throw new Error('Missing data');
+
+      const { value, stepId, comment, photoFile, photoPreviewUrl } = payload;
+
       setIsUploading(true);
-      let photoUrl = photoPreview;
-      
+      let photoUrl = photoPreviewUrl;
+
       // Upload photo if new
-      if (currentPhoto) {
-        const filePath = `${execution.id}/${currentStep.id}/${Date.now()}-${currentPhoto.name}`;
+      if (photoFile) {
+        const filePath = `${execution.id}/${stepId}/${Date.now()}-${photoFile.name}`;
         const { error: uploadError } = await supabase.storage
           .from('checklist-photos')
-          .upload(filePath, currentPhoto);
-        
+          .upload(filePath, photoFile);
+
         if (uploadError) throw uploadError;
-        
+
         const { data: urlData } = supabase.storage
           .from('checklist-photos')
           .getPublicUrl(filePath);
-        
+
         photoUrl = urlData.publicUrl;
       }
-      
+
       // Upsert result
       const { error } = await supabase
         .from('checklist_step_results')
-        .upsert({
-          checklist_execution_id: execution.id,
-          checklist_step_id: currentStep.id,
-          confirmed_by: user.id,
-          value: value,
-          comment: currentComment || null,
-          photo_url: photoUrl,
-        }, {
-          onConflict: 'checklist_execution_id,checklist_step_id',
-        });
-      
+        .upsert(
+          {
+            checklist_execution_id: execution.id,
+            checklist_step_id: stepId,
+            confirmed_by: user.id,
+            value,
+            comment: comment ? comment : null,
+            photo_url: photoUrl,
+          },
+          {
+            onConflict: 'checklist_execution_id,checklist_step_id',
+          }
+        );
+
       if (error) throw error;
-      
-      return { stepId: currentStep.id, photoUrl, value };
+
+      return { stepId, photoUrl, value, comment };
     },
-    onSuccess: ({ stepId, photoUrl, value }) => {
+    onSuccess: ({ stepId, photoUrl, value, comment }) => {
       setIsUploading(false);
-      
+
       // Update local state
       setStepResults((prev) => {
         const newMap = new Map(prev);
         newMap.set(stepId, {
           checklist_step_id: stepId,
-          value: value,
-          comment: currentComment,
+          value,
+          comment,
           photo_url: photoUrl,
         });
         return newMap;
       });
-      
+
       // Move to next step or complete
       if (steps && currentStepIndex < steps.length - 1) {
         setCurrentStepIndex(currentStepIndex + 1);
@@ -501,12 +514,22 @@ export default function ChecklistExecute() {
                 <Button
                   variant="destructive"
                   onClick={() => {
+                    if (!currentStep) return;
+
                     if (!currentComment && !showCommentField) {
                       setShowCommentField(true);
                       toast({ title: 'Beskriv felet', description: 'Lägg till en kommentar som beskriver problemet' });
-                    } else {
-                      saveStepResult.mutate('deviation');
+                      return;
                     }
+
+                    setCurrentValue('deviation');
+                    saveStepResult.mutate({
+                      value: 'deviation',
+                      stepId: currentStep.id,
+                      comment: currentComment,
+                      photoFile: currentPhoto,
+                      photoPreviewUrl: photoPreview,
+                    });
                   }}
                   disabled={saveStepResult.isPending}
                   className="h-16 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-base"
@@ -520,7 +543,18 @@ export default function ChecklistExecute() {
                 </Button>
                 
                 <Button
-                  onClick={() => saveStepResult.mutate('ok')}
+                  onClick={() => {
+                    if (!currentStep) return;
+
+                    setCurrentValue('ok');
+                    saveStepResult.mutate({
+                      value: 'ok',
+                      stepId: currentStep.id,
+                      comment: currentComment,
+                      photoFile: currentPhoto,
+                      photoPreviewUrl: photoPreview,
+                    });
+                  }}
                   disabled={saveStepResult.isPending}
                   className="h-16 bg-green-600 hover:bg-green-700 text-white font-semibold text-base"
                 >
