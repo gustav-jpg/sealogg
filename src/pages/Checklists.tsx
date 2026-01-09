@@ -214,6 +214,10 @@ export default function Checklists() {
     if (checklist.inProgressId) {
       return <Badge variant="outline" className="gap-1"><RefreshCw className="h-3 w-3" />Pågår</Badge>;
     }
+    // Show "Ej utförd" for checklists that have never been completed
+    if (checklist.nextDue === 'Ej utförd') {
+      return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Ej utförd</Badge>;
+    }
     switch (checklist.status) {
       case 'overdue':
         return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Förfallen</Badge>;
