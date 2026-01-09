@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
 import NewLogbook from "./pages/NewLogbook";
 import LogbookDetail from "./pages/LogbookDetail";
 import Deviations from "./pages/Deviations";
@@ -82,6 +83,7 @@ function AppRoutes() {
       {/* Portal routes */}
       <Route path="/portal/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/portal/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/portal/reset-password" element={<ResetPassword />} />
       <Route path="/portal" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/portal/logbook/new" element={<ProtectedRoute><NewLogbook /></ProtectedRoute>} />
       <Route path="/portal/logbook/:id" element={<ProtectedRoute><LogbookDetail /></ProtectedRoute>} />
