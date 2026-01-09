@@ -183,12 +183,12 @@ export default function FaultCaseDetail() {
     }
   };
 
-  const getStatusColor = (status: FaultStatus) => {
+  const getStatusColor = (status: FaultStatus): "default" | "secondary" | "destructive" | "outline" | "success" | "warning" => {
     switch (status) {
       case 'avslutad': return 'secondary';
-      case 'atgardad': return 'default';
-      case 'arbete_pagar': return 'outline';
-      case 'varvsatgard': return 'outline';
+      case 'atgardad': return 'success';
+      case 'arbete_pagar': return 'warning';
+      case 'varvsatgard': return 'default';
       case 'ny': return 'destructive';
     }
   };
