@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Anchor, Download, Calendar, Users, Ship } from 'lucide-react';
+import { Anchor, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
@@ -304,59 +304,16 @@ export default function SeaDays() {
           </CardContent>
         </Card>
 
-        {/* Summary Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Calendar className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{totalSeaDays}</p>
-                  <p className="text-xs text-muted-foreground">Totalt sjödagar</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Users className="h-5 w-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{seaDaySummaries.length}</p>
-                  <p className="text-xs text-muted-foreground">Antal personer</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <Ship className="h-5 w-5 text-green-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{vessels?.length || 0}</p>
-                  <p className="text-xs text-muted-foreground">Antal fartyg</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Results */}
         <Card>
-          <CardHeader>
-            <CardTitle>Sjödagar per person</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Sjödagar per person</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-muted animate-pulse rounded" />
+                  <div key={i} className="h-10 bg-muted animate-pulse rounded" />
                 ))}
               </div>
             ) : seaDaySummaries.length === 0 ? (
@@ -364,27 +321,41 @@ export default function SeaDays() {
                 Inga sjödagar hittades för valt år och filter
               </p>
             ) : (
-              <div className="space-y-4">
-                {seaDaySummaries.map((summary) => (
-                  <div
-                    key={summary.profileId}
-                    className="p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-lg">{summary.profileName}</h3>
-                      <Badge variant="secondary" className="text-base px-3 py-1">
-                        {summary.totalDays} dagar totalt
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {summary.byVesselAndRole.map((vr, idx) => (
-                        <Badge key={idx} variant="outline" className="text-sm">
-                          {vr.days} dagar {CREW_ROLE_LABELS[vr.role]} {vr.vesselName}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-3 font-medium">Namn</th>
+                      <th className="text-left p-3 font-medium">Fördelning</th>
+                      <th className="text-right p-3 font-medium">Totalt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {seaDaySummaries.map((summary) => (
+                      <tr key={summary.profileId} className="hover:bg-muted/30">
+                        <td className="p-3 font-medium">{summary.profileName}</td>
+                        <td className="p-3">
+                          <div className="flex flex-wrap gap-1">
+                            {summary.byVesselAndRole.map((vr, idx) => (
+                              <span key={idx} className="text-xs text-muted-foreground">
+                                {vr.days} {CREW_ROLE_LABELS[vr.role]} {vr.vesselName}
+                                {idx < summary.byVesselAndRole.length - 1 && ','}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="p-3 text-right font-semibold">{summary.totalDays}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-muted/50">
+                    <tr>
+                      <td className="p-3 font-semibold">Totalt</td>
+                      <td className="p-3 text-muted-foreground text-sm">{seaDaySummaries.length} personer</td>
+                      <td className="p-3 text-right font-bold">{totalSeaDays}</td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             )}
           </CardContent>
