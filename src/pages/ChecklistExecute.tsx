@@ -205,13 +205,15 @@ export default function ChecklistExecute() {
         setCurrentValue(existingResult.value);
         setCurrentComment(existingResult.comment);
         setPhotoPreview(existingResult.photo_url);
+        // Show comment field if there's an existing comment
+        setShowCommentField(!!existingResult.comment);
       } else {
         setCurrentValue('');
         setCurrentComment('');
         setCurrentPhoto(null);
         setPhotoPreview(null);
+        setShowCommentField(false);
       }
-      setShowCommentField(false);
     }
   }, [currentStepIndex, steps, stepResults]);
 
@@ -622,11 +624,11 @@ export default function ChecklistExecute() {
                   <button
                     key={step.id}
                     onClick={() => setCurrentStepIndex(index)}
-                    className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
+                    className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-colors ${
                       isCurrent ? 'bg-primary/10 border border-primary' : 'hover:bg-muted'
                     }`}
                   >
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
                       isComplete 
                         ? isDeviation 
                           ? 'bg-amber-500 text-black' 
@@ -639,11 +641,20 @@ export default function ChecklistExecute() {
                         isDeviation ? <AlertTriangle className="h-3 w-3" /> : <Check className="h-3 w-3" />
                       ) : index + 1}
                     </div>
-                    <span className={`flex-1 text-sm ${isComplete ? 'text-muted-foreground' : ''}`}>
-                      {step.title}
-                    </span>
-                    {step.requires_comment && <MessageSquare className="h-3 w-3 text-muted-foreground" />}
-                    {step.requires_photo && <Camera className="h-3 w-3 text-muted-foreground" />}
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm ${isComplete ? 'text-muted-foreground' : ''}`}>
+                        {step.title}
+                      </span>
+                      {result?.comment && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {result.comment}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {result?.comment && <MessageSquare className="h-3 w-3 text-muted-foreground" />}
+                      {result?.photo_url && <Camera className="h-3 w-3 text-muted-foreground" />}
+                    </div>
                   </button>
                 );
               })}
