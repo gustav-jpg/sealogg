@@ -26,7 +26,7 @@ import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/Logbo
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown } from 'lucide-react';
 
 interface CrewMember {
   tempId: string;
@@ -417,16 +417,6 @@ export default function LogbookDetail() {
               {format(new Date(logbook.date), 'PPPP', { locale: sv })}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => printContent('logbook-print-content', {
-              title: `Loggbok - ${(logbook as any).vessel?.name}`,
-              subtitle: format(new Date(logbook.date), 'PPPP', { locale: sv }),
-            })}
-          >
-            <Printer className="h-5 w-5" />
-          </Button>
         </div>
 
         <div id="logbook-print-content" className="grid gap-6 lg:grid-cols-3">
@@ -498,15 +488,7 @@ export default function LogbookDetail() {
               </CardHeader>
               <CardContent>
                 {isOpen ? (
-                  <>
-                    <LogbookStops stops={stops} onStopsChange={setStops} disabled={!canEditThis} />
-                    {canEditThis && (
-                      <Button onClick={() => updateLogbook.mutate()} disabled={updateLogbook.isPending} className="w-full sm:w-auto mt-4">
-                        <Save className="h-4 w-4 mr-2" />
-                        {updateLogbook.isPending ? 'Sparar...' : 'Spara ändringar'}
-                      </Button>
-                    )}
-                  </>
+                  <LogbookStops stops={stops} onStopsChange={setStops} disabled={!canEditThis} />
                 ) : (
                   <LogbookStopsDisplay stops={logbookStops || []} />
                 )}
@@ -599,8 +581,16 @@ export default function LogbookDetail() {
               <div className="space-y-3">
                 <Button
                   className="w-full"
+                  onClick={() => updateLogbook.mutate()}
+                  disabled={updateLogbook.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateLogbook.isPending ? 'Sparar...' : 'Spara ändringar'}
+                </Button>
+
+                <Button
+                  className="w-full"
                   variant="secondary"
-                  size="lg"
                   onClick={() => closeLogbook.mutate()}
                   disabled={closeLogbook.isPending || (!validation.isValid && !overrideValidation)}
                 >
@@ -611,7 +601,6 @@ export default function LogbookDetail() {
                 <Button
                   className="w-full"
                   variant="destructive"
-                  size="lg"
                   onClick={() => setShowDeleteDialog(true)}
                   disabled={deleteLogbook.isPending}
                 >
@@ -620,6 +609,18 @@ export default function LogbookDetail() {
                 </Button>
               </div>
             )}
+
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => printContent('logbook-print-content', {
+                title: `Loggbok - ${(logbook as any).vessel?.name}`,
+                subtitle: format(new Date(logbook.date), 'PPPP', { locale: sv }),
+              })}
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportera / Skriv ut
+            </Button>
 
             {!isOpen && (
               <Card className="border-muted">
