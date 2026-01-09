@@ -255,11 +255,11 @@ export default function Checklists() {
     if (checklist.nextDue === 'Ej utförd') {
       return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Ej utförd</Badge>;
     }
+    // Only show status badge for overdue (Förfallen) or OK
+    // "due_soon" is already shown via the green "Utför inom X dagar" badge
     switch (checklist.status) {
       case 'overdue':
         return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Förfallen</Badge>;
-      case 'due_soon':
-        return <Badge variant="default" className="gap-1"><Clock className="h-3 w-3" />Snart</Badge>;
       default:
         return <Badge variant="secondary" className="gap-1"><CheckCircle className="h-3 w-3" />OK</Badge>;
     }
