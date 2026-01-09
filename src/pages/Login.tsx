@@ -5,13 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Waves, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetLoading, setIsResetLoading] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -33,6 +38,41 @@ export default function Login() {
     }
 
     setIsLoading(false);
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'E-post krävs',
+        description: 'Ange din e-postadress.',
+      });
+      return;
+    }
+
+    setIsResetLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/portal/reset-password`,
+    });
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Något gick fel',
+        description: 'Kunde inte skicka återställningslänk. Försök igen.',
+      });
+    } else {
+      toast({
+        title: 'Återställningslänk skickad',
+        description: 'Kontrollera din e-post för att återställa lösenordet.',
+      });
+      setResetDialogOpen(false);
+      setResetEmail('');
+    }
+
+    setIsResetLoading(false);
   };
 
   return (
@@ -77,12 +117,48 @@ export default function Login() {
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Logga in
             </Button>
-            <p className="text-sm text-muted-foreground">
-              Har du inget konto?{' '}
-              <Link to="/portal/register" className="text-primary hover:underline">
-                Registrera dig
-              </Link>
-            </p>
+            <div className="flex flex-col items-center gap-2 text-sm">
+              <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                <DialogTrigger asChild>
+                  <button type="button" className="text-primary hover:underline">
+                    Glömt lösenord?
+                  </button>
+                </DialogTrigger>
+                <DialogContent>
+                  <form onSubmit={handlePasswordReset}>
+                    <DialogHeader>
+                      <DialogTitle>Återställ lösenord</DialogTitle>
+                      <DialogDescription>
+                        Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <Label htmlFor="reset-email">E-postadress</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="din@email.se"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="mt-2"
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={isResetLoading}>
+                        {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Skicka återställningslänk
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <p className="text-muted-foreground">
+                Har du inget konto?{' '}
+                <Link to="/portal/register" className="text-primary hover:underline">
+                  Registrera dig
+                </Link>
+              </p>
+            </div>
           </CardFooter>
         </form>
       </Card>
