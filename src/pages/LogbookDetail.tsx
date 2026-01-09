@@ -55,6 +55,13 @@ export default function LogbookDetail() {
   const [showCrewDialog, setShowCrewDialog] = useState(false);
   const [editableCrew, setEditableCrew] = useState<CrewMember[]>([]);
   const [fetchingWind, setFetchingWind] = useState(false);
+  const [selectedSmhiStation, setSelectedSmhiStation] = useState('98040');
+
+  const smhiStations = [
+    { id: '98040', name: 'Berga' },
+    { id: '97400', name: 'Arlanda' },
+    { id: '99280', name: 'Svenska Högarna' },
+  ];
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -377,7 +384,7 @@ export default function LogbookDetail() {
     setFetchingWind(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-wind-data', {
-        body: { stationId: '98040' }, // Berga (SMHI) - nära Stockholms inlopp
+        body: { stationId: selectedSmhiStation },
       });
       
       if (error) throw error;
@@ -488,6 +495,20 @@ export default function LogbookDetail() {
                         placeholder="T.ex. SV 5 m/s"
                         className="flex-1"
                       />
+                      {canEditThis && (
+                        <Select value={selectedSmhiStation} onValueChange={setSelectedSmhiStation}>
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Station" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {smhiStations.map(station => (
+                              <SelectItem key={station.id} value={station.id}>
+                                {station.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                       {canEditThis && (
                         <Button
                           type="button"
