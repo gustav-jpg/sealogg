@@ -9,15 +9,11 @@ interface WindData {
   averageSpeed: string;
   direction: string;
   timestamp: string;
+  source: string;
 }
 
-// SMHI Parameter IDs
-const PARAM_WIND_SPEED = 4;      // Vindhastighet (momentan)
-const PARAM_WIND_DIRECTION = 3;  // Vindriktning (momentan)  
-const PARAM_WIND_GUST = 21;      // Vindby (max under senaste timmen)
-
-// Stockholm-Bromma station ID for SMHI
-const DEFAULT_SMHI_STATION = '97400'; // Stockholm-Bromma flygplats
+// Default station - Blockhusudden
+const DEFAULT_VIVA_STATION = '141';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -25,83 +21,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { stationId = DEFAULT_SMHI_STATION } = await req.json().catch(() => ({}));
+    const { stationId = DEFAULT_VIVA_STATION, source = 'viva' } = await req.json().catch(() => ({}));
     
-    console.log(`Fetching wind data from SMHI for station: ${stationId}`);
+    console.log(`Fetching wind data from ${source} for station: ${stationId}`);
 
-    // Fetch wind speed, direction, and gust in parallel
-    const baseUrl = 'https://opendata-download-metobs.smhi.se/api/version/1.0';
-    
-    const [speedRes, dirRes, gustRes] = await Promise.all([
-      fetch(`${baseUrl}/parameter/${PARAM_WIND_SPEED}/station/${stationId}/period/latest-hour/data.json`),
-      fetch(`${baseUrl}/parameter/${PARAM_WIND_DIRECTION}/station/${stationId}/period/latest-hour/data.json`),
-      fetch(`${baseUrl}/parameter/${PARAM_WIND_GUST}/station/${stationId}/period/latest-hour/data.json`),
-    ]);
-
-    let avgSpeed = 'Ej tillgänglig';
-    let direction = 'Ej tillgänglig';
-    let gustSpeed = 'Ej tillgänglig';
-    let timestamp = new Date().toLocaleTimeString('sv-SE');
-    let stationName = `Station ${stationId}`;
-
-    // Parse wind speed
-    if (speedRes.ok) {
-      const speedData = await speedRes.json();
-      stationName = speedData.station?.name || stationName;
-      const values = speedData.value || [];
-      if (values.length > 0) {
-        const latest = values[values.length - 1];
-        avgSpeed = `${latest.value} m/s`;
-        if (latest.date) {
-          timestamp = new Date(latest.date).toLocaleTimeString('sv-SE');
-        }
+    // Try ViVa first
+    if (source === 'viva') {
+      const vivaResult = await fetchFromViVa(stationId);
+      if (vivaResult) {
+        return new Response(
+          JSON.stringify({ success: true, data: vivaResult }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    } else {
-      console.log(`Wind speed fetch failed: ${speedRes.status}`);
+      console.log('ViVa failed, falling back to SMHI...');
     }
 
-    // Parse wind direction
-    if (dirRes.ok) {
-      const dirData = await dirRes.json();
-      const values = dirData.value || [];
-      if (values.length > 0) {
-        const latest = values[values.length - 1];
-        const degrees = parseFloat(latest.value);
-        if (!isNaN(degrees)) {
-          const compassDir = degreesToCompass(degrees);
-          direction = `${compassDir} ${Math.round(degrees)}°`;
-        }
-      }
-    } else {
-      console.log(`Wind direction fetch failed: ${dirRes.status}`);
-    }
-
-    // Parse wind gust
-    if (gustRes.ok) {
-      const gustData = await gustRes.json();
-      const values = gustData.value || [];
-      if (values.length > 0) {
-        const latest = values[values.length - 1];
-        gustSpeed = `${latest.value} m/s`;
-      }
-    } else {
-      console.log(`Wind gust fetch failed: ${gustRes.status}`);
-    }
-
-    const windData: WindData = {
-      stationName,
-      gustSpeed,
-      averageSpeed: avgSpeed,
-      direction,
-      timestamp,
-    };
-
-    console.log('Parsed wind data:', windData);
-
+    // Fallback to SMHI
+    const smhiResult = await fetchFromSMHI(stationId === DEFAULT_VIVA_STATION ? '98040' : stationId);
     return new Response(
-      JSON.stringify({ success: true, data: windData }),
+      JSON.stringify({ success: true, data: smhiResult }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   } catch (error) {
     console.error('Error fetching wind data:', error);
     return new Response(
@@ -113,6 +55,157 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+async function fetchFromViVa(stationId: string): Promise<WindData | null> {
+  try {
+    // Try the internal ViVa endpoint
+    const url = `https://viva.sjofartsverket.se/VisualiseraV7/Service/Station.ashx?id=${stationId}`;
+    console.log('Trying ViVa URL:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Referer': 'https://viva.sjofartsverket.se/',
+      },
+    });
+
+    if (!response.ok) {
+      console.log(`ViVa response not OK: ${response.status}`);
+      return null;
+    }
+
+    const text = await response.text();
+    console.log('ViVa response (first 500 chars):', text.substring(0, 500));
+
+    // Check if it's HTML (error page)
+    if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
+      console.log('ViVa returned HTML, not JSON');
+      return null;
+    }
+
+    const data = JSON.parse(text);
+    
+    let avgSpeed = 'Ej tillgänglig';
+    let gustSpeed = 'Ej tillgänglig';
+    let direction = 'Ej tillgänglig';
+    let timestamp = new Date().toLocaleTimeString('sv-SE');
+    const stationName = data.Name || data.name || `ViVa Station ${stationId}`;
+
+    // Parse samples
+    const samples = data.Samples || data.samples || [];
+    for (const sample of samples) {
+      const name = (sample.Name || sample.name || '').toLowerCase();
+      const value = sample.Value ?? sample.value;
+      const unit = sample.Unit || sample.unit || 'm/s';
+
+      if (name.includes('medelvind') || name.includes('vindhastighet')) {
+        if (value !== undefined && value !== null) {
+          avgSpeed = `${value} ${unit}`;
+        }
+      }
+
+      if (name.includes('byvind') || name.includes('vindby')) {
+        if (value !== undefined && value !== null) {
+          gustSpeed = `${value} ${unit}`;
+        }
+      }
+
+      if (name.includes('vindriktning') || name.includes('riktning')) {
+        if (value !== undefined && value !== null) {
+          const degrees = parseFloat(value);
+          if (!isNaN(degrees)) {
+            const compassDir = degreesToCompass(degrees);
+            direction = `${compassDir} ${Math.round(degrees)}°`;
+          }
+        }
+      }
+
+      if (sample.Updated || sample.updated || sample.Time) {
+        const updated = new Date(sample.Updated || sample.updated || sample.Time);
+        if (!isNaN(updated.getTime())) {
+          timestamp = updated.toLocaleTimeString('sv-SE');
+        }
+      }
+    }
+
+    return {
+      stationName,
+      gustSpeed,
+      averageSpeed: avgSpeed,
+      direction,
+      timestamp,
+      source: 'Sjöfartsverket ViVa',
+    };
+  } catch (error) {
+    console.error('ViVa fetch error:', error);
+    return null;
+  }
+}
+
+async function fetchFromSMHI(stationId: string): Promise<WindData> {
+  const PARAM_WIND_SPEED = 4;
+  const PARAM_WIND_DIRECTION = 3;
+  const PARAM_WIND_GUST = 21;
+  
+  const baseUrl = 'https://opendata-download-metobs.smhi.se/api/version/1.0';
+  
+  const [speedRes, dirRes, gustRes] = await Promise.all([
+    fetch(`${baseUrl}/parameter/${PARAM_WIND_SPEED}/station/${stationId}/period/latest-hour/data.json`),
+    fetch(`${baseUrl}/parameter/${PARAM_WIND_DIRECTION}/station/${stationId}/period/latest-hour/data.json`),
+    fetch(`${baseUrl}/parameter/${PARAM_WIND_GUST}/station/${stationId}/period/latest-hour/data.json`),
+  ]);
+
+  let avgSpeed = 'Ej tillgänglig';
+  let direction = 'Ej tillgänglig';
+  let gustSpeed = 'Ej tillgänglig';
+  let timestamp = new Date().toLocaleTimeString('sv-SE');
+  let stationName = `SMHI Station ${stationId}`;
+
+  if (speedRes.ok) {
+    const speedData = await speedRes.json();
+    stationName = speedData.station?.name || stationName;
+    const values = speedData.value || [];
+    if (values.length > 0) {
+      const latest = values[values.length - 1];
+      avgSpeed = `${latest.value} m/s`;
+      if (latest.date) {
+        timestamp = new Date(latest.date).toLocaleTimeString('sv-SE');
+      }
+    }
+  }
+
+  if (dirRes.ok) {
+    const dirData = await dirRes.json();
+    const values = dirData.value || [];
+    if (values.length > 0) {
+      const latest = values[values.length - 1];
+      const degrees = parseFloat(latest.value);
+      if (!isNaN(degrees)) {
+        const compassDir = degreesToCompass(degrees);
+        direction = `${compassDir} ${Math.round(degrees)}°`;
+      }
+    }
+  }
+
+  if (gustRes.ok) {
+    const gustData = await gustRes.json();
+    const values = gustData.value || [];
+    if (values.length > 0) {
+      const latest = values[values.length - 1];
+      gustSpeed = `${latest.value} m/s`;
+    }
+  }
+
+  return {
+    stationName,
+    gustSpeed,
+    averageSpeed: avgSpeed,
+    direction,
+    timestamp,
+    source: 'SMHI',
+  };
+}
 
 function degreesToCompass(degrees: number): string {
   const directions = ['N', 'NO', 'O', 'SO', 'S', 'SV', 'V', 'NV'];
