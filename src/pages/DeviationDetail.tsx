@@ -51,7 +51,15 @@ export default function DeviationDetail() {
         .eq('id', id)
         .single();
       if (error) throw error;
-      return data;
+      
+      // Fetch creator profile
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', data.created_by)
+        .maybeSingle();
+      
+      return { ...data, creator_profile: creatorProfile };
     },
     enabled: !!id,
   });
@@ -65,7 +73,16 @@ export default function DeviationDetail() {
         .eq('deviation_id', id)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return data;
+      
+      // Fetch profiles for all action creators
+      const userIds = [...new Set(data.map(a => a.created_by).filter(Boolean))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+      return data.map(a => ({ ...a, creator_name: profileMap.get(a.created_by) || 'Okänd' }));
     },
     enabled: !!id,
   });
@@ -79,7 +96,16 @@ export default function DeviationDetail() {
         .eq('deviation_id', id)
         .order('responded_at', { ascending: true });
       if (error) throw error;
-      return data;
+      
+      // Fetch profiles for all responders
+      const userIds = [...new Set(data.map(r => r.responded_by).filter(Boolean))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+      return data.map(r => ({ ...r, responder_name: profileMap.get(r.responded_by) || 'Okänd' }));
     },
     enabled: !!id,
   });
@@ -263,7 +289,7 @@ export default function DeviationDetail() {
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Rapporterad av</Label>
-                    <p className="font-medium">{deviation.created_by ? `User ${String(deviation.created_by).slice(0, 8)}` : 'Okänd'}</p>
+                    <p className="font-medium">{(deviation as any).creator_profile?.full_name || 'Okänd'}</p>
                   </div>
                 </div>
                 <div>
@@ -313,7 +339,7 @@ export default function DeviationDetail() {
                       <div key={action.id} className="p-3 rounded bg-muted/50">
                         <p>{action.action_text}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {action.created_by ? `User ${String(action.created_by).slice(0, 8)}` : 'Okänd'} • {format(new Date(action.created_at), 'PPP HH:mm', { locale: sv })}
+                          {(action as any).creator_name} • {format(new Date(action.created_at), 'PPP HH:mm', { locale: sv })}
                         </p>
                       </div>
                     ))}
@@ -352,7 +378,7 @@ export default function DeviationDetail() {
                       <div key={response.id} className="p-3 rounded bg-primary/10 border border-primary/20">
                         <p>{response.response_text}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {response.responded_by ? `User ${String(response.responded_by).slice(0, 8)}` : 'Okänd'} • {format(new Date(response.responded_at), 'PPP HH:mm', { locale: sv })}
+                          {(response as any).responder_name} • {format(new Date(response.responded_at), 'PPP HH:mm', { locale: sv })}
                         </p>
                       </div>
                     ))}
