@@ -377,15 +377,18 @@ export default function LogbookDetail() {
     setFetchingWind(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-wind-data', {
-        body: { stationId: '141' }, // Blockhusudden
+        body: { stationId: '97400' }, // Stockholm-Bromma (SMHI)
       });
       
       if (error) throw error;
       
       if (data?.success && data?.data) {
         const windInfo = data.data;
-        // Format: "NO 54° medel 8.6 m/s (byvind 12.1 m/s)"
-        const windString = `${windInfo.direction} medel ${windInfo.averageSpeed} (byvind ${windInfo.gustSpeed})`;
+        // Format: "NO 40° medel 4.0 m/s" or with gust if available
+        let windString = `${windInfo.direction} ${windInfo.averageSpeed}`;
+        if (windInfo.gustSpeed && windInfo.gustSpeed !== 'Ej tillgänglig') {
+          windString += ` (by ${windInfo.gustSpeed})`;
+        }
         setWind(windString);
         toast({ 
           title: 'Vinddata hämtad', 
@@ -398,7 +401,7 @@ export default function LogbookDetail() {
       console.error('Error fetching wind:', error);
       toast({ 
         title: 'Fel', 
-        description: 'Kunde inte hämta vinddata från Sjöfartsverket', 
+        description: 'Kunde inte hämta vinddata från SMHI', 
         variant: 'destructive' 
       });
     } finally {
