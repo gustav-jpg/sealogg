@@ -339,14 +339,24 @@ export default function Checklists() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="font-medium">{checklist.name}</span>
                               {getStatusBadge(checklist)}
-                              {checklist.interval_days && (
-                                <Badge variant="outline" className="gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  Var {checklist.interval_days}:e dag
-                                </Badge>
+                              {checklist.interval_days && checklist.daysRemaining !== null && (
+                                checklist.daysRemaining >= 0 ? (
+                                  <Badge variant="outline" className="gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    Utför inom {checklist.daysRemaining} dagar
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="gap-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    Försenat {Math.abs(checklist.daysRemaining)} dagar
+                                  </Badge>
+                                )
+                              )}
+                              {checklist.nextDue === 'Ej utförd' && (
+                                <Badge variant="destructive">Ej utförd</Badge>
                               )}
                               {!checklist.interval_days && (
                                 <Badge variant="outline">Manuell</Badge>
@@ -355,25 +365,11 @@ export default function Checklists() {
                             {checklist.description && (
                               <p className="text-sm text-muted-foreground line-clamp-1">{checklist.description}</p>
                             )}
-                            <div className="flex items-center gap-4 text-sm mt-1">
-                              {checklist.lastCompleted && (
-                                <span className="text-muted-foreground">Senast: {format(new Date(checklist.lastCompleted), 'd MMM yyyy', { locale: sv })}</span>
-                              )}
-                              {checklist.interval_days && checklist.daysRemaining !== null && (
-                                checklist.daysRemaining >= 0 ? (
-                                  <span className="text-muted-foreground">
-                                    Utför inom: <span className="font-medium text-foreground">{checklist.daysRemaining} dagar</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-destructive font-medium">
-                                    Försenat: {Math.abs(checklist.daysRemaining)} dagar
-                                  </span>
-                                )
-                              )}
-                              {checklist.nextDue === 'Ej utförd' && (
-                                <span className="text-destructive font-medium">Ej utförd</span>
-                              )}
-                            </div>
+                            {checklist.lastCompleted && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Senast: {format(new Date(checklist.lastCompleted), 'd MMM yyyy', { locale: sv })}
+                              </p>
+                            )}
                           </div>
                           <div className="flex gap-2">
                             {checklist.inProgressId ? (
