@@ -33,7 +33,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format, differenceInDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { ClipboardList, Play, AlertTriangle, Clock, CheckCircle, Calendar, RefreshCw, History, Eye, Check, X, MessageSquare, Camera, Filter } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -55,7 +55,10 @@ interface ChecklistWithStatus {
 
 export default function Checklists() {
   const { user } = useAuth();
-  const [selectedVessel, setSelectedVessel] = useState<string>('');
+  const [searchParams] = useSearchParams();
+  const vesselFromUrl = searchParams.get('vessel');
+  
+  const [selectedVessel, setSelectedVessel] = useState<string>(vesselFromUrl || '');
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
   

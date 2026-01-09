@@ -443,12 +443,15 @@ export default function ChecklistExecute() {
     );
   }
 
+  // Get the vessel ID for navigation
+  const currentVesselId = vessel?.id || vesselId || existingExecution?.vessel_id;
+
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/portal/checklists')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(currentVesselId ? `/portal/checklists?vessel=${currentVesselId}` : '/portal/checklists')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
