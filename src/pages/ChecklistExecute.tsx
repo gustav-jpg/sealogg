@@ -4,19 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { format, addDays } from 'date-fns';
-import { sv } from 'date-fns/locale';
-import { ClipboardList, Check, X, Camera, MessageSquare, ArrowLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { ClipboardList, Check, Camera, ArrowLeft, Loader2, CheckCircle, AlertTriangle, MessageSquare } from 'lucide-react';
 
 interface ChecklistStep {
   id: string;
@@ -54,6 +50,7 @@ export default function ChecklistExecute() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [execution, setExecution] = useState<any>(null);
+  const [showCommentField, setShowCommentField] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch or create execution
@@ -120,7 +117,7 @@ export default function ChecklistExecute() {
     enabled: !!execution?.id,
   });
 
-  // Fetch vessel name
+  // Fetch vessel
   const { data: vessel } = useQuery({
     queryKey: ['vessel', vesselId || existingExecution?.vessel_id],
     queryFn: async () => {
@@ -213,6 +210,7 @@ export default function ChecklistExecute() {
         setCurrentPhoto(null);
         setPhotoPreview(null);
       }
+      setShowCommentField(false);
     }
   }, [currentStepIndex, steps, stepResults]);
 
@@ -227,19 +225,8 @@ export default function ChecklistExecute() {
     }
   };
 
-  const canConfirmStep = () => {
-    if (!currentStep) return false;
-    
-    if (currentStep.confirmation_type === 'checkbox' && currentValue !== 'checked') return false;
-    if (currentStep.confirmation_type === 'yes_no' && !['yes', 'no'].includes(currentValue)) return false;
-    if (currentStep.requires_comment && !currentComment.trim()) return false;
-    if (currentStep.requires_photo && !currentPhoto && !photoPreview) return false;
-    
-    return true;
-  };
-
   const saveStepResult = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (value: 'ok' | 'deviation') => {
       if (!execution?.id || !currentStep || !user?.id) throw new Error('Missing data');
       
       setIsUploading(true);
@@ -268,7 +255,7 @@ export default function ChecklistExecute() {
           checklist_execution_id: execution.id,
           checklist_step_id: currentStep.id,
           confirmed_by: user.id,
-          value: currentValue,
+          value: value,
           comment: currentComment || null,
           photo_url: photoUrl,
         }, {
@@ -277,9 +264,9 @@ export default function ChecklistExecute() {
       
       if (error) throw error;
       
-      return { stepId: currentStep.id, photoUrl };
+      return { stepId: currentStep.id, photoUrl, value };
     },
-    onSuccess: ({ stepId, photoUrl }) => {
+    onSuccess: ({ stepId, photoUrl, value }) => {
       setIsUploading(false);
       
       // Update local state
@@ -287,7 +274,7 @@ export default function ChecklistExecute() {
         const newMap = new Map(prev);
         newMap.set(stepId, {
           checklist_step_id: stepId,
-          value: currentValue,
+          value: value,
           comment: currentComment,
           photo_url: photoUrl,
         });
@@ -301,9 +288,8 @@ export default function ChecklistExecute() {
         setCurrentComment('');
         setCurrentPhoto(null);
         setPhotoPreview(null);
+        setShowCommentField(false);
       }
-      
-      toast({ title: 'Steg bekräftat' });
     },
     onError: (error) => {
       setIsUploading(false);
@@ -313,11 +299,31 @@ export default function ChecklistExecute() {
 
   const completeChecklist = useMutation({
     mutationFn: async () => {
-      if (!execution?.id || !template) throw new Error('Missing data');
+      if (!execution?.id || !template || !vessel || !user?.id) throw new Error('Missing data');
       
-      // Check if any step has "no" answer
-      const hasFailedStep = Array.from(stepResults.values()).some((r) => r.value === 'no');
-      const status = hasFailedStep ? 'failed' : 'completed';
+      // Find steps with deviations
+      const deviationSteps = Array.from(stepResults.entries())
+        .filter(([_, result]) => result.value === 'deviation')
+        .map(([stepId, result]) => {
+          const step = steps?.find(s => s.id === stepId);
+          return { step, result };
+        });
+      
+      // Create fault cases for deviations
+      for (const { step, result } of deviationSteps) {
+        if (step) {
+          await supabase
+            .from('fault_cases')
+            .insert({
+              vessel_id: vessel.id,
+              title: `Avvikelse: ${step.title}`,
+              description: result.comment || `Avvikelse upptäckt vid checklista "${template.name}" - ${step.instruction}`,
+              created_by: user.id,
+              priority: 'normal',
+              status: 'ny',
+            });
+        }
+      }
       
       // Calculate next due date if interval-based
       let nextDueAt = null;
@@ -325,24 +331,31 @@ export default function ChecklistExecute() {
         nextDueAt = format(addDays(new Date(), template.interval_days), 'yyyy-MM-dd');
       }
       
+      // Always mark as completed (even with deviations)
       const { error } = await supabase
         .from('checklist_executions')
         .update({
-          status,
+          status: 'completed',
           completed_at: new Date().toISOString(),
           next_due_at: nextDueAt,
         })
         .eq('id', execution.id);
       
       if (error) throw error;
-      return status;
+      return deviationSteps.length;
     },
-    onSuccess: (status) => {
+    onSuccess: (deviationCount) => {
       queryClient.invalidateQueries({ queryKey: ['checklist-executions'] });
-      toast({ 
-        title: status === 'completed' ? 'Checklista slutförd' : 'Checklista markerad som misslyckad',
-        description: status === 'failed' ? 'Ett eller flera steg besvarades med "Nej"' : undefined,
-      });
+      queryClient.invalidateQueries({ queryKey: ['fault-cases'] });
+      
+      if (deviationCount > 0) {
+        toast({ 
+          title: 'Checklista slutförd',
+          description: `${deviationCount} felärende(n) har skapats för avvikelser`,
+        });
+      } else {
+        toast({ title: 'Checklista slutförd' });
+      }
       navigate('/portal/checklists');
     },
     onError: (error) => {
@@ -351,6 +364,7 @@ export default function ChecklistExecute() {
   });
 
   const allStepsCompleted = steps && stepResults.size === steps.length;
+  const deviationCount = Array.from(stepResults.values()).filter(r => r.value === 'deviation').length;
 
   if (loadingExecution || createExecution.isPending) {
     return (
@@ -381,168 +395,163 @@ export default function ChecklistExecute() {
 
   return (
     <MainLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mb-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/portal/checklists')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-display font-bold">{template.name}</h1>
-            <p className="text-muted-foreground">{vessel?.name}</p>
+            <h1 className="text-xl font-display font-bold">{template.name}</h1>
+            <p className="text-sm text-muted-foreground">{vessel?.name}</p>
           </div>
         </div>
 
-        {/* Progress */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Framsteg</span>
-              <span className="text-sm text-muted-foreground">
-                {stepResults.size} av {steps.length} steg
-              </span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </CardContent>
-        </Card>
-
-        {/* Current Step */}
+        {/* Current Step - Full Screen Style */}
         {currentStep && !allStepsCompleted && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <Badge variant="outline">Steg {currentStepIndex + 1} av {steps.length}</Badge>
-                {currentStep.requires_comment && <Badge variant="secondary"><MessageSquare className="h-3 w-3 mr-1" />Kommentar krävs</Badge>}
-                {currentStep.requires_photo && <Badge variant="secondary"><Camera className="h-3 w-3 mr-1" />Foto krävs</Badge>}
-              </div>
-              <CardTitle className="mt-2">{currentStep.title}</CardTitle>
-              <CardDescription className="whitespace-pre-wrap">{currentStep.instruction}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Confirmation */}
-              {currentStep.confirmation_type === 'checkbox' ? (
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="confirm"
-                    checked={currentValue === 'checked'}
-                    onCheckedChange={(checked) => setCurrentValue(checked ? 'checked' : '')}
-                  />
-                  <Label htmlFor="confirm" className="text-base cursor-pointer">
-                    Jag bekräftar att detta steg är utfört
-                  </Label>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Label>Svar</Label>
-                  <RadioGroup value={currentValue} onValueChange={setCurrentValue}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="yes" id="yes" />
-                      <Label htmlFor="yes" className="flex items-center gap-2 cursor-pointer">
-                        <Check className="h-4 w-4 text-green-600" />
-                        Ja
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="no" id="no" />
-                      <Label htmlFor="no" className="flex items-center gap-2 cursor-pointer">
-                        <X className="h-4 w-4 text-red-600" />
-                        Nej
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              )}
-
-              {/* Comment */}
-              <div className="space-y-2">
-                <Label>
-                  Kommentar {currentStep.requires_comment && <span className="text-destructive">*</span>}
-                </Label>
+          <div className="bg-zinc-900 rounded-xl overflow-hidden">
+            {/* Progress Bar */}
+            <div className="h-2 bg-zinc-800">
+              <div 
+                className="h-full bg-green-500 transition-all duration-300" 
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            
+            {/* Step Content */}
+            <div className="p-6 text-center min-h-[250px] flex flex-col justify-center">
+              <p className="text-zinc-500 text-sm mb-2">
+                Steg {currentStepIndex + 1} av {steps.length}
+              </p>
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                {currentStep.title}
+              </h2>
+              <p className="text-zinc-400 text-base md:text-lg max-w-md mx-auto">
+                {currentStep.instruction}
+              </p>
+            </div>
+            
+            {/* Divider */}
+            <div className="border-t border-zinc-700 mx-4" />
+            
+            {/* Comment/Photo Section (optional) */}
+            {(showCommentField || currentStep.requires_comment || photoPreview) && (
+              <div className="p-4 space-y-3">
                 <Textarea
                   value={currentComment}
                   onChange={(e) => setCurrentComment(e.target.value)}
-                  placeholder="Lägg till en kommentar..."
-                  rows={3}
+                  placeholder="Lägg till kommentar..."
+                  className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  rows={2}
                 />
+                {photoPreview && (
+                  <img src={photoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
+                )}
               </div>
-
-              {/* Photo */}
-              <div className="space-y-2">
-                <Label>
-                  Foto {currentStep.requires_photo && <span className="text-destructive">*</span>}
-                </Label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                />
-                {photoPreview ? (
-                  <div className="relative">
-                    <img src={photoPreview} alt="Preview" className="w-full max-h-48 object-cover rounded-lg" />
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setCurrentPhoto(null);
-                        setPhotoPreview(null);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-0">
+              {/* Deviation Button (Yellow) */}
+              <button
+                onClick={() => {
+                  if (!showCommentField) {
+                    setShowCommentField(true);
+                  } else {
+                    saveStepResult.mutate('deviation');
+                  }
+                }}
+                disabled={saveStepResult.isPending}
+                className="bg-amber-500 hover:bg-amber-400 text-black py-8 flex flex-col items-center justify-center gap-2 transition-colors disabled:opacity-50"
+              >
+                {saveStepResult.isPending && currentValue === 'deviation' ? (
+                  <Loader2 className="h-12 w-12 animate-spin" />
                 ) : (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Ta foto eller välj bild
-                  </Button>
+                  <AlertTriangle className="h-12 w-12" strokeWidth={3} />
                 )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-4">
-                {currentStepIndex > 0 && (
-                  <Button variant="outline" onClick={() => setCurrentStepIndex(currentStepIndex - 1)}>
-                    Föregående
-                  </Button>
+                <span className="text-sm font-semibold">
+                  {showCommentField ? 'Bekräfta avvikelse' : 'Avvikelse'}
+                </span>
+              </button>
+              
+              {/* OK Button (Green) */}
+              <button
+                onClick={() => saveStepResult.mutate('ok')}
+                disabled={saveStepResult.isPending}
+                className="bg-green-500 hover:bg-green-400 text-white py-8 flex flex-col items-center justify-center gap-2 transition-colors disabled:opacity-50"
+              >
+                {saveStepResult.isPending && currentValue === 'ok' ? (
+                  <Loader2 className="h-12 w-12 animate-spin" />
+                ) : (
+                  <Check className="h-12 w-12" strokeWidth={3} />
                 )}
+                <span className="text-sm font-semibold">OK</span>
+              </button>
+            </div>
+            
+            {/* Extra Actions */}
+            <div className="flex justify-center gap-4 p-4 bg-zinc-800">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-zinc-400 hover:text-white"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Foto
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCommentField(!showCommentField)}
+                className="text-zinc-400 hover:text-white"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Kommentar
+              </Button>
+              {currentStepIndex > 0 && (
                 <Button
-                  className="flex-1"
-                  disabled={!canConfirmStep() || saveStepResult.isPending}
-                  onClick={() => saveStepResult.mutate()}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
+                  className="text-zinc-400 hover:text-white"
                 >
-                  {saveStepResult.isPending || isUploading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4 mr-2" />
-                  )}
-                  {currentStepIndex < steps.length - 1 ? 'Bekräfta & Nästa' : 'Bekräfta'}
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Föregående
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Completion */}
         {allStepsCompleted && (
-          <Card>
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="py-12 text-center">
-              <CheckCircle className="h-16 w-16 mx-auto text-green-600 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Alla steg är bekräftade</h2>
-              <p className="text-muted-foreground mb-6">
+              <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
+              <h2 className="text-xl font-semibold text-white mb-2">Alla steg är bekräftade</h2>
+              {deviationCount > 0 && (
+                <p className="text-amber-400 mb-4">
+                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  {deviationCount} avvikelse(r) - felärenden skapas automatiskt
+                </p>
+              )}
+              <p className="text-zinc-400 mb-6">
                 Klicka nedan för att slutföra checklistan
               </p>
               <Button
                 size="lg"
                 onClick={() => completeChecklist.mutate()}
                 disabled={completeChecklist.isPending}
+                className="bg-green-500 hover:bg-green-400 text-white"
               >
                 {completeChecklist.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -557,16 +566,16 @@ export default function ChecklistExecute() {
 
         {/* Step overview */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg">Översikt</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {steps.map((step, index) => {
                 const result = stepResults.get(step.id);
                 const isComplete = !!result;
                 const isCurrent = index === currentStepIndex && !allStepsCompleted;
-                const isFailed = result?.value === 'no';
+                const isDeviation = result?.value === 'deviation';
                 
                 return (
                   <button
@@ -578,14 +587,16 @@ export default function ChecklistExecute() {
                   >
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
                       isComplete 
-                        ? isFailed 
-                          ? 'bg-destructive text-destructive-foreground' 
-                          : 'bg-green-600 text-white'
+                        ? isDeviation 
+                          ? 'bg-amber-500 text-black' 
+                          : 'bg-green-500 text-white'
                         : isCurrent 
                           ? 'bg-primary text-primary-foreground' 
                           : 'bg-muted text-muted-foreground'
                     }`}>
-                      {isComplete ? (isFailed ? <AlertCircle className="h-3 w-3" /> : <Check className="h-3 w-3" />) : index + 1}
+                      {isComplete ? (
+                        isDeviation ? <AlertTriangle className="h-3 w-3" /> : <Check className="h-3 w-3" />
+                      ) : index + 1}
                     </div>
                     <span className={`flex-1 text-sm ${isComplete ? 'text-muted-foreground' : ''}`}>
                       {step.title}
