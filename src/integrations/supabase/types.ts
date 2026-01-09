@@ -945,6 +945,7 @@ export type Database = {
       logbooks: {
         Row: {
           arrival_time: string | null
+          bunker_liters: number | null
           closed_at: string | null
           closed_by: string | null
           created_at: string
@@ -964,6 +965,7 @@ export type Database = {
         }
         Insert: {
           arrival_time?: string | null
+          bunker_liters?: number | null
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string
@@ -983,6 +985,7 @@ export type Database = {
         }
         Update: {
           arrival_time?: string | null
+          bunker_liters?: number | null
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string

@@ -45,6 +45,7 @@ export default function NewLogbook() {
   const [weather, setWeather] = useState('');
   const [wind, setWind] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
+  const [bunkerLiters, setBunkerLiters] = useState('');
   const [stops, setStops] = useState<StopEntry[]>([]);
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [engineHours, setEngineHours] = useState<EngineHourEntry[]>([]);
@@ -150,6 +151,7 @@ export default function NewLogbook() {
           weather: weather || null,
           wind: wind || null,
           general_notes: generalNotes || null,
+          bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
           created_by: user.id,
           status: 'oppen',
         })
@@ -289,6 +291,10 @@ export default function NewLogbook() {
                         <Label htmlFor="wind">Vind</Label>
                         <Input id="wind" value={wind} onChange={e => setWind(e.target.value)} placeholder="T.ex. SV 5 m/s" />
                       </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bunker">Bunker (liter)</Label>
+                      <Input id="bunker" type="number" value={bunkerLiters} onChange={e => setBunkerLiters(e.target.value)} placeholder="T.ex. 500" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="notes">Allmänna anteckningar</Label>

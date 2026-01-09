@@ -32,6 +32,7 @@ export default function LogbookDetail() {
   const [weather, setWeather] = useState('');
   const [wind, setWind] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
+  const [bunkerLiters, setBunkerLiters] = useState('');
   const [stops, setStops] = useState<StopEntry[]>([]);
   const [stopsInitialized, setStopsInitialized] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -67,6 +68,7 @@ export default function LogbookDetail() {
       setWeather(logbook.weather || '');
       setWind(logbook.wind || '');
       setGeneralNotes(logbook.general_notes || '');
+      setBunkerLiters(logbook.bunker_liters?.toString() || '');
       setInitialized(true);
     }
   }, [logbook, initialized]);
@@ -146,6 +148,7 @@ export default function LogbookDetail() {
           weather: weather || null,
           wind: wind || null,
           general_notes: generalNotes || null,
+          bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
         })
         .eq('id', id);
       if (error) throw error;
@@ -217,6 +220,7 @@ export default function LogbookDetail() {
           weather: weather || null,
           wind: wind || null,
           general_notes: generalNotes || null,
+          bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
           status: 'stangd',
           closed_at: new Date().toISOString(),
           closed_by: user?.id,
@@ -373,6 +377,17 @@ export default function LogbookDetail() {
                       placeholder="T.ex. SV 5 m/s"
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bunker">Bunker (liter)</Label>
+                  <Input
+                    id="bunker"
+                    type="number"
+                    value={bunkerLiters}
+                    onChange={e => setBunkerLiters(e.target.value)}
+                    disabled={!canEditThis}
+                    placeholder="T.ex. 500"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Allmänna anteckningar</Label>
