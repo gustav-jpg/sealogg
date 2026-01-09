@@ -344,12 +344,12 @@ export default function Checklists() {
                               {getStatusBadge(checklist)}
                               {checklist.interval_days && checklist.daysRemaining !== null && (
                                 checklist.daysRemaining >= 0 ? (
-                                  <Badge variant="outline" className="gap-1">
+                                  <Badge className="gap-1 bg-green-600 hover:bg-green-600 text-white">
                                     <Clock className="h-3 w-3" />
                                     Utför inom {checklist.daysRemaining} dagar
                                   </Badge>
                                 ) : (
-                                  <Badge variant="destructive" className="gap-1">
+                                  <Badge className="gap-1 bg-red-600 hover:bg-red-600 text-white">
                                     <AlertTriangle className="h-3 w-3" />
                                     Försenat {Math.abs(checklist.daysRemaining)} dagar
                                   </Badge>
