@@ -41,10 +41,20 @@ serve(async (req) => {
     }
 
     // Check if requesting user is superadmin
-    const { data: isSuperadmin } = await supabaseAdmin.rpc('is_superadmin', { _user_id: requestingUser.id });
+    console.log("Checking superadmin for user:", requestingUser.id);
+    const { data: isSuperadmin, error: rpcError } = await supabaseAdmin.rpc('is_superadmin', { _user_id: requestingUser.id });
+    console.log("Superadmin check result:", isSuperadmin, "Error:", rpcError);
+    
+    if (rpcError) {
+      console.error("RPC Error:", rpcError);
+      return new Response(JSON.stringify({ error: "Error checking permissions: " + rpcError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     
     if (!isSuperadmin) {
-      return new Response(JSON.stringify({ error: "Not authorized" }), {
+      return new Response(JSON.stringify({ error: "Not authorized - not a superadmin" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
