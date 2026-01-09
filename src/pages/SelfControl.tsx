@@ -587,16 +587,7 @@ export default function SelfControl() {
                                             Utför inom {cp.hoursRemaining}h
                                           </Badge>
                                         )}
-                                        {cp.status === 'ok' && (
-                                          <Badge variant="secondary" className="gap-1">
-                                            <CheckCircle className="h-3 w-3" />
-                                            OK
-                                          </Badge>
-                                        )}
-                                        <Badge variant="outline">
-                                          {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
-                                          {CONTROL_TYPE_LABELS[cp.type as ControlType]}
-                                        </Badge>
+                                        {/* No badge for 'ok' status - implied by lack of other badges */}
                                       </div>
                                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                         <span>
