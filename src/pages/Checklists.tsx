@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -30,13 +30,15 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { format, differenceInDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ClipboardList, Play, AlertTriangle, Clock, CheckCircle, Calendar, RefreshCw, History, Eye, Check, X, MessageSquare, Camera, Filter } from 'lucide-react';
+import { ClipboardList, Play, AlertTriangle, Clock, CheckCircle, Calendar, RefreshCw, History, Eye, Check, X, MessageSquare, Camera, Filter, Trash2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 type ChecklistStatus = 'ok' | 'due_soon' | 'overdue';
 
@@ -55,12 +57,20 @@ interface ChecklistWithStatus {
 
 export default function Checklists() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const [searchParams] = useSearchParams();
   const vesselFromUrl = searchParams.get('vessel');
   
   const [selectedVessel, setSelectedVessel] = useState<string>(vesselFromUrl || '');
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
+
+  const [abortConfirm, setAbortConfirm] = useState<{ open: boolean; executionId: string | null }>({
+    open: false,
+    executionId: null,
+  });
   
   // History filters
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -152,6 +162,32 @@ export default function Checklists() {
       return { execution, steps, results };
     },
     enabled: !!selectedExecution,
+  });
+
+  const abortExecution = useMutation({
+    mutationFn: async (executionId: string) => {
+      // Delete step results first
+      const { error: stepError } = await supabase
+        .from('checklist_step_results')
+        .delete()
+        .eq('checklist_execution_id', executionId);
+      if (stepError) throw stepError;
+
+      // Then delete execution
+      const { error } = await supabase
+        .from('checklist_executions')
+        .delete()
+        .eq('id', executionId);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['checklist-executions'] });
+      toast({ title: 'Kontroll avbruten' });
+      setAbortConfirm({ open: false, executionId: null });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
   });
 
   const getProfileName = (userId: string) => {
@@ -375,12 +411,22 @@ export default function Checklists() {
                           </div>
                           <div className="flex gap-2">
                             {checklist.inProgressId ? (
-                              <Button asChild>
-                                <Link to={`/portal/checklists/execute/${checklist.inProgressId}`}>
-                                  <RefreshCw className="h-4 w-4 mr-2" />
-                                  Fortsätt
-                                </Link>
-                              </Button>
+                              <>
+                                <Button asChild>
+                                  <Link to={`/portal/checklists/execute/${checklist.inProgressId}`}>
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Fortsätt
+                                  </Link>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                                  onClick={() => setAbortConfirm({ open: true, executionId: checklist.inProgressId })}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Avbryt
+                                </Button>
+                              </>
                             ) : (
                               <Button asChild>
                                 <Link to={`/portal/checklists/execute?template=${checklist.id}&vessel=${selectedVessel}`}>
@@ -685,6 +731,17 @@ export default function Checklists() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={abortConfirm.open}
+        onOpenChange={(open) => setAbortConfirm({ open, executionId: open ? abortConfirm.executionId : null })}
+        title="Avbryt pågående kontroll?"
+        description="Är du säker på att du vill avbryta och radera den pågående kontrollen? Alla sparade steg kommer att försvinna."
+        confirmLabel="Avbryt & radera"
+        cancelLabel="Behåll"
+        onConfirm={() => abortConfirm.executionId && abortExecution.mutate(abortConfirm.executionId)}
+        variant="destructive"
+      />
     </MainLayout>
   );
 }
