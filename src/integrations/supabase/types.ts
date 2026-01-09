@@ -892,6 +892,53 @@ export type Database = {
           },
         ]
       }
+      logbook_stops: {
+        Row: {
+          arrival_location: string | null
+          arrival_time: string | null
+          created_at: string
+          departure_location: string | null
+          departure_time: string | null
+          id: string
+          logbook_id: string
+          notes: string | null
+          passenger_count: number | null
+          stop_order: number
+        }
+        Insert: {
+          arrival_location?: string | null
+          arrival_time?: string | null
+          created_at?: string
+          departure_location?: string | null
+          departure_time?: string | null
+          id?: string
+          logbook_id: string
+          notes?: string | null
+          passenger_count?: number | null
+          stop_order: number
+        }
+        Update: {
+          arrival_location?: string | null
+          arrival_time?: string | null
+          created_at?: string
+          departure_location?: string | null
+          departure_time?: string | null
+          id?: string
+          logbook_id?: string
+          notes?: string | null
+          passenger_count?: number | null
+          stop_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logbook_stops_logbook_id_fkey"
+            columns: ["logbook_id"]
+            isOneToOne: false
+            referencedRelation: "logbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logbooks: {
         Row: {
           arrival_time: string | null

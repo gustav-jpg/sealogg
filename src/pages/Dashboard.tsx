@@ -123,10 +123,8 @@ export default function Dashboard() {
                     <td className="p-2 border-b text-muted-foreground text-sm">
                       {format(new Date(logbook.date), 'PPP', { locale: sv })}
                     </td>
-                    <td className="p-2 border-b text-sm">
-                      {logbook.from_location && logbook.to_location 
-                        ? `${logbook.from_location} → ${logbook.to_location}`
-                        : '-'}
+                    <td className="p-2 border-b text-sm text-muted-foreground">
+                      Se detaljer
                     </td>
                     <td className="p-2 border-b text-sm">{(logbook as any).creator_name || 'Okänd'}</td>
                     <td className="p-2 border-b">
