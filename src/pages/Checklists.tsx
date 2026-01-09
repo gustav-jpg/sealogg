@@ -186,15 +186,10 @@ export default function Checklists() {
         } else if (daysRemaining <= 7) {
           status = 'due_soon';
         }
-      } else if (inProgressExecution) {
-        // If in progress but never completed, calculate from when it was started
-        const startedAt = new Date(inProgressExecution.started_at);
-        const nextDueDate = addDays(startedAt, ct.interval_days);
-        nextDue = format(nextDueDate, 'yyyy-MM-dd');
-        daysRemaining = differenceInDays(nextDueDate, new Date());
       } else {
-        status = 'overdue';
+        // Never completed - show as "Ej utförd" (countdown starts after first completion)
         nextDue = 'Ej utförd';
+        // Don't set status to overdue - keep it neutral until first completion
       }
     }
 
