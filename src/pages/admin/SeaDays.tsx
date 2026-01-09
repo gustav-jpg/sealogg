@@ -84,11 +84,12 @@ export default function SeaDays() {
   });
 
   // Process sea days with double-day resolution
+  // Rule: One day per ROLE per calendar day. If same role on multiple vessels same day, use preferred vessel.
   const seaDaySummaries = useMemo(() => {
     if (!logbookCrew) return [];
 
-    // Group entries by date and profile
-    const entriesByDateAndProfile = new Map<string, SeaDayEntry[]>();
+    // Group entries by date, profile, AND role (key: date_profileId_role)
+    const entriesByDateProfileRole = new Map<string, SeaDayEntry[]>();
 
     logbookCrew.forEach((crew) => {
       const logbook = crew.logbook as any;
@@ -97,7 +98,8 @@ export default function SeaDays() {
 
       if (!logbook || !profile || !vessel) return;
 
-      const key = `${logbook.date}_${profile.id}`;
+      // Key includes role - so different roles on same day = separate entries
+      const key = `${logbook.date}_${profile.id}_${crew.role}`;
       const entry: SeaDayEntry = {
         date: logbook.date,
         vesselId: vessel.id,
@@ -108,20 +110,20 @@ export default function SeaDays() {
         preferredVesselId: profile.preferred_vessel_id,
       };
 
-      if (!entriesByDateAndProfile.has(key)) {
-        entriesByDateAndProfile.set(key, []);
+      if (!entriesByDateProfileRole.has(key)) {
+        entriesByDateProfileRole.set(key, []);
       }
-      entriesByDateAndProfile.get(key)!.push(entry);
+      entriesByDateProfileRole.get(key)!.push(entry);
     });
 
-    // For each date/profile, pick one vessel (preferred vessel wins)
+    // For each date/profile/role combo, pick one vessel (preferred vessel wins if same role on multiple vessels)
     const resolvedDays: SeaDayEntry[] = [];
 
-    entriesByDateAndProfile.forEach((entries) => {
+    entriesByDateProfileRole.forEach((entries) => {
       if (entries.length === 1) {
         resolvedDays.push(entries[0]);
       } else {
-        // Multiple vessels same day - pick preferred vessel or first one
+        // Same role on multiple vessels same day - pick preferred vessel or first one
         const preferredVesselId = entries[0].preferredVesselId;
         const preferred = entries.find((e) => e.vesselId === preferredVesselId);
         resolvedDays.push(preferred || entries[0]);
@@ -392,7 +394,7 @@ export default function SeaDays() {
         <Card className="bg-muted/50">
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">
-              <strong>OBS:</strong> Endast en sjödag räknas per person och dag. Om en person arbetade på flera fartyg samma dag räknas den föredragna båten (ställs in i användarens profil). Om ingen föredragen båt är vald räknas första registrerade fartyget.
+              <strong>OBS:</strong> En sjödag räknas per person, roll och dag. Arbetar man som befälhavare på förmiddagen och jungman på eftermiddagen får man 2 dagar. Om man arbetar samma roll på flera fartyg samma dag räknas den föredragna båten (ställs in i användarens profil).
             </p>
           </CardContent>
         </Card>
