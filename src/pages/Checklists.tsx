@@ -359,9 +359,6 @@ export default function Checklists() {
                                   </Badge>
                                 )
                               )}
-                              {checklist.nextDue === 'Ej utförd' && (
-                                <Badge variant="destructive">Ej utförd</Badge>
-                              )}
                               {!checklist.interval_days && (
                                 <Badge variant="outline">Manuell</Badge>
                               )}
