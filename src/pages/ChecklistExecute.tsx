@@ -71,7 +71,7 @@ export default function ChecklistExecute() {
   });
 
   // Fetch template
-  const { data: template } = useQuery({
+  const { data: template, isLoading: loadingTemplate } = useQuery({
     queryKey: ['checklist-template', templateId || existingExecution?.checklist_template_id],
     queryFn: async () => {
       const id = templateId || existingExecution?.checklist_template_id;
@@ -88,7 +88,7 @@ export default function ChecklistExecute() {
   });
 
   // Fetch steps
-  const { data: steps } = useQuery({
+  const { data: steps, isLoading: loadingSteps } = useQuery({
     queryKey: ['checklist-steps', template?.id],
     queryFn: async () => {
       if (!template?.id) return [];
@@ -416,7 +416,9 @@ export default function ChecklistExecute() {
   const currentStepResult = currentStep ? stepResults.get(currentStep.id) : null;
   const isCurrentStepDeviation = currentStepResult?.value === 'deviation';
 
-  if (loadingExecution || createExecution.isPending) {
+  const isLoading = loadingExecution || createExecution.isPending || loadingTemplate || loadingSteps;
+
+  if (isLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center py-12">
