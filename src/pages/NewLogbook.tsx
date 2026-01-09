@@ -13,8 +13,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
+import { LogbookStops, StopEntry } from '@/components/LogbookStops';
 import { CrewRole, CREW_ROLE_LABELS } from '@/lib/types';
-import { Plus, Trash2, Ship, Users, Save, MapPin, Clock, Gauge } from 'lucide-react';
+import { Plus, Trash2, Ship, Users, Save, MapPin, Gauge } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CrewMember {
@@ -44,11 +45,7 @@ export default function NewLogbook() {
   const [weather, setWeather] = useState('');
   const [wind, setWind] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
-  const [fromLocation, setFromLocation] = useState('');
-  const [toLocation, setToLocation] = useState('');
-  const [departureTime, setDepartureTime] = useState('');
-  const [arrivalTime, setArrivalTime] = useState('');
-  const [passengerCount, setPassengerCount] = useState('');
+  const [stops, setStops] = useState<StopEntry[]>([]);
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [engineHours, setEngineHours] = useState<EngineHourEntry[]>([]);
   const [overrideValidation, setOverrideValidation] = useState(false);
@@ -153,11 +150,6 @@ export default function NewLogbook() {
           weather: weather || null,
           wind: wind || null,
           general_notes: generalNotes || null,
-          from_location: fromLocation || null,
-          to_location: toLocation || null,
-          departure_time: departureTime || null,
-          arrival_time: arrivalTime || null,
-          passenger_count: passengerCount ? parseInt(passengerCount) : null,
           created_by: user.id,
           status: 'oppen',
         })
@@ -165,6 +157,23 @@ export default function NewLogbook() {
         .single();
 
       if (logbookError) throw logbookError;
+
+      // Insert stops
+      if (stops.length > 0) {
+        const { error: stopsError } = await supabase.from('logbook_stops').insert(
+          stops.map(s => ({
+            logbook_id: logbook.id,
+            stop_order: s.stopOrder,
+            departure_time: s.departureTime || null,
+            departure_location: s.departureLocation || null,
+            arrival_time: s.arrivalTime || null,
+            arrival_location: s.arrivalLocation || null,
+            passenger_count: s.passengerCount ? parseInt(s.passengerCount) : null,
+            notes: s.notes || null,
+          }))
+        );
+        if (stopsError) throw stopsError;
+      }
 
       if (crew.length > 0) {
         const { error: crewError } = await supabase.from('logbook_crew').insert(
@@ -295,58 +304,8 @@ export default function NewLogbook() {
                   Reseinformation
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="from">Från hamn/plats</Label>
-                    <Input
-                      id="from"
-                      value={fromLocation}
-                      onChange={e => setFromLocation(e.target.value)}
-                      placeholder="T.ex. Skeppsbron"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="to">Till hamn/plats</Label>
-                    <Input
-                      id="to"
-                      value={toLocation}
-                      onChange={e => setToLocation(e.target.value)}
-                      placeholder="T.ex. Djurgården"
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="passengers">Antal passagerare</Label>
-                    <Input
-                      id="passengers"
-                      type="number"
-                      min={0}
-                      value={passengerCount}
-                      onChange={e => setPassengerCount(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="departure">Avgångstid</Label>
-                    <Input
-                      id="departure"
-                      type="time"
-                      value={departureTime}
-                      onChange={e => setDepartureTime(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="arrival">Ankomsttid</Label>
-                    <Input
-                      id="arrival"
-                      type="time"
-                      value={arrivalTime}
-                      onChange={e => setArrivalTime(e.target.value)}
-                    />
-                  </div>
-                </div>
+              <CardContent>
+                <LogbookStops stops={stops} onStopsChange={setStops} />
               </CardContent>
             </Card>
 

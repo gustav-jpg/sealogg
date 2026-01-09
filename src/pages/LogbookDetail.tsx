@@ -15,6 +15,7 @@ import { usePrint } from '@/hooks/usePrint';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/LogbookStops';
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -31,11 +32,8 @@ export default function LogbookDetail() {
   const [weather, setWeather] = useState('');
   const [wind, setWind] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
-  const [fromLocation, setFromLocation] = useState('');
-  const [toLocation, setToLocation] = useState('');
-  const [passengerCount, setPassengerCount] = useState('');
-  const [departureTime, setDepartureTime] = useState('');
-  const [arrivalTime, setArrivalTime] = useState('');
+  const [stops, setStops] = useState<StopEntry[]>([]);
+  const [stopsInitialized, setStopsInitialized] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [overrideValidation, setOverrideValidation] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -69,14 +67,41 @@ export default function LogbookDetail() {
       setWeather(logbook.weather || '');
       setWind(logbook.wind || '');
       setGeneralNotes(logbook.general_notes || '');
-      setFromLocation(logbook.from_location || '');
-      setToLocation(logbook.to_location || '');
-      setPassengerCount(logbook.passenger_count?.toString() || '');
-      setDepartureTime(logbook.departure_time || '');
-      setArrivalTime(logbook.arrival_time || '');
       setInitialized(true);
     }
   }, [logbook, initialized]);
+
+  // Fetch logbook stops
+  const { data: logbookStops } = useQuery({
+    queryKey: ['logbook-stops', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('logbook_stops')
+        .select('*')
+        .eq('logbook_id', id)
+        .order('stop_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Initialize stops from database
+  useEffect(() => {
+    if (logbookStops && !stopsInitialized) {
+      setStops(logbookStops.map(s => ({
+        tempId: s.id,
+        stopOrder: s.stop_order,
+        departureTime: s.departure_time || '',
+        departureLocation: s.departure_location || '',
+        arrivalTime: s.arrival_time || '',
+        arrivalLocation: s.arrival_location || '',
+        passengerCount: s.passenger_count?.toString() || '',
+        notes: s.notes || '',
+      })));
+      setStopsInitialized(true);
+    }
+  }, [logbookStops, stopsInitialized]);
 
   const { data: crewMembers } = useQuery({
     queryKey: ['logbook-crew', id],
@@ -114,20 +139,39 @@ export default function LogbookDetail() {
 
   const updateLogbook = useMutation({
     mutationFn: async () => {
+      // Update main logbook data
       const { error } = await supabase
         .from('logbooks')
         .update({
           weather: weather || null,
           wind: wind || null,
           general_notes: generalNotes || null,
-          from_location: fromLocation || null,
-          to_location: toLocation || null,
-          passenger_count: passengerCount ? parseInt(passengerCount) : null,
-          departure_time: departureTime || null,
-          arrival_time: arrivalTime || null,
         })
         .eq('id', id);
       if (error) throw error;
+
+      // Delete existing stops and re-insert
+      const { error: deleteError } = await supabase
+        .from('logbook_stops')
+        .delete()
+        .eq('logbook_id', id);
+      if (deleteError) throw deleteError;
+
+      if (stops.length > 0) {
+        const { error: stopsError } = await supabase.from('logbook_stops').insert(
+          stops.map(s => ({
+            logbook_id: id,
+            stop_order: s.stopOrder,
+            departure_time: s.departureTime || null,
+            departure_location: s.departureLocation || null,
+            arrival_time: s.arrivalTime || null,
+            arrival_location: s.arrivalLocation || null,
+            passenger_count: s.passengerCount ? parseInt(s.passengerCount) : null,
+            notes: s.notes || null,
+          }))
+        );
+        if (stopsError) throw stopsError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logbook', id] });
@@ -143,6 +187,29 @@ export default function LogbookDetail() {
     mutationFn: async () => {
       if (!validation.isValid && !overrideValidation) throw new Error('Valideringsfel måste åtgärdas innan loggboken kan stängas.');
       
+      // Save stops before closing
+      const { error: deleteStopsError } = await supabase
+        .from('logbook_stops')
+        .delete()
+        .eq('logbook_id', id);
+      if (deleteStopsError) throw deleteStopsError;
+
+      if (stops.length > 0) {
+        const { error: stopsError } = await supabase.from('logbook_stops').insert(
+          stops.map(s => ({
+            logbook_id: id,
+            stop_order: s.stopOrder,
+            departure_time: s.departureTime || null,
+            departure_location: s.departureLocation || null,
+            arrival_time: s.arrivalTime || null,
+            arrival_location: s.arrivalLocation || null,
+            passenger_count: s.passengerCount ? parseInt(s.passengerCount) : null,
+            notes: s.notes || null,
+          }))
+        );
+        if (stopsError) throw stopsError;
+      }
+
       // Save all data before closing
       const { error } = await supabase
         .from('logbooks')
@@ -150,11 +217,6 @@ export default function LogbookDetail() {
           weather: weather || null,
           wind: wind || null,
           general_notes: generalNotes || null,
-          from_location: fromLocation || null,
-          to_location: toLocation || null,
-          passenger_count: passengerCount ? parseInt(passengerCount) : null,
-          departure_time: departureTime || null,
-          arrival_time: arrivalTime || null,
           status: 'stangd',
           closed_at: new Date().toISOString(),
           closed_by: user?.id,
@@ -336,64 +398,19 @@ export default function LogbookDetail() {
                   Reseinformation
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="from">Från hamn/plats</Label>
-                    <Input
-                      id="from"
-                      value={fromLocation}
-                      onChange={e => setFromLocation(e.target.value)}
-                      disabled={!canEditThis}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="to">Till hamn/plats</Label>
-                    <Input
-                      id="to"
-                      value={toLocation}
-                      onChange={e => setToLocation(e.target.value)}
-                      disabled={!canEditThis}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="passengers">Antal passagerare</Label>
-                    <Input
-                      id="passengers"
-                      type="number"
-                      value={passengerCount}
-                      onChange={e => setPassengerCount(e.target.value)}
-                      disabled={!canEditThis}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="departure">Avgångstid</Label>
-                    <Input
-                      id="departure"
-                      type="time"
-                      value={departureTime}
-                      onChange={e => setDepartureTime(e.target.value)}
-                      disabled={!canEditThis}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="arrival">Ankomsttid</Label>
-                    <Input
-                      id="arrival"
-                      type="time"
-                      value={arrivalTime}
-                      onChange={e => setArrivalTime(e.target.value)}
-                      disabled={!canEditThis}
-                    />
-                  </div>
-                </div>
-                {canEditThis && (
-                  <Button onClick={() => updateLogbook.mutate()} disabled={updateLogbook.isPending} className="w-full sm:w-auto">
-                    <Save className="h-4 w-4 mr-2" />
-                    {updateLogbook.isPending ? 'Sparar...' : 'Spara ändringar'}
-                  </Button>
+              <CardContent>
+                {isOpen ? (
+                  <>
+                    <LogbookStops stops={stops} onStopsChange={setStops} disabled={!canEditThis} />
+                    {canEditThis && (
+                      <Button onClick={() => updateLogbook.mutate()} disabled={updateLogbook.isPending} className="w-full sm:w-auto mt-4">
+                        <Save className="h-4 w-4 mr-2" />
+                        {updateLogbook.isPending ? 'Sparar...' : 'Spara ändringar'}
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <LogbookStopsDisplay stops={logbookStops || []} />
                 )}
               </CardContent>
             </Card>
