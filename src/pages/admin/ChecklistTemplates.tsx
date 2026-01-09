@@ -46,6 +46,7 @@ export default function ChecklistTemplates() {
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null);
+  const [selectedVesselFilter, setSelectedVesselFilter] = useState<string>('');
 
   // Form state
   const [name, setName] = useState('');
@@ -504,6 +505,33 @@ export default function ChecklistTemplates() {
           </Dialog>
         </div>
 
+        {/* Vessel Filter */}
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              <Label className="text-sm font-medium whitespace-nowrap">Visa checklistor för:</Label>
+              <Select value={selectedVesselFilter || "__all__"} onValueChange={(v) => setSelectedVesselFilter(v === "__all__" ? "" : v)}>
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Välj fartyg..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Alla fartyg</SelectItem>
+                  {vessels?.map((vessel) => (
+                    <SelectItem key={vessel.id} value={vessel.id}>
+                      {vessel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedVesselFilter && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedVesselFilter('')}>
+                  Rensa filter
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* List */}
         {isLoading ? (
           <div className="animate-pulse space-y-4">
@@ -511,16 +539,29 @@ export default function ChecklistTemplates() {
               <div key={i} className="h-20 bg-muted rounded-lg" />
             ))}
           </div>
-        ) : templates?.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Inga checklistmallar skapade</p>
-            </CardContent>
-          </Card>
-        ) : (
+        ) : (() => {
+          // Filter templates by selected vessel
+          const filteredTemplates = templates?.filter((template) => {
+            if (!selectedVesselFilter) return true;
+            if (template.applies_to_all_vessels) return true;
+            const tvList = templateVessels?.filter((tv) => tv.checklist_template_id === template.id) || [];
+            return tvList.some((tv) => tv.vessel_id === selectedVesselFilter);
+          });
+
+          return filteredTemplates?.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  {selectedVesselFilter 
+                    ? 'Inga checklistmallar för detta fartyg' 
+                    : 'Inga checklistmallar skapade'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="space-y-3">
-            {templates?.map((template) => {
+            {filteredTemplates?.map((template) => {
               const tvList = templateVessels?.filter((tv) => tv.checklist_template_id === template.id) || [];
               const vesselNames = vessels?.filter((v) => tvList.some((tv) => tv.vessel_id === v.id)).map((v) => v.name) || [];
               const stepCount = allSteps?.filter((s) => s.checklist_template_id === template.id).length || 0;
@@ -592,7 +633,8 @@ export default function ChecklistTemplates() {
               );
             })}
           </div>
-        )}
+          );
+        })()}
 
         {/* Edit dialog */}
         <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && setEditingTemplate(null)}>
