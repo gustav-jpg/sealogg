@@ -403,12 +403,12 @@ export default function ControlPoints() {
           <CardContent className="py-4">
             <div className="flex items-center gap-4">
               <Label className="text-sm font-medium whitespace-nowrap">Visa kontrollpunkter för:</Label>
-              <Select value={selectedVesselFilter} onValueChange={setSelectedVesselFilter}>
+              <Select value={selectedVesselFilter || "__all__"} onValueChange={(v) => setSelectedVesselFilter(v === "__all__" ? "" : v)}>
                 <SelectTrigger className="w-[280px]">
                   <SelectValue placeholder="Välj fartyg..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Alla fartyg</SelectItem>
+                  <SelectItem value="__all__">Alla fartyg</SelectItem>
                   {vessels?.map((vessel) => (
                     <SelectItem key={vessel.id} value={vessel.id}>
                       {vessel.name}
