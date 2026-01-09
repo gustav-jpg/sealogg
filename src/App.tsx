@@ -16,11 +16,14 @@ import FaultCases from "./pages/FaultCases";
 import FaultCaseDetail from "./pages/FaultCaseDetail";
 import SelfControl from "./pages/SelfControl";
 import Qualifications from "./pages/Qualifications";
+import Checklists from "./pages/Checklists";
+import ChecklistExecute from "./pages/ChecklistExecute";
 import Privacy from "./pages/Privacy";
 import AdminVessels from "./pages/admin/Vessels";
 import AdminUsers from "./pages/admin/Users";
 import RoleRules from "./pages/admin/RoleRules";
 import ControlPoints from "./pages/admin/ControlPoints";
+import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
 import NotFound from "./pages/NotFound";
 import BackofficeLayout from "./components/layout/BackofficeLayout";
 import BackofficeDashboard from "./pages/backoffice/Dashboard";
@@ -88,10 +91,14 @@ function AppRoutes() {
       <Route path="/portal/fault-cases/:id" element={<ProtectedRoute><FaultCaseDetail /></ProtectedRoute>} />
         <Route path="/portal/self-control" element={<ProtectedRoute><SelfControl /></ProtectedRoute>} />
         <Route path="/portal/qualifications" element={<ProtectedRoute><Qualifications /></ProtectedRoute>} />
+        <Route path="/portal/checklists" element={<ProtectedRoute><Checklists /></ProtectedRoute>} />
+        <Route path="/portal/checklists/execute" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
+        <Route path="/portal/checklists/execute/:executionId" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
         <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
       <Route path="/portal/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
       <Route path="/portal/admin/rules" element={<ProtectedRoute adminOnly><RoleRules /></ProtectedRoute>} />
       <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
+      <Route path="/portal/admin/checklists" element={<ProtectedRoute adminOnly><ChecklistTemplates /></ProtectedRoute>} />
       
       {/* Backoffice routes (superadmin only) */}
       <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />
