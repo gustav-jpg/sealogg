@@ -408,8 +408,13 @@ export default function ChecklistExecute() {
   });
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showChangeToOkDialog, setShowChangeToOkDialog] = useState(false);
   const allStepsCompleted = steps && stepResults.size === steps.length;
   const deviationCount = Array.from(stepResults.values()).filter(r => r.value === 'deviation').length;
+
+  // Check if current step is already saved as deviation
+  const currentStepResult = currentStep ? stepResults.get(currentStep.id) : null;
+  const isCurrentStepDeviation = currentStepResult?.value === 'deviation';
 
   if (loadingExecution || createExecution.isPending) {
     return (
@@ -546,6 +551,12 @@ export default function ChecklistExecute() {
                   onClick={() => {
                     if (!currentStep) return;
 
+                    // If changing from deviation to ok, show confirmation dialog
+                    if (isCurrentStepDeviation) {
+                      setShowChangeToOkDialog(true);
+                      return;
+                    }
+
                     setCurrentValue('ok');
                     saveStepResult.mutate({
                       value: 'ok',
@@ -607,6 +618,26 @@ export default function ChecklistExecute() {
           description="Är du säker på att du vill radera denna kontroll? Alla svar kommer att försvinna."
           onConfirm={() => deleteExecution.mutate()}
           variant="destructive"
+        />
+
+        <ConfirmDialog
+          open={showChangeToOkDialog}
+          onOpenChange={setShowChangeToOkDialog}
+          title="Ändra till OK?"
+          description="Detta steg är markerat som felärende. Är du säker på att du vill ändra till OK? Eventuell kommentar behålls."
+          confirmLabel="Ändra till OK"
+          onConfirm={() => {
+            if (!currentStep) return;
+            setCurrentValue('ok');
+            saveStepResult.mutate({
+              value: 'ok',
+              stepId: currentStep.id,
+              comment: currentComment,
+              photoFile: currentPhoto,
+              photoPreviewUrl: photoPreview,
+            });
+          }}
+          variant="default"
         />
 
         {/* Completion */}
