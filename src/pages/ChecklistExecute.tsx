@@ -12,7 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { format, addDays } from 'date-fns';
-import { ClipboardList, Check, Camera, ArrowLeft, Loader2, CheckCircle, AlertTriangle, MessageSquare } from 'lucide-react';
+import { ClipboardList, Check, Camera, ArrowLeft, Loader2, CheckCircle, AlertTriangle, MessageSquare, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface ChecklistStep {
   id: string;
@@ -363,6 +364,35 @@ export default function ChecklistExecute() {
     },
   });
 
+  const deleteExecution = useMutation({
+    mutationFn: async () => {
+      if (!execution?.id) throw new Error('Missing execution');
+      
+      // Delete step results first
+      await supabase
+        .from('checklist_step_results')
+        .delete()
+        .eq('checklist_execution_id', execution.id);
+      
+      // Then delete execution
+      const { error } = await supabase
+        .from('checklist_executions')
+        .delete()
+        .eq('id', execution.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['checklist-executions'] });
+      toast({ title: 'Kontroll raderad' });
+      navigate('/portal/checklists');
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const allStepsCompleted = steps && stepResults.size === steps.length;
   const deviationCount = Array.from(stepResults.values()).filter(r => r.value === 'deviation').length;
 
@@ -447,15 +477,6 @@ export default function ChecklistExecute() {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   {currentComment ? 'Redigera' : 'Kommentar'}
                 </Button>
-                {currentStepIndex > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
               
               {/* Photo preview */}
@@ -509,9 +530,48 @@ export default function ChecklistExecute() {
                   OK
                 </Button>
               </div>
+              
+              {/* Navigation */}
+              <div className="flex justify-between pt-2">
+                {currentStepIndex > 0 ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Föregående
+                  </Button>
+                ) : (
+                  <div />
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={deleteExecution.isPending}
+                >
+                  {deleteExecution.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Radera
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
+
+        <ConfirmDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          title="Radera kontroll"
+          description="Är du säker på att du vill radera denna kontroll? Alla svar kommer att försvinna."
+          onConfirm={() => deleteExecution.mutate()}
+          variant="destructive"
+        />
 
         {/* Completion */}
         {allStepsCompleted && (
