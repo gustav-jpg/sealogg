@@ -124,6 +124,30 @@ export default function AdminUsers() {
     },
   });
 
+  const linkEmailMutation = useMutation({
+    mutationFn: async ({ profileId, email, role }: { profileId: string; email: string; role?: AppRole }) => {
+      const response = await supabase.functions.invoke('link-email-to-profile', {
+        body: { profileId, email, role },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['user-roles'] });
+      toast({ 
+        title: 'E-post kopplad!', 
+        description: 'Användaren får ett e-postmeddelande för att sätta lösenord.'
+      });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const deleteExternalUser = useMutation({
     mutationFn: async (profileId: string) => {
       const { error } = await supabase.from('profiles').delete().eq('id', profileId);
@@ -417,19 +441,27 @@ export default function AdminUsers() {
                     )}
                   </div>
                   {isExternalUser && (
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => setDeleteConfirm({ 
-                        open: true, 
-                        type: 'user', 
-                        id: selectedProfile.id, 
-                        name: selectedProfile.full_name 
-                      })}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Ta bort
-                    </Button>
+                    <div className="flex gap-2">
+                      <LinkEmailDialog 
+                        profileId={selectedProfile.id}
+                        profileName={selectedProfile.full_name}
+                        onLink={(data) => linkEmailMutation.mutate(data)}
+                        isLoading={linkEmailMutation.isPending}
+                      />
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => setDeleteConfirm({ 
+                          open: true, 
+                          type: 'user', 
+                          id: selectedProfile.id, 
+                          name: selectedProfile.full_name 
+                        })}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Ta bort
+                      </Button>
+                    </div>
                   )}
                 </CardHeader>
                 <CardContent>
@@ -1104,6 +1136,77 @@ function AddInductionDialog({
           </div>
           <Button onClick={handleAdd} disabled={!vesselId || !inductedAt} className="w-full">
             Lägg till
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LinkEmailDialog({
+  profileId,
+  profileName,
+  onLink,
+  isLoading,
+}: {
+  profileId: string;
+  profileName: string;
+  onLink: (data: { profileId: string; email: string; role?: AppRole }) => void;
+  isLoading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<AppRole>('skeppare');
+
+  const handleLink = () => {
+    if (email.trim()) {
+      onLink({ profileId, email: email.trim(), role });
+      setOpen(false);
+      setEmail('');
+      setRole('skeppare');
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Mail className="h-4 w-4 mr-1" />
+          Koppla e-post
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Koppla e-post till {profileName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Genom att koppla en e-post kan <strong>{profileName}</strong> logga in i portalen. De får ett e-postmeddelande för att sätta sitt lösenord.
+          </p>
+          <div className="space-y-2">
+            <Label>E-postadress</Label>
+            <Input 
+              type="email" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="anna@example.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Roll i portalen</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="skeppare">Skeppare</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="readonly">Endast läsning</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleLink} disabled={!email.trim() || isLoading} className="w-full">
+            {isLoading ? 'Kopplar...' : 'Koppla e-post'}
           </Button>
         </div>
       </DialogContent>
