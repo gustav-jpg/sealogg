@@ -94,43 +94,43 @@ export function LogbookStops({ stops, onStopsChange, disabled = false }: Logbook
                   <TableCell className="font-medium text-muted-foreground">
                     {stop.stopOrder}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-1">
                     <Input
                       type="time"
                       value={stop.departureTime}
                       onChange={e => updateStop(stop.tempId, 'departureTime', e.target.value)}
                       disabled={disabled}
-                      className="h-9"
+                      className="h-8 w-24 text-sm px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-1">
                     <Input
                       value={stop.departureLocation}
                       onChange={e => updateStop(stop.tempId, 'departureLocation', e.target.value)}
                       disabled={disabled}
                       placeholder="Hamn/plats"
-                      className="h-9"
+                      className="h-8 text-sm px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-1">
                     <Input
                       type="time"
                       value={stop.arrivalTime}
                       onChange={e => updateStop(stop.tempId, 'arrivalTime', e.target.value)}
                       disabled={disabled}
-                      className="h-9"
+                      className="h-8 w-24 text-sm px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-1">
                     <Input
                       value={stop.arrivalLocation}
                       onChange={e => updateStop(stop.tempId, 'arrivalLocation', e.target.value)}
                       disabled={disabled}
                       placeholder="Hamn/plats"
-                      className="h-9"
+                      className="h-8 text-sm px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="p-1">
                     <Input
                       type="number"
                       min={0}
@@ -138,7 +138,7 @@ export function LogbookStops({ stops, onStopsChange, disabled = false }: Logbook
                       onChange={e => updateStop(stop.tempId, 'passengerCount', e.target.value)}
                       disabled={disabled}
                       placeholder="0"
-                      className="h-9 w-16"
+                      className="h-8 w-14 text-sm px-2"
                     />
                   </TableCell>
                   {!disabled && (
