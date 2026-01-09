@@ -407,151 +407,130 @@ export default function ChecklistExecute() {
           </div>
         </div>
 
-        {/* Current Step - Full Screen Style */}
+        {/* Current Step */}
         {currentStep && !allStepsCompleted && (
-          <div className="bg-zinc-900 rounded-xl overflow-hidden">
-            {/* Progress Bar */}
-            <div className="h-2 bg-zinc-800">
-              <div 
-                className="h-full bg-green-500 transition-all duration-300" 
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            
-            {/* Step Content */}
-            <div className="p-6 text-center min-h-[250px] flex flex-col justify-center">
-              <p className="text-zinc-500 text-sm mb-2">
-                Steg {currentStepIndex + 1} av {steps.length}
-              </p>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                {currentStep.title}
-              </h2>
-              <p className="text-zinc-400 text-base md:text-lg max-w-md mx-auto">
-                {currentStep.instruction}
-              </p>
-            </div>
-            
-            {/* Divider */}
-            <div className="border-t border-zinc-700 mx-4" />
-            
-            {/* Comment/Photo Section (optional) */}
-            {(showCommentField || currentStep.requires_comment || photoPreview) && (
-              <div className="p-4 space-y-3">
-                <Textarea
-                  value={currentComment}
-                  onChange={(e) => setCurrentComment(e.target.value)}
-                  placeholder="Lägg till kommentar..."
-                  className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-                  rows={2}
-                />
-                {photoPreview && (
-                  <img src={photoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
-                )}
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between mb-2">
+                <Badge variant="outline">Steg {currentStepIndex + 1} av {steps.length}</Badge>
+                <Progress value={progress} className="w-24 h-2" />
               </div>
-            )}
-            
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-0">
-              {/* Deviation Button (Yellow) */}
-              <button
-                onClick={() => {
-                  if (!showCommentField) {
-                    setShowCommentField(true);
-                  } else {
-                    saveStepResult.mutate('deviation');
-                  }
-                }}
-                disabled={saveStepResult.isPending}
-                className="bg-amber-500 hover:bg-amber-400 text-black py-8 flex flex-col items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              >
-                {saveStepResult.isPending && currentValue === 'deviation' ? (
-                  <Loader2 className="h-12 w-12 animate-spin" />
-                ) : (
-                  <AlertTriangle className="h-12 w-12" strokeWidth={3} />
-                )}
-                <span className="text-sm font-semibold">
-                  {showCommentField ? 'Bekräfta avvikelse' : 'Avvikelse'}
-                </span>
-              </button>
+              <CardTitle>{currentStep.title}</CardTitle>
+              <CardDescription className="whitespace-pre-wrap">{currentStep.instruction}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Comment/Photo Section */}
+              {(showCommentField || currentStep.requires_comment || photoPreview) && (
+                <div className="space-y-3">
+                  <Textarea
+                    value={currentComment}
+                    onChange={(e) => setCurrentComment(e.target.value)}
+                    placeholder="Lägg till kommentar..."
+                    rows={2}
+                  />
+                  {photoPreview && (
+                    <img src={photoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
+                  )}
+                </div>
+              )}
               
-              {/* OK Button (Green) */}
-              <button
-                onClick={() => saveStepResult.mutate('ok')}
-                disabled={saveStepResult.isPending}
-                className="bg-green-500 hover:bg-green-400 text-white py-8 flex flex-col items-center justify-center gap-2 transition-colors disabled:opacity-50"
-              >
-                {saveStepResult.isPending && currentValue === 'ok' ? (
-                  <Loader2 className="h-12 w-12 animate-spin" />
-                ) : (
-                  <Check className="h-12 w-12" strokeWidth={3} />
-                )}
-                <span className="text-sm font-semibold">OK</span>
-              </button>
-            </div>
-            
-            {/* Extra Actions */}
-            <div className="flex justify-center gap-4 p-4 bg-zinc-800">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-zinc-400 hover:text-white"
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                Foto
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCommentField(!showCommentField)}
-                className="text-zinc-400 hover:text-white"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Kommentar
-              </Button>
-              {currentStepIndex > 0 && (
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!showCommentField) {
+                      setShowCommentField(true);
+                    } else {
+                      saveStepResult.mutate('deviation');
+                    }
+                  }}
+                  disabled={saveStepResult.isPending}
+                  className="h-14 border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                >
+                  {saveStepResult.isPending && currentValue === 'deviation' ? (
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  ) : (
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                  )}
+                  {showCommentField ? 'Bekräfta' : 'Avvikelse'}
+                </Button>
+                
+                <Button
+                  onClick={() => saveStepResult.mutate('ok')}
+                  disabled={saveStepResult.isPending}
+                  className="h-14 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {saveStepResult.isPending && currentValue === 'ok' ? (
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-5 w-5 mr-2" />
+                  )}
+                  OK
+                </Button>
+              </div>
+              
+              {/* Extra Actions */}
+              <div className="flex justify-center gap-2 pt-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
-                  className="text-zinc-400 hover:text-white"
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Föregående
+                  <Camera className="h-4 w-4 mr-2" />
+                  Foto
                 </Button>
-              )}
-            </div>
-          </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCommentField(!showCommentField)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Kommentar
+                </Button>
+                {currentStepIndex > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Föregående
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Completion */}
         {allStepsCompleted && (
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card>
             <CardContent className="py-12 text-center">
-              <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-              <h2 className="text-xl font-semibold text-white mb-2">Alla steg är bekräftade</h2>
+              <CheckCircle className="h-16 w-16 mx-auto text-green-600 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Alla steg är bekräftade</h2>
               {deviationCount > 0 && (
-                <p className="text-amber-400 mb-4">
+                <p className="text-amber-600 mb-4">
                   <AlertTriangle className="h-4 w-4 inline mr-1" />
                   {deviationCount} avvikelse(r) - felärenden skapas automatiskt
                 </p>
               )}
-              <p className="text-zinc-400 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Klicka nedan för att slutföra checklistan
               </p>
               <Button
                 size="lg"
                 onClick={() => completeChecklist.mutate()}
                 disabled={completeChecklist.isPending}
-                className="bg-green-500 hover:bg-green-400 text-white"
+                className="bg-green-600 hover:bg-green-700"
               >
                 {completeChecklist.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
