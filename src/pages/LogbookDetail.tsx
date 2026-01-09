@@ -9,6 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePrint } from '@/hooks/usePrint';
@@ -19,7 +26,14 @@ import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/Logbo
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus } from 'lucide-react';
+
+interface CrewMember {
+  tempId: string;
+  id?: string;
+  profileId: string;
+  role: CrewRole;
+}
 
 export default function LogbookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +52,8 @@ export default function LogbookDetail() {
   const [initialized, setInitialized] = useState(false);
   const [overrideValidation, setOverrideValidation] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCrewDialog, setShowCrewDialog] = useState(false);
+  const [editableCrew, setEditableCrew] = useState<CrewMember[]>([]);
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -116,6 +132,15 @@ export default function LogbookDetail() {
       return data;
     },
     enabled: !!id,
+  });
+
+  const { data: profiles } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('*').order('full_name');
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: engineHours } = useQuery({
@@ -289,6 +314,64 @@ export default function LogbookDetail() {
     },
   });
 
+  const updateCrew = useMutation({
+    mutationFn: async () => {
+      // Delete existing crew
+      const { error: deleteError } = await supabase
+        .from('logbook_crew')
+        .delete()
+        .eq('logbook_id', id);
+      if (deleteError) throw deleteError;
+
+      // Insert updated crew
+      if (editableCrew.length > 0) {
+        const validCrew = editableCrew.filter(c => c.profileId);
+        if (validCrew.length > 0) {
+          const { error: insertError } = await supabase.from('logbook_crew').insert(
+            validCrew.map(c => ({
+              logbook_id: id,
+              profile_id: c.profileId,
+              role: c.role,
+            }))
+          );
+          if (insertError) throw insertError;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logbook-crew', id] });
+      toast({ title: 'Sparat', description: 'Besättningen har uppdaterats.' });
+      setShowCrewDialog(false);
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const openCrewDialog = () => {
+    setEditableCrew(
+      crewMembers?.map(c => ({
+        tempId: c.id,
+        id: c.id,
+        profileId: c.profile_id,
+        role: c.role as CrewRole,
+      })) || []
+    );
+    setShowCrewDialog(true);
+  };
+
+  const addCrewMember = () => {
+    setEditableCrew([...editableCrew, { tempId: crypto.randomUUID(), profileId: '', role: 'matros' }]);
+  };
+
+  const updateCrewMember = (tempId: string, field: 'profileId' | 'role', value: string) => {
+    setEditableCrew(editableCrew.map(c => (c.tempId === tempId ? { ...c, [field]: value } : c)));
+  };
+
+  const removeCrewMember = (tempId: string) => {
+    setEditableCrew(editableCrew.filter(c => c.tempId !== tempId));
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -432,14 +515,30 @@ export default function LogbookDetail() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Besättning
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Besättning
+                  </span>
+                  {canEditThis && (
+                    <Button variant="outline" size="sm" onClick={openCrewDialog}>
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Redigera
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {!crewMembers || crewMembers.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Ingen besättning registrerad.</p>
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Ingen besättning registrerad.</p>
+                    {canEditThis && (
+                      <Button variant="outline" size="sm" className="mt-2" onClick={openCrewDialog}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Lägg till besättning
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {crewMembers.map(member => (
@@ -547,6 +646,83 @@ export default function LogbookDetail() {
         confirmLabel="Radera"
         onConfirm={() => deleteLogbook.mutate()}
       />
+
+      {/* Crew Edit Dialog */}
+      <Dialog open={showCrewDialog} onOpenChange={setShowCrewDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Redigera besättning</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {editableCrew.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">Ingen besättning tillagd.</p>
+            ) : (
+              <div className="space-y-3">
+                {editableCrew.map(member => {
+                  const selectedProfileIds = editableCrew
+                    .filter(c => c.tempId !== member.tempId && c.profileId)
+                    .map(c => c.profileId);
+                  
+                  return (
+                    <div key={member.tempId} className="flex gap-2 items-end">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">Person</Label>
+                        <Select value={member.profileId} onValueChange={v => updateCrewMember(member.tempId, 'profileId', v)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Välj person" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {profiles?.map(p => (
+                              <SelectItem 
+                                key={p.id} 
+                                value={p.id}
+                                disabled={selectedProfileIds.includes(p.id)}
+                              >
+                                {p.full_name}{p.is_external ? ' (extern)' : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">Roll</Label>
+                        <Select value={member.role} onValueChange={v => updateCrewMember(member.tempId, 'role', v)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => removeCrewMember(member.tempId)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            <Button variant="outline" onClick={addCrewMember} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Lägg till besättningsmedlem
+            </Button>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowCrewDialog(false)}>
+                Avbryt
+              </Button>
+              <Button onClick={() => updateCrew.mutate()} disabled={updateCrew.isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                {updateCrew.isPending ? 'Sparar...' : 'Spara'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
