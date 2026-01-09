@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Wrench,
   ClipboardCheck,
+  ClipboardList,
   Waves,
   Home,
   Building2,
@@ -58,6 +59,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
     { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
     { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
+    { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
     { href: '/portal/qualifications', label: 'Behörigheter', icon: Award },
   ];
 
@@ -66,6 +68,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     { href: '/portal/admin/users', label: 'Användare', icon: Users },
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
     { href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
+    { href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
   ];
 
   return (

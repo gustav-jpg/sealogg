@@ -68,6 +68,224 @@ export type Database = {
         }
         Relationships: []
       }
+      checklist_executions: {
+        Row: {
+          checklist_template_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          next_due_at: string | null
+          started_at: string
+          started_by: string
+          status: Database["public"]["Enums"]["checklist_execution_status"]
+          vessel_id: string
+        }
+        Insert: {
+          checklist_template_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          next_due_at?: string | null
+          started_at?: string
+          started_by: string
+          status?: Database["public"]["Enums"]["checklist_execution_status"]
+          vessel_id: string
+        }
+        Update: {
+          checklist_template_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          next_due_at?: string | null
+          started_at?: string
+          started_by?: string
+          status?: Database["public"]["Enums"]["checklist_execution_status"]
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_executions_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_executions_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_step_results: {
+        Row: {
+          checklist_execution_id: string
+          checklist_step_id: string
+          comment: string | null
+          confirmed_at: string
+          confirmed_by: string
+          created_at: string
+          id: string
+          photo_url: string | null
+          value: string
+        }
+        Insert: {
+          checklist_execution_id: string
+          checklist_step_id: string
+          comment?: string | null
+          confirmed_at?: string
+          confirmed_by: string
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          value: string
+        }
+        Update: {
+          checklist_execution_id?: string
+          checklist_step_id?: string
+          comment?: string | null
+          confirmed_at?: string
+          confirmed_by?: string
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_step_results_checklist_execution_id_fkey"
+            columns: ["checklist_execution_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_executions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_step_results_checklist_step_id_fkey"
+            columns: ["checklist_step_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_steps: {
+        Row: {
+          checklist_template_id: string
+          confirmation_type: string
+          created_at: string
+          id: string
+          instruction: string
+          requires_comment: boolean
+          requires_photo: boolean
+          step_order: number
+          title: string
+        }
+        Insert: {
+          checklist_template_id: string
+          confirmation_type?: string
+          created_at?: string
+          id?: string
+          instruction: string
+          requires_comment?: boolean
+          requires_photo?: boolean
+          step_order: number
+          title: string
+        }
+        Update: {
+          checklist_template_id?: string
+          confirmation_type?: string
+          created_at?: string
+          id?: string
+          instruction?: string
+          requires_comment?: boolean
+          requires_photo?: boolean
+          step_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_steps_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_template_vessels: {
+        Row: {
+          checklist_template_id: string
+          created_at: string
+          id: string
+          vessel_id: string
+        }
+        Insert: {
+          checklist_template_id: string
+          created_at?: string
+          id?: string
+          vessel_id: string
+        }
+        Update: {
+          checklist_template_id?: string
+          created_at?: string
+          id?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_vessels_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_template_vessels_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          applies_to_all_vessels: boolean
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          interval_days: number | null
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          applies_to_all_vessels?: boolean
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          applies_to_all_vessels?: boolean
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          interval_days?: number | null
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       control_point_attachments: {
         Row: {
           file_name: string
@@ -1259,6 +1477,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "skeppare" | "readonly"
+      checklist_execution_status: "in_progress" | "completed" | "failed"
       control_status: "ok" | "kommande" | "forfallen"
       control_type: "calendar" | "engine_hours"
       crew_role:
@@ -1411,6 +1630,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "skeppare", "readonly"],
+      checklist_execution_status: ["in_progress", "completed", "failed"],
       control_status: ["ok", "kommande", "forfallen"],
       control_type: ["calendar", "engine_hours"],
       crew_role: [
