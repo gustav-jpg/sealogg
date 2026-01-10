@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarIcon, Save, Trash2, FileText, Clock, UtensilsCrossed, Wine, Ship } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, Save, Trash2, FileText, Clock, UtensilsCrossed, Wine, Ship, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { BookingFoodTab } from '@/components/bookings/BookingFoodTab';
@@ -245,10 +245,14 @@ export default function BookingDetail() {
         </div>
 
         <Tabs defaultValue="grund" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="grund" className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">Grund</span>
+            </TabsTrigger>
+            <TabsTrigger value="tidsplan" className="flex items-center gap-1">
+              <ListChecks className="h-4 w-4" />
+              <span className="hidden sm:inline">Tidsplan</span>
             </TabsTrigger>
             <TabsTrigger value="mat" className="flex items-center gap-1">
               <UtensilsCrossed className="h-4 w-4" />
@@ -500,6 +504,11 @@ export default function BookingDetail() {
             </div>
           </TabsContent>
 
+          {/* Tidsplan Tab */}
+          <TabsContent value="tidsplan">
+            <BookingScheduleTab booking={booking} />
+          </TabsContent>
+
           {/* Mat Tab */}
           <TabsContent value="mat">
             <BookingFoodTab bookingId={id!} guestCount={booking.guest_count || undefined} />
@@ -563,8 +572,6 @@ export default function BookingDetail() {
             </Card>
 
             <BookingCrewTab bookingId={id!} />
-            
-            <BookingScheduleTab booking={booking} />
           </TabsContent>
 
           {/* PM Tab */}
