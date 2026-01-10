@@ -112,11 +112,11 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       {/* Header with Logo */}
-      <SidebarHeader className="border-b border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border bg-primary">
         <Link to="/portal" className="flex items-center gap-2 px-2 py-1">
-          <Waves className="h-6 w-6 text-primary shrink-0" />
+          <Waves className="h-6 w-6 text-primary-foreground shrink-0" />
           {!isCollapsed && (
-            <span className="font-logo text-lg font-extrabold text-primary">
+            <span className="font-logo text-lg font-extrabold text-primary-foreground">
               SeaLogg
             </span>
           )}
@@ -207,7 +207,7 @@ export function AppSidebar() {
           <SidebarGroup>
             <CollapsibleTrigger asChild>
               <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md">
-                <CalendarDays className="h-4 w-4 mr-2" />
+                <BookOpen className="h-4 w-4 mr-2" />
                 {!isCollapsed && (
                   <>
                     <span className="flex-1">Bokningar</span>
