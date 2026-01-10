@@ -390,7 +390,7 @@ export default function Checklists() {
                                 checklist.daysRemaining >= 0 ? (
                                   <Badge className="gap-1 bg-green-600 hover:bg-green-600 text-white">
                                     <Clock className="h-3 w-3" />
-                                    Utför inom {checklist.daysRemaining} dagar
+                                    {checklist.daysRemaining === 0 ? 'Utför idag' : `Utför inom ${checklist.daysRemaining} dagar`}
                                   </Badge>
                                 ) : (
                                   <Badge className="gap-1 bg-red-600 hover:bg-red-600 text-white">
