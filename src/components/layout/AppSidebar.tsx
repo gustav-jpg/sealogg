@@ -128,7 +128,7 @@ export function AppSidebar() {
         <Collapsible defaultOpen={isInVesselSection} className="group/collapsible">
           <SidebarGroup>
             <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md">
+              <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-semibold">
                 <Ship className="h-4 w-4 mr-2" />
                 {!isCollapsed && (
                   <>
@@ -166,7 +166,7 @@ export function AppSidebar() {
           <Collapsible defaultOpen={isInVesselSection && location.pathname.includes('/admin')}>
             <SidebarGroup>
               <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md text-muted-foreground">
+                <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-medium text-muted-foreground">
                   <Settings className="h-4 w-4 mr-2" />
                   {!isCollapsed && (
                     <>
@@ -206,7 +206,7 @@ export function AppSidebar() {
         <Collapsible defaultOpen={isInBookingSection} className="group/collapsible">
           <SidebarGroup>
             <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md">
+              <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-semibold">
                 <BookOpen className="h-4 w-4 mr-2" />
                 {!isCollapsed && (
                   <>
@@ -244,7 +244,7 @@ export function AppSidebar() {
           <Collapsible defaultOpen={isInBookingSection && location.pathname.includes('/admin')}>
             <SidebarGroup>
               <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md text-muted-foreground">
+                <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-medium text-muted-foreground">
                   <Settings className="h-4 w-4 mr-2" />
                   {!isCollapsed && (
                     <>
