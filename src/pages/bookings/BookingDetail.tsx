@@ -25,6 +25,7 @@ import { BookingFoodTab } from '@/components/bookings/BookingFoodTab';
 import { BookingDrinksTab } from '@/components/bookings/BookingDrinksTab';
 import { BookingCrewTab } from '@/components/bookings/BookingCrewTab';
 import { BookingPMTab } from '@/components/bookings/BookingPMTab';
+import { BookingScheduleTab } from '@/components/bookings/BookingScheduleTab';
 import { 
   Booking,
   BookingStatus,
@@ -562,6 +563,8 @@ export default function BookingDetail() {
             </Card>
 
             <BookingCrewTab bookingId={id!} />
+            
+            <BookingScheduleTab booking={booking} />
           </TabsContent>
 
           {/* PM Tab */}
