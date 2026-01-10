@@ -213,9 +213,10 @@ export default function Checklists() {
 
     if (ct.interval_days) {
       if (lastCompleted) {
-        const nextDueDate = addDays(new Date(lastCompleted), ct.interval_days);
+        const nextDueDate = startOfDay(addDays(new Date(lastCompleted), ct.interval_days));
         nextDue = format(nextDueDate, 'yyyy-MM-dd');
-        daysRemaining = differenceInDays(nextDueDate, new Date());
+        const today = startOfDay(new Date());
+        daysRemaining = differenceInDays(nextDueDate, today);
         
         if (daysRemaining < 0) {
           status = 'overdue';
