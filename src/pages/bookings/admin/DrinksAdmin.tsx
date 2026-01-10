@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Wine, GlassWater } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DrinkPackage } from '@/lib/booking-types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DrinkExtra {
   id: string;
@@ -29,8 +30,25 @@ interface DrinkItem {
 }
 
 export default function DrinksAdmin() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('packages');
+
+  // Get user's organization
+  const { data: userOrg } = useQuery({
+    queryKey: ['user-organization', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
   
   // Package state
   const [showPackageDialog, setShowPackageDialog] = useState(false);
@@ -100,17 +118,25 @@ export default function DrinksAdmin() {
 
   const savePackage = useMutation({
     mutationFn: async () => {
+      if (!userOrg?.organization_id) throw new Error('No organization found');
+      
       const data = {
         name: packageName,
         description: packageDescription || null,
         contents: packageContents as unknown as any,
         is_active: packageIsActive,
+        organization_id: userOrg.organization_id,
       };
 
       if (editingPackage) {
         const { error } = await supabase
           .from('drink_packages')
-          .update(data)
+          .update({
+            name: packageName,
+            description: packageDescription || null,
+            contents: packageContents as unknown as any,
+            is_active: packageIsActive,
+          })
           .eq('id', editingPackage.id);
         if (error) throw error;
       } else {
@@ -186,22 +212,27 @@ export default function DrinksAdmin() {
 
   const saveExtra = useMutation({
     mutationFn: async () => {
-      const data = {
-        name: extraName,
-        description: extraDescription || null,
-        is_active: extraIsActive,
-      };
-
+      if (!userOrg?.organization_id) throw new Error('No organization found');
+      
       if (editingExtra) {
         const { error } = await supabase
           .from('drink_extras')
-          .update(data)
+          .update({
+            name: extraName,
+            description: extraDescription || null,
+            is_active: extraIsActive,
+          })
           .eq('id', editingExtra.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('drink_extras')
-          .insert(data);
+          .insert({
+            name: extraName,
+            description: extraDescription || null,
+            is_active: extraIsActive,
+            organization_id: userOrg.organization_id,
+          });
         if (error) throw error;
       }
     },

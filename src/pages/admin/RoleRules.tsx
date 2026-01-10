@@ -12,13 +12,31 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { Plus, Trash2, Ship, Shield, Award, Users } from 'lucide-react';
 
 export default function RoleRules() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
+
+  // Get user's organization
+  const { data: userOrg } = useQuery({
+    queryKey: ['user-organization', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   // Certificate requirements state
   const [certDialogOpen, setCertDialogOpen] = useState(false);
@@ -158,9 +176,11 @@ export default function RoleRules() {
   // Certificate types mutations
   const createCertType = useMutation({
     mutationFn: async () => {
+      if (!userOrg?.organization_id) throw new Error('No organization found');
       const { error } = await supabase.from('certificate_types').insert({
         name: typeName,
         description: typeDescription || null,
+        organization_id: userOrg.organization_id,
       });
       if (error) throw error;
     },
