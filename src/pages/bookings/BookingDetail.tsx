@@ -18,9 +18,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { ArrowLeft, CalendarIcon, Save, Trash2, FileText, Clock, Users, UtensilsCrossed, Wine, Ship } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, Save, Trash2, FileText, Clock, UtensilsCrossed, Wine, Ship } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { BookingFoodTab } from '@/components/bookings/BookingFoodTab';
+import { BookingDrinksTab } from '@/components/bookings/BookingDrinksTab';
+import { BookingCrewTab } from '@/components/bookings/BookingCrewTab';
+import { BookingPMTab } from '@/components/bookings/BookingPMTab';
 import { 
   Booking,
   BookingStatus,
@@ -89,22 +93,6 @@ export default function BookingDetail() {
       if (error) throw error;
       return data;
     },
-  });
-
-  // Fetch audit logs
-  const { data: auditLogs } = useQuery({
-    queryKey: ['booking-audit', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('booking_audit_logs')
-        .select('*')
-        .eq('booking_id', id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id,
   });
 
   // Initialize form from booking data
@@ -513,38 +501,12 @@ export default function BookingDetail() {
 
           {/* Mat Tab */}
           <TabsContent value="mat">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <UtensilsCrossed className="h-5 w-5" />
-                  Mat & Meny
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Mat-hantering kommer i nästa fas. Här kommer du kunna välja meny, 
-                  ange portioner och specialkost.
-                </p>
-              </CardContent>
-            </Card>
+            <BookingFoodTab bookingId={id!} guestCount={booking.guest_count || undefined} />
           </TabsContent>
 
           {/* Dryck Tab */}
           <TabsContent value="dryck">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Wine className="h-5 w-5" />
-                  Dryck
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Dryckeshantering kommer i nästa fas. Här kommer du kunna välja 
-                  dryckespaket och tillval.
-                </p>
-              </CardContent>
-            </Card>
+            <BookingDrinksTab bookingId={id!} />
           </TabsContent>
 
           {/* Drift Tab */}
@@ -589,67 +551,22 @@ export default function BookingDetail() {
                     rows={2}
                   />
                 </div>
+
+                <div className="flex justify-end">
+                  <Button onClick={() => updateBooking.mutate()} disabled={updateBooking.isPending}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {updateBooking.isPending ? 'Sparar...' : 'Spara ändringar'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Besättning
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Besättningshantering kommer i nästa fas. Här kommer du kunna 
-                  tilldela personal för bokningen.
-                </p>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={() => updateBooking.mutate()} disabled={updateBooking.isPending}>
-                <Save className="mr-2 h-4 w-4" />
-                {updateBooking.isPending ? 'Sparar...' : 'Spara ändringar'}
-              </Button>
-            </div>
+            <BookingCrewTab bookingId={id!} />
           </TabsContent>
 
           {/* PM Tab */}
           <TabsContent value="pm" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  PM & Ändringslogg
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  PM-generering kommer i nästa fas. Här kommer du kunna skapa 
-                  PM för Kök, Servering, Besättning och Bar.
-                </p>
-
-                {auditLogs && auditLogs.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="font-medium mb-2">Ändringslogg</h4>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {auditLogs.map((log) => (
-                        <div 
-                          key={log.id} 
-                          className="text-sm p-2 bg-muted/50 rounded flex justify-between"
-                        >
-                          <span className="font-medium">{log.action}</span>
-                          <span className="text-muted-foreground">
-                            {format(parseISO(log.created_at), 'yyyy-MM-dd HH:mm')}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <BookingPMTab booking={booking} />
           </TabsContent>
         </Tabs>
 
