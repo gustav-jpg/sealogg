@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Plus, Edit, Trash2, ClipboardList, Calendar, List, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -40,6 +41,7 @@ interface ChecklistStep {
 
 export default function ChecklistTemplates() {
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -74,24 +76,33 @@ export default function ChecklistTemplates() {
   });
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ['checklist-templates-admin'],
-    queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
-        .from('checklist_templates')
+        .from('vessels')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
+  });
+
+  const { data: templates, isLoading } = useQuery({
+    queryKey: ['checklist-templates-admin', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('checklist_templates')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrgId,
   });
 
   const { data: templateVessels } = useQuery({

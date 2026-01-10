@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -69,15 +70,12 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
 
 export function AppSidebar() {
   const { user, profile, isAdmin, signOut } = useAuth();
+  const { selectedOrgId, selectedOrg, userOrgs, setSelectedOrgId, isLoading: isOrgLoading } = useOrganization();
   const location = useLocation();
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(() => {
-    // Initialize from localStorage if available
-    return localStorage.getItem('selectedOrgId');
-  });
 
   useEffect(() => {
     const checkSuperadmin = async () => {
@@ -87,48 +85,6 @@ export function AppSidebar() {
     };
     checkSuperadmin();
   }, [user]);
-
-  // Fetch user's organizations
-  const { data: userOrgs } = useQuery({
-    queryKey: ['user-organizations', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select(`
-          organization_id,
-          role,
-          organizations:organization_id (
-            id,
-            name,
-            is_active
-          )
-        `)
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data?.filter(d => (d.organizations as any)?.is_active) || [];
-    },
-    enabled: !!user,
-  });
-
-  // Set default org only if no valid selection exists
-  useEffect(() => {
-    if (userOrgs && userOrgs.length > 0) {
-      // Check if current selection is still valid
-      const isValidSelection = selectedOrgId && userOrgs.some(o => o.organization_id === selectedOrgId);
-      if (!isValidSelection) {
-        const defaultOrgId = userOrgs[0].organization_id;
-        setSelectedOrgId(defaultOrgId);
-        localStorage.setItem('selectedOrgId', defaultOrgId);
-      }
-    }
-  }, [userOrgs, selectedOrgId]);
-
-  // Helper to handle org selection with persistence
-  const handleOrgSelect = (orgId: string) => {
-    setSelectedOrgId(orgId);
-    localStorage.setItem('selectedOrgId', orgId);
-  };
 
   // Fetch active modules for selected org
   const { data: orgModules } = useQuery({
@@ -148,7 +104,7 @@ export function AppSidebar() {
     enabled: !!selectedOrgId,
   });
 
-  const selectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
+  const currentSelectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
 
   // Filter nav items based on active modules
   const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists'];
@@ -238,13 +194,13 @@ export function AppSidebar() {
                     "w-full justify-between",
                     !isCollapsed && "px-2"
                   )}
-                  tooltip={selectedOrg ? (selectedOrg.organizations as any)?.name : 'Välj organisation'}
+                  tooltip={selectedOrg?.name || 'Välj organisation'}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Building2 className="h-4 w-4 shrink-0" />
                     {!isCollapsed && (
                       <span className="truncate font-medium">
-                        {selectedOrg ? (selectedOrg.organizations as any)?.name : 'Välj organisation'}
+                        {selectedOrg?.name || 'Välj organisation'}
                       </span>
                     )}
                   </div>
@@ -260,7 +216,7 @@ export function AppSidebar() {
                     return (
                       <DropdownMenuItem
                         key={org.organization_id}
-                        onClick={() => handleOrgSelect(org.organization_id)}
+                        onClick={() => setSelectedOrgId(org.organization_id)}
                         className="flex items-center justify-between"
                       >
                         <span>{orgData?.name}</span>

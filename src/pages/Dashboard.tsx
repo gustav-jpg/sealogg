@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Ship, Calendar, User, Printer } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { LOGBOOK_STATUS_LABELS } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -14,17 +15,31 @@ import { usePrint } from '@/hooks/usePrint';
 
 export default function Dashboard() {
   const { canEdit } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { printContent } = usePrint();
 
   const { data: logbooks, isLoading } = useQuery({
-    queryKey: ['logbooks'],
+    queryKey: ['logbooks', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
+      
+      // First get vessels for this org
+      const { data: orgVessels, error: vesselError } = await supabase
+        .from('vessels')
+        .select('id')
+        .eq('organization_id', selectedOrgId);
+      if (vesselError) throw vesselError;
+      
+      const vesselIds = orgVessels?.map(v => v.id) || [];
+      if (vesselIds.length === 0) return [];
+      
       const { data, error } = await supabase
         .from('logbooks')
         .select(`
           *,
           vessel:vessels(*)
         `)
+        .in('vessel_id', vesselIds)
         .order('date', { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -47,6 +62,7 @@ export default function Dashboard() {
       
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   return (

@@ -16,10 +16,12 @@ import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { Plus, Ship, Trash2, Users, Settings, Gauge, Pencil, Award, Upload, FileText, ExternalLink, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function AdminVessels() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [engineDialogOpen, setEngineDialogOpen] = useState(false);
@@ -37,12 +39,18 @@ export default function AdminVessels() {
   const [editRequirements, setEditRequirements] = useState<{ id?: string; role: CrewRole; count: number; group: string }[]>([]);
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('vessels')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: crewRequirements } = useQuery({
