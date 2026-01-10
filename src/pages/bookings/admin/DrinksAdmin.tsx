@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Wine, GlassWater } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { DrinkPackage } from '@/lib/booking-types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface DrinkExtra {
   id: string;
@@ -30,25 +30,9 @@ interface DrinkItem {
 }
 
 export default function DrinksAdmin() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { selectedOrgId } = useOrganization();
   const [activeTab, setActiveTab] = useState('packages');
-
-  // Get user's organization
-  const { data: userOrg } = useQuery({
-    queryKey: ['user-organization', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
   
   // Package state
   const [showPackageDialog, setShowPackageDialog] = useState(false);
@@ -69,28 +53,34 @@ export default function DrinksAdmin() {
 
   // Fetch packages
   const { data: packages, isLoading: packagesLoading } = useQuery({
-    queryKey: ['drink-packages-admin'],
+    queryKey: ['drink-packages-admin', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('drink_packages')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data as DrinkPackage[];
     },
+    enabled: !!selectedOrgId,
   });
 
   // Fetch extras
   const { data: extras, isLoading: extrasLoading } = useQuery({
-    queryKey: ['drink-extras-admin'],
+    queryKey: ['drink-extras-admin', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('drink_extras')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data as DrinkExtra[];
     },
+    enabled: !!selectedOrgId,
   });
 
   // Package functions
@@ -118,14 +108,14 @@ export default function DrinksAdmin() {
 
   const savePackage = useMutation({
     mutationFn: async () => {
-      if (!userOrg?.organization_id) throw new Error('No organization found');
-      
+      if (!selectedOrgId) throw new Error('Inget rederi valt');
+
       const data = {
         name: packageName,
         description: packageDescription || null,
         contents: packageContents as unknown as any,
         is_active: packageIsActive,
-        organization_id: userOrg.organization_id,
+        organization_id: selectedOrgId,
       };
 
       if (editingPackage) {
@@ -212,8 +202,8 @@ export default function DrinksAdmin() {
 
   const saveExtra = useMutation({
     mutationFn: async () => {
-      if (!userOrg?.organization_id) throw new Error('No organization found');
-      
+      if (!selectedOrgId) throw new Error('Inget rederi valt');
+
       if (editingExtra) {
         const { error } = await supabase
           .from('drink_extras')
@@ -231,7 +221,7 @@ export default function DrinksAdmin() {
             name: extraName,
             description: extraDescription || null,
             is_active: extraIsActive,
-            organization_id: userOrg.organization_id,
+            organization_id: selectedOrgId,
           });
         if (error) throw error;
       }

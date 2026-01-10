@@ -1616,6 +1616,7 @@ export type Database = {
           full_name: string
           id: string
           is_external: boolean
+          organization_id: string | null
           preferred_vessel_id: string | null
           updated_at: string
           user_id: string | null
@@ -1626,6 +1627,7 @@ export type Database = {
           full_name: string
           id?: string
           is_external?: boolean
+          organization_id?: string | null
           preferred_vessel_id?: string | null
           updated_at?: string
           user_id?: string | null
@@ -1636,11 +1638,19 @@ export type Database = {
           full_name?: string
           id?: string
           is_external?: boolean
+          organization_id?: string | null
           preferred_vessel_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_preferred_vessel_id_fkey"
             columns: ["preferred_vessel_id"]

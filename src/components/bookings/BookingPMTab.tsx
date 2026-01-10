@@ -4,23 +4,24 @@ import { format, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { 
-  FileText, 
-  Printer, 
-  RefreshCw, 
-  ChefHat, 
-  UtensilsCrossed, 
-  Users, 
-  History 
+import {
+  FileText,
+  Printer,
+  RefreshCw,
+  ChefHat,
+  UtensilsCrossed,
+  Users,
+  History
 } from 'lucide-react';
-import { 
-  PmType, 
-  PM_TYPE_LABELS, 
+import {
+  PmType,
+  PM_TYPE_LABELS,
   BOOKING_CREW_ROLE_LABELS,
   EVENT_TYPE_LABELS,
   EVENT_LAYOUT_LABELS,
@@ -78,6 +79,7 @@ interface PMContent {
 export function BookingPMTab({ booking }: BookingPMTabProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const [selectedPmType, setSelectedPmType] = useState<PmType>('kok');
 
   // Fetch existing PMs
@@ -122,16 +124,19 @@ export function BookingPMTab({ booking }: BookingPMTabProps) {
     },
   });
 
-  // Fetch drink extras names
+  // Fetch drink extras names (scoped per rederi)
   const { data: drinkExtras } = useQuery({
-    queryKey: ['drink-extras-all'],
+    queryKey: ['drink-extras-all', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('drink_extras')
-        .select('id, name');
+        .select('id, name')
+        .eq('organization_id', selectedOrgId);
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   // Fetch booking crew data
