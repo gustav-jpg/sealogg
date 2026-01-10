@@ -299,7 +299,7 @@ export function AppSidebar() {
                   <Settings className="h-4 w-4 mr-2" />
                   {!isCollapsed && (
                     <>
-                      <span className="flex-1">Fartyg Admin</span>
+                      <span className="flex-1">Inställningar</span>
                       <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                     </>
                   )}
@@ -381,7 +381,7 @@ export function AppSidebar() {
                   <Settings className="h-4 w-4 mr-2" />
                   {!isCollapsed && (
                     <>
-                      <span className="flex-1">Bokningar Admin</span>
+                      <span className="flex-1">Inställningar</span>
                       <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                     </>
                   )}
