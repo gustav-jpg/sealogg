@@ -42,7 +42,7 @@ import {
 import { usePrint } from '@/hooks/usePrint';
 
 export default function SelfControl() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
@@ -599,12 +599,14 @@ export default function SelfControl() {
                                         )}
                                       </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                      <Button variant="default" size="sm" onClick={(e) => { e.stopPropagation(); openPerformDialog(cp); }}>
-                                        <Check className="h-4 w-4 mr-1" />
-                                        Utför
-                                      </Button>
-                                    </div>
+                                    {isAdmin && (
+                                      <div className="flex gap-2">
+                                        <Button variant="default" size="sm" onClick={(e) => { e.stopPropagation(); openPerformDialog(cp); }}>
+                                          <Check className="h-4 w-4 mr-1" />
+                                          Utför
+                                        </Button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -651,10 +653,12 @@ export default function SelfControl() {
                                   <span>Nästa: {cp.nextDue}</span>
                                 </div>
                               </div>
-                            <Button variant="default" size="sm" onClick={() => openPerformDialog(cp)}>
-                              <Check className="h-4 w-4 mr-1" />
-                              Utför
-                            </Button>
+                            {isAdmin && (
+                              <Button variant="default" size="sm" onClick={() => openPerformDialog(cp)}>
+                                <Check className="h-4 w-4 mr-1" />
+                                Utför
+                              </Button>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -708,10 +712,12 @@ export default function SelfControl() {
                                 </div>
                               )}
                             </div>
-                            <Button variant="destructive" size="sm" onClick={() => openPerformDialog(cp)}>
-                              <Check className="h-4 w-4 mr-1" />
-                              Utför nu
-                            </Button>
+                            {isAdmin && (
+                              <Button variant="destructive" size="sm" onClick={() => openPerformDialog(cp)}>
+                                <Check className="h-4 w-4 mr-1" />
+                                Utför nu
+                              </Button>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
