@@ -78,6 +78,24 @@ serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
+      
+      // Ensure profile exists for existing user
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (!existingProfile) {
+        // Create profile for existing user if missing
+        await supabaseAdmin
+          .from('profiles')
+          .insert({
+            user_id: userId,
+            full_name: fullName,
+            email: email,
+          });
+      }
     } else {
       // Create new user with a temporary password
       const tempPassword = crypto.randomUUID();
@@ -97,6 +115,19 @@ serve(async (req) => {
       }
 
       userId = newUser.user.id;
+
+      // Create profile for new user
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          user_id: userId,
+          full_name: fullName,
+          email: email,
+        });
+
+      if (profileError) {
+        console.error("Failed to create profile:", profileError);
+      }
 
       // Send password reset email so user can set their own password
       const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
