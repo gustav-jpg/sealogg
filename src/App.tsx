@@ -32,6 +32,9 @@ import BackofficeLayout from "./components/layout/BackofficeLayout";
 import BackofficeDashboard from "./pages/backoffice/Dashboard";
 import Organizations from "./pages/backoffice/Organizations";
 import OrganizationDetail from "./pages/backoffice/OrganizationDetail";
+import BookingCalendar from "./pages/bookings/BookingCalendar";
+import NewBooking from "./pages/bookings/NewBooking";
+import BookingDetail from "./pages/bookings/BookingDetail";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +108,11 @@ function AppRoutes() {
       <Route path="/portal/admin/checklists" element={<ProtectedRoute adminOnly><ChecklistTemplates /></ProtectedRoute>} />
       <Route path="/portal/admin/status" element={<ProtectedRoute adminOnly><AdminStatus /></ProtectedRoute>} />
       <Route path="/portal/admin/sea-days" element={<ProtectedRoute adminOnly><SeaDays /></ProtectedRoute>} />
+      
+      {/* Booking routes */}
+      <Route path="/bookings" element={<ProtectedRoute><BookingCalendar /></ProtectedRoute>} />
+      <Route path="/bookings/new" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
+      <Route path="/bookings/:id" element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
       
       {/* Backoffice routes (superadmin only) */}
       <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />

@@ -47,6 +47,337 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_audit_logs: {
+        Row: {
+          action: string
+          booking_id: string
+          created_at: string
+          field_changed: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          booking_id: string
+          created_at?: string
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          booking_id?: string
+          created_at?: string
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_audit_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_crew: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          profile_id: string
+          role_type: Database["public"]["Enums"]["booking_crew_role"]
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          profile_id: string
+          role_type: Database["public"]["Enums"]["booking_crew_role"]
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          profile_id?: string
+          role_type?: Database["public"]["Enums"]["booking_crew_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_crew_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_crew_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_drinks: {
+        Row: {
+          booking_id: string
+          created_at: string
+          drink_package_id: string | null
+          extras: string[] | null
+          id: string
+          is_a_la_carte: boolean | null
+          notes: string | null
+          package_name_snapshot: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          drink_package_id?: string | null
+          extras?: string[] | null
+          id?: string
+          is_a_la_carte?: boolean | null
+          notes?: string | null
+          package_name_snapshot?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          drink_package_id?: string | null
+          extras?: string[] | null
+          id?: string
+          is_a_la_carte?: boolean | null
+          notes?: string | null
+          package_name_snapshot?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_drinks_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_drinks_drink_package_id_fkey"
+            columns: ["drink_package_id"]
+            isOneToOne: false
+            referencedRelation: "drink_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_food: {
+        Row: {
+          booking_id: string
+          created_at: string
+          dietary_notes: string | null
+          dietary_tags: string[] | null
+          id: string
+          kitchen_notes: string | null
+          menu_deadline: string | null
+          menu_id: string | null
+          menu_name_snapshot: string | null
+          portions: number | null
+          serving_times: Json | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          dietary_notes?: string | null
+          dietary_tags?: string[] | null
+          id?: string
+          kitchen_notes?: string | null
+          menu_deadline?: string | null
+          menu_id?: string | null
+          menu_name_snapshot?: string | null
+          portions?: number | null
+          serving_times?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          dietary_notes?: string | null
+          dietary_tags?: string[] | null
+          id?: string
+          kitchen_notes?: string | null
+          menu_deadline?: string | null
+          menu_id?: string | null
+          menu_name_snapshot?: string | null
+          portions?: number | null
+          serving_times?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_food_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_food_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "menus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_pms: {
+        Row: {
+          booking_id: string
+          content: Json
+          created_at: string
+          created_by: string
+          id: string
+          is_latest: boolean
+          pm_type: Database["public"]["Enums"]["pm_type"]
+          version: number
+        }
+        Insert: {
+          booking_id: string
+          content: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          is_latest?: boolean
+          pm_type: Database["public"]["Enums"]["pm_type"]
+          version?: number
+        }
+        Update: {
+          booking_id?: string
+          content?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_latest?: boolean
+          pm_type?: Database["public"]["Enums"]["pm_type"]
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_pms_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          arrival_harbor: string | null
+          blocking_reason: Database["public"]["Enums"]["blocking_reason"] | null
+          booking_date: string
+          buffer_after_minutes: number | null
+          buffer_before_minutes: number | null
+          contact_company: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string
+          departure_harbor: string | null
+          end_time: string
+          event_layout: Database["public"]["Enums"]["event_layout"] | null
+          event_type: Database["public"]["Enums"]["event_type"] | null
+          guest_count: number | null
+          id: string
+          internal_notes: string | null
+          max_guest_warning: boolean | null
+          route_notes: string | null
+          safety_notes: string | null
+          start_time: string
+          status: Database["public"]["Enums"]["booking_status"]
+          tech_equipment: string[] | null
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          arrival_harbor?: string | null
+          blocking_reason?:
+            | Database["public"]["Enums"]["blocking_reason"]
+            | null
+          booking_date: string
+          buffer_after_minutes?: number | null
+          buffer_before_minutes?: number | null
+          contact_company?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by: string
+          departure_harbor?: string | null
+          end_time: string
+          event_layout?: Database["public"]["Enums"]["event_layout"] | null
+          event_type?: Database["public"]["Enums"]["event_type"] | null
+          guest_count?: number | null
+          id?: string
+          internal_notes?: string | null
+          max_guest_warning?: boolean | null
+          route_notes?: string | null
+          safety_notes?: string | null
+          start_time: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          tech_equipment?: string[] | null
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          arrival_harbor?: string | null
+          blocking_reason?:
+            | Database["public"]["Enums"]["blocking_reason"]
+            | null
+          booking_date?: string
+          buffer_after_minutes?: number | null
+          buffer_before_minutes?: number | null
+          contact_company?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          departure_harbor?: string | null
+          end_time?: string
+          event_layout?: Database["public"]["Enums"]["event_layout"] | null
+          event_type?: Database["public"]["Enums"]["event_type"] | null
+          guest_count?: number | null
+          id?: string
+          internal_notes?: string | null
+          max_guest_warning?: boolean | null
+          route_notes?: string | null
+          safety_notes?: string | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          tech_equipment?: string[] | null
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificate_types: {
         Row: {
           created_at: string
@@ -664,6 +995,60 @@ export type Database = {
           },
         ]
       }
+      drink_extras: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      drink_packages: {
+        Row: {
+          contents: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          contents?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          contents?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fault_attachments: {
         Row: {
           comment_id: string | null
@@ -1012,6 +1397,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      menus: {
+        Row: {
+          allergen_info: string | null
+          courses: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          season: string | null
+          updated_at: string
+        }
+        Insert: {
+          allergen_info?: string | null
+          courses?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          season?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allergen_info?: string | null
+          courses?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          season?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       organization_members: {
         Row: {
@@ -1541,6 +1962,25 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "skeppare" | "readonly"
+      blocking_reason:
+        | "service"
+        | "privat"
+        | "vaderreserv"
+        | "personalbrist"
+        | "ovrigt"
+      booking_crew_role:
+        | "kapten"
+        | "matros"
+        | "serveringsansvarig"
+        | "kock"
+        | "bartender"
+      booking_status:
+        | "forfragen"
+        | "preliminar"
+        | "bekraftad"
+        | "avbokad"
+        | "genomford"
+        | "blockerad"
       checklist_execution_status: "in_progress" | "completed" | "failed"
       control_status: "ok" | "kommande" | "forfallen"
       control_type: "calendar" | "engine_hours"
@@ -1557,6 +1997,15 @@ export type Database = {
         | "aterrapporterad"
         | "stangd"
       deviation_type: "incident" | "tillbud" | "avvikelse" | "ovrigt"
+      event_layout: "sittning" | "mingel" | "konferens" | "blandat"
+      event_type:
+        | "middag"
+        | "foretagsevent"
+        | "brollop"
+        | "transport"
+        | "privat"
+        | "konferens"
+        | "ovrigt"
       fault_priority: "lag" | "normal" | "hog" | "kritisk"
       fault_status:
         | "ny"
@@ -1566,6 +2015,7 @@ export type Database = {
         | "avslutad"
       logbook_status: "oppen" | "stangd"
       org_role: "org_admin" | "org_user"
+      pm_type: "besattning" | "servering" | "kok" | "bar"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1694,6 +2144,28 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "skeppare", "readonly"],
+      blocking_reason: [
+        "service",
+        "privat",
+        "vaderreserv",
+        "personalbrist",
+        "ovrigt",
+      ],
+      booking_crew_role: [
+        "kapten",
+        "matros",
+        "serveringsansvarig",
+        "kock",
+        "bartender",
+      ],
+      booking_status: [
+        "forfragen",
+        "preliminar",
+        "bekraftad",
+        "avbokad",
+        "genomford",
+        "blockerad",
+      ],
       checklist_execution_status: ["in_progress", "completed", "failed"],
       control_status: ["ok", "kommande", "forfallen"],
       control_type: ["calendar", "engine_hours"],
@@ -1712,6 +2184,16 @@ export const Constants = {
         "stangd",
       ],
       deviation_type: ["incident", "tillbud", "avvikelse", "ovrigt"],
+      event_layout: ["sittning", "mingel", "konferens", "blandat"],
+      event_type: [
+        "middag",
+        "foretagsevent",
+        "brollop",
+        "transport",
+        "privat",
+        "konferens",
+        "ovrigt",
+      ],
       fault_priority: ["lag", "normal", "hog", "kritisk"],
       fault_status: [
         "ny",
@@ -1722,6 +2204,7 @@ export const Constants = {
       ],
       logbook_status: ["oppen", "stangd"],
       org_role: ["org_admin", "org_user"],
+      pm_type: ["besattning", "servering", "kok", "bar"],
     },
   },
 } as const
