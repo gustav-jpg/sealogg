@@ -31,7 +31,13 @@ export default function NewBooking() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+
+  // Redirect non-admins
+  if (!isAdmin) {
+    navigate('/bookings');
+    return null;
+  }
 
   const initialDate = searchParams.get('date');
 

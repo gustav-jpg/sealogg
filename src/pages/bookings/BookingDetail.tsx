@@ -244,35 +244,39 @@ export default function BookingDetail() {
           </p>
         </div>
 
-        <Tabs defaultValue="grund" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="grund" className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Grund</span>
-            </TabsTrigger>
-            <TabsTrigger value="tidsplan" className="flex items-center gap-1">
-              <ListChecks className="h-4 w-4" />
-              <span className="hidden sm:inline">Tidsplan</span>
-            </TabsTrigger>
-            <TabsTrigger value="mat" className="flex items-center gap-1">
-              <UtensilsCrossed className="h-4 w-4" />
-              <span className="hidden sm:inline">Mat</span>
-            </TabsTrigger>
-            <TabsTrigger value="dryck" className="flex items-center gap-1">
-              <Wine className="h-4 w-4" />
-              <span className="hidden sm:inline">Dryck</span>
-            </TabsTrigger>
-            <TabsTrigger value="drift" className="flex items-center gap-1">
-              <Ship className="h-4 w-4" />
-              <span className="hidden sm:inline">Drift</span>
-            </TabsTrigger>
+        <Tabs defaultValue={isAdmin ? "grund" : "pm"} className="space-y-4">
+          <TabsList className={cn("grid w-full", isAdmin ? "grid-cols-6" : "grid-cols-1")}>
+            {isAdmin && (
+              <>
+                <TabsTrigger value="grund" className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span className="hidden sm:inline">Grund</span>
+                </TabsTrigger>
+                <TabsTrigger value="tidsplan" className="flex items-center gap-1">
+                  <ListChecks className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tidsplan</span>
+                </TabsTrigger>
+                <TabsTrigger value="mat" className="flex items-center gap-1">
+                  <UtensilsCrossed className="h-4 w-4" />
+                  <span className="hidden sm:inline">Mat</span>
+                </TabsTrigger>
+                <TabsTrigger value="dryck" className="flex items-center gap-1">
+                  <Wine className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dryck</span>
+                </TabsTrigger>
+                <TabsTrigger value="drift" className="flex items-center gap-1">
+                  <Ship className="h-4 w-4" />
+                  <span className="hidden sm:inline">Drift</span>
+                </TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="pm" className="flex items-center gap-1">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">PM</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* Grund Tab */}
+          {/* Grund Tab - Admin only */}
           <TabsContent value="grund" className="space-y-4">
             <Card>
               <CardHeader>

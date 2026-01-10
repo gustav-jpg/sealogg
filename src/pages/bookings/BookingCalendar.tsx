@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,7 @@ import {
 
 export default function BookingCalendar() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedVessel, setSelectedVessel] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
@@ -83,10 +85,12 @@ export default function BookingCalendar() {
               Hantera bokningar för hyr hela båten
             </p>
           </div>
-          <Button onClick={() => navigate('/bookings/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Ny bokning
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => navigate('/bookings/new')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Ny bokning
+            </Button>
+          )}
         </div>
 
         {/* Filters and Navigation */}
