@@ -138,12 +138,12 @@ export function BookingFoodTab({ bookingId, guestCount }: BookingFoodTabProps) {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Meny</Label>
-              <Select value={menuId} onValueChange={setMenuId}>
+              <Select value={menuId || 'none'} onValueChange={(v) => setMenuId(v === 'none' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Välj meny" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ingen meny vald</SelectItem>
+                  <SelectItem value="none">Ingen meny vald</SelectItem>
                   {menus?.map((menu) => (
                     <SelectItem key={menu.id} value={menu.id}>
                       {menu.name} {menu.season && `(${menu.season})`}

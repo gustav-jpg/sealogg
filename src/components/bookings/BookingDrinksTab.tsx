@@ -156,12 +156,12 @@ export function BookingDrinksTab({ bookingId }: BookingDrinksTabProps) {
             <>
               <div className="space-y-2">
                 <Label>Välj dryckespaket</Label>
-                <Select value={packageId} onValueChange={setPackageId}>
+                <Select value={packageId || 'none'} onValueChange={(v) => setPackageId(v === 'none' ? '' : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Välj paket" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Inget paket valt</SelectItem>
+                    <SelectItem value="none">Inget paket valt</SelectItem>
                     {packages?.map((pkg) => (
                       <SelectItem key={pkg.id} value={pkg.id}>
                         {pkg.name}
