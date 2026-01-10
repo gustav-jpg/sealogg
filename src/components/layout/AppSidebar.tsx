@@ -150,15 +150,27 @@ export function AppSidebar() {
     vesselNavItems.push({ href: '/portal/qualifications', label: 'Behörigheter', icon: Award });
   }
 
-  const vesselAdminItems = [
+  // Base admin items always shown
+  const baseVesselAdminItems = [
     { href: '/portal/admin/status', label: 'Statusöversikt', icon: Activity },
     { href: '/portal/admin/sea-days', label: 'Sjödagar', icon: Anchor },
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Användare', icon: Users },
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
-    { href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
-    { href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
   ];
+
+  // Module-specific admin items
+  const moduleAdminItems: { module: AppModule; href: string; label: string; icon: any }[] = [
+    { module: 'self_control', href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
+    { module: 'checklists', href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
+  ];
+
+  // Filter module-specific items based on active modules
+  const filteredModuleAdminItems = moduleAdminItems
+    .filter(item => orgModules?.includes(item.module) || isSuperadmin)
+    .map(({ href, label, icon }) => ({ href, label, icon }));
+
+  const vesselAdminItems = [...baseVesselAdminItems, ...filteredModuleAdminItems];
 
   const bookingAdminItems = [
     { href: '/bookings/admin/menus', label: 'Menyer', icon: UtensilsCrossed },
