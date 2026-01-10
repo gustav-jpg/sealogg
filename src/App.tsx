@@ -35,6 +35,8 @@ import OrganizationDetail from "./pages/backoffice/OrganizationDetail";
 import BookingCalendar from "./pages/bookings/BookingCalendar";
 import NewBooking from "./pages/bookings/NewBooking";
 import BookingDetail from "./pages/bookings/BookingDetail";
+import MenusAdmin from "./pages/bookings/admin/MenusAdmin";
+import DrinksAdmin from "./pages/bookings/admin/DrinksAdmin";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +115,8 @@ function AppRoutes() {
       <Route path="/bookings" element={<ProtectedRoute><BookingCalendar /></ProtectedRoute>} />
       <Route path="/bookings/new" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
       <Route path="/bookings/:id" element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
+      <Route path="/bookings/admin/menus" element={<ProtectedRoute adminOnly><MenusAdmin /></ProtectedRoute>} />
+      <Route path="/bookings/admin/drinks" element={<ProtectedRoute adminOnly><DrinksAdmin /></ProtectedRoute>} />
       
       {/* Backoffice routes (superadmin only) */}
       <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />

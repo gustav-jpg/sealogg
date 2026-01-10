@@ -29,6 +29,9 @@ import {
   Building2,
   Activity,
   Anchor,
+  CalendarDays,
+  UtensilsCrossed,
+  Wine,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -63,6 +66,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
     { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
     { href: '/portal/qualifications', label: 'Behörigheter', icon: Award },
+    { href: '/bookings', label: 'Bokningar', icon: CalendarDays },
   ];
 
   const adminItems = [
@@ -73,6 +77,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
     { href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
     { href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
+    { href: '/bookings/admin/menus', label: 'Menyer', icon: UtensilsCrossed },
+    { href: '/bookings/admin/drinks', label: 'Dryckespaket', icon: Wine },
   ];
 
   return (
