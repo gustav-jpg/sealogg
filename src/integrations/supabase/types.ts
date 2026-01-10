@@ -387,20 +387,31 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          organization_id: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          organization_id: string
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          organization_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "certificate_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklist_executions: {
         Row: {
@@ -1027,6 +1038,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          organization_id: string
         }
         Insert: {
           created_at?: string
@@ -1034,6 +1046,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          organization_id: string
         }
         Update: {
           created_at?: string
@@ -1041,8 +1054,17 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          organization_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "drink_extras_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       drink_packages: {
         Row: {
@@ -1052,6 +1074,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          organization_id: string
           updated_at: string
         }
         Insert: {
@@ -1061,6 +1084,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          organization_id: string
           updated_at?: string
         }
         Update: {
@@ -1070,9 +1094,18 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          organization_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "drink_packages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fault_attachments: {
         Row: {
@@ -1432,6 +1465,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          organization_id: string
           season: string | null
           updated_at: string
         }
@@ -1443,6 +1477,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          organization_id: string
           season?: string | null
           updated_at?: string
         }
@@ -1454,10 +1489,19 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          organization_id?: string
           season?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "menus_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organization_features: {
         Row: {

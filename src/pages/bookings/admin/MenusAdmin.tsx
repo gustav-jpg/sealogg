@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, UtensilsCrossed } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Menu } from '@/lib/booking-types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CourseItem {
   type: 'forratt' | 'varmratt' | 'dessert' | 'buffe';
@@ -22,10 +23,27 @@ interface CourseItem {
 }
 
 export default function MenusAdmin() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = useState(false);
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
   const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
+
+  // Get user's organization
+  const { data: userOrg } = useQuery({
+    queryKey: ['user-organization', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   // Form state
   const [name, setName] = useState('');
@@ -75,25 +93,33 @@ export default function MenusAdmin() {
 
   const saveMenu = useMutation({
     mutationFn: async () => {
-      const menuData = {
-        name,
-        season: season || null,
-        description: description || null,
-        allergen_info: allergenInfo || null,
-        courses: courses as unknown as any,
-        is_active: isActive,
-      };
-
+      if (!userOrg?.organization_id) throw new Error('No organization found');
+      
       if (editingMenu) {
         const { error } = await supabase
           .from('menus')
-          .update(menuData)
+          .update({
+            name,
+            season: season || null,
+            description: description || null,
+            allergen_info: allergenInfo || null,
+            courses: courses as unknown as any,
+            is_active: isActive,
+          })
           .eq('id', editingMenu.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('menus')
-          .insert(menuData);
+          .insert({
+            name,
+            season: season || null,
+            description: description || null,
+            allergen_info: allergenInfo || null,
+            courses: courses as unknown as any,
+            is_active: isActive,
+            organization_id: userOrg.organization_id,
+          });
         if (error) throw error;
       }
     },
