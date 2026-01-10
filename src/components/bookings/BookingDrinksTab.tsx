@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Save, Wine, GlassWater } from 'lucide-react';
 import { BookingDrinks, DrinkPackage } from '@/lib/booking-types';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface DrinkExtra {
   id: string;
@@ -25,6 +26,7 @@ interface BookingDrinksTabProps {
 
 export function BookingDrinksTab({ bookingId }: BookingDrinksTabProps) {
   const queryClient = useQueryClient();
+  const { selectedOrgId } = useOrganization();
 
   const [packageId, setPackageId] = useState<string>('');
   const [isALaCarte, setIsALaCarte] = useState(false);
@@ -47,30 +49,36 @@ export function BookingDrinksTab({ bookingId }: BookingDrinksTabProps) {
 
   // Fetch available packages
   const { data: packages } = useQuery({
-    queryKey: ['drink-packages-active'],
+    queryKey: ['drink-packages-active', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('drink_packages')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data as DrinkPackage[];
     },
+    enabled: !!selectedOrgId,
   });
 
   // Fetch available extras
   const { data: extras } = useQuery({
-    queryKey: ['drink-extras-active'],
+    queryKey: ['drink-extras-active', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('drink_extras')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data as DrinkExtra[];
     },
+    enabled: !!selectedOrgId,
   });
 
   // Initialize form from existing data

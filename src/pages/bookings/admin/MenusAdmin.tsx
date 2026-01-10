@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, UtensilsCrossed } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Menu } from '@/lib/booking-types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface CourseItem {
   type: 'forratt' | 'varmratt' | 'dessert' | 'buffe';
@@ -23,27 +23,11 @@ interface CourseItem {
 }
 
 export default function MenusAdmin() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { selectedOrgId } = useOrganization();
   const [showDialog, setShowDialog] = useState(false);
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
   const [deleteMenuId, setDeleteMenuId] = useState<string | null>(null);
-
-  // Get user's organization
-  const { data: userOrg } = useQuery({
-    queryKey: ['user-organization', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
 
   // Form state
   const [name, setName] = useState('');
@@ -54,15 +38,18 @@ export default function MenusAdmin() {
   const [isActive, setIsActive] = useState(true);
 
   const { data: menus, isLoading } = useQuery({
-    queryKey: ['menus-admin'],
+    queryKey: ['menus-admin', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('menus')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data as Menu[];
     },
+    enabled: !!selectedOrgId,
   });
 
   const resetForm = () => {
@@ -93,8 +80,8 @@ export default function MenusAdmin() {
 
   const saveMenu = useMutation({
     mutationFn: async () => {
-      if (!userOrg?.organization_id) throw new Error('No organization found');
-      
+      if (!selectedOrgId) throw new Error('Inget rederi valt');
+
       if (editingMenu) {
         const { error } = await supabase
           .from('menus')
@@ -118,7 +105,7 @@ export default function MenusAdmin() {
             allergen_info: allergenInfo || null,
             courses: courses as unknown as any,
             is_active: isActive,
-            organization_id: userOrg.organization_id,
+            organization_id: selectedOrgId,
           });
         if (error) throw error;
       }
