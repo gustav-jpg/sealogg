@@ -439,14 +439,6 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Till startsidan">
-              <Link to="/">
-                <Home className="h-4 w-4" />
-                <span>Till startsidan</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
             <SidebarMenuButton
               onClick={signOut}
               tooltip="Logga ut"
