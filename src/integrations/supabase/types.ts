@@ -304,6 +304,7 @@ export type Database = {
           max_guest_warning: boolean | null
           route_notes: string | null
           safety_notes: string | null
+          schedule: Json | null
           start_time: string
           status: Database["public"]["Enums"]["booking_status"]
           tech_equipment: string[] | null
@@ -333,6 +334,7 @@ export type Database = {
           max_guest_warning?: boolean | null
           route_notes?: string | null
           safety_notes?: string | null
+          schedule?: Json | null
           start_time: string
           status?: Database["public"]["Enums"]["booking_status"]
           tech_equipment?: string[] | null
@@ -362,6 +364,7 @@ export type Database = {
           max_guest_warning?: boolean | null
           route_notes?: string | null
           safety_notes?: string | null
+          schedule?: Json | null
           start_time?: string
           status?: Database["public"]["Enums"]["booking_status"]
           tech_equipment?: string[] | null

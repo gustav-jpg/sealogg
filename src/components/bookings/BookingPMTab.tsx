@@ -32,6 +32,11 @@ interface BookingPMTabProps {
   booking: Booking;
 }
 
+interface ScheduleItem {
+  time: string;
+  description: string;
+}
+
 interface PMContent {
   generatedAt: string;
   booking: {
@@ -49,6 +54,7 @@ interface PMContent {
     routeNotes?: string;
     safetyNotes?: string;
   };
+  schedule?: ScheduleItem[];
   menu?: {
     name: string;
     portions?: number;
@@ -180,6 +186,14 @@ export function BookingPMTab({ booking }: BookingPMTabProps) {
         },
       };
 
+      // Add schedule data for all PM types
+      const scheduleData = (booking as any).schedule;
+      if (scheduleData && Array.isArray(scheduleData) && scheduleData.length > 0) {
+        content.schedule = scheduleData
+          .filter((item: any) => item.time && item.description)
+          .sort((a: any, b: any) => a.time.localeCompare(b.time));
+      }
+
       // Add menu data for kitchen PM
       if (pmType === 'kok' && foodData) {
         content.menu = {
@@ -284,7 +298,11 @@ export function BookingPMTab({ booking }: BookingPMTabProps) {
           .courses { margin: 15px 0; }
           .course { padding: 8px; margin: 5px 0; background: #fafafa; border-left: 3px solid #007bff; }
           .notes { background: #fffde7; padding: 10px; border-radius: 4px; margin: 10px 0; }
-          @media print { 
+          .schedule { margin: 15px 0; }
+          .schedule-item { display: flex; align-items: center; gap: 15px; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .schedule-item .time { font-weight: bold; font-family: monospace; font-size: 1.1em; color: #007bff; min-width: 50px; }
+          .schedule-item .desc { color: #333; }
+          @media print {
             body { padding: 0; }
             .no-print { display: none; }
           }
@@ -307,6 +325,13 @@ export function BookingPMTab({ booking }: BookingPMTabProps) {
           ${content.booking.eventLayout ? `<div class="info-item"><span class="label">Upplägg:</span> ${content.booking.eventLayout}</div>` : ''}
           ${content.booking.contactName ? `<div class="info-item"><span class="label">Kontakt:</span> ${content.booking.contactName}${content.booking.contactCompany ? ` (${content.booking.contactCompany})` : ''}</div>` : ''}
         </div>
+        
+        ${content.schedule && content.schedule.length > 0 ? `
+          <h2>Tidsplan</h2>
+          <div class="schedule">
+            ${content.schedule.map(item => `<div class="schedule-item"><span class="time">${item.time}</span><span class="desc">${item.description}</span></div>`).join('')}
+          </div>
+        ` : ''}
     `;
 
     // Route info for crew PM
