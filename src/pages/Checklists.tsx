@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { useToast } from '@/hooks/use-toast';
 import { format, differenceInDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -57,6 +58,7 @@ interface ChecklistWithStatus {
 
 export default function Checklists() {
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -79,25 +81,34 @@ export default function Checklists() {
   const [filterDateTo, setFilterDateTo] = useState<Date | undefined>(undefined);
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('vessels')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: checklistTemplates } = useQuery({
-    queryKey: ['checklist-templates'],
+    queryKey: ['checklist-templates', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('checklist_templates')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: templateVessels } = useQuery({

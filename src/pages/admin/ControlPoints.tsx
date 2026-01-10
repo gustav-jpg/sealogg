@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
   CONTROL_TYPE_LABELS,
@@ -34,6 +35,7 @@ import { Plus, Edit, Trash2, Calendar, Gauge, ClipboardCheck } from 'lucide-reac
 
 export default function ControlPoints() {
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -70,12 +72,18 @@ export default function ControlPoints() {
   });
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('vessels')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: allEngines } = useQuery({
@@ -93,15 +101,18 @@ export default function ControlPoints() {
   });
 
   const { data: controlPoints, isLoading } = useQuery({
-    queryKey: ['control-points-admin'],
+    queryKey: ['control-points-admin', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('control_points')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: controlPointVessels } = useQuery({

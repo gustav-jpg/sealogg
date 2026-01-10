@@ -24,6 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   CONTROL_TYPE_LABELS,
   CONTROL_STATUS_LABELS,
@@ -43,6 +44,7 @@ import { usePrint } from '@/hooks/usePrint';
 
 export default function SelfControl() {
   const { user, isAdmin } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
@@ -59,25 +61,34 @@ export default function SelfControl() {
   const [groupByCategory, setGroupByCategory] = useState(true);
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('vessels')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: controlPoints } = useQuery({
-    queryKey: ['control-points'],
+    queryKey: ['control-points', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('control_points')
         .select('*')
+        .eq('organization_id', selectedOrgId)
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: controlPointVessels } = useQuery({

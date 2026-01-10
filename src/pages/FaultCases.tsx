@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   FAULT_PRIORITY_LABELS,
   FAULT_STATUS_LABELS,
@@ -39,6 +40,7 @@ import { usePrint } from '@/hooks/usePrint';
 
 export default function FaultCases() {
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
@@ -57,12 +59,18 @@ export default function FaultCases() {
   const [files, setFiles] = useState<File[]>([]);
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('vessels')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: faultCases, isLoading } = useQuery({

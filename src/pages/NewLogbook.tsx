@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { useToast } from '@/hooks/use-toast';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
@@ -37,6 +38,7 @@ interface EngineHourEntry {
 export default function NewLogbook() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -52,12 +54,18 @@ export default function NewLogbook() {
   const [overrideValidation, setOverrideValidation] = useState(false);
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('vessels')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: profiles } = useQuery({
