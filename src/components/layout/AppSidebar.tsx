@@ -74,7 +74,10 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(() => {
+    // Initialize from localStorage if available
+    return localStorage.getItem('selectedOrgId');
+  });
 
   useEffect(() => {
     const checkSuperadmin = async () => {
@@ -108,12 +111,24 @@ export function AppSidebar() {
     enabled: !!user,
   });
 
-  // Set default org
+  // Set default org only if no valid selection exists
   useEffect(() => {
-    if (userOrgs && userOrgs.length > 0 && !selectedOrgId) {
-      setSelectedOrgId(userOrgs[0].organization_id);
+    if (userOrgs && userOrgs.length > 0) {
+      // Check if current selection is still valid
+      const isValidSelection = selectedOrgId && userOrgs.some(o => o.organization_id === selectedOrgId);
+      if (!isValidSelection) {
+        const defaultOrgId = userOrgs[0].organization_id;
+        setSelectedOrgId(defaultOrgId);
+        localStorage.setItem('selectedOrgId', defaultOrgId);
+      }
     }
   }, [userOrgs, selectedOrgId]);
+
+  // Helper to handle org selection with persistence
+  const handleOrgSelect = (orgId: string) => {
+    setSelectedOrgId(orgId);
+    localStorage.setItem('selectedOrgId', orgId);
+  };
 
   // Fetch active modules for selected org
   const { data: orgModules } = useQuery({
@@ -245,7 +260,7 @@ export function AppSidebar() {
                     return (
                       <DropdownMenuItem
                         key={org.organization_id}
-                        onClick={() => setSelectedOrgId(org.organization_id)}
+                        onClick={() => handleOrgSelect(org.organization_id)}
                         className="flex items-center justify-between"
                       >
                         <span>{orgData?.name}</span>
