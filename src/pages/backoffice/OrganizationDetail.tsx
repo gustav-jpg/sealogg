@@ -69,21 +69,30 @@ export default function OrganizationDetail() {
   const { data: members } = useQuery({
     queryKey: ['organization-members', id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get organization members
+      const { data: membersData, error: membersError } = await supabase
         .from('organization_members')
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            full_name,
-            email,
-            user_id
-          )
-        `)
+        .select('*')
         .eq('organization_id', id)
         .order('created_at');
-      if (error) throw error;
-      return data;
+      if (membersError) throw membersError;
+      
+      if (!membersData || membersData.length === 0) return [];
+      
+      // Then get profiles for those user_ids
+      const userIds = membersData.map(m => m.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, user_id')
+        .in('user_id', userIds);
+      if (profilesError) throw profilesError;
+      
+      // Map profiles to members
+      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+      return membersData.map(member => ({
+        ...member,
+        profile: profilesMap.get(member.user_id) || null
+      }));
     },
   });
 
@@ -523,7 +532,7 @@ export default function OrganizationDetail() {
                   </TableHeader>
                   <TableBody>
                     {members.map((member) => {
-                      const profile = member.profiles as any;
+                      const profile = member.profile;
                       return (
                         <TableRow key={member.id}>
                           <TableCell className="font-medium">
