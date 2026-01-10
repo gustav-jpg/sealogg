@@ -594,6 +594,7 @@ export type Database = {
           interval_days: number | null
           is_active: boolean
           name: string
+          organization_id: string
           updated_at: string
         }
         Insert: {
@@ -605,6 +606,7 @@ export type Database = {
           interval_days?: number | null
           is_active?: boolean
           name: string
+          organization_id: string
           updated_at?: string
         }
         Update: {
@@ -616,9 +618,18 @@ export type Database = {
           interval_days?: number | null
           is_active?: boolean
           name?: string
+          organization_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checklist_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       control_point_attachments: {
         Row: {
@@ -775,6 +786,7 @@ export type Database = {
           is_active: boolean
           machine_name: string | null
           name: string
+          organization_id: string
           type: Database["public"]["Enums"]["control_type"]
           updated_at: string
         }
@@ -789,6 +801,7 @@ export type Database = {
           is_active?: boolean
           machine_name?: string | null
           name: string
+          organization_id: string
           type: Database["public"]["Enums"]["control_type"]
           updated_at?: string
         }
@@ -803,10 +816,19 @@ export type Database = {
           is_active?: boolean
           machine_name?: string | null
           name?: string
+          organization_id?: string
           type?: Database["public"]["Enums"]["control_type"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "control_points_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deviation_actions: {
         Row: {

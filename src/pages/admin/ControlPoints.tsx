@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
   CONTROL_TYPE_LABELS,
@@ -32,6 +33,7 @@ import {
 import { Plus, Edit, Trash2, Calendar, Gauge, ClipboardCheck } from 'lucide-react';
 
 export default function ControlPoints() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -50,6 +52,22 @@ export default function ControlPoints() {
   const [machineName, setMachineName] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [category, setCategory] = useState('');
+
+  // Get user's organization
+  const { data: userOrg } = useQuery({
+    queryKey: ['user-organization', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels'],
@@ -99,6 +117,8 @@ export default function ControlPoints() {
 
   const createControlPoint = useMutation({
     mutationFn: async () => {
+      if (!userOrg?.organization_id) throw new Error('No organization found');
+      
       const { data: cp, error } = await supabase
         .from('control_points')
         .insert({
@@ -111,6 +131,7 @@ export default function ControlPoints() {
           is_active: isActive,
           machine_name: machineName || null,
           category: category || null,
+          organization_id: userOrg.organization_id,
         })
         .select()
         .single();
