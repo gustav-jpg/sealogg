@@ -9,11 +9,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import {
   Ship,
   BookOpen,
-  Plus,
   Settings,
   User,
   LogOut,
@@ -32,6 +32,7 @@ import {
   CalendarDays,
   UtensilsCrossed,
   Wine,
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -59,17 +60,17 @@ export function MainLayout({ children }: MainLayoutProps) {
     navigate('/portal/login');
   };
 
-  const navItems = [
+  // Fartygssektion - allt relaterat till fartyg och drift
+  const vesselNavItems = [
     { href: '/portal', label: 'Loggböcker', icon: BookOpen },
     { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
     { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
     { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
     { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
     { href: '/portal/qualifications', label: 'Behörigheter', icon: Award },
-    { href: '/bookings', label: 'Bokningar', icon: CalendarDays },
   ];
 
-  const adminItems = [
+  const vesselAdminItems = [
     { href: '/portal/admin/status', label: 'Statusöversikt', icon: Activity },
     { href: '/portal/admin/sea-days', label: 'Sjödagar', icon: Anchor },
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
@@ -77,9 +78,20 @@ export function MainLayout({ children }: MainLayoutProps) {
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
     { href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
     { href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
+  ];
+
+  // Bokningssektion
+  const bookingNavItems = [
+    { href: '/bookings', label: 'Kalender', icon: CalendarDays },
+  ];
+
+  const bookingAdminItems = [
     { href: '/bookings/admin/menus', label: 'Menyer', icon: UtensilsCrossed },
     { href: '/bookings/admin/drinks', label: 'Dryckespaket', icon: Wine },
   ];
+
+  const isInVesselSection = location.pathname.startsWith('/portal');
+  const isInBookingSection = location.pathname.startsWith('/bookings');
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -95,45 +107,87 @@ export function MainLayout({ children }: MainLayoutProps) {
             </Link>
             
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                    location.pathname === item.href
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+              {/* Fartyg dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      'flex items-center gap-1 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10',
+                      isInVesselSection && 'bg-primary-foreground/20 text-primary-foreground'
+                    )}
+                  >
+                    <Ship className="h-4 w-4" />
+                    Fartyg
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {vesselNavItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link to={item.href} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">Admin</DropdownMenuLabel>
+                      {vesselAdminItems.map((item) => (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link to={item.href} className="flex items-center gap-2">
+                            <item.icon className="h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
                   )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
-              
-              {isAdmin && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Admin
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {adminItems.map((item) => (
-                      <DropdownMenuItem key={item.href} asChild>
-                        <Link to={item.href} className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
-                          {item.label}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Bokningar dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      'flex items-center gap-1 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10',
+                      isInBookingSection && 'bg-primary-foreground/20 text-primary-foreground'
+                    )}
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    Bokningar
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {bookingNavItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link to={item.href} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">Admin</DropdownMenuLabel>
+                      {bookingAdminItems.map((item) => (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link to={item.href} className="flex items-center gap-2">
+                            <item.icon className="h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </nav>
           </div>
 
@@ -158,7 +212,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                 
                 {/* Mobile nav items */}
                 <div className="md:hidden">
-                  {navItems.map((item) => (
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Fartyg</DropdownMenuLabel>
+                  {vesselNavItems.map((item) => (
                     <DropdownMenuItem key={item.href} asChild>
                       <Link to={item.href} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
@@ -166,19 +221,32 @@ export function MainLayout({ children }: MainLayoutProps) {
                       </Link>
                     </DropdownMenuItem>
                   ))}
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      {adminItems.map((item) => (
-                        <DropdownMenuItem key={item.href} asChild>
-                          <Link to={item.href} className="flex items-center gap-2">
-                            <item.icon className="h-4 w-4" />
-                            {item.label}
-                          </Link>
-                        </DropdownMenuItem>
-                      ))}
-                    </>
-                  )}
+                  {isAdmin && vesselAdminItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link to={item.href} className="flex items-center gap-2 text-muted-foreground">
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Bokningar</DropdownMenuLabel>
+                  {bookingNavItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link to={item.href} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                  {isAdmin && bookingAdminItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link to={item.href} className="flex items-center gap-2 text-muted-foreground">
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
                   <DropdownMenuSeparator />
                 </div>
                 
