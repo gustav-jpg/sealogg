@@ -1,5 +1,7 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +17,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
-    // Create admin client with service role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     });
@@ -117,14 +118,74 @@ serve(async (req) => {
       userId = newUser.user.id;
       isNewUser = true;
 
-      // Send password reset email so user can set their own password
-      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+      // Generate password reset link
+      const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email,
       });
 
       if (resetError) {
-        console.error("Failed to send reset email:", resetError);
+        console.error("Failed to generate reset link:", resetError);
+      } else if (linkData?.properties?.action_link && RESEND_API_KEY) {
+        const resetLink = linkData.properties.action_link;
+        const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : 'läsare';
+        
+        // Send welcome email via Resend
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "SeaLogg <noreply@sealogg.se>",
+            to: [email],
+            subject: "Välkommen till SeaLogg - Sätt ditt lösenord",
+            html: `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="utf-8">
+                <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #0077b6; }
+                  .logo { font-size: 24px; font-weight: bold; color: #0077b6; }
+                  .content { padding: 30px 0; }
+                  .button { display: inline-block; padding: 14px 28px; background-color: #0077b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+                  .footer { padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <div class="logo">SeaLogg</div>
+                  </div>
+                  <div class="content">
+                    <h2>Välkommen till SeaLogg, ${fullName}!</h2>
+                    <p>Du har bjudits in till SeaLogg som <strong>${roleText}</strong>.</p>
+                    <p>Klicka på knappen nedan för att sätta ditt lösenord och aktivera ditt konto:</p>
+                    <p style="text-align: center; margin: 30px 0;">
+                      <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
+                    </p>
+                    <p><small>Länken är giltig i 24 timmar.</small></p>
+                  </div>
+                  <div class="footer">
+                    <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
+                  </div>
+                </div>
+              </body>
+              </html>
+            `,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.text();
+          console.error("Failed to send welcome email via Resend:", err);
+        } else {
+          console.log("Welcome email sent via Resend");
+        }
       }
     }
 
@@ -150,14 +211,13 @@ serve(async (req) => {
       .eq('user_id', requestingUser.id);
 
     if (adminOrgs && adminOrgs.length > 0) {
-      // Add new user to same organizations as the admin
       for (const org of adminOrgs) {
         const { error: orgError } = await supabaseAdmin
           .from('organization_members')
           .insert({
             organization_id: org.organization_id,
             user_id: userId,
-            role: 'org_user', // Add as org_user, not org_admin
+            role: 'org_user',
           });
         
         if (orgError && !orgError.message.includes('duplicate')) {
@@ -171,8 +231,8 @@ serve(async (req) => {
       userId,
       isNewUser,
       message: isNewUser 
-        ? "New user created with role. They will receive a password reset email." 
-        : "Role added to existing user."
+        ? "Ny användare skapad. Ett välkomstmail har skickats." 
+        : "Roll tillagd till befintlig användare."
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
