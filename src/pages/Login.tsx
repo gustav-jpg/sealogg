@@ -53,11 +53,13 @@ export default function Login() {
 
     setIsResetLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/portal/reset-password`,
+    const { error } = await supabase.functions.invoke('public-password-reset', {
+      body: { email: resetEmail },
     });
 
+    // Av säkerhetsskäl: visa samma svar oavsett om e-posten finns eller ej
     if (error) {
+      console.error('Password reset error:', error);
       toast({
         variant: 'destructive',
         title: 'Något gick fel',
