@@ -1437,6 +1437,47 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_features: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          module: Database["public"]["Enums"]["app_module"]
+          organization_id: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          module: Database["public"]["Enums"]["app_module"]
+          organization_id: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          module?: Database["public"]["Enums"]["app_module"]
+          organization_id?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_features_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -1938,6 +1979,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_modules: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_module"][]
+      }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role: {
         Args: {
@@ -1962,8 +2007,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      org_has_module: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _org_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_module:
+        | "logbook"
+        | "deviations"
+        | "fault_cases"
+        | "self_control"
+        | "checklists"
+        | "bookings"
       app_role: "admin" | "skeppare" | "readonly"
       blocking_reason:
         | "service"
@@ -2146,6 +2205,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_module: [
+        "logbook",
+        "deviations",
+        "fault_cases",
+        "self_control",
+        "checklists",
+        "bookings",
+      ],
       app_role: ["admin", "skeppare", "readonly"],
       blocking_reason: [
         "service",

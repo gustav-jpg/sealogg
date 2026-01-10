@@ -1,7 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import {
   Ship,
   BookOpen,
@@ -23,6 +24,8 @@ import {
   UtensilsCrossed,
   Wine,
   ChevronDown,
+  ChevronsUpDown,
+  Check,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -43,15 +46,35 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
+type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'bookings';
+
+// Map modules to nav items
+const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any }> = {
+  logbook: { href: '/portal', label: 'Loggböcker', icon: BookOpen },
+  deviations: { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
+  fault_cases: { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
+  self_control: { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
+  checklists: { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
+  bookings: { href: '/bookings', label: 'Kalender', icon: CalendarDays },
+};
 
 export function AppSidebar() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSuperadmin = async () => {
@@ -62,14 +85,70 @@ export function AppSidebar() {
     checkSuperadmin();
   }, [user]);
 
-  const vesselNavItems = [
-    { href: '/portal', label: 'Loggböcker', icon: BookOpen },
-    { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
-    { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
-    { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
-    { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
-    { href: '/portal/qualifications', label: 'Behörigheter', icon: Award },
-  ];
+  // Fetch user's organizations
+  const { data: userOrgs } = useQuery({
+    queryKey: ['user-organizations', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select(`
+          organization_id,
+          role,
+          organizations:organization_id (
+            id,
+            name,
+            is_active
+          )
+        `)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data?.filter(d => (d.organizations as any)?.is_active) || [];
+    },
+    enabled: !!user,
+  });
+
+  // Set default org
+  useEffect(() => {
+    if (userOrgs && userOrgs.length > 0 && !selectedOrgId) {
+      setSelectedOrgId(userOrgs[0].organization_id);
+    }
+  }, [userOrgs, selectedOrgId]);
+
+  // Fetch active modules for selected org
+  const { data: orgModules } = useQuery({
+    queryKey: ['org-modules', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('organization_features')
+        .select('module')
+        .eq('organization_id', selectedOrgId)
+        .eq('is_active', true)
+        .lte('starts_at', new Date().toISOString().split('T')[0])
+        .or(`expires_at.is.null,expires_at.gte.${new Date().toISOString().split('T')[0]}`);
+      if (error) throw error;
+      return data?.map(d => d.module as AppModule) || [];
+    },
+    enabled: !!selectedOrgId,
+  });
+
+  const selectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
+
+  // Filter nav items based on active modules
+  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists'];
+  const bookingModules: AppModule[] = ['bookings'];
+
+  const activeVesselModules = vesselModules.filter(m => orgModules?.includes(m) || isSuperadmin);
+  const activeBookingModules = bookingModules.filter(m => orgModules?.includes(m) || isSuperadmin);
+
+  const vesselNavItems = activeVesselModules.map(m => MODULE_NAV_MAP[m]);
+  const bookingNavItems = activeBookingModules.map(m => MODULE_NAV_MAP[m]);
+
+  // Always show qualifications for vessel section
+  if (vesselNavItems.length > 0 || isSuperadmin) {
+    vesselNavItems.push({ href: '/portal/qualifications', label: 'Behörigheter', icon: Award });
+  }
 
   const vesselAdminItems = [
     { href: '/portal/admin/status', label: 'Statusöversikt', icon: Activity },
@@ -79,10 +158,6 @@ export function AppSidebar() {
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
     { href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
     { href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
-  ];
-
-  const bookingNavItems = [
-    { href: '/bookings', label: 'Kalender', icon: CalendarDays },
   ];
 
   const bookingAdminItems = [
@@ -109,6 +184,8 @@ export function AppSidebar() {
       .slice(0, 2);
   };
 
+  const hasMultipleOrgs = (userOrgs?.length || 0) > 1;
+
   return (
     <Sidebar collapsible="icon">
       {/* Header with Logo */}
@@ -124,45 +201,97 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Fartyg Section */}
-        <Collapsible defaultOpen={isInVesselSection} className="group/collapsible">
+        {/* Organization Switcher */}
+        {userOrgs && userOrgs.length > 0 && (
           <SidebarGroup>
-            <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-semibold">
-                <Ship className="h-4 w-4 mr-2" />
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1">Fartyg</span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </>
-                )}
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {vesselNavItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.href)}
-                        tooltip={item.label}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  className={cn(
+                    "w-full justify-between",
+                    !isCollapsed && "px-2"
+                  )}
+                  tooltip={selectedOrg ? (selectedOrg.organizations as any)?.name : 'Välj organisation'}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && (
+                      <span className="truncate font-medium">
+                        {selectedOrg ? (selectedOrg.organizations as any)?.name : 'Välj organisation'}
+                      </span>
+                    )}
+                  </div>
+                  {!isCollapsed && hasMultipleOrgs && (
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                  )}
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              {hasMultipleOrgs && (
+                <DropdownMenuContent align="start" className="w-56">
+                  {userOrgs.map((org) => {
+                    const orgData = org.organizations as any;
+                    return (
+                      <DropdownMenuItem
+                        key={org.organization_id}
+                        onClick={() => setSelectedOrgId(org.organization_id)}
+                        className="flex items-center justify-between"
                       >
-                        <Link to={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
+                        <span>{orgData?.name}</span>
+                        {org.organization_id === selectedOrgId && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              )}
+            </DropdownMenu>
           </SidebarGroup>
-        </Collapsible>
+        )}
+
+        <SidebarSeparator />
+
+        {/* Fartyg Section */}
+        {vesselNavItems.length > 0 && (
+          <Collapsible defaultOpen={isInVesselSection} className="group/collapsible">
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-semibold">
+                  <Ship className="h-4 w-4 mr-2" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">Fartyg</span>
+                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </>
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {vesselNavItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.href)}
+                          tooltip={item.label}
+                        >
+                          <Link to={item.href}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
 
         {/* Fartyg Admin */}
-        {isAdmin && (
+        {isAdmin && vesselNavItems.length > 0 && (
           <Collapsible defaultOpen={isInVesselSection && location.pathname.includes('/admin')}>
             <SidebarGroup>
               <CollapsibleTrigger asChild>
@@ -200,47 +329,51 @@ export function AppSidebar() {
           </Collapsible>
         )}
 
-        <SidebarSeparator />
+        {vesselNavItems.length > 0 && bookingNavItems.length > 0 && (
+          <SidebarSeparator />
+        )}
 
         {/* Bokningar Section */}
-        <Collapsible defaultOpen={isInBookingSection} className="group/collapsible">
-          <SidebarGroup>
-            <CollapsibleTrigger asChild>
-              <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-semibold">
-                <BookOpen className="h-4 w-4 mr-2" />
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1">Bokningar</span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </>
-                )}
-              </SidebarGroupLabel>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {bookingNavItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.href)}
-                        tooltip={item.label}
-                      >
-                        <Link to={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+        {bookingNavItems.length > 0 && (
+          <Collapsible defaultOpen={isInBookingSection} className="group/collapsible">
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="cursor-pointer hover:bg-sidebar-accent rounded-md h-9 text-sm font-semibold">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">Bokningar</span>
+                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </>
+                  )}
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {bookingNavItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.href)}
+                          tooltip={item.label}
+                        >
+                          <Link to={item.href}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
 
         {/* Bokningar Admin */}
-        {isAdmin && (
+        {isAdmin && bookingNavItems.length > 0 && (
           <Collapsible defaultOpen={isInBookingSection && location.pathname.includes('/admin')}>
             <SidebarGroup>
               <CollapsibleTrigger asChild>
