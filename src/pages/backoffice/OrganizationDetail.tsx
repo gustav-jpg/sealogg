@@ -562,54 +562,8 @@ export default function OrganizationDetail() {
                   </TableBody>
                 </Table>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">Inga användare ännu</p>
-                  <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Mail className="h-4 w-4 mr-2" />
-                        Skapa ägare
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <form onSubmit={(e) => handleInvite(e, 'org_admin')}>
-                        <DialogHeader>
-                          <DialogTitle>Skapa organisationsägare</DialogTitle>
-                          <DialogDescription>
-                            Ägaren får admin-rättigheter i portalen och kan sedan själv hantera användare.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="ownerFullName">Namn *</Label>
-                            <Input
-                              id="ownerFullName"
-                              value={inviteFullName}
-                              onChange={(e) => setInviteFullName(e.target.value)}
-                              placeholder="Anna Andersson"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="ownerEmail">E-post *</Label>
-                            <Input
-                              id="ownerEmail"
-                              type="email"
-                              value={inviteEmail}
-                              onChange={(e) => setInviteEmail(e.target.value)}
-                              placeholder="anna@example.com"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button type="submit" disabled={inviteUserMutation.isPending}>
-                            {inviteUserMutation.isPending ? 'Skapar...' : 'Skapa ägare'}
-                          </Button>
-                        </DialogFooter>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
+                <div className="text-center py-8 text-muted-foreground">
+                  Inga användare ännu. Klicka på "Lägg till användare" för att komma igång.
                 </div>
               )}
             </CardContent>
