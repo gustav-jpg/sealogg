@@ -55,10 +55,10 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { email, fullName, role } = await req.json();
+    const { email, fullName, role, organizationId } = await req.json();
 
-    if (!email || !fullName || !role) {
-      return new Response(JSON.stringify({ error: "Missing required fields: email, fullName, role" }), {
+    if (!email || !fullName || !role || !organizationId) {
+      return new Response(JSON.stringify({ error: "Missing required fields: email, fullName, role, organizationId" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -204,26 +204,27 @@ serve(async (req) => {
       });
     }
 
-    // Copy user's organization membership if the requesting admin has one
-    const { data: adminOrgs } = await supabaseAdmin
+    // Add user to the specific organization
+    const { error: orgError } = await supabaseAdmin
       .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', requestingUser.id);
+      .insert({
+        organization_id: organizationId,
+        user_id: userId,
+        role: 'org_user',
+      });
+    
+    if (orgError && !orgError.message.includes('duplicate')) {
+      console.error("Failed to add to organization:", orgError);
+    }
 
-    if (adminOrgs && adminOrgs.length > 0) {
-      for (const org of adminOrgs) {
-        const { error: orgError } = await supabaseAdmin
-          .from('organization_members')
-          .insert({
-            organization_id: org.organization_id,
-            user_id: userId,
-            role: 'org_user',
-          });
-        
-        if (orgError && !orgError.message.includes('duplicate')) {
-          console.error("Failed to add to organization:", orgError);
-        }
-      }
+    // Update the user's profile with the organization_id
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({ organization_id: organizationId })
+      .eq('user_id', userId);
+
+    if (profileError) {
+      console.error("Failed to update profile organization:", profileError);
     }
 
     return new Response(JSON.stringify({ 

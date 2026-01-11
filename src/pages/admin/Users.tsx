@@ -16,20 +16,28 @@ import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
 import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export default function AdminUsers() {
   const { toast } = useToast();
+  const { selectedOrgId } = useOrganization();
   const queryClient = useQueryClient();
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: string; id: string; name: string } | null>(null);
 
   const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
+    queryKey: ['profiles', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('full_name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('full_name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: userRoles } = useQuery({
@@ -51,12 +59,18 @@ export default function AdminUsers() {
   });
 
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('vessels')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: inductions } = useQuery({
@@ -70,20 +84,28 @@ export default function AdminUsers() {
 
 
   const { data: certificateTypes } = useQuery({
-    queryKey: ['certificate-types'],
+    queryKey: ['certificate-types', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('certificate_types').select('*').order('name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('certificate_types')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const addExternalUser = useMutation({
     mutationFn: async ({ fullName }: { fullName: string }) => {
+      if (!selectedOrgId) throw new Error('Ingen organisation vald');
       const { error } = await supabase.from('profiles').insert({
         full_name: fullName,
         is_external: true,
         user_id: null,
+        organization_id: selectedOrgId,
       });
       if (error) throw error;
     },
@@ -98,8 +120,9 @@ export default function AdminUsers() {
 
   const invitePortalUserMutation = useMutation({
     mutationFn: async ({ email, fullName, role }: { email: string; fullName: string; role: AppRole }) => {
+      if (!selectedOrgId) throw new Error('Ingen organisation vald');
       const response = await supabase.functions.invoke('invite-portal-user', {
-        body: { email, fullName, role },
+        body: { email, fullName, role, organizationId: selectedOrgId },
       });
 
       if (response.error) throw response.error;
@@ -126,8 +149,9 @@ export default function AdminUsers() {
 
   const linkEmailMutation = useMutation({
     mutationFn: async ({ profileId, email, role }: { profileId: string; email: string; role?: AppRole }) => {
+      if (!selectedOrgId) throw new Error('Ingen organisation vald');
       const response = await supabase.functions.invoke('link-email-to-profile', {
-        body: { profileId, email, role },
+        body: { profileId, email, role, organizationId: selectedOrgId },
       });
 
       if (response.error) throw response.error;

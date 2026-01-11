@@ -54,10 +54,10 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { profileId, email, role } = await req.json();
+    const { profileId, email, role, organizationId } = await req.json();
 
-    if (!profileId || !email) {
-      return new Response(JSON.stringify({ error: "Missing required fields: profileId, email" }), {
+    if (!profileId || !email || !organizationId) {
+      return new Response(JSON.stringify({ error: "Missing required fields: profileId, email, organizationId" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -157,26 +157,17 @@ serve(async (req) => {
       }
     }
 
-    // Add to same organizations as the admin
-    const { data: adminOrgs } = await supabaseAdmin
+    // Add to the specific organization
+    const { error: orgError } = await supabaseAdmin
       .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', requestingUser.id);
-
-    if (adminOrgs && adminOrgs.length > 0) {
-      for (const org of adminOrgs) {
-        const { error: orgError } = await supabaseAdmin
-          .from('organization_members')
-          .insert({
-            organization_id: org.organization_id,
-            user_id: newUser.user.id,
-            role: 'org_user',
-          });
-        
-        if (orgError && !orgError.message.includes('duplicate')) {
-          console.error("Failed to add to organization:", orgError);
-        }
-      }
+      .insert({
+        organization_id: organizationId,
+        user_id: newUser.user.id,
+        role: 'org_user',
+      });
+    
+    if (orgError && !orgError.message.includes('duplicate')) {
+      console.error("Failed to add to organization:", orgError);
     }
 
     // Generate password reset link and send via Resend
