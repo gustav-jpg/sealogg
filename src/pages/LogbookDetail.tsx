@@ -28,7 +28,18 @@ import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/Logbo
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2 } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge } from 'lucide-react';
+
+interface EngineHourEntry {
+  id?: string;
+  tempId: string;
+  engineType: 'main' | 'auxiliary';
+  engineNumber: number;
+  engineLabel: string;
+  startHours: number;
+  stopHours: number | null;
+  notes: string;
+}
 
 
 interface CrewMember {
@@ -58,6 +69,8 @@ export default function LogbookDetail() {
   const [showCrewDialog, setShowCrewDialog] = useState(false);
   const [editableCrew, setEditableCrew] = useState<CrewMember[]>([]);
   const [fetchingWind, setFetchingWind] = useState(false);
+  const [editableEngineHours, setEditableEngineHours] = useState<EngineHourEntry[]>([]);
+  const [engineHoursInitialized, setEngineHoursInitialized] = useState(false);
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -149,12 +162,90 @@ export default function LogbookDetail() {
         .from('logbook_engine_hours')
         .select('*')
         .eq('logbook_id', id)
-        .order('start_hours');
+        .order('engine_type')
+        .order('engine_number');
       if (error) throw error;
       return data;
     },
     enabled: !!id,
   });
+
+  // Fetch vessel engine hours to initialize if logbook doesn't have any
+  const { data: vesselEngineHours } = useQuery({
+    queryKey: ['vessel-engine-hours', logbook?.vessel_id],
+    queryFn: async () => {
+      if (!logbook?.vessel_id) return [];
+      const { data, error } = await supabase
+        .from('vessel_engine_hours')
+        .select('*')
+        .eq('vessel_id', logbook.vessel_id)
+        .order('engine_type')
+        .order('engine_number');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!logbook?.vessel_id,
+  });
+
+  // Initialize editable engine hours from database or vessel config
+  useEffect(() => {
+    if (engineHours && !engineHoursInitialized) {
+      setEditableEngineHours(engineHours.map(e => ({
+        id: e.id,
+        tempId: e.id,
+        engineType: (e.engine_type as 'main' | 'auxiliary') || 'main',
+        engineNumber: e.engine_number || 1,
+        engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${e.engine_number || 1}`,
+        startHours: e.start_hours || 0,
+        stopHours: e.stop_hours,
+        notes: e.notes || '',
+      })));
+      setEngineHoursInitialized(true);
+    }
+  }, [engineHours, engineHoursInitialized]);
+
+  const initializeEngineHoursFromVessel = () => {
+    if (!vesselEngineHours || !logbook?.vessel) return;
+    
+    const vessel = logbook.vessel as any;
+    const entries: EngineHourEntry[] = [];
+    
+    // Create entries for main engines
+    for (let i = 1; i <= (vessel.main_engine_count || 0); i++) {
+      const existing = vesselEngineHours.find(h => h.engine_type === 'main' && h.engine_number === i);
+      entries.push({
+        tempId: crypto.randomUUID(),
+        engineType: 'main',
+        engineNumber: i,
+        engineLabel: existing?.name || `Huvudmaskin ${i}`,
+        startHours: existing?.current_hours || 0,
+        stopHours: null,
+        notes: ''
+      });
+    }
+    
+    // Create entries for auxiliary engines
+    for (let i = 1; i <= (vessel.auxiliary_engine_count || 0); i++) {
+      const existing = vesselEngineHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
+      entries.push({
+        tempId: crypto.randomUUID(),
+        engineType: 'auxiliary',
+        engineNumber: i,
+        engineLabel: existing?.name || `Hjälpmaskin ${i}`,
+        startHours: existing?.current_hours || 0,
+        stopHours: null,
+        notes: ''
+      });
+    }
+    
+    setEditableEngineHours(entries);
+  };
+
+  const updateEngineHour = (tempId: string, field: keyof EngineHourEntry, value: string | number | null) => {
+    setEditableEngineHours(editableEngineHours.map(e => 
+      e.tempId === tempId ? { ...e, [field]: value } : e
+    ));
+  };
 
   const crewForValidation = crewMembers?.map(c => ({
     userId: c.profile_id,
@@ -199,10 +290,33 @@ export default function LogbookDetail() {
         );
         if (stopsError) throw stopsError;
       }
+
+      // Save engine hours
+      const { error: deleteEngineError } = await supabase
+        .from('logbook_engine_hours')
+        .delete()
+        .eq('logbook_id', id);
+      if (deleteEngineError) throw deleteEngineError;
+
+      if (editableEngineHours.length > 0) {
+        const { error: engineError } = await supabase.from('logbook_engine_hours').insert(
+          editableEngineHours.map(e => ({
+            logbook_id: id,
+            engine_type: e.engineType,
+            engine_number: e.engineNumber,
+            engine_name: e.engineLabel,
+            start_hours: e.startHours,
+            stop_hours: e.stopHours,
+            notes: e.notes || null,
+          }))
+        );
+        if (engineError) throw engineError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logbook', id] });
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
+      queryClient.invalidateQueries({ queryKey: ['logbook-engine-hours', id] });
       toast({ title: 'Sparat', description: 'Loggboken har uppdaterats.' });
     },
     onError: (error) => {
@@ -220,9 +334,9 @@ export default function LogbookDetail() {
       if (!bunkerLiters?.trim()) missingFields.push('Bunker');
       if (!crewMembers || crewMembers.length === 0) missingFields.push('Besättning');
       
-      // Check engine hours - at least one engine must have stop_hours filled
-      const hasEngineHours = engineHours && engineHours.length > 0 && 
-        engineHours.some(e => e.stop_hours !== null && e.stop_hours !== undefined);
+      // Check engine hours - at least one engine must have stop_hours filled (use editable state)
+      const hasEngineHours = editableEngineHours.length > 0 && 
+        editableEngineHours.some(e => e.stopHours !== null && e.stopHours !== undefined);
       if (!hasEngineHours) missingFields.push('Maskintimmar (sluttimmar)');
       
       if (missingFields.length > 0) {
@@ -230,6 +344,7 @@ export default function LogbookDetail() {
       }
       
       if (!validation.isValid && !overrideValidation) throw new Error('Valideringsfel måste åtgärdas innan loggboken kan stängas.');
+      
       // Save stops before closing
       const { error: deleteStopsError } = await supabase
         .from('logbook_stops')
@@ -253,6 +368,28 @@ export default function LogbookDetail() {
         if (stopsError) throw stopsError;
       }
 
+      // Save engine hours before closing
+      const { error: deleteEngineError } = await supabase
+        .from('logbook_engine_hours')
+        .delete()
+        .eq('logbook_id', id);
+      if (deleteEngineError) throw deleteEngineError;
+
+      if (editableEngineHours.length > 0) {
+        const { error: engineInsertError } = await supabase.from('logbook_engine_hours').insert(
+          editableEngineHours.map(e => ({
+            logbook_id: id,
+            engine_type: e.engineType,
+            engine_number: e.engineNumber,
+            engine_name: e.engineLabel,
+            start_hours: e.startHours,
+            stop_hours: e.stopHours,
+            notes: e.notes || null,
+          }))
+        );
+        if (engineInsertError) throw engineInsertError;
+      }
+
       // Save all data before closing
       const { error } = await supabase
         .from('logbooks')
@@ -269,16 +406,16 @@ export default function LogbookDetail() {
       if (error) throw error;
       
       // Uppdatera vessel_engine_hours med stop_hours från denna loggbok
-      if (engineHours && engineHours.length > 0 && logbook?.vessel_id) {
-        for (const entry of engineHours) {
-          if (entry.stop_hours !== null) {
+      if (editableEngineHours.length > 0 && logbook?.vessel_id) {
+        for (const entry of editableEngineHours) {
+          if (entry.stopHours !== null) {
             const { error: engineError } = await supabase
               .from('vessel_engine_hours')
               .upsert({
                 vessel_id: logbook.vessel_id,
-                engine_type: entry.engine_type || 'main',
-                engine_number: entry.engine_number || 1,
-                current_hours: entry.stop_hours,
+                engine_type: entry.engineType || 'main',
+                engine_number: entry.engineNumber || 1,
+                current_hours: entry.stopHours,
                 updated_at: new Date().toISOString()
               }, { onConflict: 'vessel_id,engine_type,engine_number' });
             if (engineError) console.error('Failed to update engine hours:', engineError);
@@ -290,6 +427,7 @@ export default function LogbookDetail() {
       queryClient.invalidateQueries({ queryKey: ['logbook', id] });
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
+      queryClient.invalidateQueries({ queryKey: ['logbook-engine-hours', id] });
       toast({ title: 'Stängd', description: 'Loggboken har sparats och stängts. Maskintimmar har uppdaterats.' });
     },
     onError: (error) => {
@@ -604,29 +742,103 @@ export default function LogbookDetail() {
               </CardContent>
             </Card>
 
-            {engineHours && engineHours.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Maskintimmar</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {engineHours.map(entry => (
-                      <div key={entry.id} className="flex items-center gap-4 p-2 rounded bg-muted/50">
-                        <span className="text-sm font-medium min-w-28">
-                          {entry.engine_name || (entry.engine_type === 'auxiliary' 
-                            ? `Hjälpmaskin ${entry.engine_number}` 
-                            : `Huvudmaskin ${entry.engine_number || 1}`)}
-                        </span>
-                        <span className="font-mono">{entry.start_hours} → {entry.stop_hours}</span>
-                        <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
-                        {entry.notes && <span className="text-muted-foreground text-sm">{entry.notes}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Gauge className="h-5 w-5" />
+                    Maskintimmar
+                  </span>
+                  {canEditThis && editableEngineHours.length === 0 && vesselEngineHours && vesselEngineHours.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={initializeEngineHoursFromVessel}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Ladda maskiner
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isOpen && canEditThis ? (
+                  // Editable mode for open logbooks
+                  editableEngineHours.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground">Inga maskintimmar registrerade.</p>
+                      {vesselEngineHours && vesselEngineHours.length > 0 && (
+                        <Button variant="outline" size="sm" className="mt-2" onClick={initializeEngineHoursFromVessel}>
+                          <Plus className="h-4 w-4 mr-1" />
+                          Ladda maskiner från fartyg
+                        </Button>
+                      )}
+                      {(!vesselEngineHours || vesselEngineHours.length === 0) && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Fartyget har inga motorer konfigurerade.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {editableEngineHours.map(entry => (
+                        <div key={entry.tempId} className="space-y-2">
+                          <Label className="text-sm font-medium">{entry.engineLabel}</Label>
+                          <div className="flex gap-2 items-end">
+                            <div className="w-24 space-y-1">
+                              <Label className="text-xs">Start</Label>
+                              <Input 
+                                type="number" 
+                                value={entry.startHours} 
+                                onChange={e => updateEngineHour(entry.tempId, 'startHours', parseInt(e.target.value) || 0)} 
+                              />
+                            </div>
+                            <div className="w-24 space-y-1">
+                              <Label className="text-xs">Stopp</Label>
+                              <Input 
+                                type="number" 
+                                value={entry.stopHours ?? ''} 
+                                onChange={e => updateEngineHour(entry.tempId, 'stopHours', e.target.value ? parseInt(e.target.value) : null)} 
+                                placeholder="—"
+                              />
+                            </div>
+                            <div className="w-20 space-y-1">
+                              <Label className="text-xs">Diff</Label>
+                              <div className="h-10 flex items-center px-3 bg-muted rounded-md text-sm font-mono">
+                                {entry.stopHours !== null ? `${(entry.stopHours || 0) - entry.startHours}h` : '—'}
+                              </div>
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <Label className="text-xs">Anteckning</Label>
+                              <Input 
+                                value={entry.notes} 
+                                onChange={e => updateEngineHour(entry.tempId, 'notes', e.target.value)} 
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  // Read-only mode for closed logbooks
+                  engineHours && engineHours.length > 0 ? (
+                    <div className="space-y-2">
+                      {engineHours.map(entry => (
+                        <div key={entry.id} className="flex items-center gap-4 p-2 rounded bg-muted/50">
+                          <span className="text-sm font-medium min-w-28">
+                            {entry.engine_name || (entry.engine_type === 'auxiliary' 
+                              ? `Hjälpmaskin ${entry.engine_number}` 
+                              : `Huvudmaskin ${entry.engine_number || 1}`)}
+                          </span>
+                          <span className="font-mono">{entry.start_hours} → {entry.stop_hours ?? '—'}</span>
+                          <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
+                          {entry.notes && <span className="text-muted-foreground text-sm">{entry.notes}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">Inga maskintimmar registrerade.</p>
+                  )
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="space-y-6">
