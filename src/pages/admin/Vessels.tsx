@@ -82,13 +82,16 @@ export default function AdminVessels() {
 
   const createVessel = useMutation({
     mutationFn: async () => {
+      if (!selectedOrgId) throw new Error('Ingen organisation vald');
+      
       const { data: vessel, error: vesselError } = await supabase
         .from('vessels')
         .insert({ 
           name, 
           description: description || null,
           main_engine_count: mainEngineCount,
-          auxiliary_engine_count: auxiliaryEngineCount
+          auxiliary_engine_count: auxiliaryEngineCount,
+          organization_id: selectedOrgId
         })
         .select()
         .single();
