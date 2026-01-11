@@ -217,14 +217,24 @@ serve(async (req) => {
       console.error("Failed to add to organization:", orgError);
     }
 
-    // Update the user's profile with the organization_id
+    // Ensure the user's profile exists and is scoped to the organization.
+    // NOTE: When creating users via admin API, the automatic profile trigger may not always
+    // populate the public profile as expected, so we upsert here to guarantee visibility.
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({ organization_id: organizationId })
-      .eq('user_id', userId);
+      .upsert(
+        {
+          user_id: userId,
+          full_name: fullName,
+          email: email,
+          is_external: false,
+          organization_id: organizationId,
+        },
+        { onConflict: 'user_id' }
+      );
 
     if (profileError) {
-      console.error("Failed to update profile organization:", profileError);
+      console.error("Failed to upsert profile:", profileError);
     }
 
     return new Response(JSON.stringify({ 
