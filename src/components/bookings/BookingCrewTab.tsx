@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Save, Plus, Trash2, Users } from 'lucide-react';
 import { BookingCrew, BookingCrewRole, BOOKING_CREW_ROLE_LABELS } from '@/lib/booking-types';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 
 interface CrewAssignment {
   tempId: string;
@@ -21,6 +23,7 @@ interface BookingCrewTabProps {
 
 export function BookingCrewTab({ bookingId }: BookingCrewTabProps) {
   const queryClient = useQueryClient();
+  const { selectedOrgId } = useOrganization();
   const [assignments, setAssignments] = useState<CrewAssignment[]>([]);
 
   // Fetch existing crew assignments
@@ -36,18 +39,8 @@ export function BookingCrewTab({ bookingId }: BookingCrewTabProps) {
     },
   });
 
-  // Fetch available profiles
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles-all'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .order('full_name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Fetch available profiles - scoped to organization
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
 
   // Initialize from existing data
   useEffect(() => {

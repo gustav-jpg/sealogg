@@ -31,6 +31,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
 import { format, differenceInDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -136,14 +137,7 @@ export default function Checklists() {
     enabled: !!selectedVessel,
   });
 
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('user_id, full_name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
 
   const { data: executionDetails } = useQuery({
     queryKey: ['execution-details', selectedExecution],

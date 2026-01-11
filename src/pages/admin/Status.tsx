@@ -7,6 +7,9 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle, Wrench, Award, Ship, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgVessels } from '@/hooks/useOrgVessels';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 
 const FAULT_PRIORITY_LABELS: Record<string, string> = {
   lag: 'Låg',
@@ -30,31 +33,43 @@ const CONTROL_STATUS_LABELS: Record<string, string> = {
 };
 
 export default function AdminStatus() {
+  const { selectedOrgId } = useOrganization();
+  const { data: vessels } = useOrgVessels(selectedOrgId);
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
+
+  const vesselIds = vessels?.map(v => v.id) || [];
+  const profileIds = profiles?.map(p => p.id) || [];
+
   const cutoffDate = addDays(new Date(), 60);
   const today = new Date();
 
-  // Fetch open fault cases
+  // Fetch open fault cases - scoped to org vessels
   const { data: faultCases } = useQuery({
-    queryKey: ['status-fault-cases'],
+    queryKey: ['status-fault-cases', vesselIds],
     queryFn: async () => {
+      if (vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('fault_cases')
         .select(`*, vessel:vessels(name)`)
+        .in('vessel_id', vesselIds)
         .in('status', ['ny', 'varvsatgard', 'arbete_pagar'])
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
+    enabled: vesselIds.length > 0,
   });
 
-  // Fetch control point states that are kommande or forfallen
+  // Fetch control point states - scoped to org vessels
   const { data: controlStates } = useQuery({
-    queryKey: ['status-control-states'],
+    queryKey: ['status-control-states', vesselIds],
     queryFn: async () => {
+      if (vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('vessel_control_point_state')
         .select(`*, control_point:control_points(name, type), vessel:vessels(name)`)
+        .in('vessel_id', vesselIds)
         .in('status', ['kommande', 'forfallen'])
         .order('next_due_date', { ascending: true });
       if (error) throw error;
@@ -63,51 +78,61 @@ export default function AdminStatus() {
         return new Date(s.next_due_date) <= cutoffDate;
       });
     },
+    enabled: vesselIds.length > 0,
   });
 
-  // Fetch vessel certificates expiring within 60 days
+  // Fetch vessel certificates - scoped to org vessels
   const { data: vesselCertificates } = useQuery({
-    queryKey: ['status-vessel-certificates'],
+    queryKey: ['status-vessel-certificates', vesselIds],
     queryFn: async () => {
+      if (vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('vessel_certificates')
         .select(`*, vessel:vessels(name)`)
+        .in('vessel_id', vesselIds)
         .lte('expiry_date', cutoffDate.toISOString().split('T')[0])
         .gte('expiry_date', today.toISOString().split('T')[0])
         .order('expiry_date', { ascending: true });
       if (error) throw error;
       return data;
     },
+    enabled: vesselIds.length > 0,
   });
 
-  // Fetch user certificates expiring within 60 days
+  // Fetch user certificates - scoped to org profiles
   const { data: userCertificates } = useQuery({
-    queryKey: ['status-user-certificates'],
+    queryKey: ['status-user-certificates', profileIds],
     queryFn: async () => {
+      if (profileIds.length === 0) return [];
       const { data, error } = await supabase
         .from('user_certificates')
         .select(`*, profile:profiles(full_name), certificate_type:certificate_types(name)`)
+        .in('profile_id', profileIds)
         .lte('expiry_date', cutoffDate.toISOString().split('T')[0])
         .gte('expiry_date', today.toISOString().split('T')[0])
         .order('expiry_date', { ascending: true });
       if (error) throw error;
       return data;
     },
+    enabled: profileIds.length > 0,
   });
 
-  // Fetch open deviations
+  // Fetch open deviations - scoped to org vessels
   const { data: deviations } = useQuery({
-    queryKey: ['status-deviations'],
+    queryKey: ['status-deviations', vesselIds],
     queryFn: async () => {
+      if (vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('deviations')
         .select(`*, vessel:vessels(name)`)
+        .in('vessel_id', vesselIds)
         .in('status', ['oppen', 'under_utredning'])
         .order('severity', { ascending: false })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
+    enabled: vesselIds.length > 0,
   });
 
   const getDaysUntil = (dateStr: string) => {

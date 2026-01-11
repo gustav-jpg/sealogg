@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Anchor, Download } from 'lucide-react';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgVessels } from '@/hooks/useOrgVessels';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 
 interface SeaDayEntry {
   date: string;
@@ -27,36 +30,23 @@ interface SeaDayRow {
 }
 
 export default function SeaDays() {
+  const { selectedOrgId } = useOrganization();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [selectedVessel, setSelectedVessel] = useState<string>('all');
   const [selectedProfile, setSelectedProfile] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<string>('all');
 
-  // Fetch vessels
-  const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: vessels } = useOrgVessels(selectedOrgId);
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
 
-  // Fetch profiles
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles-with-preferred'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('full_name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  const vesselIds = vessels?.map(v => v.id) || [];
 
-  // Fetch all closed logbooks for the selected year with crew
+  // Fetch all closed logbooks for the selected year with crew - scoped to org vessels
   const { data: logbookCrew, isLoading } = useQuery({
-    queryKey: ['sea-days-data', selectedYear],
+    queryKey: ['sea-days-data', selectedYear, vesselIds],
     queryFn: async () => {
+      if (vesselIds.length === 0) return [];
       const startDate = `${selectedYear}-01-01`;
       const endDate = `${selectedYear}-12-31`;
 
@@ -69,11 +59,13 @@ export default function SeaDays() {
         `)
         .gte('logbook.date', startDate)
         .lte('logbook.date', endDate)
-        .eq('logbook.status', 'stangd');
+        .eq('logbook.status', 'stangd')
+        .in('logbook.vessel_id', vesselIds);
 
       if (error) throw error;
       return data;
     },
+    enabled: vesselIds.length > 0,
   });
 
   // Process sea days - returns flat rows for table

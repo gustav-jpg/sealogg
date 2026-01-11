@@ -12,31 +12,18 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgVessels } from '@/hooks/useOrgVessels';
+import { useOrgCertificateTypes } from '@/hooks/useOrgCertificateTypes';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { Plus, Trash2, Ship, Shield, Award, Users } from 'lucide-react';
 
+
 export default function RoleRules() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { selectedOrgId } = useOrganization();
   const [selectedVesselId, setSelectedVesselId] = useState<string | null>(null);
-
-  // Get user's organization
-  const { data: userOrg } = useQuery({
-    queryKey: ['user-organization', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
 
   // Certificate requirements state
   const [certDialogOpen, setCertDialogOpen] = useState(false);
@@ -55,14 +42,9 @@ export default function RoleRules() {
   const [typeName, setTypeName] = useState('');
   const [typeDescription, setTypeDescription] = useState('');
 
-  const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: vessels } = useOrgVessels(selectedOrgId);
+  const { data: certificateTypes } = useOrgCertificateTypes(selectedOrgId);
+
 
   const { data: vesselRoleCerts } = useQuery({
     queryKey: ['vessel-role-certificates', selectedVesselId],
@@ -94,14 +76,6 @@ export default function RoleRules() {
     enabled: !!selectedVesselId,
   });
 
-  const { data: certificateTypes } = useQuery({
-    queryKey: ['certificate-types'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('certificate_types').select('*').order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
 
   // Certificate requirements mutations
   const createCertRule = useMutation({
@@ -176,16 +150,16 @@ export default function RoleRules() {
   // Certificate types mutations
   const createCertType = useMutation({
     mutationFn: async () => {
-      if (!userOrg?.organization_id) throw new Error('No organization found');
+      if (!selectedOrgId) throw new Error('No organization found');
       const { error } = await supabase.from('certificate_types').insert({
         name: typeName,
         description: typeDescription || null,
-        organization_id: userOrg.organization_id,
+        organization_id: selectedOrgId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['certificate-types'] });
+      queryClient.invalidateQueries({ queryKey: ['org-certificate-types', selectedOrgId] });
       toast({ title: 'Certifikattyp skapad' });
       setTypeDialogOpen(false);
       setTypeName('');
@@ -202,7 +176,7 @@ export default function RoleRules() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['certificate-types'] });
+      queryClient.invalidateQueries({ queryKey: ['org-certificate-types', selectedOrgId] });
       toast({ title: 'Certifikattyp borttagen' });
     },
     onError: (error) => {
