@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ export default function NewBooking() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user, isAdmin } = useAuth();
+  const { selectedOrgId } = useOrganization();
 
   // Redirect non-admins
   if (!isAdmin) {
@@ -66,15 +68,18 @@ export default function NewBooking() {
 
   // Fetch vessels
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('vessels')
         .select('id, name')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const createBooking = useMutation({

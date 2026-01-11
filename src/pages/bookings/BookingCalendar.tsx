@@ -5,6 +5,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, 
 import { sv } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ import {
 export default function BookingCalendar() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedVessel, setSelectedVessel] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
@@ -32,15 +34,18 @@ export default function BookingCalendar() {
 
   // Fetch vessels
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('vessels')
         .select('id, name')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   // Fetch bookings for the current week
