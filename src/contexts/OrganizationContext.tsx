@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
@@ -27,6 +27,7 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgIdState] = useState<string | null>(() => {
     return localStorage.getItem('selectedOrgId');
   });
@@ -67,6 +68,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   }, [userOrgs, selectedOrgId]);
 
   const setSelectedOrgId = (orgId: string) => {
+    if (orgId !== selectedOrgId) {
+      // Invalidate all cached queries when organization changes
+      // to ensure fresh data is loaded for the new organization
+      queryClient.invalidateQueries();
+    }
     setSelectedOrgIdState(orgId);
     localStorage.setItem('selectedOrgId', orgId);
   };
