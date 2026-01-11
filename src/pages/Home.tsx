@@ -10,6 +10,7 @@ import {
   Check,
   Waves,
 } from 'lucide-react';
+import devicesMockup from '@/assets/devices-mockup.png';
 
 export default function Home() {
   const features = [
@@ -155,10 +156,12 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-            <div className="relative">
-              <div className="aspect-square max-w-md mx-auto rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center">
-                <Waves className="h-32 w-32 text-primary/30" />
-              </div>
+            <div className="relative flex items-center justify-center">
+              <img 
+                src={devicesMockup} 
+                alt="SeaLogg på surfplatta och mobil" 
+                className="max-w-full h-auto max-h-[500px] object-contain drop-shadow-2xl"
+              />
             </div>
           </div>
         </div>
