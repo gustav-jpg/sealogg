@@ -154,12 +154,6 @@ export default function Login() {
                   </form>
                 </DialogContent>
               </Dialog>
-              <p className="text-muted-foreground">
-                Har du inget konto?{' '}
-                <Link to="/portal/register" className="text-primary hover:underline">
-                  Registrera dig
-                </Link>
-              </p>
             </div>
           </CardFooter>
         </form>
