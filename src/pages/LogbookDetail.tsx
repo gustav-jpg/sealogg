@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
 import { usePrint } from '@/hooks/usePrint';
 import { ValidationPanel } from '@/components/ValidationPanel';
@@ -27,6 +29,7 @@ import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2 } from 'lucide-react';
+
 
 interface CrewMember {
   tempId: string;
@@ -135,14 +138,9 @@ export default function LogbookDetail() {
     enabled: !!id,
   });
 
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('full_name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { selectedOrgId } = useOrganization();
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
+
 
   const { data: engineHours } = useQuery({
     queryKey: ['logbook-engine-hours', id],

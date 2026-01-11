@@ -16,8 +16,10 @@ import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { LogbookStops, StopEntry } from '@/components/LogbookStops';
 import { CrewRole, CREW_ROLE_LABELS } from '@/lib/types';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { Plus, Trash2, Ship, Users, Save, MapPin, Gauge } from 'lucide-react';
 import { format } from 'date-fns';
+
 
 interface CrewMember {
   tempId: string;
@@ -68,20 +70,8 @@ export default function NewLogbook() {
     enabled: !!selectedOrgId,
   });
 
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles', selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return [];
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('organization_id', selectedOrgId)
-        .order('full_name');
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedOrgId,
-  });
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
+
 
   const { data: vesselEngineHours } = useQuery({
     queryKey: ['vessel-engine-hours', vesselId],

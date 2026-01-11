@@ -17,6 +17,7 @@ import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 
 export default function AdminUsers() {
   const { toast } = useToast();
@@ -25,20 +26,8 @@ export default function AdminUsers() {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: string; id: string; name: string } | null>(null);
 
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles', selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return [];
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('organization_id', selectedOrgId)
-        .order('full_name');
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedOrgId,
-  });
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
+
 
   const { data: userRoles } = useQuery({
     queryKey: ['user-roles'],
@@ -110,7 +99,7 @@ export default function AdminUsers() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['org-profiles', selectedOrgId] });
       toast({ title: 'Extern besättning tillagd' });
     },
     onError: (error) => {
@@ -131,7 +120,7 @@ export default function AdminUsers() {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['org-profiles', selectedOrgId] });
       queryClient.invalidateQueries({ queryKey: ['user-roles'] });
       toast({ 
         title: data.isNewUser 
@@ -160,7 +149,7 @@ export default function AdminUsers() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['org-profiles', selectedOrgId] });
       queryClient.invalidateQueries({ queryKey: ['user-roles'] });
       toast({ 
         title: 'E-post kopplad!', 
@@ -178,7 +167,7 @@ export default function AdminUsers() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['org-profiles', selectedOrgId] });
       setSelectedProfileId(null);
       toast({ title: 'Extern besättning borttagen' });
     },
@@ -196,7 +185,7 @@ export default function AdminUsers() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['org-profiles', selectedOrgId] });
       toast({ title: 'Namn uppdaterat' });
     },
     onError: (error) => {
@@ -213,7 +202,7 @@ export default function AdminUsers() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['org-profiles', selectedOrgId] });
       queryClient.invalidateQueries({ queryKey: ['profiles-with-preferred'] });
       toast({ title: 'Föredragen båt uppdaterad' });
     },
