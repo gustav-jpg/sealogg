@@ -9,22 +9,25 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Ship, Users, Award, AlertTriangle, FileText, ExternalLink } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgVessels } from '@/hooks/useOrgVessels';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 
 export default function Qualifications() {
+  const { selectedOrgId } = useOrganization();
   const [selectedVesselId, setSelectedVesselId] = useState<string>('all');
 
-  const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('vessels').select('*').order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: vessels } = useOrgVessels(selectedOrgId);
+  const { data: profiles } = useOrgProfiles(selectedOrgId);
+
+  // Filter vessel ids for scoped queries
+  const vesselIds = vessels?.map(v => v.id) || [];
+  const profileIds = profiles?.map(p => p.id) || [];
 
   const { data: vesselCertificates } = useQuery({
-    queryKey: ['vessel-certificates', selectedVesselId],
+    queryKey: ['vessel-certificates', selectedVesselId, vesselIds],
     queryFn: async () => {
+      if (vesselIds.length === 0) return [];
       let query = supabase
         .from('vessel_certificates')
         .select('*, vessel:vessels(name)')
@@ -32,44 +35,45 @@ export default function Qualifications() {
       
       if (selectedVesselId !== 'all') {
         query = query.eq('vessel_id', selectedVesselId);
+      } else {
+        query = query.in('vessel_id', vesselIds);
       }
       
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-  });
-
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('full_name');
-      if (error) throw error;
-      return data;
-    },
+    enabled: vesselIds.length > 0,
   });
 
   const { data: userCertificates } = useQuery({
-    queryKey: ['user-certificates-all'],
+    queryKey: ['user-certificates-org', profileIds],
     queryFn: async () => {
+      if (profileIds.length === 0) return [];
       const { data, error } = await supabase
         .from('user_certificates')
         .select('*, certificate_type:certificate_types(*), profile:profiles(*)')
+        .in('profile_id', profileIds)
         .order('expiry_date', { ascending: true });
       if (error) throw error;
       return data;
     },
+    enabled: profileIds.length > 0,
   });
 
   const { data: inductions } = useQuery({
-    queryKey: ['user-inductions-all'],
+    queryKey: ['user-inductions-org', profileIds, vesselIds],
     queryFn: async () => {
+      if (profileIds.length === 0 || vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('user_vessel_inductions')
-        .select('*, vessel:vessels(*), profile:profiles(*)');
+        .select('*, vessel:vessels(*), profile:profiles(*)')
+        .in('profile_id', profileIds)
+        .in('vessel_id', vesselIds);
       if (error) throw error;
       return data;
     },
+    enabled: profileIds.length > 0 && vesselIds.length > 0,
   });
 
   const today = new Date().toISOString().split('T')[0];
