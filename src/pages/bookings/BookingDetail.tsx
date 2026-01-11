@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ export default function BookingDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, isAdmin } = useAuth();
+  const { selectedOrgId } = useOrganization();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -85,15 +87,18 @@ export default function BookingDetail() {
 
   // Fetch vessels
   const { data: vessels } = useQuery({
-    queryKey: ['vessels'],
+    queryKey: ['vessels', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
       const { data, error } = await supabase
         .from('vessels')
         .select('id, name')
+        .eq('organization_id', selectedOrgId)
         .order('name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   // Initialize form from booking data

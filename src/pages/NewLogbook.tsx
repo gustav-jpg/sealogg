@@ -69,12 +69,18 @@ export default function NewLogbook() {
   });
 
   const { data: profiles } = useQuery({
-    queryKey: ['profiles'],
+    queryKey: ['profiles', selectedOrgId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('full_name');
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .order('full_name');
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedOrgId,
   });
 
   const { data: vesselEngineHours } = useQuery({
