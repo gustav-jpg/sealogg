@@ -79,7 +79,7 @@ export default function Privacy() {
               <li><strong>Loggböcker:</strong> Enligt lagkrav för fartygsloggböcker (minst 3 år)</li>
               <li><strong>Certifikat:</strong> Så länge de är giltiga plus 1 år</li>
               <li><strong>Kontoinformation:</strong> Så länge kontot är aktivt eller enligt avtal med organisationen</li>
-              <li><strong>Avvikelser och felärenden:</strong> Enligt ISM-kodens krav på dokumentation</li>
+              <li><strong>Avvikelser och felärenden:</strong> Avvikelsehantering med dokumentation och återrapportering</li>
             </ul>
           </section>
 

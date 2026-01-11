@@ -31,7 +31,7 @@ export default function Home() {
     {
       icon: AlertTriangle,
       title: 'Avvikelser',
-      description: 'ISM-dokumentation',
+      description: 'Avvikelsehantering med dokumentation och återrapportering',
     },
   ];
 
@@ -139,7 +139,7 @@ export default function Home() {
                   <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                     <Check className="h-4 w-4 text-primary" />
                   </div>
-                  <span>ISM-kod för avvikelsehantering</span>
+                  <span>Avvikelsehantering med dokumentation och återrapportering</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
