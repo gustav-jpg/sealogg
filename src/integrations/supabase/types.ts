@@ -650,6 +650,7 @@ export type Database = {
           file_name: string
           file_url: string
           id: string
+          organization_id: string
           record_id: string
           uploaded_at: string
           uploaded_by: string
@@ -658,6 +659,7 @@ export type Database = {
           file_name: string
           file_url: string
           id?: string
+          organization_id: string
           record_id: string
           uploaded_at?: string
           uploaded_by: string
@@ -666,11 +668,19 @@ export type Database = {
           file_name?: string
           file_url?: string
           id?: string
+          organization_id?: string
           record_id?: string
           uploaded_at?: string
           uploaded_by?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "control_point_attachments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "control_point_attachments_record_id_fkey"
             columns: ["record_id"]
@@ -2020,7 +2030,7 @@ export type Database = {
           id: string
           main_engine_count: number
           name: string
-          organization_id: string | null
+          organization_id: string
           updated_at: string
         }
         Insert: {
@@ -2030,7 +2040,7 @@ export type Database = {
           id?: string
           main_engine_count?: number
           name: string
-          organization_id?: string | null
+          organization_id: string
           updated_at?: string
         }
         Update: {
@@ -2040,7 +2050,7 @@ export type Database = {
           id?: string
           main_engine_count?: number
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           updated_at?: string
         }
         Relationships: [
