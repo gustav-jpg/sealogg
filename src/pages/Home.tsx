@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Check,
 } from 'lucide-react';
-import devicesMockup from '@/assets/devices-mockup.png';
 import sealoggLogo from '@/assets/sealog-logo.png';
 
 export default function Home() {
@@ -63,20 +62,20 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="maritime-gradient relative overflow-hidden pb-32 pt-16 md:pt-24">
+      <section className="bg-gradient-to-br from-sky-100 via-blue-50 to-slate-100 relative overflow-hidden pb-32 pt-16 md:pt-24">
         <div className="container relative">
           <div className="max-w-2xl">
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6 leading-tight">
+            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
               Fartygsloggbok.
               <br />
-              <span className="text-primary-foreground/70">Digitalt. Enkelt.</span>
+              <span className="text-muted-foreground">Digitalt. Enkelt.</span>
             </h1>
-            <p className="text-lg text-primary-foreground/80 mb-8 max-w-lg">
+            <p className="text-lg text-muted-foreground mb-8 max-w-lg">
               Komplett system för loggbok, egenkontroll och säkerhetsarbete. 
               Byggd för svensk sjöfart.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+              <Button asChild size="lg">
                 <Link to="/portal/login">
                   Logga in
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -152,13 +151,6 @@ export default function Home() {
                   <span>Fungerar på mobil, surfplatta och dator</span>
                 </li>
               </ul>
-            </div>
-            <div className="relative flex items-center justify-center">
-              <img 
-                src={devicesMockup} 
-                alt="SeaLogg på surfplatta och mobil" 
-                className="max-w-full h-auto max-h-[500px] object-contain drop-shadow-2xl"
-              />
             </div>
           </div>
         </div>
