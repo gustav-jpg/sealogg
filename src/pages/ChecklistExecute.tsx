@@ -531,7 +531,7 @@ export default function ChecklistExecute() {
                     className="text-muted-foreground h-8 px-2"
                   >
                     <HelpCircle className="h-4 w-4 mr-1" />
-                    Hjälp?
+                    Hjälp
                   </Button>
                   {showHelpText && (
                     <div className="mt-2 p-3 bg-muted/50 rounded-lg border border-muted">
