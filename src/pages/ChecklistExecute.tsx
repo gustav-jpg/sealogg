@@ -709,26 +709,28 @@ export default function ChecklistExecute() {
                   <div />
                 )}
               </div>
-              
-              {/* Abort & Delete - Separate section */}
-              <div className="pt-4 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                  disabled={deleteExecution.isPending}
-                >
-                  {deleteExecution.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Trash2 className="h-4 w-4 mr-2" />
-                  )}
-                  Avbryt & radera
-                </Button>
-              </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Abort & Delete - Outside the step card */}
+        {execution && (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={deleteExecution.isPending}
+            >
+              {deleteExecution.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Avbryt & radera kontroll
+            </Button>
+          </div>
         )}
 
         <ConfirmDialog
