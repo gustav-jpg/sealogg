@@ -38,23 +38,23 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="maritime-gradient sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-border/40">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center">
             <img src={sealoggLogo} alt="SeaLogg" className="h-8" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#funktioner" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm">
+            <a href="#funktioner" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
               Funktioner
             </a>
-            <a href="#kontakt" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm">
+            <a href="#kontakt" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
               Kontakt
             </a>
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="sm" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
+            <Button asChild size="sm">
               <Link to="/portal/login">Logga in</Link>
             </Button>
           </div>
