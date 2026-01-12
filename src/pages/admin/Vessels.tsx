@@ -53,28 +53,46 @@ export default function AdminVessels() {
     enabled: !!selectedOrgId,
   });
 
+  const vesselIds = vessels?.map((v) => v.id) || [];
+
   const { data: crewRequirements } = useQuery({
-    queryKey: ['vessel-crew-requirements'],
+    queryKey: ['vessel-crew-requirements', vesselIds],
+    enabled: vesselIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessel_crew_requirements').select('*');
+      if (vesselIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('vessel_crew_requirements')
+        .select('*')
+        .in('vessel_id', vesselIds);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: vesselEngineHours } = useQuery({
-    queryKey: ['vessel-engine-hours'],
+    queryKey: ['vessel-engine-hours', vesselIds],
+    enabled: vesselIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessel_engine_hours').select('*');
+      if (vesselIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('vessel_engine_hours')
+        .select('*')
+        .in('vessel_id', vesselIds);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: vesselCertificates } = useQuery({
-    queryKey: ['vessel-certificates'],
+    queryKey: ['vessel-certificates', vesselIds],
+    enabled: vesselIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from('vessel_certificates').select('*').order('expiry_date');
+      if (vesselIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('vessel_certificates')
+        .select('*')
+        .in('vessel_id', vesselIds)
+        .order('expiry_date');
       if (error) throw error;
       return data;
     },

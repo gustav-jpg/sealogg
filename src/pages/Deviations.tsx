@@ -93,12 +93,19 @@ export default function Deviations() {
     enabled: !!vesselId,
   });
 
+  const vesselIds = vessels?.map((v) => v.id) || [];
+
   const { data: deviations, isLoading } = useQuery({
-    queryKey: ['deviations', filterVessel, filterStatus, filterType, filterSeverity],
+    queryKey: ['deviations', selectedOrgId, vesselIds, filterVessel, filterStatus, filterType, filterSeverity],
+    enabled: !!selectedOrgId,
     queryFn: async () => {
+      if (!selectedOrgId) return [];
+      if (vesselIds.length === 0) return [];
+
       let query = supabase
         .from('deviations')
         .select(`*, vessel:vessels(*)`)
+        .in('vessel_id', vesselIds)
         .order('date', { ascending: false });
 
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);

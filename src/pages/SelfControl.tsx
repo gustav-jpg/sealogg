@@ -91,12 +91,17 @@ export default function SelfControl() {
     enabled: !!selectedOrgId,
   });
 
+  const controlPointIds = controlPoints?.map((cp) => cp.id) || [];
+
   const { data: controlPointVessels } = useQuery({
-    queryKey: ['control-point-vessels'],
+    queryKey: ['control-point-vessels', controlPointIds],
+    enabled: controlPointIds.length > 0,
     queryFn: async () => {
+      if (controlPointIds.length === 0) return [];
       const { data, error } = await supabase
         .from('control_point_vessels')
-        .select('*');
+        .select('*')
+        .in('control_point_id', controlPointIds);
       if (error) throw error;
       return data;
     },

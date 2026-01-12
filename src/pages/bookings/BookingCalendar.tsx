@@ -48,13 +48,20 @@ export default function BookingCalendar() {
     enabled: !!selectedOrgId,
   });
 
-  // Fetch bookings for the current week
+  const vesselIds = vessels?.map((v) => v.id) || [];
+
+  // Fetch bookings for the current week - scoped to org vessels
   const { data: bookings, isLoading } = useQuery({
-    queryKey: ['bookings', weekStart.toISOString(), weekEnd.toISOString(), selectedVessel],
+    queryKey: ['bookings', selectedOrgId, vesselIds, weekStart.toISOString(), weekEnd.toISOString(), selectedVessel],
+    enabled: !!selectedOrgId,
     queryFn: async () => {
+      if (!selectedOrgId) return [];
+      if (vesselIds.length === 0) return [];
+
       let query = supabase
         .from('bookings')
         .select('*, vessels(id, name)')
+        .in('vessel_id', vesselIds)
         .gte('booking_date', format(weekStart, 'yyyy-MM-dd'))
         .lte('booking_date', format(weekEnd, 'yyyy-MM-dd'))
         .order('booking_date')
