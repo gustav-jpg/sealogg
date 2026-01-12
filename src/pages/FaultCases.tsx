@@ -73,12 +73,30 @@ export default function FaultCases() {
     enabled: !!selectedOrgId,
   });
 
+  const vesselIds = vessels?.map((v) => v.id) || [];
+
   const { data: faultCases, isLoading } = useQuery({
-    queryKey: ['fault-cases', filterVessel, filterStatus, filterPriority, searchText, activeTab],
+    queryKey: [
+      'fault-cases',
+      selectedOrgId,
+      vesselIds,
+      filterVessel,
+      filterStatus,
+      filterPriority,
+      searchText,
+      activeTab,
+    ],
+    enabled: !!selectedOrgId,
     queryFn: async () => {
+      if (!selectedOrgId) return [];
+      if (vesselIds.length === 0) return [];
+
+      // Always scope fault cases to the currently selected organization
+      // (otherwise users with multiple org memberships will see mixed data)
       let query = supabase
         .from('fault_cases')
         .select(`*, vessel:vessels(*)`)
+        .in('vessel_id', vesselIds)
         .order('created_at', { ascending: false });
 
       // Filter by active/archive tab
