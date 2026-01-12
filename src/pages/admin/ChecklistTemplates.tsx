@@ -34,6 +34,7 @@ interface ChecklistStep {
   step_order: number;
   title: string;
   instruction: string;
+  help_text: string;
   confirmation_type: 'checkbox' | 'yes_no';
   requires_comment: boolean;
   requires_photo: boolean;
@@ -165,6 +166,7 @@ export default function ChecklistTemplates() {
           step_order: index + 1,
           title: step.title,
           instruction: step.instruction,
+          help_text: step.help_text || null,
           confirmation_type: step.confirmation_type,
           requires_comment: step.requires_comment,
           requires_photo: step.requires_photo,
@@ -230,6 +232,7 @@ export default function ChecklistTemplates() {
           step_order: index + 1,
           title: step.title,
           instruction: step.instruction,
+          help_text: step.help_text || null,
           confirmation_type: step.confirmation_type,
           requires_comment: step.requires_comment,
           requires_photo: step.requires_photo,
@@ -292,6 +295,7 @@ export default function ChecklistTemplates() {
       step_order: s.step_order,
       title: s.title,
       instruction: s.instruction,
+      help_text: s.help_text || '',
       confirmation_type: s.confirmation_type as 'checkbox' | 'yes_no',
       requires_comment: s.requires_comment,
       requires_photo: s.requires_photo,
@@ -311,6 +315,7 @@ export default function ChecklistTemplates() {
       step_order: steps.length + 1,
       title: '',
       instruction: '',
+      help_text: '',
       confirmation_type: 'checkbox',
       requires_comment: false,
       requires_photo: false,
@@ -448,6 +453,13 @@ export default function ChecklistTemplates() {
                         onChange={(e) => updateStep(index, { instruction: e.target.value })}
                         placeholder="Instruktionstext *"
                         rows={2}
+                      />
+                      <Textarea 
+                        value={step.help_text} 
+                        onChange={(e) => updateStep(index, { help_text: e.target.value })}
+                        placeholder="Hjälptext (valfritt) - t.ex. hur man kontrollerar"
+                        rows={2}
+                        className="text-muted-foreground"
                       />
                       <div className="flex flex-wrap gap-4">
                         <Select 

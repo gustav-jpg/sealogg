@@ -20,6 +20,7 @@ interface ChecklistStep {
   step_order: number;
   title: string;
   instruction: string;
+  help_text: string | null;
   confirmation_type: 'checkbox' | 'yes_no';
   requires_comment: boolean;
   requires_photo: boolean;
@@ -518,6 +519,11 @@ export default function ChecklistExecute() {
               </div>
               <CardTitle>{currentStep.title}</CardTitle>
               <CardDescription className="whitespace-pre-wrap">{currentStep.instruction}</CardDescription>
+              {currentStep.help_text && (
+                <p className="text-sm text-muted-foreground/70 italic mt-2 whitespace-pre-wrap">
+                  {currentStep.help_text}
+                </p>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Photo & Comment - Always visible at top */}
