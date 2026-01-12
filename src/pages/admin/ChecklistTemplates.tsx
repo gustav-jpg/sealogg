@@ -131,7 +131,7 @@ export default function ChecklistTemplates() {
   const createTemplate = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error('Not authenticated');
-      if (!userOrg?.organization_id) throw new Error('No organization found');
+      if (!selectedOrgId) throw new Error('No organization selected');
       
       const { data: template, error } = await supabase
         .from('checklist_templates')
@@ -142,7 +142,7 @@ export default function ChecklistTemplates() {
           is_active: isActive,
           applies_to_all_vessels: appliesToAll,
           created_by: user.id,
-          organization_id: userOrg.organization_id,
+          organization_id: selectedOrgId,
         })
         .select()
         .single();
