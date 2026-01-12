@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Waves, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import sealoggLogo from '@/assets/sealog-logo.png';
 
 export default function Privacy() {
   return (
@@ -8,11 +9,8 @@ export default function Privacy() {
       {/* Header */}
       <header className="maritime-gradient sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <Waves className="h-7 w-7 text-primary-foreground" />
-            <span className="font-logo text-xl font-extrabold text-primary-foreground">
-              SeaLogg
-            </span>
+          <Link to="/" className="flex items-center">
+            <img src={sealoggLogo} alt="SeaLogg" className="h-8" />
           </Link>
           <Button asChild variant="ghost" size="sm" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
             <Link to="/">
@@ -148,9 +146,8 @@ export default function Privacy() {
       <footer className="border-t border-border/40 bg-muted/30">
         <div className="container py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Waves className="h-5 w-5 text-primary" />
-              <span className="font-logo font-extrabold">SeaLogg</span>
+            <div className="flex items-center">
+              <img src={sealoggLogo} alt="SeaLogg" className="h-6" />
             </div>
             <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} AhrensGroup AB

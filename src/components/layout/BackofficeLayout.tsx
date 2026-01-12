@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Waves, Building2, LogOut, LayoutDashboard, Menu } from 'lucide-react';
+import { Building2, LogOut, LayoutDashboard, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import sealoggLogo from '@/assets/sealog-logo.png';
 
 interface BackofficeLayoutProps {
   children: ReactNode;
@@ -77,9 +78,8 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
     <>
       <div className="p-4 border-b">
         <Link to="/backoffice" className="flex items-center gap-2">
-          <Waves className="h-6 w-6 text-primary" />
-          <span className="font-logo font-extrabold">SeaLogg</span>
-          <span className="text-xs text-muted-foreground ml-1">Admin</span>
+          <img src={sealoggLogo} alt="SeaLogg" className="h-6" />
+          <span className="text-xs text-muted-foreground">Admin</span>
         </Link>
       </div>
 
@@ -126,9 +126,8 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
       {/* Mobile header */}
       <header className="md:hidden flex items-center justify-between p-4 border-b bg-muted/30">
         <Link to="/backoffice" className="flex items-center gap-2">
-          <Waves className="h-6 w-6 text-primary" />
-          <span className="font-logo font-extrabold">SeaLogg</span>
-          <span className="text-xs text-muted-foreground ml-1">Admin</span>
+          <img src={sealoggLogo} alt="SeaLogg" className="h-6" />
+          <span className="text-xs text-muted-foreground">Admin</span>
         </Link>
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>

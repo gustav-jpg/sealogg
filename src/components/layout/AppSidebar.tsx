@@ -16,7 +16,6 @@ import {
   Wrench,
   ClipboardCheck,
   ClipboardList,
-  Waves,
   Home,
   Building2,
   Activity,
@@ -28,6 +27,7 @@ import {
   ChevronsUpDown,
   Check,
 } from 'lucide-react';
+import sealoggLogo from '@/assets/sealog-logo.png';
 import {
   Sidebar,
   SidebarContent,
@@ -173,13 +173,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       {/* Header with Logo */}
       <SidebarHeader className="border-b border-sidebar-border bg-primary">
-        <Link to="/portal" className="flex items-center gap-2 px-2 py-1">
-          <Waves className="h-6 w-6 text-primary-foreground shrink-0" />
-          {!isCollapsed && (
-            <span className="font-logo text-lg font-extrabold text-primary-foreground">
-              SeaLogg
-            </span>
-          )}
+        <Link to="/portal" className="flex items-center px-2 py-1">
+          <img 
+            src={sealoggLogo} 
+            alt="SeaLogg" 
+            className={isCollapsed ? "h-6" : "h-7"} 
+          />
         </Link>
       </SidebarHeader>
 
