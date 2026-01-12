@@ -86,12 +86,17 @@ export default function ControlPoints() {
     enabled: !!selectedOrgId,
   });
 
+  const vesselIds = vessels?.map((v) => v.id) || [];
+
   const { data: allEngines } = useQuery({
-    queryKey: ['all-engines'],
+    queryKey: ['all-engines', vesselIds],
+    enabled: vesselIds.length > 0,
     queryFn: async () => {
+      if (vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('vessel_engine_hours')
         .select('*, vessels(name)')
+        .in('vessel_id', vesselIds)
         .order('vessel_id')
         .order('engine_type')
         .order('engine_number');
@@ -115,12 +120,17 @@ export default function ControlPoints() {
     enabled: !!selectedOrgId,
   });
 
+  const controlPointIds = controlPoints?.map((cp) => cp.id) || [];
+
   const { data: controlPointVessels } = useQuery({
-    queryKey: ['control-point-vessels'],
+    queryKey: ['control-point-vessels-admin', controlPointIds],
+    enabled: controlPointIds.length > 0,
     queryFn: async () => {
+      if (controlPointIds.length === 0) return [];
       const { data, error } = await supabase
         .from('control_point_vessels')
-        .select('*');
+        .select('*')
+        .in('control_point_id', controlPointIds);
       if (error) throw error;
       return data;
     },

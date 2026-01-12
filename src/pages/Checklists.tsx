@@ -112,12 +112,17 @@ export default function Checklists() {
     enabled: !!selectedOrgId,
   });
 
+  const templateIds = checklistTemplates?.map((t) => t.id) || [];
+
   const { data: templateVessels } = useQuery({
-    queryKey: ['checklist-template-vessels'],
+    queryKey: ['checklist-template-vessels', templateIds],
+    enabled: templateIds.length > 0,
     queryFn: async () => {
+      if (templateIds.length === 0) return [];
       const { data, error } = await supabase
         .from('checklist_template_vessels')
-        .select('*');
+        .select('*')
+        .in('checklist_template_id', templateIds);
       if (error) throw error;
       return data;
     },

@@ -28,20 +28,32 @@ export default function AdminUsers() {
 
   const { data: profiles } = useOrgProfiles(selectedOrgId);
 
+  const profileIds = profiles?.map((p) => p.id) || [];
+  const profileUserIds = profiles?.map((p) => p.user_id).filter(Boolean) || [];
 
   const { data: userRoles } = useQuery({
-    queryKey: ['user-roles'],
+    queryKey: ['user-roles', profileUserIds],
+    enabled: profileUserIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from('user_roles').select('*');
+      if (profileUserIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('*')
+        .in('user_id', profileUserIds);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: userCertificates } = useQuery({
-    queryKey: ['user-certificates'],
+    queryKey: ['user-certificates', profileIds],
+    enabled: profileIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from('user_certificates').select('*, certificate_type:certificate_types(*)');
+      if (profileIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('user_certificates')
+        .select('*, certificate_type:certificate_types(*)')
+        .in('profile_id', profileIds);
       if (error) throw error;
       return data;
     },
@@ -62,10 +74,18 @@ export default function AdminUsers() {
     enabled: !!selectedOrgId,
   });
 
+  const vesselIds = vessels?.map((v) => v.id) || [];
+
   const { data: inductions } = useQuery({
-    queryKey: ['user-inductions'],
+    queryKey: ['user-inductions', profileIds, vesselIds],
+    enabled: profileIds.length > 0 && vesselIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await supabase.from('user_vessel_inductions').select('*, vessel:vessels(*)');
+      if (profileIds.length === 0 || vesselIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('user_vessel_inductions')
+        .select('*, vessel:vessels(*)')
+        .in('profile_id', profileIds)
+        .in('vessel_id', vesselIds);
       if (error) throw error;
       return data;
     },

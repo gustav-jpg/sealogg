@@ -106,23 +106,31 @@ export default function ChecklistTemplates() {
     enabled: !!selectedOrgId,
   });
 
+  const templateIds = templates?.map((t) => t.id) || [];
+
   const { data: templateVessels } = useQuery({
-    queryKey: ['checklist-template-vessels-admin'],
+    queryKey: ['checklist-template-vessels-admin', templateIds],
+    enabled: templateIds.length > 0,
     queryFn: async () => {
+      if (templateIds.length === 0) return [];
       const { data, error } = await supabase
         .from('checklist_template_vessels')
-        .select('*');
+        .select('*')
+        .in('checklist_template_id', templateIds);
       if (error) throw error;
       return data;
     },
   });
 
   const { data: allSteps } = useQuery({
-    queryKey: ['checklist-steps-admin'],
+    queryKey: ['checklist-steps-admin', templateIds],
+    enabled: templateIds.length > 0,
     queryFn: async () => {
+      if (templateIds.length === 0) return [];
       const { data, error } = await supabase
         .from('checklist_steps')
         .select('*')
+        .in('checklist_template_id', templateIds)
         .order('step_order');
       if (error) throw error;
       return data;
