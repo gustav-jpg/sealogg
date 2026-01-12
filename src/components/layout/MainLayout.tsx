@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import { Waves } from 'lucide-react';
+import sealoggLogo from '@/assets/sealog-logo.png';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -18,9 +18,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-12 items-center gap-4 px-4">
               <SidebarTrigger />
-              <div className="flex items-center gap-2 md:hidden">
-                <Waves className="h-5 w-5 text-primary" />
-                <span className="font-logo text-lg font-bold text-primary">SeaLogg</span>
+              <div className="flex items-center md:hidden">
+                <img src={sealoggLogo} alt="SeaLogg" className="h-6" />
               </div>
             </div>
           </header>

@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Waves, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import sealoggLogo from '@/assets/sealog-logo.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -82,11 +83,8 @@ export default function Login() {
       <Card className="w-full max-w-md mx-4 animate-fade-in">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 rounded-full maritime-gradient">
-              <Waves className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img src={sealoggLogo} alt="SeaLogg" className="h-10" />
           </div>
-          <CardTitle className="font-logo text-2xl font-extrabold">SeaLogg</CardTitle>
           <CardDescription>Logga in för att fortsätta</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

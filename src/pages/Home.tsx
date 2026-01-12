@@ -8,9 +8,9 @@ import {
   AlertTriangle,
   ArrowRight,
   Check,
-  Waves,
 } from 'lucide-react';
 import devicesMockup from '@/assets/devices-mockup.png';
+import sealoggLogo from '@/assets/sealog-logo.png';
 
 export default function Home() {
   const features = [
@@ -41,11 +41,8 @@ export default function Home() {
       {/* Header */}
       <header className="maritime-gradient sticky top-0 z-50">
         <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <Waves className="h-7 w-7 text-primary-foreground" />
-            <span className="font-logo text-xl font-extrabold text-primary-foreground">
-              SeaLogg
-            </span>
+          <Link to="/" className="flex items-center">
+            <img src={sealoggLogo} alt="SeaLogg" className="h-8" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -191,9 +188,8 @@ export default function Home() {
       <footer className="border-t border-border/40 bg-muted/30">
         <div className="container py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Waves className="h-5 w-5 text-primary" />
-              <span className="font-logo font-extrabold">SeaLogg</span>
+            <div className="flex items-center">
+              <img src={sealoggLogo} alt="SeaLogg" className="h-6" />
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link to="/portal" className="hover:text-foreground transition-colors">Portal</Link>
