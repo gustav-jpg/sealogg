@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { format, addDays } from 'date-fns';
-import { ClipboardList, Check, Camera, ArrowLeft, Loader2, CheckCircle, AlertTriangle, MessageSquare, Trash2 } from 'lucide-react';
+import { ClipboardList, Check, Camera, ArrowLeft, Loader2, CheckCircle, AlertTriangle, MessageSquare, Trash2, HelpCircle } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface ChecklistStep {
@@ -53,6 +53,7 @@ export default function ChecklistExecute() {
   const [isUploading, setIsUploading] = useState(false);
   const [execution, setExecution] = useState<any>(null);
   const [showCommentField, setShowCommentField] = useState(false);
+  const [showHelpText, setShowHelpText] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch or create execution
@@ -261,6 +262,8 @@ export default function ChecklistExecute() {
         setPhotoPreview(null);
         setShowCommentField(false);
       }
+      // Always hide help text when switching steps
+      setShowHelpText(false);
     }
   }, [currentStepIndex, steps, stepResults]);
 
@@ -520,9 +523,24 @@ export default function ChecklistExecute() {
               <CardTitle>{currentStep.title}</CardTitle>
               <CardDescription className="whitespace-pre-wrap">{currentStep.instruction}</CardDescription>
               {currentStep.help_text && (
-                <p className="text-sm text-muted-foreground/70 italic mt-2 whitespace-pre-wrap">
-                  {currentStep.help_text}
-                </p>
+                <div className="mt-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowHelpText(!showHelpText)}
+                    className="text-muted-foreground h-8 px-2"
+                  >
+                    <HelpCircle className="h-4 w-4 mr-1" />
+                    Hjälp?
+                  </Button>
+                  {showHelpText && (
+                    <div className="mt-2 p-3 bg-muted/50 rounded-lg border border-muted">
+                      <p className="text-sm text-muted-foreground/80 italic whitespace-pre-wrap">
+                        {currentStep.help_text}
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
             </CardHeader>
             <CardContent className="space-y-4">
