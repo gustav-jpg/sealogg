@@ -640,6 +640,35 @@ export default function ChecklistExecute() {
                   OK
                 </Button>
               </div>
+
+              {/* Show prominent completion section when all steps are done */}
+              {allStepsCompleted && (
+                <div className="mt-4 p-4 bg-green-50 dark:bg-green-950/30 border-2 border-green-500 rounded-lg text-center">
+                  <CheckCircle className="h-12 w-12 mx-auto text-green-600 mb-3" />
+                  <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                    Alla steg är klara!
+                  </h3>
+                  {deviationCount > 0 && (
+                    <p className="text-amber-600 mb-3 text-sm">
+                      <AlertTriangle className="h-4 w-4 inline mr-1" />
+                      {deviationCount} avvikelse(r) - felärenden skapas automatiskt
+                    </p>
+                  )}
+                  <Button
+                    size="lg"
+                    onClick={() => completeChecklist.mutate()}
+                    disabled={completeChecklist.isPending}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-14 text-base"
+                  >
+                    {completeChecklist.isPending ? (
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    ) : (
+                      <Check className="h-5 w-5 mr-2" />
+                    )}
+                    Slutför checklista
+                  </Button>
+                </div>
+              )}
               
               {/* Navigation */}
               <div className="flex justify-between pt-2">
@@ -708,37 +737,7 @@ export default function ChecklistExecute() {
           variant="default"
         />
 
-        {/* Completion */}
-        {allStepsCompleted && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <CheckCircle className="h-16 w-16 mx-auto text-green-600 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Alla steg är bekräftade</h2>
-              {deviationCount > 0 && (
-                <p className="text-amber-600 mb-4">
-                  <AlertTriangle className="h-4 w-4 inline mr-1" />
-                  {deviationCount} avvikelse(r) - felärenden skapas automatiskt
-                </p>
-              )}
-              <p className="text-muted-foreground mb-6">
-                Klicka nedan för att slutföra checklistan
-              </p>
-              <Button
-                size="lg"
-                onClick={() => completeChecklist.mutate()}
-                disabled={completeChecklist.isPending}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {completeChecklist.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4 mr-2" />
-                )}
-                Slutför checklista
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        {/* Completion - removed duplicate, now shown inline in the step card */}
 
         {/* Step overview */}
         <Card>
