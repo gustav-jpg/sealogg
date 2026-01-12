@@ -297,12 +297,13 @@ export default function SelfControl() {
             .from('attachments')
             .getPublicUrl(filePath);
 
+          // organization_id is auto-set by trigger from record_id -> vessel
           await supabase.from('control_point_attachments').insert({
             record_id: record.id,
             file_url: urlData.publicUrl,
             file_name: file.name,
             uploaded_by: user?.id,
-          });
+          } as any);
         }
       }
 
