@@ -520,6 +520,7 @@ export type Database = {
           checklist_template_id: string
           confirmation_type: string
           created_at: string
+          help_text: string | null
           id: string
           instruction: string
           requires_comment: boolean
@@ -531,6 +532,7 @@ export type Database = {
           checklist_template_id: string
           confirmation_type?: string
           created_at?: string
+          help_text?: string | null
           id?: string
           instruction: string
           requires_comment?: boolean
@@ -542,6 +544,7 @@ export type Database = {
           checklist_template_id?: string
           confirmation_type?: string
           created_at?: string
+          help_text?: string | null
           id?: string
           instruction?: string
           requires_comment?: boolean
