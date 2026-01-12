@@ -135,6 +135,52 @@ export default function ChecklistExecute() {
     enabled: !!(vesselId || existingExecution?.vessel_id),
   });
 
+  // Fetch previous execution's comments for this template and vessel
+  const { data: previousComments } = useQuery({
+    queryKey: ['previous-checklist-comments', template?.id, vessel?.id, execution?.id],
+    queryFn: async () => {
+      if (!template?.id || !vessel?.id) return new Map<string, string>();
+      
+      // Find the most recent completed execution before current one
+      const { data: prevExecutions, error: execError } = await supabase
+        .from('checklist_executions')
+        .select('id, completed_at')
+        .eq('checklist_template_id', template.id)
+        .eq('vessel_id', vessel.id)
+        .eq('status', 'completed')
+        .neq('id', execution?.id || '')
+        .order('completed_at', { ascending: false })
+        .limit(1);
+      
+      if (execError || !prevExecutions || prevExecutions.length === 0) {
+        return new Map<string, string>();
+      }
+      
+      const prevExecId = prevExecutions[0].id;
+      
+      // Fetch step results from that execution
+      const { data: prevResults, error: resultsError } = await supabase
+        .from('checklist_step_results')
+        .select('checklist_step_id, comment')
+        .eq('checklist_execution_id', prevExecId)
+        .not('comment', 'is', null);
+      
+      if (resultsError || !prevResults) {
+        return new Map<string, string>();
+      }
+      
+      const commentsMap = new Map<string, string>();
+      prevResults.forEach((result) => {
+        if (result.comment) {
+          commentsMap.set(result.checklist_step_id, result.comment);
+        }
+      });
+      
+      return commentsMap;
+    },
+    enabled: !!template?.id && !!vessel?.id,
+  });
+
   // Create execution if starting new
   const createExecution = useMutation({
     mutationFn: async () => {
@@ -507,6 +553,18 @@ export default function ChecklistExecute() {
               {/* Photo preview */}
               {photoPreview && (
                 <img src={photoPreview} alt="Preview" className="w-full max-h-32 object-cover rounded-lg" />
+              )}
+              
+              {/* Previous comment from last execution */}
+              {previousComments && currentStep && previousComments.get(currentStep.id) && (
+                <div className="bg-muted/50 border border-muted rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    Kommentar från förra kontrollen:
+                  </p>
+                  <p className="text-sm italic">
+                    "{previousComments.get(currentStep.id)}"
+                  </p>
+                </div>
               )}
               
               {/* Comment field */}
