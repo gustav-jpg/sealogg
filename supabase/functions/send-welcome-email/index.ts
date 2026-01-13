@@ -53,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
           <body>
             <div class="container">
               <div class="header">
-                <div class="logo">🌊 SeaLogg</div>
+                <img src="https://sealogg.se/sealog-logo.png" alt="SeaLogg" style="height: 50px; width: auto;" />
               </div>
               <div class="content">
                 <h2>Välkommen${fullName ? `, ${fullName}` : ''}!</h2>
