@@ -203,15 +203,22 @@ export default function AdminUsers() {
     },
   });
 
-  const deleteExternalUser = useMutation({
-    mutationFn: async (profileId: string) => {
-      const { error } = await supabase.from('profiles').delete().eq('id', profileId);
-      if (error) throw error;
+  const deleteUser = useMutation({
+    mutationFn: async ({ profileId, userId }: { profileId: string; userId: string | null }) => {
+      const response = await supabase.functions.invoke('delete-user', {
+        body: { profileId, userId },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['org-profiles', selectedOrgId] });
+      queryClient.invalidateQueries({ queryKey: ['user-roles'] });
       setSelectedProfileId(null);
-      toast({ title: 'Extern besättning borttagen' });
+      toast({ title: 'Användare borttagen' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -562,29 +569,29 @@ export default function AdminUsers() {
                       )}
                     </div>
                   </div>
-                  {isExternalUser && (
-                    <div className="flex gap-2">
+                  <div className="flex gap-2">
+                    {isExternalUser && (
                       <LinkEmailDialog 
                         profileId={selectedProfile.id}
                         profileName={selectedProfile.full_name}
                         onLink={(data) => linkEmailMutation.mutate(data)}
                         isLoading={linkEmailMutation.isPending}
                       />
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => setDeleteConfirm({ 
-                          open: true, 
-                          type: 'user', 
-                          id: selectedProfile.id, 
-                          name: selectedProfile.full_name 
-                        })}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Ta bort
-                      </Button>
-                    </div>
-                  )}
+                    )}
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => setDeleteConfirm({ 
+                        open: true, 
+                        type: 'user', 
+                        id: selectedProfile.id, 
+                        name: selectedProfile.full_name 
+                      })}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Ta bort
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue={isExternalUser ? "certificates" : "roles"}>
@@ -755,18 +762,23 @@ export default function AdminUsers() {
           open={deleteConfirm?.open || false}
           onOpenChange={(open) => !open && setDeleteConfirm(null)}
           title={
-            deleteConfirm?.type === 'user' ? 'Ta bort extern besättning' :
+            deleteConfirm?.type === 'user' ? 'Ta bort användare' :
             deleteConfirm?.type === 'role' ? 'Ta bort roll' :
             deleteConfirm?.type === 'certificate' ? 'Ta bort certifikat' :
             deleteConfirm?.type === 'induction' ? 'Ta bort inskolning' : 'Bekräfta borttagning'
           }
-          description={`Är du säker på att du vill ta bort "${deleteConfirm?.name}"? Detta går inte att ångra.`}
+          description={
+            deleteConfirm?.type === 'user' 
+              ? `Är du säker på att du vill ta bort "${deleteConfirm?.name}"? Användaren och all tillhörande data (certifikat, inskolningar etc.) kommer att raderas permanent. Detta går inte att ångra.`
+              : `Är du säker på att du vill ta bort "${deleteConfirm?.name}"? Detta går inte att ångra.`
+          }
           confirmLabel="Ta bort"
           onConfirm={() => {
             if (deleteConfirm) {
               switch (deleteConfirm.type) {
                 case 'user':
-                  deleteExternalUser.mutate(deleteConfirm.id);
+                  const profile = profiles?.find(p => p.id === deleteConfirm.id);
+                  deleteUser.mutate({ profileId: deleteConfirm.id, userId: profile?.user_id || null });
                   break;
                 case 'role':
                   removeRole.mutate(deleteConfirm.id);
