@@ -8,12 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
-import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
-import { Plus, Ship, Trash2, Users, Settings, Gauge, Pencil, Award, Upload, FileText, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Plus, Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -31,12 +30,8 @@ export default function AdminVessels() {
   const [description, setDescription] = useState('');
   const [mainEngineCount, setMainEngineCount] = useState(1);
   const [auxiliaryEngineCount, setAuxiliaryEngineCount] = useState(0);
-  const [requirements, setRequirements] = useState<{ role: CrewRole; count: number; group: string }[]>([]);
   const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
-  const [crewDialogOpen, setCrewDialogOpen] = useState(false);
-  const [editingVesselId, setEditingVesselId] = useState<string | null>(null);
-  const [editRequirements, setEditRequirements] = useState<{ id?: string; role: CrewRole; count: number; group: string }[]>([]);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -55,19 +50,6 @@ export default function AdminVessels() {
 
   const vesselIds = vessels?.map((v) => v.id) || [];
 
-  const { data: crewRequirements } = useQuery({
-    queryKey: ['vessel-crew-requirements', vesselIds],
-    enabled: vesselIds.length > 0,
-    queryFn: async () => {
-      if (vesselIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('vessel_crew_requirements')
-        .select('*')
-        .in('vessel_id', vesselIds);
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const { data: vesselEngineHours } = useQuery({
     queryKey: ['vessel-engine-hours', vesselIds],
@@ -115,18 +97,6 @@ export default function AdminVessels() {
         .single();
       if (vesselError) throw vesselError;
 
-      if (requirements.length > 0) {
-        const { error: reqError } = await supabase.from('vessel_crew_requirements').insert(
-          requirements.map(r => ({ 
-            vessel_id: vessel.id, 
-            role: r.role, 
-            minimum_count: r.count,
-            requirement_group: r.group || null
-          }))
-        );
-        if (reqError) throw reqError;
-      }
-
       // Skapa engine hours records för alla maskiner
       const engineRecords = [];
       for (let i = 1; i <= mainEngineCount; i++) {
@@ -144,7 +114,6 @@ export default function AdminVessels() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vessels'] });
-      queryClient.invalidateQueries({ queryKey: ['vessel-crew-requirements'] });
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
       toast({ title: 'Skapat', description: 'Fartyget har skapats.' });
       setDialogOpen(false);
@@ -152,7 +121,6 @@ export default function AdminVessels() {
       setDescription('');
       setMainEngineCount(1);
       setAuxiliaryEngineCount(0);
-      setRequirements([]);
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -229,83 +197,6 @@ export default function AdminVessels() {
     },
   });
 
-  const openCrewDialog = (vesselId: string) => {
-    const vesselReqs = crewRequirements?.filter(r => r.vessel_id === vesselId) || [];
-    setEditRequirements(vesselReqs.map(r => ({
-      id: r.id,
-      role: r.role as CrewRole,
-      count: r.minimum_count,
-      group: (r as any).requirement_group || ''
-    })));
-    setEditingVesselId(vesselId);
-    setCrewDialogOpen(true);
-  };
-
-  const updateCrewRequirements = useMutation({
-    mutationFn: async () => {
-      if (!editingVesselId) throw new Error('Inget fartyg valt');
-      
-      // Delete existing requirements
-      const { error: deleteError } = await supabase
-        .from('vessel_crew_requirements')
-        .delete()
-        .eq('vessel_id', editingVesselId);
-      if (deleteError) throw deleteError;
-      
-      // Insert new requirements
-      if (editRequirements.length > 0) {
-        const { error: insertError } = await supabase
-          .from('vessel_crew_requirements')
-          .insert(editRequirements.map(r => ({
-            vessel_id: editingVesselId,
-            role: r.role,
-            minimum_count: r.count,
-            requirement_group: r.group || null
-          })));
-        if (insertError) throw insertError;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vessel-crew-requirements'] });
-      toast({ title: 'Sparat', description: 'Bemanningskrav uppdaterade.' });
-      setCrewDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const addRequirement = (group: string = '') => {
-    setRequirements([...requirements, { role: 'matros', count: 1, group }]);
-  };
-
-  const addEditRequirement = () => {
-    setEditRequirements([...editRequirements, { role: 'matros', count: 1, group: '' }]);
-  };
-
-  const updateEditRequirement = (index: number, field: 'role' | 'count' | 'group', value: string | number) => {
-    const updated = [...editRequirements];
-    if (field === 'role') updated[index].role = value as CrewRole;
-    else if (field === 'count') updated[index].count = value as number;
-    else if (field === 'group') updated[index].group = value as string;
-    setEditRequirements(updated);
-  };
-
-  const removeEditRequirement = (index: number) => {
-    setEditRequirements(editRequirements.filter((_, i) => i !== index));
-  };
-
-  const updateRequirement = (index: number, field: 'role' | 'count' | 'group', value: string | number) => {
-    const updated = [...requirements];
-    if (field === 'role') updated[index].role = value as CrewRole;
-    else if (field === 'count') updated[index].count = value as number;
-    else if (field === 'group') updated[index].group = value as string;
-    setRequirements(updated);
-  };
-
-  const removeRequirement = (index: number) => {
-    setRequirements(requirements.filter((_, i) => i !== index));
-  };
 
   return (
     <MainLayout>
@@ -313,7 +204,7 @@ export default function AdminVessels() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-display font-bold">Fartyg</h1>
-            <p className="text-muted-foreground mt-1">Hantera fartyg och bemanningskrav</p>
+            <p className="text-muted-foreground mt-1">Hantera fartyg och certifikat</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -345,52 +236,6 @@ export default function AdminVessels() {
                     <Input id="auxEngines" type="number" min={0} value={auxiliaryEngineCount} onChange={e => setAuxiliaryEngineCount(parseInt(e.target.value) || 0)} />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Bemanningskrav</Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Lämna "Grupp" tomt för krav som alltid gäller. Använd samma gruppnamn (t.ex. "A", "B") för alternativ – om minst ett alternativ uppfylls godkänns bemanningen.
-                  </p>
-                  
-                  <div className="space-y-2">
-                    {requirements.map((req, i) => (
-                      <div key={i} className="flex gap-2 items-center">
-                        <Input
-                          placeholder="Grupp"
-                          className="w-16"
-                          value={req.group}
-                          onChange={e => updateRequirement(i, 'group', e.target.value)}
-                        />
-                        <Select value={req.role} onValueChange={v => updateRequirement(i, 'role', v)}>
-                          <SelectTrigger className="flex-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          className="w-16"
-                          min={1}
-                          value={req.count}
-                          onChange={e => updateRequirement(i, 'count', parseInt(e.target.value) || 1)}
-                        />
-                        <Button variant="ghost" size="icon" onClick={() => removeRequirement(i)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Button variant="outline" size="sm" onClick={() => addRequirement('')} className="w-full">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Lägg till krav
-                  </Button>
-                </div>
                 <Button onClick={() => createVessel.mutate()} disabled={!name || createVessel.isPending} className="w-full">
                   {createVessel.isPending ? 'Skapar...' : 'Skapa fartyg'}
                 </Button>
@@ -401,40 +246,11 @@ export default function AdminVessels() {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {vessels?.map(vessel => {
-            const vesselReqs = crewRequirements?.filter(r => r.vessel_id === vessel.id) || [];
             const vesselCerts = vesselCertificates?.filter(c => c.vessel_id === vessel.id) || [];
             const today = new Date().toISOString().split('T')[0];
             const warningDate = new Date();
             warningDate.setMonth(warningDate.getMonth() + 2);
             const warningDateStr = warningDate.toISOString().split('T')[0];
-            const expiredCerts = vesselCerts.filter(c => c.expiry_date < today);
-            const expiringCerts = vesselCerts.filter(c => c.expiry_date >= today && c.expiry_date <= warningDateStr);
-            const okCerts = vesselCerts.filter(c => c.expiry_date > warningDateStr);
-            
-            // Summarize crew requirements
-            const summarizeCrewReqs = () => {
-              if (vesselReqs.length === 0) return null;
-              const grouped: Record<string, typeof vesselReqs> = {};
-              const ungrouped: typeof vesselReqs = [];
-              for (const req of vesselReqs) {
-                if ((req as any).requirement_group) {
-                  const g = (req as any).requirement_group;
-                  if (!grouped[g]) grouped[g] = [];
-                  grouped[g].push(req);
-                } else {
-                  ungrouped.push(req);
-                }
-              }
-              const parts: string[] = [];
-              if (ungrouped.length > 0) {
-                parts.push(ungrouped.map(r => `${r.minimum_count} ${CREW_ROLE_LABELS[r.role as CrewRole]}`).join(' + '));
-              }
-              Object.entries(grouped).forEach(([group, reqs]) => {
-                parts.push(`Alt ${group}: ${reqs.map(r => `${r.minimum_count} ${CREW_ROLE_LABELS[r.role as CrewRole]}`).join(' + ')}`);
-              });
-              return parts;
-            };
-            const crewSummary = summarizeCrewReqs();
             
             return (
               <Card key={vessel.id} className="overflow-hidden">
@@ -475,32 +291,10 @@ export default function AdminVessels() {
                     </Button>
                   </div>
                   
-                  {/* Bemanningskrav - compact */}
+                  {/* Certifikat - med färgkodade namn */}
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                        <Users className="h-3 w-3" />
-                        Bemanningskrav
-                      </p>
-                      {crewSummary ? (
-                        <div className="space-y-0.5">
-                          {crewSummary.map((line, i) => (
-                            <p key={i} className="text-sm truncate">{line}</p>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Inga krav definierade</p>
-                      )}
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openCrewDialog(vessel.id)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  
-                  {/* Certifikat - compact status */}
-                  <div className="flex items-start justify-between border-t pt-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
+                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
                         <Award className="h-3 w-3" />
                         Certifikat
                       </p>
@@ -508,21 +302,26 @@ export default function AdminVessels() {
                         <p className="text-sm text-muted-foreground italic">Inga certifikat</p>
                       ) : (
                         <div className="flex flex-wrap gap-1.5">
-                          {expiredCerts.length > 0 && (
-                            <Badge variant="destructive" className="text-xs">
-                              {expiredCerts.length} utgånget
-                            </Badge>
-                          )}
-                          {expiringCerts.length > 0 && (
-                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                              {expiringCerts.length} går ut snart
-                            </Badge>
-                          )}
-                          {okCerts.length > 0 && (
-                            <Badge variant="outline" className="text-xs">
-                              {okCerts.length} giltiga
-                            </Badge>
-                          )}
+                          {vesselCerts.map(cert => {
+                            const isExpired = cert.expiry_date < today;
+                            const isExpiring = cert.expiry_date >= today && cert.expiry_date <= warningDateStr;
+                            
+                            return (
+                              <Badge 
+                                key={cert.id}
+                                variant={isExpired ? "destructive" : isExpiring ? "secondary" : "default"}
+                                className={`text-xs ${
+                                  isExpiring 
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200' 
+                                    : !isExpired 
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200' 
+                                      : ''
+                                }`}
+                              >
+                                {cert.name}
+                              </Badge>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -602,60 +401,6 @@ export default function AdminVessels() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={crewDialogOpen} onOpenChange={setCrewDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Redigera bemanningskrav</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Lämna "Grupp" tomt för krav som alltid gäller. Använd samma gruppnamn (t.ex. "A", "B") för alternativ.
-              </p>
-              
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {editRequirements.map((req, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <Input
-                      placeholder="Grupp"
-                      className="w-16"
-                      value={req.group}
-                      onChange={e => updateEditRequirement(i, 'group', e.target.value)}
-                    />
-                    <Select value={req.role} onValueChange={v => updateEditRequirement(i, 'role', v)}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      className="w-16"
-                      min={1}
-                      value={req.count}
-                      onChange={e => updateEditRequirement(i, 'count', parseInt(e.target.value) || 1)}
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => removeEditRequirement(i)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              
-              <Button variant="outline" size="sm" onClick={addEditRequirement} className="w-full">
-                <Plus className="h-4 w-4 mr-1" />
-                Lägg till krav
-              </Button>
-              
-              <Button onClick={() => updateCrewRequirements.mutate()} disabled={updateCrewRequirements.isPending} className="w-full">
-                {updateCrewRequirements.isPending ? 'Sparar...' : 'Spara bemanningskrav'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         <VesselCertificatesDialog 
           open={certDialogOpen}
