@@ -91,6 +91,28 @@ export default function AdminUsers() {
     },
   });
 
+  const resendWelcomeEmailMutation = useMutation({
+    mutationFn: async ({ email, fullName }: { email: string; fullName: string }) => {
+      const response = await supabase.functions.invoke('resend-welcome-email', {
+        body: { email, fullName },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
+    },
+    onSuccess: () => {
+      toast({ 
+        title: 'Välkomstmail skickat!', 
+        description: 'Användaren har fått ett nytt mail med länk för att sätta lösenord.'
+      });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
 
   const { data: certificateTypes } = useQuery({
     queryKey: ['certificate-types', selectedOrgId],
@@ -465,33 +487,55 @@ export default function AdminUsers() {
                   const hasExpiring = expiringCerts.length > 0;
                   
                   return (
-                    <button
+                    <div
                       key={profile.id}
-                      onClick={() => setSelectedProfileId(profile.id)}
-                      className={`w-full text-left p-2 rounded transition-colors ${
+                      className={`flex items-center justify-between p-2 rounded transition-colors ${
                         selectedProfileId === profile.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{profile.full_name}</p>
-                        {profile.is_external && (
-                          <Badge variant="outline" className="text-xs">Extern</Badge>
-                        )}
-                        {hasExpired && (
-                          <Badge variant="destructive" className="text-xs gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            Utgånget
-                          </Badge>
-                        )}
-                        {!hasExpired && hasExpiring && (
-                          <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                            <AlertTriangle className="h-3 w-3" />
-                            Går ut snart
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs opacity-70">{profile.email || 'Ingen e-post'}</p>
-                    </button>
+                      <button
+                        onClick={() => setSelectedProfileId(profile.id)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{profile.full_name}</p>
+                          {profile.is_external && (
+                            <Badge variant="outline" className="text-xs">Extern</Badge>
+                          )}
+                          {hasExpired && (
+                            <Badge variant="destructive" className="text-xs gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Utgånget
+                            </Badge>
+                          )}
+                          {!hasExpired && hasExpiring && (
+                            <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                              <AlertTriangle className="h-3 w-3" />
+                              Går ut snart
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs opacity-70">{profile.email || 'Ingen e-post'}</p>
+                      </button>
+                      {profile.email && !profile.is_external && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-8 w-8 shrink-0 ${selectedProfileId === profile.id ? 'hover:bg-primary-foreground/20' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            resendWelcomeEmailMutation.mutate({ 
+                              email: profile.email!, 
+                              fullName: profile.full_name 
+                            });
+                          }}
+                          disabled={resendWelcomeEmailMutation.isPending}
+                          title="Skicka välkomstmail"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
