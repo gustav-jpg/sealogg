@@ -121,6 +121,8 @@ serve(async (req) => {
 
       // Generate password reset link
       console.log("Generating password reset link for:", email);
+      let resetLink: string | null = null;
+      
       const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email,
@@ -128,71 +130,86 @@ serve(async (req) => {
 
       if (resetError) {
         console.error("Failed to generate reset link:", resetError);
-      } 
+      } else if (linkData?.properties?.action_link) {
+        resetLink = linkData.properties.action_link;
+        console.log("Reset link generated successfully");
+      }
       
-      console.log("Reset link generated:", !!linkData?.properties?.action_link);
       console.log("RESEND_API_KEY available:", !!RESEND_API_KEY);
       
-      if (linkData?.properties?.action_link && RESEND_API_KEY) {
-        const resetLink = linkData.properties.action_link;
+      // ALWAYS send welcome email for new users
+      if (RESEND_API_KEY) {
         const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : 'läsare';
         
-        // Send welcome email via Resend
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: "SeaLogg <noreply@sealogg.se>",
-            to: [email],
-            subject: "Välkommen till SeaLogg - Sätt ditt lösenord",
-            html: `
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <meta charset="utf-8">
-                <style>
-                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                  .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #0077b6; }
-                  .logo { font-size: 24px; font-weight: bold; color: #0077b6; }
-                  .content { padding: 30px 0; }
-                  .button { display: inline-block; padding: 14px 28px; background-color: #0077b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
-                  .footer { padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <div class="logo">SeaLogg</div>
+        // Build email HTML - include reset button only if link was generated
+        const resetButtonHtml = resetLink 
+          ? `<p style="text-align: center; margin: 30px 0;">
+               <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
+             </p>
+             <p><small>Länken är giltig i 24 timmar.</small></p>`
+          : `<p>Kontakta din administratör för att få ett lösenord.</p>`;
+        
+        console.log("Sending welcome email to:", email);
+        
+        try {
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "SeaLogg <noreply@sealogg.se>",
+              to: [email],
+              subject: "Välkommen till SeaLogg - Sätt ditt lösenord",
+              html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <meta charset="utf-8">
+                  <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #0077b6; }
+                    .logo { font-size: 24px; font-weight: bold; color: #0077b6; }
+                    .content { padding: 30px 0; }
+                    .button { display: inline-block; padding: 14px 28px; background-color: #0077b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+                    .footer { padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="header">
+                      <div class="logo">SeaLogg</div>
+                    </div>
+                    <div class="content">
+                      <h2>Välkommen till SeaLogg, ${fullName}!</h2>
+                      <p>Du har bjudits in till SeaLogg som <strong>${roleText}</strong>.</p>
+                      <p>Klicka på knappen nedan för att sätta ditt lösenord och aktivera ditt konto:</p>
+                      ${resetButtonHtml}
+                    </div>
+                    <div class="footer">
+                      <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
+                    </div>
                   </div>
-                  <div class="content">
-                    <h2>Välkommen till SeaLogg, ${fullName}!</h2>
-                    <p>Du har bjudits in till SeaLogg som <strong>${roleText}</strong>.</p>
-                    <p>Klicka på knappen nedan för att sätta ditt lösenord och aktivera ditt konto:</p>
-                    <p style="text-align: center; margin: 30px 0;">
-                      <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
-                    </p>
-                    <p><small>Länken är giltig i 24 timmar.</small></p>
-                  </div>
-                  <div class="footer">
-                    <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
-                  </div>
-                </div>
-              </body>
-              </html>
-            `,
-          }),
-        });
+                </body>
+                </html>
+              `,
+            }),
+          });
 
-        if (!res.ok) {
-          const err = await res.text();
-          console.error("Failed to send welcome email via Resend:", err);
-        } else {
-          console.log("Welcome email sent via Resend");
+          if (!res.ok) {
+            const err = await res.text();
+            console.error("Failed to send welcome email via Resend:", err);
+          } else {
+            const emailResult = await res.json();
+            console.log("Welcome email sent successfully:", emailResult);
+          }
+        } catch (emailError) {
+          console.error("Exception sending email:", emailError);
         }
+      } else {
+        console.error("RESEND_API_KEY is not configured - cannot send welcome email");
       }
     }
 
