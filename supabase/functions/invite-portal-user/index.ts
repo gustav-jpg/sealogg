@@ -117,8 +117,10 @@ serve(async (req) => {
 
       userId = newUser.user.id;
       isNewUser = true;
+      console.log("New user created with ID:", userId);
 
       // Generate password reset link
+      console.log("Generating password reset link for:", email);
       const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email,
@@ -126,7 +128,12 @@ serve(async (req) => {
 
       if (resetError) {
         console.error("Failed to generate reset link:", resetError);
-      } else if (linkData?.properties?.action_link && RESEND_API_KEY) {
+      } 
+      
+      console.log("Reset link generated:", !!linkData?.properties?.action_link);
+      console.log("RESEND_API_KEY available:", !!RESEND_API_KEY);
+      
+      if (linkData?.properties?.action_link && RESEND_API_KEY) {
         const resetLink = linkData.properties.action_link;
         const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : 'läsare';
         
