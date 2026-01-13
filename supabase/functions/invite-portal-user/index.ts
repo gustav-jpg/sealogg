@@ -180,7 +180,7 @@ serve(async (req) => {
                 <body>
                   <div class="container">
                     <div class="header">
-                      <div class="logo">SeaLogg</div>
+                      <img src="https://sealogg.se/sealog-logo.png" alt="SeaLogg" style="height: 50px; width: auto;" />
                     </div>
                     <div class="content">
                       <h2>Välkommen till SeaLogg, ${fullName}!</h2>
