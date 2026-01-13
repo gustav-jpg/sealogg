@@ -407,115 +407,131 @@ export default function AdminVessels() {
             const warningDate = new Date();
             warningDate.setMonth(warningDate.getMonth() + 2);
             const warningDateStr = warningDate.toISOString().split('T')[0];
-            const hasExpiredCert = vesselCerts.some(c => c.expiry_date < today);
-            const hasExpiringCert = vesselCerts.some(c => c.expiry_date >= today && c.expiry_date <= warningDateStr);
+            const expiredCerts = vesselCerts.filter(c => c.expiry_date < today);
+            const expiringCerts = vesselCerts.filter(c => c.expiry_date >= today && c.expiry_date <= warningDateStr);
+            const okCerts = vesselCerts.filter(c => c.expiry_date > warningDateStr);
+            
+            // Summarize crew requirements
+            const summarizeCrewReqs = () => {
+              if (vesselReqs.length === 0) return null;
+              const grouped: Record<string, typeof vesselReqs> = {};
+              const ungrouped: typeof vesselReqs = [];
+              for (const req of vesselReqs) {
+                if ((req as any).requirement_group) {
+                  const g = (req as any).requirement_group;
+                  if (!grouped[g]) grouped[g] = [];
+                  grouped[g].push(req);
+                } else {
+                  ungrouped.push(req);
+                }
+              }
+              const parts: string[] = [];
+              if (ungrouped.length > 0) {
+                parts.push(ungrouped.map(r => `${r.minimum_count} ${CREW_ROLE_LABELS[r.role as CrewRole]}`).join(' + '));
+              }
+              Object.entries(grouped).forEach(([group, reqs]) => {
+                parts.push(`Alt ${group}: ${reqs.map(r => `${r.minimum_count} ${CREW_ROLE_LABELS[r.role as CrewRole]}`).join(' + ')}`);
+              });
+              return parts;
+            };
+            const crewSummary = summarizeCrewReqs();
             
             return (
-              <Card key={vessel.id}>
-                <CardHeader className="pb-2">
+              <Card key={vessel.id} className="overflow-hidden">
+                <CardHeader className="pb-3 bg-muted/30">
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <Ship className="h-5 w-5" />
+                      <Ship className="h-5 w-5 text-primary" />
                       {vessel.name}
                     </span>
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
                       onClick={() => setDeleteConfirm({ open: true, vessel: { id: vessel.id, name: vessel.name } })}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </CardTitle>
+                  {vessel.description && (
+                    <p className="text-sm text-muted-foreground">{vessel.description}</p>
+                  )}
                 </CardHeader>
-              <CardContent className="space-y-3">
-                  {vessel.description && <p className="text-sm text-muted-foreground">{vessel.description}</p>}
-                  
-                  <div className="flex items-center gap-2 text-sm">
-                    <Gauge className="h-4 w-4 text-muted-foreground" />
-                    <span>{vessel.main_engine_count} huvudmaskin(er)</span>
-                    {vessel.auxiliary_engine_count > 0 && (
-                      <span className="text-muted-foreground">+ {vessel.auxiliary_engine_count} hjälp</span>
-                    )}
-                    <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => openEngineDialog(vessel)}>
-                      <Settings className="h-3 w-3 mr-1" />
+                <CardContent className="pt-4 space-y-4">
+                  {/* Maskiner */}
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {vessel.main_engine_count} huvudmaskin{vessel.main_engine_count !== 1 ? 'er' : ''}
+                        {vessel.auxiliary_engine_count > 0 && (
+                          <span className="text-muted-foreground"> + {vessel.auxiliary_engine_count} hjälp</span>
+                        )}
+                      </span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openEngineDialog(vessel)}>
+                      <Settings className="h-3.5 w-3.5 mr-1" />
                       Timmar
                     </Button>
                   </div>
                   
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium flex items-center gap-1">
+                  {/* Bemanningskrav - compact */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
                         <Users className="h-3 w-3" />
                         Bemanningskrav
                       </p>
-                      <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => openCrewDialog(vessel.id)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
+                      {crewSummary ? (
+                        <div className="space-y-0.5">
+                          {crewSummary.map((line, i) => (
+                            <p key={i} className="text-sm truncate">{line}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">Inga krav definierade</p>
+                      )}
                     </div>
-                    {vesselReqs.length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">Inga krav</p>
-                    ) : (
-                      (() => {
-                        const grouped: Record<string, typeof vesselReqs> = {};
-                        const ungrouped: typeof vesselReqs = [];
-                        for (const req of vesselReqs) {
-                          if ((req as any).requirement_group) {
-                            const g = (req as any).requirement_group;
-                            if (!grouped[g]) grouped[g] = [];
-                            grouped[g].push(req);
-                          } else {
-                            ungrouped.push(req);
-                          }
-                        }
-                        return (
-                          <>
-                            {ungrouped.map(req => (
-                              <p key={req.id} className="text-sm text-muted-foreground">
-                                {CREW_ROLE_LABELS[req.role as CrewRole]}: {req.minimum_count}
-                              </p>
-                            ))}
-                            {Object.entries(grouped).map(([group, reqs]) => (
-                              <p key={group} className="text-sm text-muted-foreground">
-                                <span className="font-medium text-foreground">Alt {group}:</span>{' '}
-                                {reqs.map(r => `${r.minimum_count} ${CREW_ROLE_LABELS[r.role as CrewRole]}`).join(' + ')}
-                              </p>
-                            ))}
-                          </>
-                        );
-                      })()
-                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => openCrewDialog(vessel.id)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                   
-                  {/* Certifikat */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium flex items-center gap-1">
+                  {/* Certifikat - compact status */}
+                  <div className="flex items-start justify-between border-t pt-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
                         <Award className="h-3 w-3" />
-                        Certifikat ({vesselCerts.length})
-                        {hasExpiredCert && <Badge variant="destructive" className="text-[10px] h-4 px-1">Utgånget</Badge>}
-                        {!hasExpiredCert && hasExpiringCert && <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-amber-100 text-amber-800">Snart</Badge>}
+                        Certifikat
                       </p>
-                      <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => {
-                        setSelectedVessel(vessel);
-                        setCertDialogOpen(true);
-                      }}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
+                      {vesselCerts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground italic">Inga certifikat</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {expiredCerts.length > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {expiredCerts.length} utgånget
+                            </Badge>
+                          )}
+                          {expiringCerts.length > 0 && (
+                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                              {expiringCerts.length} går ut snart
+                            </Badge>
+                          )}
+                          {okCerts.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {okCerts.length} giltiga
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {vesselCerts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">Inga certifikat</p>
-                    ) : (
-                      <div className="space-y-0.5">
-                        {vesselCerts.slice(0, 3).map(cert => (
-                          <p key={cert.id} className={`text-sm ${cert.expiry_date < today ? 'text-destructive' : cert.expiry_date <= warningDateStr ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                            {cert.name} ({cert.expiry_date})
-                          </p>
-                        ))}
-                        {vesselCerts.length > 3 && (
-                          <p className="text-xs text-muted-foreground">+{vesselCerts.length - 3} till...</p>
-                        )}
-                      </div>
-                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => {
+                      setSelectedVessel(vessel);
+                      setCertDialogOpen(true);
+                    }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -524,46 +540,62 @@ export default function AdminVessels() {
         </div>
 
         <Dialog open={engineDialogOpen} onOpenChange={setEngineDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Maskintimmar - {selectedVessel?.name}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Gauge className="h-5 w-5" />
+                Maskintimmar - {selectedVessel?.name}
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              {engineHoursInputs.map((input, index) => (
-                <div key={`${input.engine_type}-${input.engine_number}`} className="space-y-2 p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <Label className="text-xs text-muted-foreground min-w-20">Namn</Label>
-                    <Input
-                      value={input.name}
-                      onChange={e => {
-                        const updated = [...engineHoursInputs];
-                        updated[index].name = e.target.value;
-                        setEngineHoursInputs(updated);
-                      }}
-                      placeholder={input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
-                      className="flex-1"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label className="text-xs text-muted-foreground min-w-20">Timmar</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={input.current_hours}
-                      onChange={e => {
-                        const updated = [...engineHoursInputs];
-                        updated[index].current_hours = parseInt(e.target.value) || 0;
-                        setEngineHoursInputs(updated);
-                      }}
-                      className="w-32"
-                    />
-                  </div>
+            <div className="space-y-3">
+              {engineHoursInputs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Gauge className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                  <p>Inga maskiner konfigurerade</p>
                 </div>
-              ))}
-              {engineHoursInputs.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">Inga maskiner konfigurerade för detta fartyg.</p>
+              ) : (
+                <div className="divide-y">
+                  {engineHoursInputs.map((input, index) => (
+                    <div key={`${input.engine_type}-${input.engine_number}`} className="py-3 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant={input.engine_type === 'main' ? 'default' : 'secondary'} className="text-xs">
+                          {input.engine_type === 'main' ? 'Huvud' : 'Hjälp'} #{input.engine_number}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Namn</Label>
+                          <Input
+                            value={input.name}
+                            onChange={e => {
+                              const updated = [...engineHoursInputs];
+                              updated[index].name = e.target.value;
+                              setEngineHoursInputs(updated);
+                            }}
+                            placeholder={input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Timmar</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={input.current_hours}
+                            onChange={e => {
+                              const updated = [...engineHoursInputs];
+                              updated[index].current_hours = parseInt(e.target.value) || 0;
+                              setEngineHoursInputs(updated);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-              <Button onClick={() => updateEngineHours.mutate()} disabled={updateEngineHours.isPending} className="w-full">
+              <Button onClick={() => updateEngineHours.mutate()} disabled={updateEngineHours.isPending || engineHoursInputs.length === 0} className="w-full">
                 {updateEngineHours.isPending ? 'Sparar...' : 'Spara maskintimmar'}
               </Button>
             </div>
