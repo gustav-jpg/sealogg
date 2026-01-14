@@ -21,6 +21,7 @@ import Qualifications from "./pages/Qualifications";
 import Checklists from "./pages/Checklists";
 import ChecklistExecute from "./pages/ChecklistExecute";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import AdminVessels from "./pages/admin/Vessels";
 import AdminUsers from "./pages/admin/Users";
 import RoleRules from "./pages/admin/RoleRules";
@@ -87,6 +88,7 @@ function AppRoutes() {
       {/* Public pages */}
       <Route path="/" element={<Home />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       
       {/* Portal routes */}
       <Route path="/portal/login" element={<PublicRoute><Login /></PublicRoute>} />
