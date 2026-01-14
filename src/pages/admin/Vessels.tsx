@@ -461,6 +461,7 @@ function VesselCertificatesDialog({
   const [editExpiryDate, setEditExpiryDate] = useState('');
   const [editIsIndefinite, setEditIsIndefinite] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [deleteConfirmCert, setDeleteConfirmCert] = useState<{ id: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const today = new Date().toISOString().split('T')[0];
@@ -690,7 +691,7 @@ function VesselCertificatesDialog({
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => handleDelete(cert.id)}
+                        onClick={() => setDeleteConfirmCert({ id: cert.id, name: cert.name })}
                         disabled={isDeleting === cert.id}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -776,6 +777,20 @@ function VesselCertificatesDialog({
           </div>
         </div>
       </DialogContent>
+      
+      <ConfirmDialog
+        open={!!deleteConfirmCert}
+        onOpenChange={(open) => !open && setDeleteConfirmCert(null)}
+        title="Radera certifikat?"
+        description={`Är du säker på att du vill radera certifikatet "${deleteConfirmCert?.name}"? Detta kan inte ångras.`}
+        confirmLabel="Radera"
+        onConfirm={() => {
+          if (deleteConfirmCert) {
+            handleDelete(deleteConfirmCert.id);
+            setDeleteConfirmCert(null);
+          }
+        }}
+      />
     </Dialog>
   );
 }
