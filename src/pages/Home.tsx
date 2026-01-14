@@ -145,7 +145,7 @@ export default function Home() {
               
               <motion.p variants={fadeInUp} className="text-lg text-muted-foreground mb-8 max-w-lg">
                 Komplett system för loggbok, egenkontroll och säkerhetsarbete. 
-                Spara tid och säkerställ efterlevnad med vår moderna plattform.
+                Spara tid och säkerställ efterlevnad med SeaLogg.
               </motion.p>
               
               <motion.div variants={fadeInUp} className="flex flex-wrap gap-4">
