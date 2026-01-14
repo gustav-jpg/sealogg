@@ -450,9 +450,17 @@ function VesselCertificatesDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [issueDate, setIssueDate] = useState('');
+  const [isIndefinite, setIsIndefinite] = useState(false);
   const [file, setFile] = useState<File | undefined>();
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [editingCert, setEditingCert] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editIssueDate, setEditIssueDate] = useState('');
+  const [editExpiryDate, setEditExpiryDate] = useState('');
+  const [editIsIndefinite, setEditIsIndefinite] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const today = new Date().toISOString().split('T')[0];
@@ -461,7 +469,7 @@ function VesselCertificatesDialog({
   const warningDateStr = warningDate.toISOString().split('T')[0];
 
   const handleAdd = async () => {
-    if (!vessel || !name || !expiryDate) return;
+    if (!vessel || !name || (!isIndefinite && !expiryDate)) return;
     
     setIsAdding(true);
     try {
@@ -483,7 +491,9 @@ function VesselCertificatesDialog({
         vessel_id: vessel.id,
         name,
         description: description || null,
-        expiry_date: expiryDate,
+        expiry_date: isIndefinite ? null : expiryDate,
+        issue_date: issueDate || null,
+        is_indefinite: isIndefinite,
         file_url: fileUrl,
         created_by: userId,
       });
@@ -494,6 +504,8 @@ function VesselCertificatesDialog({
       setName('');
       setDescription('');
       setExpiryDate('');
+      setIssueDate('');
+      setIsIndefinite(false);
       setFile(undefined);
       onSuccess();
     } catch (error: any) {
@@ -501,6 +513,42 @@ function VesselCertificatesDialog({
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const handleUpdate = async (certId: string) => {
+    if (!editName) return;
+    
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('vessel_certificates')
+        .update({
+          name: editName,
+          issue_date: editIssueDate || null,
+          expiry_date: editIsIndefinite ? null : editExpiryDate || null,
+          is_indefinite: editIsIndefinite,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', certId);
+      
+      if (error) throw error;
+      
+      toast({ title: 'Certifikat uppdaterat' });
+      setEditingCert(null);
+      onSuccess();
+    } catch (error: any) {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const startEditing = (cert: any) => {
+    setEditingCert(cert.id);
+    setEditName(cert.name);
+    setEditIssueDate(cert.issue_date || '');
+    setEditExpiryDate(cert.expiry_date || '');
+    setEditIsIndefinite(cert.is_indefinite || false);
   };
 
   const handleDelete = async (certId: string) => {
@@ -542,20 +590,88 @@ function VesselCertificatesDialog({
             <div className="space-y-2">
               <Label>Befintliga certifikat</Label>
               {certificates.map(cert => {
-                const isExpired = cert.expiry_date < today;
-                const isExpiring = cert.expiry_date >= today && cert.expiry_date <= warningDateStr;
+                const isExpired = !cert.is_indefinite && cert.expiry_date && cert.expiry_date < today;
+                const isExpiring = !cert.is_indefinite && cert.expiry_date && cert.expiry_date >= today && cert.expiry_date <= warningDateStr;
+                const isEditing = editingCert === cert.id;
+                
+                if (isEditing) {
+                  return (
+                    <div key={cert.id} className="p-3 rounded-lg bg-muted/50 space-y-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Namn</Label>
+                        <Input 
+                          value={editName} 
+                          onChange={e => setEditName(e.target.value)}
+                          placeholder="Certifikatnamn"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Utfärdat</Label>
+                        <Input 
+                          type="date" 
+                          value={editIssueDate} 
+                          onChange={e => setEditIssueDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`edit-indefinite-${cert.id}`}
+                          checked={editIsIndefinite}
+                          onChange={e => setEditIsIndefinite(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <Label htmlFor={`edit-indefinite-${cert.id}`} className="text-sm">Tillsvidare (inget utgångsdatum)</Label>
+                      </div>
+                      {!editIsIndefinite && (
+                        <div className="space-y-2">
+                          <Label className="text-xs">Utgår</Label>
+                          <Input 
+                            type="date" 
+                            value={editExpiryDate} 
+                            onChange={e => setEditExpiryDate(e.target.value)}
+                          />
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleUpdate(cert.id)}
+                          disabled={!editName || isUpdating}
+                        >
+                          {isUpdating ? 'Sparar...' : 'Spara'}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setEditingCert(null)}
+                        >
+                          Avbryt
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
                 
                 return (
                   <div key={cert.id} className={`flex items-center justify-between p-3 rounded-lg ${isExpired ? 'bg-destructive/10' : isExpiring ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-muted/50'}`}>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{cert.name}</span>
+                        {cert.is_indefinite && <Badge variant="secondary" className="text-xs">Tillsvidare</Badge>}
                         {isExpired && <Badge variant="destructive" className="text-xs">Utgånget</Badge>}
                         {isExpiring && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">Går ut snart</Badge>}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
-                      </p>
+                      <div className="text-xs text-muted-foreground space-y-0.5">
+                        {cert.issue_date && (
+                          <p>Utfärdat: {format(new Date(cert.issue_date), 'yyyy-MM-dd')}</p>
+                        )}
+                        {cert.is_indefinite ? (
+                          <p>Gäller tillsvidare</p>
+                        ) : cert.expiry_date ? (
+                          <p>Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}</p>
+                        ) : null}
+                      </div>
                       {cert.description && <p className="text-xs text-muted-foreground">{cert.description}</p>}
                     </div>
                     <div className="flex items-center gap-1">
@@ -564,6 +680,13 @@ function VesselCertificatesDialog({
                           <FileText className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => startEditing(cert)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -597,13 +720,33 @@ function VesselCertificatesDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">Utgångsdatum *</Label>
+              <Label className="text-xs">Utfärdat (valfritt)</Label>
               <Input 
                 type="date" 
-                value={expiryDate} 
-                onChange={e => setExpiryDate(e.target.value)}
+                value={issueDate} 
+                onChange={e => setIssueDate(e.target.value)}
               />
             </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="new-indefinite"
+                checked={isIndefinite}
+                onChange={e => setIsIndefinite(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="new-indefinite" className="text-sm">Tillsvidare (inget utgångsdatum)</Label>
+            </div>
+            {!isIndefinite && (
+              <div className="space-y-2">
+                <Label className="text-xs">Utgångsdatum *</Label>
+                <Input 
+                  type="date" 
+                  value={expiryDate} 
+                  onChange={e => setExpiryDate(e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-xs">Fil (valfritt)</Label>
               <input
@@ -625,7 +768,7 @@ function VesselCertificatesDialog({
             </div>
             <Button 
               onClick={handleAdd} 
-              disabled={!name || !expiryDate || isAdding}
+              disabled={!name || (!isIndefinite && !expiryDate) || isAdding}
               className="w-full"
             >
               {isAdding ? 'Lägger till...' : 'Lägg till certifikat'}
