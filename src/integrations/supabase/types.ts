@@ -1807,9 +1807,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
-          expiry_date: string
+          expiry_date: string | null
           file_url: string | null
           id: string
+          is_indefinite: boolean
+          issue_date: string | null
           name: string
           updated_at: string
           vessel_id: string
@@ -1818,9 +1820,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          expiry_date: string
+          expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_indefinite?: boolean
+          issue_date?: string | null
           name: string
           updated_at?: string
           vessel_id: string
@@ -1829,9 +1833,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          expiry_date?: string
+          expiry_date?: string | null
           file_url?: string | null
           id?: string
+          is_indefinite?: boolean
+          issue_date?: string | null
           name?: string
           updated_at?: string
           vessel_id?: string
