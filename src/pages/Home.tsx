@@ -14,7 +14,9 @@ import {
   CheckCircle2,
   Smartphone,
   Cloud,
-  Users
+  Users,
+  ListChecks,
+  UserCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
 import sealoggLogo from "@/assets/sealog-logo.png";
@@ -40,6 +42,16 @@ const features = [
     icon: ClipboardCheck,
     title: "Avvikelser",
     description: "Dokumentera tillbud och incidenter enligt föreskrifter"
+  },
+  {
+    icon: ListChecks,
+    title: "Checklistor",
+    description: "Skapa och genomför strukturerade checklistor för rutinuppgifter"
+  },
+  {
+    icon: UserCheck,
+    title: "Mönstring",
+    description: "Hantera besättning, behörigheter och certifikat digitalt"
   }
 ];
 
@@ -88,9 +100,6 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button asChild variant="outline" size="sm" className="hidden sm:flex">
-              <Link to="/portal/register">Skapa konto</Link>
-            </Button>
             <Button asChild size="sm">
               <Link to="/portal/login">Logga in</Link>
             </Button>
@@ -228,7 +237,7 @@ export default function Home() {
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={staggerContainer}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {features.map((feature, index) => (
               <motion.div key={index} variants={fadeInUp}>
@@ -288,26 +297,15 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.7 }}
-              className="relative"
+              className="relative hidden lg:block"
             >
-              {/* Stats cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="p-6 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-                  <div className="text-4xl font-bold mb-2">100%</div>
-                  <div className="text-sm opacity-90">Digital dokumentation</div>
-                </Card>
-                <Card className="p-6 bg-gradient-to-br from-accent to-accent/80 text-accent-foreground">
-                  <div className="text-4xl font-bold mb-2">24/7</div>
-                  <div className="text-sm opacity-90">Tillgänglig överallt</div>
-                </Card>
-                <Card className="p-6 border-2 border-primary/20">
-                  <div className="text-4xl font-bold text-primary mb-2">50%</div>
-                  <div className="text-sm text-muted-foreground">Tidsbesparning</div>
-                </Card>
-                <Card className="p-6 border-2 border-accent/20">
-                  <div className="text-4xl font-bold text-accent mb-2">0</div>
-                  <div className="text-sm text-muted-foreground">Borttappade papper</div>
-                </Card>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 blur-3xl rounded-full" />
+                <img 
+                  src={devicesMockup} 
+                  alt="SeaLogg på olika enheter" 
+                  className="relative z-10 w-full max-w-md mx-auto drop-shadow-2xl"
+                />
               </div>
             </motion.div>
           </div>
@@ -332,14 +330,9 @@ export default function Home() {
             </motion.p>
             <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-4">
               <Button asChild size="lg" className="shadow-lg shadow-primary/20">
-                <Link to="/portal/register">
-                  Skapa konto gratis
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
                 <a href="mailto:info@sealogg.se">
                   Kontakta oss
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </a>
               </Button>
             </motion.div>
