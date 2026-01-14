@@ -424,7 +424,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-border/40 mt-8 pt-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Sealogg.se en del av AhrensGroup AB • Org.nr 559553-5443
+            © {new Date().getFullYear()} SeaLogg™ – en del av AhrensGroup AB
           </div>
         </div>
       </footer>
