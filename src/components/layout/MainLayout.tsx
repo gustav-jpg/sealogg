@@ -32,7 +32,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Footer */}
           <footer className="border-t border-border/40 bg-muted/30">
             <div className="container py-4 text-center text-sm text-muted-foreground">
-              Sealogg.se en del av AhrensGroup AB • Org.nr 559553-5443
+              SeaLogg™ – en del av AhrensGroup AB
             </div>
           </footer>
         </div>
