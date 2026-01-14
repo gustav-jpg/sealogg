@@ -170,11 +170,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="h-5 w-5 text-success" />
-                  <span>Svensk support</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-success" />
-                  <span>Ingen installation</span>
+                  <span>Tillgänglig på alla plattformar</span>
                 </div>
               </motion.div>
             </motion.div>
