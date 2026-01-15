@@ -575,8 +575,18 @@ function VesselCertificatesDialog({
   };
 
   const handleViewFile = async (fileUrl: string) => {
+    if (!fileUrl || fileUrl.trim() === '') {
+      toast({ title: 'Fel', description: 'Inget dokument finns uppladdat', variant: 'destructive' });
+      return;
+    }
+    
     // Open window immediately to avoid popup blocker
     const win = window.open('about:blank', '_blank');
+    
+    // Show loading message in the new window
+    if (win) {
+      win.document.write('<html><head><title>Laddar dokument...</title></head><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:system-ui;color:#666;">Laddar dokument...</body></html>');
+    }
     
     try {
       // Get the current session to include auth token
@@ -719,7 +729,7 @@ function VesselCertificatesDialog({
                       {cert.description && <p className="text-xs text-muted-foreground">{cert.description}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {cert.file_url && (
+                      {cert.file_url && cert.file_url.trim() !== '' && (
                         <Button 
                           type="button"
                           variant="ghost" 
@@ -730,6 +740,7 @@ function VesselCertificatesDialog({
                             handleViewFile(cert.file_url);
                           }}
                           className="h-8 w-8"
+                          title="Visa dokument"
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
