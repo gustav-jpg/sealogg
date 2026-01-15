@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Lock } from 'lucide-react';
+import { Plus, Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -579,26 +579,33 @@ function VesselCertificatesDialog({
       toast({ title: 'Fel', description: 'Inget dokument finns uppladdat', variant: 'destructive' });
       return;
     }
-    
+
+    // Open window immediately to avoid popup blockers (must be synchronous)
+    const win = window.open('about:blank', '_blank');
+
     try {
-      // Generate a signed URL that expires in 60 seconds
       const { data, error } = await supabase.storage
         .from('vessel-certificates')
         .createSignedUrl(fileUrl, 60);
-      
+
       if (error || !data?.signedUrl) {
         throw new Error('Kunde inte skapa länk till dokumentet');
       }
-      
+
       // Build full URL - signedUrl might be relative
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const fullUrl = data.signedUrl.startsWith('http') 
-        ? data.signedUrl 
+      const fullUrl = data.signedUrl.startsWith('http')
+        ? data.signedUrl
         : `${supabaseUrl}/storage/v1${data.signedUrl}`;
-      
-      // Open the signed URL directly - much faster!
-      window.open(fullUrl, '_blank');
+
+      if (win) {
+        win.location.href = fullUrl;
+      } else {
+        // Fallback if popup was blocked
+        window.open(fullUrl, '_blank');
+      }
     } catch (error: any) {
+      if (win) win.close();
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
