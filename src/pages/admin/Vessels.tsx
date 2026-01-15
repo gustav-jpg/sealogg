@@ -579,7 +579,7 @@ function VesselCertificatesDialog({
       toast({ title: 'Fel', description: 'Inget dokument finns uppladdat', variant: 'destructive' });
       return;
     }
-
+    
     // Open window immediately to avoid popup blocker
     const win = window.open('about:blank', '_blank');
     
@@ -587,26 +587,42 @@ function VesselCertificatesDialog({
     if (win) {
       win.document.write('<html><head><title>Laddar dokument...</title></head><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:system-ui;color:#666;">Laddar dokument...</body></html>');
     }
-
+    
     try {
-      const { data, error } = await supabase.storage
-        .from('vessel-certificates')
-        .createSignedUrl(fileUrl, 300);
-
-      if (error || !data?.signedUrl) {
-        throw new Error('Kunde inte skapa länk till dokumentet');
+      // Get the current session to include auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        if (win) win.close();
+        toast({ title: 'Fel', description: 'Du måste vara inloggad', variant: 'destructive' });
+        return;
       }
 
+      // Build the edge function URL - this will use your domain
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const fullUrl = data.signedUrl.startsWith('http')
-        ? data.signedUrl
-        : `${supabaseUrl}/storage/v1${data.signedUrl}`;
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-certificate?bucket=vessel-certificates&path=${encodeURIComponent(fileUrl)}`;
+      
+      // Fetch the file with auth header
+      const response = await fetch(edgeFunctionUrl, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
-      if (win) {
-        win.location.href = fullUrl;
-      } else {
-        window.open(fullUrl, '_blank');
+      if (!response.ok) {
+        throw new Error('Kunde inte hämta dokumentet');
       }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      if (win) {
+        win.location.href = blobUrl;
+      } else {
+        window.open(blobUrl, '_blank');
+      }
+      
+      // Clean up blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
     } catch (error: any) {
       if (win) win.close();
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
