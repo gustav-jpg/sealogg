@@ -580,13 +580,18 @@ function VesselCertificatesDialog({
       return;
     }
 
-    // Must be synchronous to avoid browser blocking downloads/popups
+    // Open window immediately to avoid popup blocker
     const win = window.open('about:blank', '_blank');
+    
+    // Show loading message in the new window
+    if (win) {
+      win.document.write('<html><head><title>Laddar dokument...</title></head><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:system-ui;color:#666;">Laddar dokument...</body></html>');
+    }
 
     try {
       const { data, error } = await supabase.storage
         .from('vessel-certificates')
-        .createSignedUrl(fileUrl, 60);
+        .createSignedUrl(fileUrl, 300);
 
       if (error || !data?.signedUrl) {
         throw new Error('Kunde inte skapa länk till dokumentet');
@@ -597,23 +602,13 @@ function VesselCertificatesDialog({
         ? data.signedUrl
         : `${supabaseUrl}/storage/v1${data.signedUrl}`;
 
-      const filename = fileUrl.split('/').pop() || 'dokument';
-      const downloadUrl = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}download=${encodeURIComponent(filename)}`;
-
       if (win) {
-        win.location.href = downloadUrl;
-        // Close the helper tab after the request has started
-        setTimeout(() => {
-          try { win.close(); } catch { /* ignore */ }
-        }, 1500);
+        win.location.href = fullUrl;
       } else {
-        // Fallback if popup was blocked: navigate current tab
-        window.location.href = downloadUrl;
+        window.open(fullUrl, '_blank');
       }
     } catch (error: any) {
-      if (win) {
-        try { win.close(); } catch { /* ignore */ }
-      }
+      if (win) win.close();
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
