@@ -580,32 +580,27 @@ function VesselCertificatesDialog({
       return;
     }
 
-    // Open window immediately to avoid popup blockers (must be synchronous)
-    const win = window.open('about:blank', '_blank');
-
     try {
       const { data, error } = await supabase.storage
         .from('vessel-certificates')
-        .createSignedUrl(fileUrl, 60);
+        .download(fileUrl);
 
-      if (error || !data?.signedUrl) {
-        throw new Error('Kunde inte skapa länk till dokumentet');
+      if (error || !data) {
+        throw new Error('Kunde inte ladda ner dokumentet');
       }
 
-      // Build full URL - signedUrl might be relative
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const fullUrl = data.signedUrl.startsWith('http')
-        ? data.signedUrl
-        : `${supabaseUrl}/storage/v1${data.signedUrl}`;
-
-      if (win) {
-        win.location.href = fullUrl;
-      } else {
-        // Fallback if popup was blocked
-        window.open(fullUrl, '_blank');
-      }
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileUrl.split('/').pop() || 'dokument';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({ title: 'Nedladdning startad', description: 'Dokumentet laddas ner' });
     } catch (error: any) {
-      if (win) win.close();
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
