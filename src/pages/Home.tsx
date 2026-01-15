@@ -385,11 +385,6 @@ export default function Home() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/portal/register" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Skapa konto
-                  </Link>
-                </li>
-                <li>
                   <a href="#funktioner" className="text-muted-foreground hover:text-foreground transition-colors">
                     Funktioner
                   </a>
