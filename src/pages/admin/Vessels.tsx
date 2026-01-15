@@ -580,52 +580,19 @@ function VesselCertificatesDialog({
       return;
     }
     
-    // Open window immediately to avoid popup blocker
-    const win = window.open('about:blank', '_blank');
-    
-    // Show loading message in the new window
-    if (win) {
-      win.document.write('<html><head><title>Laddar dokument...</title></head><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:system-ui;color:#666;">Laddar dokument...</body></html>');
-    }
-    
     try {
-      // Get the current session to include auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        if (win) win.close();
-        toast({ title: 'Fel', description: 'Du måste vara inloggad', variant: 'destructive' });
-        return;
-      }
-
-      // Build the edge function URL
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-certificate?bucket=vessel-certificates&path=${encodeURIComponent(fileUrl)}`;
+      // Generate a signed URL that expires in 60 seconds
+      const { data, error } = await supabase.storage
+        .from('vessel-certificates')
+        .createSignedUrl(fileUrl, 60);
       
-      // Fetch the file with auth header
-      const response = await fetch(edgeFunctionUrl, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Kunde inte hämta dokumentet');
-      }
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      
-      if (win) {
-        win.location.href = blobUrl;
-      } else {
-        // Fallback if popup was blocked
-        window.open(blobUrl, '_blank');
+      if (error || !data?.signedUrl) {
+        throw new Error('Kunde inte skapa länk till dokumentet');
       }
       
-      // Clean up blob URL after a delay
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      // Open the signed URL directly - much faster!
+      window.open(data.signedUrl, '_blank');
     } catch (error: any) {
-      if (win) win.close();
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
