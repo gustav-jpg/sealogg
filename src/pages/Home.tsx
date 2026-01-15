@@ -151,7 +151,7 @@ export default function Home() {
               <motion.div variants={fadeInUp} className="flex flex-wrap gap-4">
                 <Button asChild size="lg" className="shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
                   <Link to="/portal/login">
-                    Kom igång nu
+                    Logga in
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
