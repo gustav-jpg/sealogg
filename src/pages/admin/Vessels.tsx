@@ -575,9 +575,28 @@ function VesselCertificatesDialog({
   };
 
   const handleViewFile = async (fileUrl: string) => {
-    const { data } = await supabase.storage.from('vessel-certificates').createSignedUrl(fileUrl, 3600);
-    if (data?.signedUrl) {
-      window.open(data.signedUrl, '_blank');
+    // Open a window immediately (keeps the click as a user gesture) so popup blockers don't block it
+    const win = window.open('about:blank', '_blank');
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('vessel-certificates')
+        .createSignedUrl(fileUrl, 3600);
+
+      if (error) throw error;
+
+      if (data?.signedUrl) {
+        if (win) {
+          win.location.href = data.signedUrl;
+        } else {
+          window.open(data.signedUrl, '_blank');
+        }
+      } else {
+        throw new Error('Kunde inte skapa länk till dokumentet');
+      }
+    } catch (error: any) {
+      if (win) win.close();
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
 
