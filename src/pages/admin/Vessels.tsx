@@ -575,27 +575,36 @@ function VesselCertificatesDialog({
   };
 
   const handleViewFile = async (fileUrl: string) => {
-    // Open a window immediately (keeps the click as a user gesture) so popup blockers don't block it
-    const win = window.open('about:blank', '_blank');
-
     try {
-      const { data, error } = await supabase.storage
-        .from('vessel-certificates')
-        .createSignedUrl(fileUrl, 3600);
-
-      if (error) throw error;
-
-      if (data?.signedUrl) {
-        if (win) {
-          win.location.href = data.signedUrl;
-        } else {
-          window.open(data.signedUrl, '_blank');
-        }
-      } else {
-        throw new Error('Kunde inte skapa länk till dokumentet');
+      // Get the current session to include auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Fel', description: 'Du måste vara inloggad', variant: 'destructive' });
+        return;
       }
+
+      // Build the edge function URL
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-certificate?bucket=vessel-certificates&path=${encodeURIComponent(fileUrl)}`;
+      
+      // Open the URL with auth header - we need to use fetch and create a blob URL
+      const response = await fetch(edgeFunctionUrl, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Kunde inte hämta dokumentet');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      
+      // Clean up blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
     } catch (error: any) {
-      if (win) win.close();
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
