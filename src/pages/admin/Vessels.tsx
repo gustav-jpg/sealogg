@@ -590,8 +590,14 @@ function VesselCertificatesDialog({
         throw new Error('Kunde inte skapa länk till dokumentet');
       }
       
+      // Build full URL - signedUrl might be relative
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const fullUrl = data.signedUrl.startsWith('http') 
+        ? data.signedUrl 
+        : `${supabaseUrl}/storage/v1${data.signedUrl}`;
+      
       // Open the signed URL directly - much faster!
-      window.open(data.signedUrl, '_blank');
+      window.open(fullUrl, '_blank');
     } catch (error: any) {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
