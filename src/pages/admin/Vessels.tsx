@@ -696,7 +696,7 @@ function VesselCertificatesDialog({
                       {cert.description && <p className="text-xs text-muted-foreground">{cert.description}</p>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {cert.file_url && cert.file_url.trim() !== '' ? (
+                      {cert.file_url && cert.file_url.trim() !== '' && (
                         <Button 
                           type="button"
                           variant="ghost" 
@@ -711,13 +711,6 @@ function VesselCertificatesDialog({
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
-                      ) : (
-                        <div 
-                          className="h-8 w-8 flex items-center justify-center text-muted-foreground/50"
-                          title="Inget dokument uppladdat"
-                        >
-                          <Lock className="h-4 w-4" />
-                        </div>
                       )}
                       <Button 
                         type="button"
