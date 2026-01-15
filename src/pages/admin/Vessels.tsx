@@ -462,6 +462,7 @@ function VesselCertificatesDialog({
   const [editIsIndefinite, setEditIsIndefinite] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteConfirmCert, setDeleteConfirmCert] = useState<{ id: string; name: string } | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const today = new Date().toISOString().split('T')[0];
@@ -508,6 +509,7 @@ function VesselCertificatesDialog({
       setIssueDate('');
       setIsIndefinite(false);
       setFile(undefined);
+      setShowAddForm(false);
       onSuccess();
     } catch (error: any) {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -587,10 +589,12 @@ function VesselCertificatesDialog({
         </DialogHeader>
         <div className="space-y-4">
           {/* Existing certificates */}
-          {certificates.length > 0 && (
-            <div className="space-y-2">
-              <Label>Befintliga certifikat</Label>
-              {certificates.map(cert => {
+          <div className="space-y-2">
+            <Label>Befintliga certifikat</Label>
+            {certificates.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic py-2">Inga certifikat tillagda ännu</p>
+            ) : (
+              certificates.map(cert => {
                 const isExpired = !cert.is_indefinite && cert.expiry_date && cert.expiry_date < today;
                 const isExpiring = !cert.is_indefinite && cert.expiry_date && cert.expiry_date >= today && cert.expiry_date <= warningDateStr;
                 const isEditing = editingCert === cert.id;
@@ -656,8 +660,8 @@ function VesselCertificatesDialog({
                 
                 return (
                   <div key={cert.id} className={`flex items-center justify-between p-3 rounded-lg ${isExpired ? 'bg-destructive/10' : isExpiring ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-muted/50'}`}>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium">{cert.name}</span>
                         {cert.is_indefinite && <Badge variant="secondary" className="text-xs">Tillsvidare</Badge>}
                         {isExpired && <Badge variant="destructive" className="text-xs">Utgånget</Badge>}
@@ -675,105 +679,159 @@ function VesselCertificatesDialog({
                       </div>
                       {cert.description && <p className="text-xs text-muted-foreground">{cert.description}</p>}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       {cert.file_url && (
-                        <Button variant="ghost" size="icon" onClick={() => handleViewFile(cert.file_url)}>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleViewFile(cert.file_url);
+                          }}
+                          className="h-8 w-8"
+                        >
                           <FileText className="h-4 w-4" />
                         </Button>
                       )}
                       <Button 
+                        type="button"
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => startEditing(cert)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          startEditing(cert);
+                        }}
+                        className="h-8 w-8"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button 
+                        type="button"
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => setDeleteConfirmCert({ id: cert.id, name: cert.name })}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteConfirmCert({ id: cert.id, name: cert.name });
+                        }}
                         disabled={isDeleting === cert.id}
+                        className="h-8 w-8"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
-          
-          {/* Add new certificate */}
-          <div className="border-t pt-4 space-y-3">
-            <Label>Lägg till nytt certifikat</Label>
-            <div className="space-y-2">
-              <Input 
-                placeholder="Certifikatnamn *" 
-                value={name} 
-                onChange={e => setName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Input 
-                placeholder="Beskrivning (valfritt)" 
-                value={description} 
-                onChange={e => setDescription(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Utfärdat (valfritt)</Label>
-              <Input 
-                type="date" 
-                value={issueDate} 
-                onChange={e => setIssueDate(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="new-indefinite"
-                checked={isIndefinite}
-                onChange={e => setIsIndefinite(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="new-indefinite" className="text-sm">Tillsvidare (inget utgångsdatum)</Label>
-            </div>
-            {!isIndefinite && (
-              <div className="space-y-2">
-                <Label className="text-xs">Utgångsdatum *</Label>
-                <Input 
-                  type="date" 
-                  value={expiryDate} 
-                  onChange={e => setExpiryDate(e.target.value)}
-                />
-              </div>
+              })
             )}
-            <div className="space-y-2">
-              <Label className="text-xs">Fil (valfritt)</Label>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={e => setFile(e.target.files?.[0])}
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-              />
+          </div>
+          
+          {/* Add new certificate button & form */}
+          <div className="border-t pt-4">
+            {!showAddForm ? (
               <Button 
-                type="button" 
+                type="button"
                 variant="outline" 
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowAddForm(true)}
                 className="w-full"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                {file ? file.name : 'Välj fil'}
+                <Plus className="h-4 w-4 mr-2" />
+                Lägg till certifikat
               </Button>
-            </div>
-            <Button 
-              onClick={handleAdd} 
-              disabled={!name || (!isIndefinite && !expiryDate) || isAdding}
-              className="w-full"
-            >
-              {isAdding ? 'Lägger till...' : 'Lägg till certifikat'}
-            </Button>
+            ) : (
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-medium">Lägg till nytt certifikat</Label>
+                  <Button 
+                    type="button"
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setName('');
+                      setDescription('');
+                      setExpiryDate('');
+                      setIssueDate('');
+                      setIsIndefinite(false);
+                      setFile(undefined);
+                    }}
+                  >
+                    Avbryt
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Input 
+                    placeholder="Certifikatnamn *" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Input 
+                    placeholder="Beskrivning (valfritt)" 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Utfärdat (valfritt)</Label>
+                  <Input 
+                    type="date" 
+                    value={issueDate} 
+                    onChange={e => setIssueDate(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="new-indefinite"
+                    checked={isIndefinite}
+                    onChange={e => setIsIndefinite(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="new-indefinite" className="text-sm">Tillsvidare (inget utgångsdatum)</Label>
+                </div>
+                {!isIndefinite && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Utgångsdatum *</Label>
+                    <Input 
+                      type="date" 
+                      value={expiryDate} 
+                      onChange={e => setExpiryDate(e.target.value)}
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label className="text-xs">Fil (valfritt)</Label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={e => setFile(e.target.files?.[0])}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {file ? file.name : 'Välj fil'}
+                  </Button>
+                </div>
+                <Button 
+                  onClick={handleAdd} 
+                  disabled={!name || (!isIndefinite && !expiryDate) || isAdding}
+                  className="w-full"
+                >
+                  {isAdding ? 'Lägger till...' : 'Lägg till certifikat'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
