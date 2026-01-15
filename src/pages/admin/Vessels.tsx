@@ -580,27 +580,40 @@ function VesselCertificatesDialog({
       return;
     }
 
+    // Must be synchronous to avoid browser blocking downloads/popups
+    const win = window.open('about:blank', '_blank');
+
     try {
       const { data, error } = await supabase.storage
         .from('vessel-certificates')
-        .download(fileUrl);
+        .createSignedUrl(fileUrl, 60);
 
-      if (error || !data) {
-        throw new Error('Kunde inte ladda ner dokumentet');
+      if (error || !data?.signedUrl) {
+        throw new Error('Kunde inte skapa länk till dokumentet');
       }
 
-      // Create download link
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileUrl.split('/').pop() || 'dokument';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast({ title: 'Nedladdning startad', description: 'Dokumentet laddas ner' });
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const fullUrl = data.signedUrl.startsWith('http')
+        ? data.signedUrl
+        : `${supabaseUrl}/storage/v1${data.signedUrl}`;
+
+      const filename = fileUrl.split('/').pop() || 'dokument';
+      const downloadUrl = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}download=${encodeURIComponent(filename)}`;
+
+      if (win) {
+        win.location.href = downloadUrl;
+        // Close the helper tab after the request has started
+        setTimeout(() => {
+          try { win.close(); } catch { /* ignore */ }
+        }, 1500);
+      } else {
+        // Fallback if popup was blocked: navigate current tab
+        window.location.href = downloadUrl;
+      }
     } catch (error: any) {
+      if (win) {
+        try { win.close(); } catch { /* ignore */ }
+      }
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
