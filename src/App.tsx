@@ -31,6 +31,8 @@ import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
 import AdminStatus from "./pages/admin/Status";
 import SeaDays from "./pages/admin/SeaDays";
 import ExercisesAdmin from "./pages/admin/Exercises";
+import IntranetAdmin from "./pages/admin/Intranet";
+import Startsida from "./pages/Startsida";
 import NotFound from "./pages/NotFound";
 import BackofficeLayout from "./components/layout/BackofficeLayout";
 import BackofficeDashboard from "./pages/backoffice/Dashboard";
@@ -97,6 +99,7 @@ function AppRoutes() {
       <Route path="/portal/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route path="/portal/reset-password" element={<ResetPassword />} />
       <Route path="/portal" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/portal/startsida" element={<ProtectedRoute><Startsida /></ProtectedRoute>} />
       <Route path="/portal/logbook/new" element={<ProtectedRoute><NewLogbook /></ProtectedRoute>} />
       <Route path="/portal/logbook/:id" element={<ProtectedRoute><LogbookDetail /></ProtectedRoute>} />
       <Route path="/portal/deviations" element={<ProtectedRoute><Deviations /></ProtectedRoute>} />
@@ -116,6 +119,7 @@ function AppRoutes() {
       <Route path="/portal/admin/status" element={<ProtectedRoute adminOnly><AdminStatus /></ProtectedRoute>} />
       <Route path="/portal/admin/sea-days" element={<ProtectedRoute adminOnly><SeaDays /></ProtectedRoute>} />
       <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
+      <Route path="/portal/admin/intranet" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
       
       {/* Booking routes */}
       <Route path="/bookings" element={<ProtectedRoute><BookingCalendar /></ProtectedRoute>} />
