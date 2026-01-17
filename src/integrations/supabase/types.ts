@@ -1575,6 +1575,8 @@ export type Database = {
           logbook_id: string
           notes: string | null
           passenger_count: number | null
+          pax_off: number | null
+          pax_on: number | null
           stop_order: number
         }
         Insert: {
@@ -1587,6 +1589,8 @@ export type Database = {
           logbook_id: string
           notes?: string | null
           passenger_count?: number | null
+          pax_off?: number | null
+          pax_on?: number | null
           stop_order: number
         }
         Update: {
@@ -1599,6 +1603,8 @@ export type Database = {
           logbook_id?: string
           notes?: string | null
           passenger_count?: number | null
+          pax_off?: number | null
+          pax_on?: number | null
           stop_order?: number
         }
         Relationships: [
