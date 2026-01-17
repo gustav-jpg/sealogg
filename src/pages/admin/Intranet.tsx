@@ -248,7 +248,21 @@ export default function IntranetAdmin() {
 
   const downloadDocument = async (doc: ExistingDocument) => {
     try {
-      const response = await fetch(doc.file_url);
+      // Extract the file path from the URL (after /object/public/ or /object/sign/)
+      const urlParts = doc.file_url.split('/intranet-documents/');
+      if (urlParts.length < 2) {
+        throw new Error('Invalid file URL');
+      }
+      const filePath = urlParts[1];
+      
+      // Use signed URL for private bucket
+      const { data, error } = await supabase.storage
+        .from('intranet-documents')
+        .createSignedUrl(filePath, 60);
+      
+      if (error) throw error;
+      
+      const response = await fetch(data.signedUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -259,6 +273,7 @@ export default function IntranetAdmin() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
+      console.error('Download error:', error);
       toast({ title: 'Fel', description: 'Kunde inte ladda ner filen', variant: 'destructive' });
     }
   };
