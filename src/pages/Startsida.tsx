@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink, Navigation, Gauge } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -27,6 +27,15 @@ interface UFSWarning {
   isTemporary: boolean;
   isPreliminary: boolean;
   url: string;
+}
+
+interface WindData {
+  stationName: string;
+  gustSpeed: string;
+  averageSpeed: string;
+  direction: string;
+  timestamp: string;
+  source: string;
 }
 
 export default function Startsida() {
@@ -91,6 +100,24 @@ export default function Startsida() {
       }
     },
     staleTime: 1000 * 60 * 30,
+  });
+
+  // Fetch wind data from Sjöfartsverket/SMHI
+  const { data: windData, isLoading: windLoading } = useQuery({
+    queryKey: ['wind-data'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-wind-data', {
+          body: { stationId: '141', source: 'viva' },
+        });
+        if (error) throw error;
+        return data?.data as WindData || null;
+      } catch (error) {
+        console.error('Wind data fetch error:', error);
+        return null;
+      }
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
   // Fetch UFS warnings
@@ -192,38 +219,70 @@ export default function Startsida() {
           </CardContent>
         </Card>
 
-        {/* Weather and UFS side by side on larger screens */}
+        {/* Wind and UFS side by side on larger screens */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Weather Forecast */}
+          {/* Current Wind Data */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Cloud className="h-5 w-5" />
-                Väder 24h
-                <Badge variant="outline" className="ml-auto text-xs font-normal">SMHI</Badge>
+                <Wind className="h-5 w-5" />
+                Aktuellt väder
+                <Badge variant="outline" className="ml-auto text-xs font-normal">
+                  {windData?.source || 'SMHI'}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {weatherLoading ? (
-                <p className="text-muted-foreground">Laddar väderdata...</p>
-              ) : weatherData && weatherData.length > 0 ? (
-                <div className="grid grid-cols-4 gap-2">
-                  {weatherData.slice(0, 4).map((hour: WeatherData, index: number) => (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center p-2 rounded-lg bg-muted/50 text-center"
-                    >
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(hour.time), 'HH:mm')}
-                      </span>
-                      <span className="text-xl my-1">{getWeatherIcon(hour.symbol)}</span>
-                      <span className="font-semibold text-sm">{Math.round(hour.temperature)}°</span>
-                      <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                        <Wind className="h-3 w-3" />
-                        <span>{Math.round(hour.windSpeed)}</span>
+              {windLoading ? (
+                <p className="text-muted-foreground">Laddar vinddata...</p>
+              ) : windData ? (
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">{windData.stationName}</p>
+                    <p className="text-xs text-muted-foreground">Uppdaterad: {windData.timestamp}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
+                      <Wind className="h-5 w-5 text-primary mb-1" />
+                      <span className="text-xs text-muted-foreground">Medelvind</span>
+                      <span className="font-semibold text-lg">{windData.averageSpeed}</span>
+                    </div>
+                    <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
+                      <Gauge className="h-5 w-5 text-orange-500 mb-1" />
+                      <span className="text-xs text-muted-foreground">Byvind</span>
+                      <span className="font-semibold text-lg">{windData.gustSpeed}</span>
+                    </div>
+                    <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
+                      <Navigation className="h-5 w-5 text-blue-500 mb-1" />
+                      <span className="text-xs text-muted-foreground">Riktning</span>
+                      <span className="font-semibold text-lg">{windData.direction}</span>
+                    </div>
+                  </div>
+                  
+                  {/* SMHI Weather Forecast */}
+                  {weatherData && weatherData.length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                        <Cloud className="h-3 w-3" />
+                        Prognos kommande timmar (Stockholm)
+                      </p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {weatherData.slice(0, 4).map((hour: WeatherData, index: number) => (
+                          <div
+                            key={index}
+                            className="flex flex-col items-center p-2 rounded-lg bg-muted/30 text-center"
+                          >
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(hour.time), 'HH:mm')}
+                            </span>
+                            <span className="text-lg my-0.5">{getWeatherIcon(hour.symbol)}</span>
+                            <span className="font-medium text-sm">{Math.round(hour.temperature)}°</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               ) : (
                 <p className="text-muted-foreground text-center py-4">
