@@ -99,7 +99,6 @@ export function LogbookStops({ stops, onStopsChange, disabled = false }: Logbook
               <TableHead className="w-12">#</TableHead>
               <TableHead className="min-w-20">Avg. tid</TableHead>
               <TableHead className="min-w-28">Position</TableHead>
-              <TableHead className="min-w-20">Ank. tid</TableHead>
               <TableHead className="w-16 text-center">Pax på</TableHead>
               <TableHead className="w-16 text-center">Pax av</TableHead>
               <TableHead className="w-20 text-center">Ombord</TableHead>
@@ -133,15 +132,6 @@ export function LogbookStops({ stops, onStopsChange, disabled = false }: Logbook
                       disabled={disabled}
                       placeholder="Hamn/plats"
                       className="h-8 text-sm px-2"
-                    />
-                  </TableCell>
-                  <TableCell className="p-1">
-                    <Input
-                      type="time"
-                      value={stop.arrivalTime}
-                      onChange={e => updateStop(stop.tempId, 'arrivalTime', e.target.value)}
-                      disabled={disabled}
-                      className="h-8 w-20 text-sm px-2"
                     />
                   </TableCell>
                   <TableCell className="p-1">
@@ -263,7 +253,6 @@ export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
               <TableHead className="w-12">#</TableHead>
               <TableHead>Avg. tid</TableHead>
               <TableHead>Position</TableHead>
-              <TableHead>Ank. tid</TableHead>
               {usesNewFormat ? (
                 <>
                   <TableHead className="text-center">Pax på</TableHead>
@@ -289,9 +278,6 @@ export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
                     {stop.departure_time || '-'}
                   </TableCell>
                   <TableCell>{position}</TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {stop.arrival_time || '-'}
-                  </TableCell>
                   {usesNewFormat ? (
                     <>
                       <TableCell className="text-center font-mono">
