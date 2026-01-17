@@ -42,19 +42,28 @@ export default function Startsida() {
   const { selectedOrgId } = useOrganization();
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  // Fetch today's message
+  // Fetch today's message with documents
   const { data: todayMessage, isLoading: messageLoading } = useQuery({
     queryKey: ['intranet-message-today', selectedOrgId, today],
     queryFn: async () => {
       if (!selectedOrgId) return null;
-      const { data, error } = await supabase
+      const { data: message, error } = await supabase
         .from('intranet_messages')
         .select('*')
         .eq('organization_id', selectedOrgId)
         .eq('message_date', today)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      if (!message) return null;
+      
+      // Fetch documents for this message
+      const { data: documents } = await supabase
+        .from('intranet_documents')
+        .select('id, display_name, file_name, file_url')
+        .eq('message_id', message.id)
+        .order('created_at');
+      
+      return { ...message, documents: documents || [] };
     },
     enabled: !!selectedOrgId,
   });
@@ -148,19 +157,32 @@ export default function Startsida() {
     return '🌧️';
   };
 
-  const handleDownload = async (url: string, filename: string) => {
+  const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
+      // Extract the file path from the URL
+      const urlParts = fileUrl.split('/intranet-documents/');
+      if (urlParts.length < 2) {
+        throw new Error('Invalid file URL');
+      }
+      const filePath = urlParts[1];
+      
+      // Use signed URL for private bucket
       const { data, error } = await supabase.storage
         .from('intranet-documents')
-        .download(url.split('/').pop() || '');
+        .createSignedUrl(filePath, 60);
       
       if (error) throw error;
       
-      const blob = new Blob([data]);
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      link.click();
+      const response = await fetch(data.signedUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
     }
@@ -200,7 +222,29 @@ export default function Startsida() {
                     </p>
                   )}
                 </div>
-                {todayMessage.document_url && todayMessage.document_name && (
+                
+                {/* New documents from intranet_documents table */}
+                {todayMessage.documents && todayMessage.documents.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Dokument:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {todayMessage.documents.map((doc: { id: string; display_name: string; file_name: string; file_url: string }) => (
+                        <Button
+                          key={doc.id}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(doc.file_url, doc.file_name)}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          {doc.display_name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Legacy: old single document field (for backwards compatibility) */}
+                {todayMessage.document_url && todayMessage.document_name && (!todayMessage.documents || todayMessage.documents.length === 0) && (
                   <Button
                     variant="outline"
                     size="sm"
