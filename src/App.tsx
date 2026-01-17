@@ -30,6 +30,7 @@ import ControlPoints from "./pages/admin/ControlPoints";
 import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
 import AdminStatus from "./pages/admin/Status";
 import SeaDays from "./pages/admin/SeaDays";
+import ExercisesAdmin from "./pages/admin/Exercises";
 import NotFound from "./pages/NotFound";
 import BackofficeLayout from "./components/layout/BackofficeLayout";
 import BackofficeDashboard from "./pages/backoffice/Dashboard";
@@ -114,6 +115,7 @@ function AppRoutes() {
       <Route path="/portal/admin/checklists" element={<ProtectedRoute adminOnly><ChecklistTemplates /></ProtectedRoute>} />
       <Route path="/portal/admin/status" element={<ProtectedRoute adminOnly><AdminStatus /></ProtectedRoute>} />
       <Route path="/portal/admin/sea-days" element={<ProtectedRoute adminOnly><SeaDays /></ProtectedRoute>} />
+      <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
       
       {/* Booking routes */}
       <Route path="/bookings" element={<ProtectedRoute><BookingCalendar /></ProtectedRoute>} />

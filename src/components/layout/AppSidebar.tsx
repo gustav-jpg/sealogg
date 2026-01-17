@@ -23,6 +23,7 @@ import {
   CalendarDays,
   UtensilsCrossed,
   Wine,
+  GraduationCap,
   ChevronDown,
   ChevronsUpDown,
   Check,
@@ -134,6 +135,7 @@ export function AppSidebar() {
   const moduleAdminItems: { module: AppModule; href: string; label: string; icon: any }[] = [
     { module: 'self_control', href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
     { module: 'checklists', href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
+    { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
   ];
 
   // Filter module-specific items based on active modules
