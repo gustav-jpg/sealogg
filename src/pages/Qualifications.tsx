@@ -12,8 +12,10 @@ import { format, differenceInDays } from 'date-fns';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Qualifications() {
+  const { toast } = useToast();
   const { selectedOrgId } = useOrganization();
   const [selectedVesselId, setSelectedVesselId] = useState<string>('all');
 
@@ -98,10 +100,29 @@ export default function Qualifications() {
     }
   };
 
-  const handleViewFile = async (fileUrl: string, bucket: string) => {
-    const { data } = await supabase.storage.from(bucket).createSignedUrl(fileUrl, 3600);
-    if (data?.signedUrl) {
-      window.open(data.signedUrl, '_blank');
+  const handleViewFile = async (fileUrl: string | null | undefined, bucket: string) => {
+    if (!fileUrl || fileUrl.trim() === '') {
+      toast({ title: 'Fel', description: 'Inget dokument finns uppladdat', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(fileUrl, 300);
+
+      if (error || !data?.signedUrl) {
+        throw new Error('Kunde inte skapa länk till dokumentet');
+      }
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const fullUrl = data.signedUrl.startsWith('http')
+        ? data.signedUrl
+        : `${supabaseUrl}/storage/v1${data.signedUrl}`;
+
+      window.open(fullUrl, '_blank');
+    } catch (error: any) {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
   };
 
