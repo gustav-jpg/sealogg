@@ -38,6 +38,7 @@ import BackofficeLayout from "./components/layout/BackofficeLayout";
 import BackofficeDashboard from "./pages/backoffice/Dashboard";
 import Organizations from "./pages/backoffice/Organizations";
 import OrganizationDetail from "./pages/backoffice/OrganizationDetail";
+import AuditLogs from "./pages/backoffice/AuditLogs";
 import BookingCalendar from "./pages/bookings/BookingCalendar";
 import NewBooking from "./pages/bookings/NewBooking";
 import BookingDetail from "./pages/bookings/BookingDetail";
@@ -132,6 +133,7 @@ function AppRoutes() {
       <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />
       <Route path="/backoffice/organizations" element={<BackofficeLayout><Organizations /></BackofficeLayout>} />
       <Route path="/backoffice/organizations/:id" element={<BackofficeLayout><OrganizationDetail /></BackofficeLayout>} />
+      <Route path="/backoffice/audit-logs" element={<BackofficeLayout><AuditLogs /></BackofficeLayout>} />
       
       {/* Legacy redirects */}
       <Route path="/login" element={<Navigate to="/portal/login" replace />} />
