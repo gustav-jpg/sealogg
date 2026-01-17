@@ -460,10 +460,13 @@ function VesselCertificatesDialog({
   const [editIssueDate, setEditIssueDate] = useState('');
   const [editExpiryDate, setEditExpiryDate] = useState('');
   const [editIsIndefinite, setEditIsIndefinite] = useState(false);
+  const [editFile, setEditFile] = useState<File | undefined>();
+  const [editExistingFileUrl, setEditExistingFileUrl] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [deleteConfirmCert, setDeleteConfirmCert] = useState<{ id: string; name: string } | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const today = new Date().toISOString().split('T')[0];
   const warningDate = new Date();
@@ -519,25 +522,55 @@ function VesselCertificatesDialog({
   };
 
   const handleUpdate = async (certId: string) => {
-    if (!editName) return;
+    if (!editName || !vessel) return;
     
     setIsUpdating(true);
     try {
+      let fileUrl: string | null | undefined = undefined; // undefined = no change
+      
+      // Upload new file if provided
+      if (editFile) {
+        const fileExt = editFile.name.split('.').pop();
+        const fileName = `${vessel.id}/${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('vessel-certificates')
+          .upload(fileName, editFile);
+        
+        if (uploadError) throw uploadError;
+        
+        // Delete old file if exists
+        if (editExistingFileUrl) {
+          await supabase.storage.from('vessel-certificates').remove([editExistingFileUrl]);
+        }
+        
+        fileUrl = fileName;
+      }
+      
+      const updateData: any = {
+        name: editName,
+        issue_date: editIssueDate || null,
+        expiry_date: editIsIndefinite ? null : editExpiryDate || null,
+        is_indefinite: editIsIndefinite,
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Only update file_url if a new file was uploaded
+      if (fileUrl !== undefined) {
+        updateData.file_url = fileUrl;
+      }
+      
       const { error } = await supabase
         .from('vessel_certificates')
-        .update({
-          name: editName,
-          issue_date: editIssueDate || null,
-          expiry_date: editIsIndefinite ? null : editExpiryDate || null,
-          is_indefinite: editIsIndefinite,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', certId);
       
       if (error) throw error;
       
       toast({ title: 'Certifikat uppdaterat' });
       setEditingCert(null);
+      setEditFile(undefined);
+      setEditExistingFileUrl(null);
       onSuccess();
     } catch (error: any) {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -552,6 +585,8 @@ function VesselCertificatesDialog({
     setEditIssueDate(cert.issue_date || '');
     setEditExpiryDate(cert.expiry_date || '');
     setEditIsIndefinite(cert.is_indefinite || false);
+    setEditFile(undefined);
+    setEditExistingFileUrl(cert.file_url || null);
   };
 
   const handleDelete = async (certId: string) => {
@@ -657,6 +692,40 @@ function VesselCertificatesDialog({
                           />
                         </div>
                       )}
+                      {/* File upload for edit */}
+                      <div className="space-y-2">
+                        <Label className="text-xs">Dokument</Label>
+                        <input
+                          ref={editFileInputRef}
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="hidden"
+                          onChange={e => setEditFile(e.target.files?.[0])}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => editFileInputRef.current?.click()}
+                            className="gap-2"
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            {editFile ? 'Byt fil' : editExistingFileUrl ? 'Ersätt dokument' : 'Ladda upp'}
+                          </Button>
+                          {editFile && (
+                            <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                              {editFile.name}
+                            </span>
+                          )}
+                          {!editFile && editExistingFileUrl && (
+                            <span className="text-xs text-green-600 flex items-center gap-1">
+                              <FileText className="h-3 w-3" />
+                              Dokument finns
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <Button 
                           size="sm" 
@@ -668,7 +737,11 @@ function VesselCertificatesDialog({
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          onClick={() => setEditingCert(null)}
+                          onClick={() => {
+                            setEditingCert(null);
+                            setEditFile(undefined);
+                            setEditExistingFileUrl(null);
+                          }}
                         >
                           Avbryt
                         </Button>
