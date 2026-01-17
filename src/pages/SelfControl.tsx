@@ -41,6 +41,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { usePrint } from '@/hooks/usePrint';
+import { useSharedVessel } from '@/hooks/useSharedVessel';
 
 export default function SelfControl() {
   const { user, isAdmin } = useAuth();
@@ -48,7 +49,7 @@ export default function SelfControl() {
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
-  const [selectedVessel, setSelectedVessel] = useState<string>('');
+  const { selectedVessel, setSelectedVessel } = useSharedVessel();
   const [activeTab, setActiveTab] = useState('all');
   const [performDialogOpen, setPerformDialogOpen] = useState(false);
   const [selectedControlPoint, setSelectedControlPoint] = useState<any>(null);
