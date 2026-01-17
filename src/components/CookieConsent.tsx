@@ -76,11 +76,11 @@ export const CookieConsent = () => {
             </Link>
           </p>
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col items-center gap-3">
           <Button className="w-full" onClick={handleAccept}>
             Acceptera cookies
           </Button>
-          <Button variant="outline" className="w-full" onClick={handleDecline}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={handleDecline}>
             Avböj
           </Button>
         </div>
