@@ -97,7 +97,7 @@ export function LogbookStops({ stops, onStopsChange, disabled = false }: Logbook
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead className="min-w-20">Avg. tid</TableHead>
+              <TableHead className="min-w-20">Tid</TableHead>
               <TableHead className="min-w-28">Position</TableHead>
               <TableHead className="w-16 text-center">Pax på</TableHead>
               <TableHead className="w-16 text-center">Pax av</TableHead>
@@ -251,7 +251,7 @@ export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Avg. tid</TableHead>
+              <TableHead>Tid</TableHead>
               <TableHead>Position</TableHead>
               {usesNewFormat ? (
                 <>
