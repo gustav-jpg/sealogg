@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Home, FileText, Cloud, Download, Thermometer, Wind, Droplets } from 'lucide-react';
+import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -17,6 +17,16 @@ interface WeatherData {
   humidity: number;
   precipitation: number;
   symbol: number;
+}
+
+interface UFSWarning {
+  noticeNumber: string;
+  chartNumber: string;
+  publishedDate: string;
+  headline: string;
+  isTemporary: boolean;
+  isPreliminary: boolean;
+  url: string;
 }
 
 export default function Startsida() {
@@ -45,21 +55,19 @@ export default function Startsida() {
     queryKey: ['smhi-weather'],
     queryFn: async () => {
       try {
-        // SMHI API for Stockholm (lat: 59.3293, lon: 18.0686)
         const response = await fetch(
           'https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.0686/lat/59.3293/data.json'
         );
         if (!response.ok) throw new Error('Failed to fetch weather');
         const data = await response.json();
         
-        // Get next 24 hours of forecast
         const now = new Date();
         const next24h = data.timeSeries
           .filter((ts: any) => {
             const time = new Date(ts.validTime);
             return time >= now && time <= new Date(now.getTime() + 24 * 60 * 60 * 1000);
           })
-          .slice(0, 8) // Get every 3 hours
+          .slice(0, 8)
           .map((ts: any) => {
             const params = ts.parameters.reduce((acc: any, p: any) => {
               acc[p.name] = p.values[0];
@@ -82,11 +90,28 @@ export default function Startsida() {
         return [];
       }
     },
-    staleTime: 1000 * 60 * 30, // 30 minutes
+    staleTime: 1000 * 60 * 30,
+  });
+
+  // Fetch UFS warnings
+  const { data: ufsWarnings, isLoading: ufsLoading } = useQuery({
+    queryKey: ['ufs-warnings'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-ufs-warnings', {
+          body: { limit: 10 },
+        });
+        if (error) throw error;
+        return data?.data as UFSWarning[] || [];
+      } catch (error) {
+        console.error('UFS fetch error:', error);
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour
   });
 
   const getWeatherIcon = (symbol: number) => {
-    // SMHI weather symbols: 1-2 = clear, 3-4 = partly cloudy, 5-6 = cloudy, 7+ = rain/snow
     if (symbol <= 2) return '☀️';
     if (symbol <= 4) return '⛅';
     if (symbol <= 6) return '☁️';
@@ -167,57 +192,114 @@ export default function Startsida() {
           </CardContent>
         </Card>
 
-        {/* Weather Forecast */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Cloud className="h-5 w-5" />
-              Väder kommande 24h
-              <Badge variant="outline" className="ml-auto text-xs font-normal">SMHI</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {weatherLoading ? (
-              <p className="text-muted-foreground">Laddar väderdata...</p>
-            ) : weatherData && weatherData.length > 0 ? (
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                {weatherData.map((hour: WeatherData, index: number) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center p-2 rounded-lg bg-muted/50 text-center"
-                  >
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(hour.time), 'HH:mm')}
-                    </span>
-                    <span className="text-2xl my-1">{getWeatherIcon(hour.symbol)}</span>
-                    <span className="font-semibold">{Math.round(hour.temperature)}°</span>
-                    <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-1">
-                      <Wind className="h-3 w-3" />
-                      <span>{Math.round(hour.windSpeed)}</span>
+        {/* Weather and UFS side by side on larger screens */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Weather Forecast */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Cloud className="h-5 w-5" />
+                Väder 24h
+                <Badge variant="outline" className="ml-auto text-xs font-normal">SMHI</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {weatherLoading ? (
+                <p className="text-muted-foreground">Laddar väderdata...</p>
+              ) : weatherData && weatherData.length > 0 ? (
+                <div className="grid grid-cols-4 gap-2">
+                  {weatherData.slice(0, 4).map((hour: WeatherData, index: number) => (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center p-2 rounded-lg bg-muted/50 text-center"
+                    >
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(hour.time), 'HH:mm')}
+                      </span>
+                      <span className="text-xl my-1">{getWeatherIcon(hour.symbol)}</span>
+                      <span className="font-semibold text-sm">{Math.round(hour.temperature)}°</span>
+                      <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                        <Wind className="h-3 w-3" />
+                        <span>{Math.round(hour.windSpeed)}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">
-                Kunde inte hämta väderdata
-              </p>
-            )}
-            
-            {weatherData && weatherData.length > 0 && (
-              <div className="mt-4 pt-4 border-t flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Thermometer className="h-4 w-4" />
-                  <span>Temperatur i °C</span>
+                  ))}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Wind className="h-4 w-4" />
-                  <span>Vind i m/s</span>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Kunde inte hämta väderdata
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* UFS Warnings */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <AlertTriangle className="h-5 w-5" />
+                UFS Varningar
+                <Badge variant="outline" className="ml-auto text-xs font-normal">Sjöfartsverket</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ufsLoading ? (
+                <p className="text-muted-foreground">Laddar UFS-data...</p>
+              ) : ufsWarnings && ufsWarnings.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {ufsWarnings.slice(0, 5).map((warning, index) => (
+                    <a
+                      key={index}
+                      href={warning.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-sm">#{warning.noticeNumber}</span>
+                            {warning.isTemporary && (
+                              <Badge variant="secondary" className="text-xs px-1 py-0">T</Badge>
+                            )}
+                            {warning.isPreliminary && (
+                              <Badge variant="secondary" className="text-xs px-1 py-0">P</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {warning.headline}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                          <span>{warning.publishedDate}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </div>
+                      </div>
+                    </a>
+                  ))}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Kunde inte hämta UFS-varningar
+                </p>
+              )}
+              
+              {ufsWarnings && ufsWarnings.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <a
+                    href="https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=99&SearchFormModel.SearchTimePeriod=0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    Visa alla på Sjöfartsverket
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </MainLayout>
   );
