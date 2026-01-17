@@ -99,7 +99,7 @@ export default function Startsida() {
     queryFn: async () => {
       try {
         const { data, error } = await supabase.functions.invoke('fetch-ufs-warnings', {
-          body: { limit: 10 },
+          body: { limit: 20 },
         });
         if (error) throw error;
         return data?.data as UFSWarning[] || [];
@@ -246,8 +246,8 @@ export default function Startsida() {
               {ufsLoading ? (
                 <p className="text-muted-foreground">Laddar UFS-data...</p>
               ) : ufsWarnings && ufsWarnings.length > 0 ? (
-                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                  {ufsWarnings.slice(0, 5).map((warning, index) => (
+                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                  {ufsWarnings.map((warning, index) => (
                     <a
                       key={index}
                       href={warning.url}
