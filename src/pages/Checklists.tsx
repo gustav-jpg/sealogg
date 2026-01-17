@@ -41,6 +41,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useSharedVessel } from '@/hooks/useSharedVessel';
 
 type ChecklistStatus = 'ok' | 'due_soon' | 'overdue';
 
@@ -66,7 +67,7 @@ export default function Checklists() {
   const [searchParams] = useSearchParams();
   const vesselFromUrl = searchParams.get('vessel');
   
-  const [selectedVessel, setSelectedVessel] = useState<string>(vesselFromUrl || '');
+  const { selectedVessel, setSelectedVessel } = useSharedVessel(vesselFromUrl);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
 
