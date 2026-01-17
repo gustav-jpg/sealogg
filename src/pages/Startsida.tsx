@@ -246,35 +246,44 @@ export default function Startsida() {
               {ufsLoading ? (
                 <p className="text-muted-foreground">Laddar UFS-data...</p>
               ) : ufsWarnings && ufsWarnings.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                   {ufsWarnings.slice(0, 5).map((warning, index) => (
                     <a
                       key={index}
                       href={warning.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      className="block p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-sm">#{warning.noticeNumber}</span>
-                            {warning.isTemporary && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">T</Badge>
-                            )}
-                            {warning.isPreliminary && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">P</Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {warning.headline}
-                          </p>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="default" className="text-xs font-mono">
+                            {warning.noticeNumber}
+                          </Badge>
+                          {warning.isTemporary && (
+                            <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                              Tillfällig
+                            </Badge>
+                          )}
+                          {warning.isPreliminary && (
+                            <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">
+                              Preliminär
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
                           <span>{warning.publishedDate}</span>
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3.5 w-3.5" />
                         </div>
                       </div>
+                      <p className="text-sm leading-relaxed">
+                        {warning.headline || 'Ingen rubrik tillgänglig'}
+                      </p>
+                      {warning.chartNumber && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Sjökort: {warning.chartNumber}
+                        </p>
+                      )}
                     </a>
                   ))}
                 </div>
@@ -290,10 +299,10 @@ export default function Startsida() {
                     href="https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=99&SearchFormModel.SearchTimePeriod=0"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    className="text-sm text-primary hover:underline flex items-center gap-1.5"
                   >
-                    Visa alla på Sjöfartsverket
-                    <ExternalLink className="h-3 w-3" />
+                    Visa alla varningar på Sjöfartsverket
+                    <ExternalLink className="h-4 w-4" />
                   </a>
                 </div>
               )}
