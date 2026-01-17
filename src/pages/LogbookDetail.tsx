@@ -26,10 +26,11 @@ import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/LogbookStops';
+import { useLogbookSignatures, useSignLogbook } from '@/hooks/useLogbookSignature';
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface EngineHourEntry {
   id?: string;
@@ -77,7 +78,11 @@ export default function LogbookDetail() {
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
   const [newExerciseType, setNewExerciseType] = useState('');
   const [newExerciseNotes, setNewExerciseNotes] = useState('');
+  const [showSignDialog, setShowSignDialog] = useState(false);
 
+  // Signatures
+  const { data: signatures } = useLogbookSignatures(id);
+  const signLogbook = useSignLogbook();
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -474,6 +479,39 @@ export default function LogbookDetail() {
         .eq('id', id);
       if (error) throw error;
       
+      // Create digital signature
+      const logbookDataForSignature = {
+        id,
+        date: logbook?.date,
+        vessel_id: logbook?.vessel_id,
+        weather,
+        wind,
+        bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
+        general_notes: generalNotes,
+        stops: stops.map(s => ({
+          stopOrder: s.stopOrder,
+          departureTime: s.departureTime,
+          departureLocation: s.departureLocation,
+          arrivalTime: s.arrivalTime,
+          arrivalLocation: s.arrivalLocation,
+          passengerCount: s.passengerCount,
+        })),
+        engine_hours: editableEngineHours.map(e => ({
+          engineType: e.engineType,
+          engineNumber: e.engineNumber,
+          startHours: e.startHours,
+          stopHours: e.stopHours,
+        })),
+        crew: crewMembers?.map(c => ({ profileId: c.profile_id, role: c.role })) || [],
+        exercises: editableExercises.map(e => ({ type: e.exerciseType, notes: e.notes })),
+      };
+
+      await signLogbook.mutateAsync({
+        logbookId: id!,
+        logbookData: logbookDataForSignature,
+        signatureType: 'close',
+      });
+      
       // Uppdatera vessel_engine_hours med stop_hours från denna loggbok
       if (editableEngineHours.length > 0 && logbook?.vessel_id) {
         for (const entry of editableEngineHours) {
@@ -497,7 +535,9 @@ export default function LogbookDetail() {
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
       queryClient.invalidateQueries({ queryKey: ['logbook-engine-hours', id] });
-      toast({ title: 'Stängd', description: 'Loggboken har sparats och stängts. Maskintimmar har uppdaterats.' });
+      queryClient.invalidateQueries({ queryKey: ['logbook-signatures', id] });
+      setShowSignDialog(false);
+      toast({ title: 'Signerad & Stängd', description: 'Loggboken har signerats digitalt och stängts. Maskintimmar har uppdaterats.' });
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -1053,11 +1093,11 @@ export default function LogbookDetail() {
                 <Button
                   className="w-full"
                   variant="secondary"
-                  onClick={() => closeLogbook.mutate()}
+                  onClick={() => setShowSignDialog(true)}
                   disabled={closeLogbook.isPending || (!validation.isValid && !overrideValidation)}
                 >
-                  <Lock className="h-4 w-4 mr-2" />
-                  {closeLogbook.isPending ? 'Stänger...' : 'Stäng loggbok'}
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Signera & Stäng
                 </Button>
                 
                 <Button
@@ -1085,14 +1125,43 @@ export default function LogbookDetail() {
             </Button>
 
             {!isOpen && (
-              <Card className="border-muted">
-                <CardContent className="pt-6 text-center text-muted-foreground">
-                  <Lock className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">Denna loggbok är stängd och kan inte redigeras.</p>
-                  {logbook.closed_at && (
-                    <p className="text-xs mt-1">
-                      Stängd {format(new Date(logbook.closed_at), 'PPP', { locale: sv })}
-                    </p>
+              <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                    <ShieldCheck className="h-5 w-5" />
+                    Digital signatur
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {signatures && signatures.length > 0 ? (
+                    <div className="space-y-2">
+                      {signatures.map(sig => (
+                        <div key={sig.id} className="flex items-start gap-2 p-2 rounded bg-background/80">
+                          <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {sig.signer_profile?.full_name || 'Okänd'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(sig.signed_at), 'PPP HH:mm', { locale: sv })}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-mono truncate" title={sig.content_hash}>
+                              Hash: {sig.content_hash.substring(0, 16)}...
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-2">
+                      <Lock className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Stängd utan digital signatur</p>
+                      {logbook.closed_at && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(logbook.closed_at), 'PPP', { locale: sv })}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1181,6 +1250,51 @@ export default function LogbookDetail() {
               <Button onClick={() => updateCrew.mutate()} disabled={updateCrew.isPending}>
                 <Save className="h-4 w-4 mr-2" />
                 {updateCrew.isPending ? 'Sparar...' : 'Spara'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Digital Signature Confirmation Dialog */}
+      <Dialog open={showSignDialog} onOpenChange={setShowSignDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Signera & Stäng loggbok
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+              <p className="text-sm">
+                Genom att signera bekräftar du att:
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li>All information i loggboken är korrekt</li>
+                <li>Du har behörighet att stänga denna loggbok</li>
+                <li>Loggboken kommer att låsas permanent</li>
+              </ul>
+            </div>
+            
+            <div className="p-3 rounded border bg-background">
+              <p className="text-xs text-muted-foreground mb-1">Signeras av</p>
+              <p className="font-medium">{user?.email}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                En kryptografisk hash (SHA-256) av loggboksinnehållet kommer att sparas som bevis på innehållet vid signeringstillfället.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowSignDialog(false)}>
+                Avbryt
+              </Button>
+              <Button 
+                onClick={() => closeLogbook.mutate()} 
+                disabled={closeLogbook.isPending || signLogbook.isPending}
+              >
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                {closeLogbook.isPending || signLogbook.isPending ? 'Signerar...' : 'Signera & Stäng'}
               </Button>
             </div>
           </div>
