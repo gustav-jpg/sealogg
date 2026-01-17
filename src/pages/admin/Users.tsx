@@ -538,101 +538,103 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-5">
-          {/* User table */}
-          <Card className="xl:col-span-2">
-            <CardContent className="p-0">
-              <div className="max-h-[600px] overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-card z-10">
+        {/* User table */}
+        <Card>
+          <CardContent className="p-0">
+            <div className="max-h-[calc(100vh-280px)] overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-card z-10">
+                  <TableRow>
+                    <TableHead>Namn</TableHead>
+                    <TableHead className="hidden sm:table-cell">E-post</TableHead>
+                    <TableHead className="w-20 text-center">Cert.</TableHead>
+                    <TableHead className="w-16"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProfiles.length === 0 ? (
                     <TableRow>
-                      <TableHead>Namn</TableHead>
-                      <TableHead className="w-20 text-center">Cert.</TableHead>
-                      <TableHead className="w-16"></TableHead>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        {searchQuery ? 'Inga träffar' : 'Inga personer registrerade'}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProfiles.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          {searchQuery ? 'Inga träffar' : 'Inga personer registrerade'}
+                  ) : (
+                    filteredProfiles.map(profile => (
+                      <TableRow 
+                        key={profile.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedProfileId(profile.id)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{profile.full_name}</p>
+                            {profile.is_external && (
+                              <Badge variant="outline" className="text-xs">Ext</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground sm:hidden">
+                            {profile.email || 'Ingen e-post'}
+                          </p>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell text-muted-foreground">
+                          {profile.email || '–'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {profile.hasExpired ? (
+                            <Badge variant="destructive" className="text-xs gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                            </Badge>
+                          ) : profile.hasExpiring ? (
+                            <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                              <AlertTriangle className="h-3 w-3" />
+                            </Badge>
+                          ) : profile.certCount > 0 ? (
+                            <span className="text-xs text-muted-foreground">{profile.certCount}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">–</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {profile.email && !profile.is_external && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                resendWelcomeEmailMutation.mutate({ 
+                                  email: profile.email!, 
+                                  fullName: profile.full_name 
+                                });
+                              }}
+                              disabled={resendWelcomeEmailMutation.isPending}
+                              title="Skicka välkomstmail"
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      filteredProfiles.map(profile => (
-                        <TableRow 
-                          key={profile.id}
-                          className={`cursor-pointer ${selectedProfileId === profile.id ? 'bg-primary/10' : ''}`}
-                          onClick={() => setSelectedProfileId(profile.id)}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium truncate">{profile.full_name}</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {profile.email || 'Ingen e-post'}
-                                </p>
-                              </div>
-                              {profile.is_external && (
-                                <Badge variant="outline" className="text-xs shrink-0">Ext</Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {profile.hasExpired ? (
-                              <Badge variant="destructive" className="text-xs gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                              </Badge>
-                            ) : profile.hasExpiring ? (
-                              <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                                <AlertTriangle className="h-3 w-3" />
-                              </Badge>
-                            ) : profile.certCount > 0 ? (
-                              <span className="text-xs text-muted-foreground">{profile.certCount}</span>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">–</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {profile.email && !profile.is_external && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  resendWelcomeEmailMutation.mutate({ 
-                                    email: profile.email!, 
-                                    fullName: profile.full_name 
-                                  });
-                                }}
-                                disabled={resendWelcomeEmailMutation.isPending}
-                                title="Skicka välkomstmail"
-                              >
-                                <Mail className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Detail panel */}
-          <Card className="xl:col-span-3">
-            {selectedProfile ? (
+        {/* Detail dialog */}
+        <Dialog open={!!selectedProfile} onOpenChange={(open) => !open && setSelectedProfileId(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            {selectedProfile && (
               <>
-                <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+                <DialogHeader className="flex flex-row items-start justify-between gap-4 pr-8">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <User className="h-6 w-6 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="flex items-center gap-2 flex-wrap">
+                      <DialogTitle className="flex items-center gap-2 flex-wrap">
                         <span className="truncate">{selectedProfile.full_name}</span>
                         <EditNameDialog 
                           profileId={selectedProfile.id}
@@ -640,213 +642,208 @@ export default function AdminUsers() {
                           onSave={(data) => updateProfileName.mutate(data)}
                           isLoading={updateProfileName.isPending}
                         />
-                      </CardTitle>
+                      </DialogTitle>
                       <p className="text-sm text-muted-foreground">
                         {selectedProfile.email || 'Ingen e-post'}
                         {isExternalUser && ' • Extern besättning'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2 shrink-0">
-                    {isExternalUser && (
-                      <LinkEmailDialog 
-                        profileId={selectedProfile.id}
-                        profileName={selectedProfile.full_name}
-                        onLink={(data) => linkEmailMutation.mutate(data)}
-                        isLoading={linkEmailMutation.isPending}
-                      />
-                    )}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setDeleteConfirm({ 
-                        open: true, 
-                        type: 'user', 
-                        id: selectedProfile.id, 
-                        name: selectedProfile.full_name 
-                      })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue={isExternalUser ? "certificates" : "roles"}>
-                    <TabsList className="w-full justify-start">
-                      {!isExternalUser && (
-                        <TabsTrigger value="roles">
-                          <Shield className="h-4 w-4 mr-1" />
-                          Roller
-                        </TabsTrigger>
-                      )}
-                      <TabsTrigger value="certificates">
-                        <Award className="h-4 w-4 mr-1" />
-                        Certifikat
-                      </TabsTrigger>
-                      <TabsTrigger value="inductions">
-                        <Ship className="h-4 w-4 mr-1" />
-                        Inskolningar
-                      </TabsTrigger>
-                      <TabsTrigger value="settings">
-                        <Settings className="h-4 w-4 mr-1" />
-                        Övrigt
-                      </TabsTrigger>
-                    </TabsList>
+                </DialogHeader>
 
+                <div className="flex gap-2 mt-2">
+                  {isExternalUser && (
+                    <LinkEmailDialog 
+                      profileId={selectedProfile.id}
+                      profileName={selectedProfile.full_name}
+                      onLink={(data) => linkEmailMutation.mutate(data)}
+                      isLoading={linkEmailMutation.isPending}
+                    />
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteConfirm({ 
+                      open: true, 
+                      type: 'user', 
+                      id: selectedProfile.id, 
+                      name: selectedProfile.full_name 
+                    })}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Ta bort
+                  </Button>
+                </div>
+
+                <Tabs defaultValue={isExternalUser ? "certificates" : "roles"} className="mt-4">
+                  <TabsList className="w-full justify-start">
                     {!isExternalUser && (
-                      <TabsContent value="roles" className="space-y-4 mt-4">
-                        <div className="flex gap-2 flex-wrap">
-                          {selectedUserRoles.map(role => (
-                            <Badge key={role.id} variant="secondary" className="gap-1">
-                              {APP_ROLE_LABELS[role.role as AppRole]}
-                              <button 
-                                onClick={() => setDeleteConfirm({ 
-                                  open: true, 
-                                  type: 'role', 
-                                  id: role.id, 
-                                  name: APP_ROLE_LABELS[role.role as AppRole] 
-                                })} 
-                                className="ml-1 hover:text-destructive"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                          {selectedUserRoles.length === 0 && (
-                            <p className="text-sm text-muted-foreground">Inga roller tilldelade</p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Select onValueChange={v => addRole.mutate({ userId: selectedProfile.user_id!, role: v as AppRole })}>
-                            <SelectTrigger className="w-48">
-                              <SelectValue placeholder="Lägg till roll" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(APP_ROLE_LABELS).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TabsContent>
+                      <TabsTrigger value="roles">
+                        <Shield className="h-4 w-4 mr-1" />
+                        Roller
+                      </TabsTrigger>
                     )}
+                    <TabsTrigger value="certificates">
+                      <Award className="h-4 w-4 mr-1" />
+                      Certifikat
+                    </TabsTrigger>
+                    <TabsTrigger value="inductions">
+                      <Ship className="h-4 w-4 mr-1" />
+                      Inskolningar
+                    </TabsTrigger>
+                    <TabsTrigger value="settings">
+                      <Settings className="h-4 w-4 mr-1" />
+                      Övrigt
+                    </TabsTrigger>
+                  </TabsList>
 
-                    <TabsContent value="certificates" className="space-y-4 mt-4">
-                      <div className="space-y-2">
-                        {selectedUserCerts.length === 0 ? (
-                          <p className="text-sm text-muted-foreground py-4">Inga certifikat registrerade</p>
-                        ) : (
-                          selectedUserCerts.map(cert => (
-                            <CertificateItem
-                              key={cert.id}
-                              cert={cert}
-                              oderId={selectedProfile.id}
-                              onRemove={() => setDeleteConfirm({ 
+                  {!isExternalUser && (
+                    <TabsContent value="roles" className="space-y-4 mt-4">
+                      <div className="flex gap-2 flex-wrap">
+                        {selectedUserRoles.map(role => (
+                          <Badge key={role.id} variant="secondary" className="gap-1">
+                            {APP_ROLE_LABELS[role.role as AppRole]}
+                            <button 
+                              onClick={() => setDeleteConfirm({ 
                                 open: true, 
-                                type: 'certificate', 
-                                id: cert.id, 
-                                name: cert.certificate_type?.name || 'Certifikat' 
-                              })}
-                              onUpload={(file) => uploadCertificateFile.mutate({ 
-                                certId: cert.id, 
-                                oderId: selectedProfile.id, 
-                                file 
-                              })}
-                              onRenew={(newDate, newFile) => renewCertificate.mutate({
-                                certId: cert.id,
-                                newExpiryDate: newDate,
-                                oldFileUrl: cert.file_url,
-                                newFile,
-                                profileId: selectedProfile.id
-                              })}
-                            />
-                          ))
+                                type: 'role', 
+                                id: role.id, 
+                                name: APP_ROLE_LABELS[role.role as AppRole] 
+                              })} 
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                        {selectedUserRoles.length === 0 && (
+                          <p className="text-sm text-muted-foreground">Inga roller tilldelade</p>
                         )}
                       </div>
-                      <AddCertificateDialog
-                        certificateTypes={certificateTypes || []}
-                        onAdd={(certTypeId, expiryDate, file) => addCertificate.mutate({ 
-                          userId: selectedProfile.id, 
-                          certTypeId, 
-                          expiryDate,
-                          file 
-                        })}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="inductions" className="space-y-4 mt-4">
-                      <div className="space-y-2">
-                        {selectedUserInductions.length === 0 ? (
-                          <p className="text-sm text-muted-foreground py-4">Inga inskolningar registrerade</p>
-                        ) : (
-                          selectedUserInductions.map(ind => (
-                            <InductionItem 
-                              key={ind.id}
-                              induction={ind}
-                              onRemove={() => setDeleteConfirm({ 
-                                open: true, 
-                                type: 'induction', 
-                                id: ind.id, 
-                                name: (ind as any).vessel?.name || 'Inskolning' 
-                              })}
-                            />
-                          ))
-                        )}
+                      <div className="flex gap-2">
+                        <Select onValueChange={v => addRole.mutate({ userId: selectedProfile.user_id!, role: v as AppRole })}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Lägg till roll" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(APP_ROLE_LABELS).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <AddInductionDialog
-                        vessels={vessels || []}
-                        existingVesselIds={selectedUserInductions.map(i => i.vessel_id)}
-                        onAdd={(vesselId, inductedAt, file) => addInduction.mutate({ 
-                          profileId: selectedProfile.id, 
-                          vesselId,
-                          inductedAt,
-                          file 
-                        })}
-                      />
                     </TabsContent>
+                  )}
 
-                    <TabsContent value="settings" className="space-y-4 mt-4">
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="preferred-vessel">Föredragen båt för sjödagar</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Används vid rapportering till Transportstyrelsen om personen arbetat på flera båtar samma dag.
-                          </p>
-                          <Select 
-                            value={selectedProfile.preferred_vessel_id || 'none'} 
-                            onValueChange={(v) => updatePreferredVessel.mutate({ 
-                              profileId: selectedProfile.id, 
-                              vesselId: v === 'none' ? null : v 
+                  <TabsContent value="certificates" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      {selectedUserCerts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4">Inga certifikat registrerade</p>
+                      ) : (
+                        selectedUserCerts.map(cert => (
+                          <CertificateItem
+                            key={cert.id}
+                            cert={cert}
+                            oderId={selectedProfile.id}
+                            onRemove={() => setDeleteConfirm({ 
+                              open: true, 
+                              type: 'certificate', 
+                              id: cert.id, 
+                              name: cert.certificate_type?.name || 'Certifikat' 
                             })}
-                          >
-                            <SelectTrigger className="w-64">
-                              <SelectValue placeholder="Välj båt" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Ingen föredragen båt</SelectItem>
-                              {vessels?.map(vessel => (
-                                <SelectItem key={vessel.id} value={vessel.id}>
-                                  {vessel.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                            onUpload={(file) => uploadCertificateFile.mutate({ 
+                              certId: cert.id, 
+                              oderId: selectedProfile.id, 
+                              file 
+                            })}
+                            onRenew={(newDate, newFile) => renewCertificate.mutate({
+                              certId: cert.id,
+                              newExpiryDate: newDate,
+                              oldFileUrl: cert.file_url,
+                              newFile,
+                              profileId: selectedProfile.id
+                            })}
+                          />
+                        ))
+                      )}
+                    </div>
+                    <AddCertificateDialog
+                      certificateTypes={certificateTypes || []}
+                      onAdd={(certTypeId, expiryDate, file) => addCertificate.mutate({ 
+                        userId: selectedProfile.id, 
+                        certTypeId, 
+                        expiryDate,
+                        file 
+                      })}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="inductions" className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      {selectedUserInductions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4">Inga inskolningar registrerade</p>
+                      ) : (
+                        selectedUserInductions.map(ind => (
+                          <InductionItem 
+                            key={ind.id}
+                            induction={ind}
+                            onRemove={() => setDeleteConfirm({ 
+                              open: true, 
+                              type: 'induction', 
+                              id: ind.id, 
+                              name: (ind as any).vessel?.name || 'Inskolning' 
+                            })}
+                          />
+                        ))
+                      )}
+                    </div>
+                    <AddInductionDialog
+                      vessels={vessels || []}
+                      existingVesselIds={selectedUserInductions.map(i => i.vessel_id)}
+                      onAdd={(vesselId, inductedAt, file) => addInduction.mutate({ 
+                        profileId: selectedProfile.id, 
+                        vesselId,
+                        inductedAt,
+                        file 
+                      })}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="settings" className="space-y-4 mt-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="preferred-vessel">Föredragen båt för sjödagar</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Används vid rapportering till Transportstyrelsen om personen arbetat på flera båtar samma dag.
+                        </p>
+                        <Select 
+                          value={selectedProfile.preferred_vessel_id || 'none'} 
+                          onValueChange={(v) => updatePreferredVessel.mutate({ 
+                            profileId: selectedProfile.id, 
+                            vesselId: v === 'none' ? null : v 
+                          })}
+                        >
+                          <SelectTrigger className="w-64">
+                            <SelectValue placeholder="Välj båt" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Ingen föredragen båt</SelectItem>
+                            {vessels?.map(vessel => (
+                              <SelectItem key={vessel.id} value={vessel.id}>
+                                {vessel.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </>
-            ) : (
-              <CardContent className="py-16 text-center text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="font-medium">Välj en person</p>
-                <p className="text-sm mt-1">Klicka på en rad i listan för att se och redigera detaljer</p>
-              </CardContent>
             )}
-          </Card>
-        </div>
+          </DialogContent>
+        </Dialog>
 
         <ConfirmDialog
           open={deleteConfirm?.open || false}
