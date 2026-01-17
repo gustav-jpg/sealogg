@@ -1300,6 +1300,53 @@ export type Database = {
           },
         ]
       }
+      intranet_messages: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string
+          document_name: string | null
+          document_url: string | null
+          id: string
+          message_date: string
+          organization_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by: string
+          document_name?: string | null
+          document_url?: string | null
+          id?: string
+          message_date: string
+          organization_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string
+          document_name?: string | null
+          document_url?: string | null
+          id?: string
+          message_date?: string
+          organization_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intranet_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logbook_crew: {
         Row: {
           created_at: string

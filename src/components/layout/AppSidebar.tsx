@@ -117,8 +117,9 @@ export function AppSidebar() {
   const vesselNavItems = activeVesselModules.map(m => MODULE_NAV_MAP[m]);
   const bookingNavItems = activeBookingModules.map(m => MODULE_NAV_MAP[m]);
 
-  // Always show qualifications for vessel section
+  // Always show Startsida first and Qualifications at end for vessel section
   if (vesselNavItems.length > 0 || isSuperadmin) {
+    vesselNavItems.unshift({ href: '/portal/startsida', label: 'Startsida', icon: Home });
     vesselNavItems.push({ href: '/portal/qualifications', label: 'Behörigheter', icon: Award });
   }
 
@@ -136,6 +137,7 @@ export function AppSidebar() {
     { module: 'self_control', href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
     { module: 'checklists', href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
     { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
+    { module: 'logbook', href: '/portal/admin/intranet', label: 'Intranät', icon: Home },
   ];
 
   // Filter module-specific items based on active modules
