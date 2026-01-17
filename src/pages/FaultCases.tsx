@@ -57,9 +57,9 @@ export default function FaultCases() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<FaultPriority>('normal');
-  const [files, setFiles] = useState<File[]>([]);
-  const [fileToAnnotate, setFileToAnnotate] = useState<File | null>(null);
-  const [filePreviews, setFilePreviews] = useState<{ file: File; preview: string }[]>([]);
+  const [files, setFiles] = useState<{ id: string; file: File }[]>([]);
+  const [fileToAnnotateId, setFileToAnnotateId] = useState<string | null>(null);
+  const [filePreviews, setFilePreviews] = useState<{ id: string; file: File; preview: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: vessels } = useQuery({
@@ -138,11 +138,11 @@ export default function FaultCases() {
       if (error) throw error;
 
       // Upload files
-      for (const file of files) {
-        const filePath = `fault-cases/${faultCase.id}/${Date.now()}-${file.name}`;
+      for (const fileItem of files) {
+        const filePath = `fault-cases/${faultCase.id}/${Date.now()}-${fileItem.file.name}`;
         const { error: uploadError } = await supabase.storage
           .from('attachments')
-          .upload(filePath, file);
+          .upload(filePath, fileItem.file);
 
         if (uploadError) {
           console.error('Upload error:', uploadError);
@@ -156,7 +156,7 @@ export default function FaultCases() {
         await supabase.from('fault_attachments').insert({
           fault_case_id: faultCase.id,
           file_url: urlData.publicUrl,
-          file_name: file.name,
+          file_name: fileItem.file.name,
           uploaded_by: user?.id,
         });
       }
@@ -181,29 +181,36 @@ export default function FaultCases() {
     setPriority('normal');
     setFiles([]);
     setFilePreviews([]);
-    setFileToAnnotate(null);
+    setFileToAnnotateId(null);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     
+    // Create file items with unique IDs
+    const newFileItems = selectedFiles.map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file,
+    }));
+    
     // Find first image to auto-open annotation
-    const firstImage = selectedFiles.find(file => file.type.startsWith('image/'));
+    const firstImageItem = newFileItems.find(item => item.file.type.startsWith('image/'));
     
     // Create previews for images
-    const newPreviews = selectedFiles
-      .filter(file => file.type.startsWith('image/'))
-      .map(file => ({
-        file,
-        preview: URL.createObjectURL(file),
+    const newPreviews = newFileItems
+      .filter(item => item.file.type.startsWith('image/'))
+      .map(item => ({
+        id: item.id,
+        file: item.file,
+        preview: URL.createObjectURL(item.file),
       }));
     
-    setFiles(prev => [...prev, ...selectedFiles]);
+    setFiles(prev => [...prev, ...newFileItems]);
     setFilePreviews(prev => [...prev, ...newPreviews]);
     
     // Auto-open annotation dialog for the first image
-    if (firstImage) {
-      setFileToAnnotate(firstImage);
+    if (firstImageItem) {
+      setFileToAnnotateId(firstImageItem.id);
     }
     
     // Reset input so the same file can be selected again
@@ -212,38 +219,44 @@ export default function FaultCases() {
     }
   };
 
-  const handleRemoveFile = (fileToRemove: File) => {
-    setFiles(prev => prev.filter(f => f !== fileToRemove));
+  const handleRemoveFile = (fileId: string) => {
+    setFiles(prev => prev.filter(f => f.id !== fileId));
     setFilePreviews(prev => {
-      const previewToRemove = prev.find(p => p.file === fileToRemove);
+      const previewToRemove = prev.find(p => p.id === fileId);
       if (previewToRemove) {
         URL.revokeObjectURL(previewToRemove.preview);
       }
-      return prev.filter(p => p.file !== fileToRemove);
+      return prev.filter(p => p.id !== fileId);
     });
   };
 
   const handleAnnotationSave = (annotatedFile: File) => {
-    if (!fileToAnnotate) return;
+    if (!fileToAnnotateId) return;
 
     // Replace the original file with the annotated version
-    setFiles(prev => prev.map(f => f === fileToAnnotate ? annotatedFile : f));
+    setFiles(prev => prev.map(f => 
+      f.id === fileToAnnotateId ? { ...f, file: annotatedFile } : f
+    ));
     
     // Update preview
     setFilePreviews(prev => {
-      const oldPreview = prev.find(p => p.file === fileToAnnotate);
+      const oldPreview = prev.find(p => p.id === fileToAnnotateId);
       if (oldPreview) {
         URL.revokeObjectURL(oldPreview.preview);
       }
       return prev.map(p => 
-        p.file === fileToAnnotate 
-          ? { file: annotatedFile, preview: URL.createObjectURL(annotatedFile) }
+        p.id === fileToAnnotateId 
+          ? { ...p, file: annotatedFile, preview: URL.createObjectURL(annotatedFile) }
           : p
       );
     });
     
-    setFileToAnnotate(null);
+    setFileToAnnotateId(null);
   };
+
+  const fileToAnnotate = fileToAnnotateId 
+    ? filePreviews.find(p => p.id === fileToAnnotateId)?.file 
+    : null;
 
   const getPriorityColor = (prio: FaultPriority) => {
     switch (prio) {
@@ -368,7 +381,7 @@ export default function FaultCases() {
                               variant="secondary"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => setFileToAnnotate(preview.file)}
+                              onClick={() => setFileToAnnotateId(preview.id)}
                               title="Markera på bilden"
                             >
                               <Pencil className="h-4 w-4" />
@@ -378,7 +391,7 @@ export default function FaultCases() {
                               variant="destructive"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => handleRemoveFile(preview.file)}
+                              onClick={() => handleRemoveFile(preview.id)}
                               title="Ta bort"
                             >
                               <X className="h-4 w-4" />
@@ -391,17 +404,17 @@ export default function FaultCases() {
                   )}
 
                   {/* Non-image files list */}
-                  {files.filter(f => !f.type.startsWith('image/')).length > 0 && (
+                  {files.filter(f => !f.file.type.startsWith('image/')).length > 0 && (
                     <div className="space-y-1 mt-2">
-                      {files.filter(f => !f.type.startsWith('image/')).map((file, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm bg-muted rounded px-2 py-1">
-                          <span className="truncate">{file.name}</span>
+                      {files.filter(f => !f.file.type.startsWith('image/')).map((fileItem) => (
+                        <div key={fileItem.id} className="flex items-center justify-between text-sm bg-muted rounded px-2 py-1">
+                          <span className="truncate">{fileItem.file.name}</span>
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => handleRemoveFile(file)}
+                            onClick={() => handleRemoveFile(fileItem.id)}
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -434,7 +447,7 @@ export default function FaultCases() {
               file={fileToAnnotate}
               open={!!fileToAnnotate}
               onSave={handleAnnotationSave}
-              onCancel={() => setFileToAnnotate(null)}
+              onCancel={() => setFileToAnnotateId(null)}
             />
           )}
           </div>
