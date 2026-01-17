@@ -1513,6 +1513,57 @@ export type Database = {
           },
         ]
       }
+      logbook_signatures: {
+        Row: {
+          content_hash: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          logbook_id: string
+          signature_type: string
+          signed_at: string
+          signed_by: string
+          user_agent: string | null
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          logbook_id: string
+          signature_type?: string
+          signed_at?: string
+          signed_by: string
+          user_agent?: string | null
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          logbook_id?: string
+          signature_type?: string
+          signed_at?: string
+          signed_by?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_signed_by"
+            columns: ["signed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "logbook_signatures_logbook_id_fkey"
+            columns: ["logbook_id"]
+            isOneToOne: false
+            referencedRelation: "logbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logbook_stops: {
         Row: {
           arrival_location: string | null
