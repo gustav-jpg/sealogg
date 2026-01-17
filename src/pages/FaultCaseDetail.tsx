@@ -255,6 +255,39 @@ export default function FaultCaseDetail() {
 
         <div id="faultcase-print-content" className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
+            {/* Images shown prominently at top */}
+            {mainAttachments.filter(a => /\.(jpg|jpeg|png|gif|webp)$/i.test(a.file_name)).length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <Image className="h-5 w-5" />
+                    Bilder
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {mainAttachments
+                      .filter(a => /\.(jpg|jpeg|png|gif|webp)$/i.test(a.file_name))
+                      .map((att) => (
+                        <a
+                          key={att.id}
+                          href={att.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block overflow-hidden rounded-lg border hover:border-primary transition-colors"
+                        >
+                          <img
+                            src={att.file_url}
+                            alt={att.file_name}
+                            className="w-full h-48 object-cover hover:scale-105 transition-transform duration-200"
+                          />
+                        </a>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -270,29 +303,31 @@ export default function FaultCaseDetail() {
               </CardContent>
             </Card>
 
-            {/* Main Attachments */}
-            {mainAttachments.length > 0 && (
+            {/* Non-image attachments (PDFs, etc.) */}
+            {mainAttachments.filter(a => !/\.(jpg|jpeg|png|gif|webp)$/i.test(a.file_name)).length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Image className="h-5 w-5" />
-                    Bilagor ({mainAttachments.length})
+                    <FileText className="h-5 w-5" />
+                    Dokument
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {mainAttachments.map((att) => (
-                      <a
-                        key={att.id}
-                        href={att.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 rounded border hover:bg-muted transition-colors"
-                      >
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="truncate text-sm">{att.file_name}</span>
-                      </a>
-                    ))}
+                    {mainAttachments
+                      .filter(a => !/\.(jpg|jpeg|png|gif|webp)$/i.test(a.file_name))
+                      .map((att) => (
+                        <a
+                          key={att.id}
+                          href={att.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-2 rounded border hover:bg-muted transition-colors"
+                        >
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="truncate text-sm">{att.file_name}</span>
+                        </a>
+                      ))}
                   </div>
                 </CardContent>
               </Card>
