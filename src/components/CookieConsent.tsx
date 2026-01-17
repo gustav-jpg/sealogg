@@ -60,7 +60,7 @@ export const CookieConsent = () => {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-card border rounded-xl shadow-2xl max-w-md w-full p-8 text-center space-y-6">
         <div className="flex justify-center">
           <div className="bg-primary/10 p-4 rounded-full">
