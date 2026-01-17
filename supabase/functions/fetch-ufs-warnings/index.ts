@@ -20,7 +20,24 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"');
+    .replace(/&quot;/g, '"')
+    .replace(/&aring;/gi, 'å')
+    .replace(/&auml;/gi, 'ä')
+    .replace(/&ouml;/gi, 'ö')
+    .replace(/&Aring;/g, 'Å')
+    .replace(/&Auml;/g, 'Ä')
+    .replace(/&Ouml;/g, 'Ö')
+    .replace(/&nbsp;/g, ' ');
+}
+
+function cleanText(html: string): string {
+  return decodeHtmlEntities(
+    html
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 Deno.serve(async (req) => {
@@ -36,20 +53,25 @@ Deno.serve(async (req) => {
       {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'sv-SE,sv;q=0.9,en;q=0.8',
         },
       }
     );
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    const html = await response.text();
+    const buffer = await response.arrayBuffer();
+    const decoder = new TextDecoder('utf-8');
+    const html = decoder.decode(buffer);
+    
     const warnings: UFSWarning[] = [];
     
     const tbodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
     if (!tbodyMatch) {
+      console.log('No tbody found');
       return new Response(JSON.stringify({ success: true, data: [] }), 
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } });
     }
     
     const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
@@ -57,37 +79,58 @@ Deno.serve(async (req) => {
     
     while ((rowMatch = rowRegex.exec(tbodyMatch[1])) !== null && warnings.length < limit) {
       const rowHtml = rowMatch[1];
-      const hrefMatch = rowHtml.match(/href=["']([^"']+)["']/i);
       
+      // Extract the link from <th> which contains the notice ID and URL
+      const thMatch = rowHtml.match(/<th[^>]*>[\s\S]*?<a\s+href=["']([^"']+)["'][^>]*>(\d+)<\/a>[\s\S]*?<\/th>/i);
+      if (!thMatch) continue;
+      
+      const url = `https://ufs.sjofartsverket.se${thMatch[1]}`;
+      const notisNr = thMatch[2];
+      
+      // Extract all <td> cells
       const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
       const cells: string[] = [];
       let tdMatch;
       while ((tdMatch = tdRegex.exec(rowHtml)) !== null) {
-        cells.push(decodeHtmlEntities(tdMatch[1].replace(/<[^>]+>/g, '').trim()));
+        cells.push(cleanText(tdMatch[1]));
       }
       
-      // cells[0]=NotisNr, cells[1]=Sjökort, cells[2]=Publicerat, cells[3]=Rubrik
-      if (cells.length >= 4 && /^\d/.test(cells[0])) {
-        const noticeCell = cells[0];
-        const noticeNumber = noticeCell.replace(/[^0-9]/g, '');
+      // Structure: cells[0]=Sjökort + Bsp info, cells[1]=Datum, cells[2]=Rubrik, cells[3]=Checkbox (ignorera)
+      if (cells.length >= 3) {
+        const chartInfo = cells[0] || '';
+        const publishedDate = cells[1] || '';
+        const headline = cells[2] || '';
+        
+        // Extract chart number (e.g., "612" from "612 Bsp Stockholm N 2024/s39")
+        const chartNumberMatch = chartInfo.match(/^(\d+)/);
+        const chartNumber = chartNumberMatch ? chartNumberMatch[1] : chartInfo;
+        
+        // Check for temporary (T) or preliminary (P) markers in the chart info
+        const isTemporary = chartInfo.includes('(T)');
+        const isPreliminary = chartInfo.includes('(P)');
         
         warnings.push({
-          noticeNumber: noticeCell.replace(/\s+/g, ' ').trim(),
-          chartNumber: cells[1] || '',
-          publishedDate: cells[2] || '',
-          headline: cells[3] || '',
-          isTemporary: noticeCell.includes('(T)'),
-          isPreliminary: noticeCell.includes('(P)'),
-          url: hrefMatch ? `https://ufs.sjofartsverket.se${hrefMatch[1]}` : `https://ufs.sjofartsverket.se/Notice/Details/${noticeNumber}`,
+          noticeNumber: notisNr,
+          chartNumber: chartNumber,
+          publishedDate: publishedDate,
+          headline: headline,
+          isTemporary: isTemporary,
+          isPreliminary: isPreliminary,
+          url: url,
         });
       }
     }
 
+    console.log('Total warnings found:', warnings.length);
+    if (warnings.length > 0) {
+      console.log('First warning:', JSON.stringify(warnings[0]));
+    }
+
     return new Response(JSON.stringify({ success: true, data: warnings }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } });
   } catch (error) {
     console.error('Error:', error);
     return new Response(JSON.stringify({ success: false, error: String(error) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } });
   }
 });
