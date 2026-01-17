@@ -254,8 +254,9 @@ export default function FaultCases() {
     setFileToAnnotateId(null);
   };
 
+  // Get file from the files array (not filePreviews) to ensure we use the latest version
   const fileToAnnotate = fileToAnnotateId 
-    ? filePreviews.find(p => p.id === fileToAnnotateId)?.file 
+    ? files.find(f => f.id === fileToAnnotateId)?.file 
     : null;
 
   const getPriorityColor = (prio: FaultPriority) => {
