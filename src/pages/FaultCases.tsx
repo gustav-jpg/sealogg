@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -33,10 +33,11 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Wrench, Plus, Filter, Eye, Archive, Printer } from 'lucide-react';
+import { Wrench, Plus, Filter, Eye, Archive, Printer, Pencil, X, ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrint } from '@/hooks/usePrint';
+import { ImageAnnotator } from '@/components/ImageAnnotator';
 
 export default function FaultCases() {
   const { user } = useAuth();
@@ -57,6 +58,9 @@ export default function FaultCases() {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<FaultPriority>('normal');
   const [files, setFiles] = useState<File[]>([]);
+  const [fileToAnnotate, setFileToAnnotate] = useState<File | null>(null);
+  const [filePreviews, setFilePreviews] = useState<{ file: File; preview: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -176,6 +180,61 @@ export default function FaultCases() {
     setDescription('');
     setPriority('normal');
     setFiles([]);
+    setFilePreviews([]);
+    setFileToAnnotate(null);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    
+    // Create previews for images
+    const newPreviews = selectedFiles
+      .filter(file => file.type.startsWith('image/'))
+      .map(file => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+    
+    setFiles(prev => [...prev, ...selectedFiles]);
+    setFilePreviews(prev => [...prev, ...newPreviews]);
+    
+    // Reset input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (fileToRemove: File) => {
+    setFiles(prev => prev.filter(f => f !== fileToRemove));
+    setFilePreviews(prev => {
+      const previewToRemove = prev.find(p => p.file === fileToRemove);
+      if (previewToRemove) {
+        URL.revokeObjectURL(previewToRemove.preview);
+      }
+      return prev.filter(p => p.file !== fileToRemove);
+    });
+  };
+
+  const handleAnnotationSave = (annotatedFile: File) => {
+    if (!fileToAnnotate) return;
+
+    // Replace the original file with the annotated version
+    setFiles(prev => prev.map(f => f === fileToAnnotate ? annotatedFile : f));
+    
+    // Update preview
+    setFilePreviews(prev => {
+      const oldPreview = prev.find(p => p.file === fileToAnnotate);
+      if (oldPreview) {
+        URL.revokeObjectURL(oldPreview.preview);
+      }
+      return prev.map(p => 
+        p.file === fileToAnnotate 
+          ? { file: annotatedFile, preview: URL.createObjectURL(annotatedFile) }
+          : p
+      );
+    });
+    
+    setFileToAnnotate(null);
   };
 
   const getPriorityColor = (prio: FaultPriority) => {
@@ -272,17 +331,81 @@ export default function FaultCases() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Bilagor</Label>
-                  <Input
-                    type="file"
-                    multiple
-                    accept="image/*,.pdf"
-                    onChange={(e) => setFiles(Array.from(e.target.files || []))}
-                  />
-                  {files.length > 0 && (
-                    <p className="text-sm text-muted-foreground">{files.length} fil(er) valda</p>
+                <div className="space-y-3">
+                  <Label>Bilagor (bilder & dokument)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf"
+                      onChange={handleFileSelect}
+                      className="flex-1"
+                    />
+                  </div>
+                  
+                  {/* File previews with annotation option */}
+                  {filePreviews.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                      {filePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={preview.preview}
+                            alt={preview.file.name}
+                            className="w-full h-24 object-cover rounded-lg border"
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-1">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setFileToAnnotate(preview.file)}
+                              title="Markera på bilden"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleRemoveFile(preview.file)}
+                              title="Ta bort"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-1">{preview.file.name}</p>
+                        </div>
+                      ))}
+                    </div>
                   )}
+
+                  {/* Non-image files list */}
+                  {files.filter(f => !f.type.startsWith('image/')).length > 0 && (
+                    <div className="space-y-1 mt-2">
+                      {files.filter(f => !f.type.startsWith('image/')).map((file, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm bg-muted rounded px-2 py-1">
+                          <span className="truncate">{file.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleRemoveFile(file)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <ImageIcon className="h-3 w-3" />
+                    Tips: Klicka på pennan för att markera läckage eller skador på bilden
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-2">
@@ -296,6 +419,16 @@ export default function FaultCases() {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Image Annotator Dialog */}
+          {fileToAnnotate && (
+            <ImageAnnotator
+              file={fileToAnnotate}
+              open={!!fileToAnnotate}
+              onSave={handleAnnotationSave}
+              onCancel={() => setFileToAnnotate(null)}
+            />
+          )}
           </div>
         </div>
 
