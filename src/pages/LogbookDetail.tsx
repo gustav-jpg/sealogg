@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -30,7 +31,7 @@ import { useLogbookSignatures, useSignLogbook } from '@/hooks/useLogbookSignatur
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2, History } from 'lucide-react';
 
 interface EngineHourEntry {
   id?: string;
@@ -79,10 +80,38 @@ export default function LogbookDetail() {
   const [newExerciseType, setNewExerciseType] = useState('');
   const [newExerciseNotes, setNewExerciseNotes] = useState('');
   const [showSignDialog, setShowSignDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
   // Signatures
   const { data: signatures } = useLogbookSignatures(id);
   const signLogbook = useSignLogbook();
+
+  // Audit history for this logbook
+  const { data: auditHistory } = useQuery({
+    queryKey: ['logbook-audit-history', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('table_name', 'logbooks')
+        .eq('record_id', id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      
+      // Fetch user profiles for all user_ids
+      const userIds = [...new Set(data?.map(log => log.user_id).filter(Boolean) as string[])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', userIds);
+      
+      return data?.map(log => ({
+        ...log,
+        user_profile: profiles?.find(p => p.user_id === log.user_id),
+      })) || [];
+    },
+    enabled: !!id,
+  });
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -1118,17 +1147,26 @@ export default function LogbookDetail() {
               </div>
             )}
 
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => printContent('logbook-print-content', {
-                title: `Loggbok - ${(logbook as any).vessel?.name}`,
-                subtitle: format(new Date(logbook.date), 'PPPP', { locale: sv }),
-              })}
-            >
-              <FileDown className="h-4 w-4 mr-2" />
-              Exportera / Skriv ut
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                variant="outline"
+                onClick={() => printContent('logbook-print-content', {
+                  title: `Loggbok - ${(logbook as any).vessel?.name}`,
+                  subtitle: format(new Date(logbook.date), 'PPPP', { locale: sv }),
+                })}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportera
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowHistoryDialog(true)}
+              >
+                <History className="h-4 w-4 mr-2" />
+                Historik
+              </Button>
+            </div>
 
             {!isOpen && (
               <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
@@ -1304,6 +1342,78 @@ export default function LogbookDetail() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Ändringshistorik
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-3 pr-4">
+              {/* Show signatures first */}
+              {signatures && signatures.length > 0 && (
+                <div className="p-3 rounded-lg border border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-green-700 dark:text-green-400">Signerad & stängd</span>
+                  </div>
+                  {signatures.map(sig => (
+                    <div key={sig.id} className="text-sm">
+                      <p className="font-medium">{sig.signer_profile?.full_name || 'Okänd'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(sig.signed_at), 'yyyy-MM-dd HH:mm:ss', { locale: sv })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Audit logs */}
+              {auditHistory && auditHistory.length > 0 ? (
+                auditHistory.map((log) => {
+                  const actionLabel = log.action === 'INSERT' ? 'Skapad' : log.action === 'UPDATE' ? 'Sparad' : 'Borttagen';
+                  const actionColor = log.action === 'INSERT' ? 'text-green-600' : log.action === 'DELETE' ? 'text-red-600' : 'text-blue-600';
+                  
+                  return (
+                    <div key={log.id} className="p-3 rounded-lg border bg-muted/30">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-medium text-sm ${actionColor}`}>{actionLabel}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss', { locale: sv })}
+                        </span>
+                      </div>
+                      <p className="text-sm">
+                        {log.user_profile?.full_name || log.user_profile?.email || 'System'}
+                      </p>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-muted-foreground text-center py-4">Ingen historik tillgänglig.</p>
+              )}
+
+              {/* Show created info if no audit logs */}
+              {(!auditHistory || auditHistory.length === 0) && logbook && (
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium text-sm text-green-600">Skapad</span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(logbook.created_at), 'yyyy-MM-dd HH:mm:ss', { locale: sv })}
+                    </span>
+                  </div>
+                  <p className="text-sm">
+                    {(logbook as any).created_by_profile?.full_name || 'Okänd'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </MainLayout>
