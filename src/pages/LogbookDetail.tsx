@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -71,18 +72,11 @@ export default function LogbookDetail() {
   const [fetchingWind, setFetchingWind] = useState(false);
   const [editableEngineHours, setEditableEngineHours] = useState<EngineHourEntry[]>([]);
   const [engineHoursInitialized, setEngineHoursInitialized] = useState(false);
-  const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
-  const [exercisesNotes, setExercisesNotes] = useState('');
+  const [editableExercises, setEditableExercises] = useState<{tempId: string; exerciseType: string; notes: string}[]>([]);
   const [exercisesInitialized, setExercisesInitialized] = useState(false);
+  const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
+  const [newExerciseType, setNewExerciseType] = useState('');
 
-const EXERCISE_TYPES = [
-  { value: 'sjukdomsfall', label: 'Sjukdomsfall' },
-  { value: 'overgivande_fartyg', label: 'Övergivande av fartyg' },
-  { value: 'brand', label: 'Brand' },
-  { value: 'grundstotning', label: 'Grundstötning' },
-  { value: 'kollision', label: 'Kollision' },
-  { value: 'vattenfororening', label: 'Vattenförorening' },
-] as const;
 
   const { data: logbook, isLoading } = useQuery({
     queryKey: ['logbook', id],
@@ -199,13 +193,31 @@ const EXERCISE_TYPES = [
   // Initialize exercises from database
   useEffect(() => {
     if (exercises && !exercisesInitialized) {
-      setSelectedExercises(exercises.map(e => e.exercise_type));
-      // Combine notes if multiple
-      const notes = exercises.filter(e => e.notes).map(e => e.notes).join(', ');
-      setExercisesNotes(notes);
+      setEditableExercises(exercises.map(e => ({
+        tempId: e.id,
+        exerciseType: e.exercise_type,
+        notes: e.notes || ''
+      })));
       setExercisesInitialized(true);
     }
   }, [exercises, exercisesInitialized]);
+
+  // Fetch exercise categories
+  const { data: exerciseCategories } = useQuery({
+    queryKey: ['exercise-categories', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return [];
+      const { data, error } = await supabase
+        .from('exercise_categories')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrgId,
+  });
 
   // Fetch vessel engine hours to initialize if logbook doesn't have any
   const { data: vesselEngineHours } = useQuery({
@@ -357,12 +369,12 @@ const EXERCISE_TYPES = [
         .eq('logbook_id', id);
       if (deleteExercisesError) throw deleteExercisesError;
 
-      if (selectedExercises.length > 0) {
+      if (editableExercises.length > 0) {
         const { error: exercisesError } = await supabase.from('logbook_exercises').insert(
-          selectedExercises.map((exerciseType, index) => ({
+          editableExercises.map((exercise) => ({
             logbook_id: id,
-            exercise_type: exerciseType,
-            notes: index === 0 ? (exercisesNotes || null) : null, // Only store notes on first entry
+            exercise_type: exercise.exerciseType,
+            notes: exercise.notes || null,
           }))
         );
         if (exercisesError) throw exercisesError;
@@ -899,71 +911,102 @@ const EXERCISE_TYPES = [
             {/* Övningar */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5" />
-                  Övningar
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" />
+                    Övningar
+                  </span>
+                  {isOpen && canEditThis && (
+                    <Dialog open={exerciseDialogOpen} onOpenChange={setExerciseDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Plus className="h-4 w-4 mr-1" />
+                          Lägg till
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Lägg till övning</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Välj övningstyp *</Label>
+                            <Select value={newExerciseType} onValueChange={setNewExerciseType}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Välj övning" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {exerciseCategories?.map((cat) => (
+                                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              if (newExerciseType) {
+                                setEditableExercises([...editableExercises, {
+                                  tempId: crypto.randomUUID(),
+                                  exerciseType: newExerciseType,
+                                  notes: ''
+                                }]);
+                                setNewExerciseType('');
+                                setExerciseDialogOpen(false);
+                              }
+                            }}
+                            disabled={!newExerciseType}
+                          >
+                            Lägg till
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {isOpen && canEditThis ? (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      {EXERCISE_TYPES.map(exercise => (
-                        <label
-                          key={exercise.value}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                            selectedExercises.includes(exercise.value)
-                              ? 'bg-primary/10 border-primary text-primary'
-                              : 'bg-muted/50 border-border hover:bg-muted'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedExercises.includes(exercise.value)}
-                            onChange={e => {
-                              if (e.target.checked) {
-                                setSelectedExercises([...selectedExercises, exercise.value]);
-                              } else {
-                                setSelectedExercises(selectedExercises.filter(v => v !== exercise.value));
-                              }
-                            }}
-                            className="h-4 w-4 rounded border-input"
-                          />
-                          <span className="text-sm">{exercise.label}</span>
-                        </label>
+                  editableExercises.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">Inga övningar tillagda ännu.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {editableExercises.map(exercise => (
+                        <div key={exercise.tempId} className="p-3 rounded-lg border bg-muted/50 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{exercise.exerciseType}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditableExercises(editableExercises.filter(e => e.tempId !== exercise.tempId))}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Kommentar</Label>
+                            <Textarea
+                              value={exercise.notes}
+                              onChange={e => setEditableExercises(editableExercises.map(ex => 
+                                ex.tempId === exercise.tempId ? { ...ex, notes: e.target.value } : ex
+                              ))}
+                              placeholder="Beskriv vad ni övade..."
+                              rows={2}
+                            />
+                          </div>
+                        </div>
                       ))}
                     </div>
-                    {selectedExercises.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-xs">Anteckningar (valfritt)</Label>
-                        <Textarea
-                          value={exercisesNotes}
-                          onChange={e => setExercisesNotes(e.target.value)}
-                          placeholder="T.ex. hur övningen gick, deltagare..."
-                          rows={2}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  )
                 ) : (
-                  // Read-only mode
                   exercises && exercises.length > 0 ? (
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {exercises.map(ex => {
-                          const label = EXERCISE_TYPES.find(t => t.value === ex.exercise_type)?.label || ex.exercise_type;
-                          return (
-                            <Badge key={ex.id} variant="secondary" className="text-sm">
-                              {label}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                      {exercises.some(ex => ex.notes) && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {exercises.filter(ex => ex.notes).map(ex => ex.notes).join(', ')}
-                        </p>
-                      )}
+                    <div className="space-y-3">
+                      {exercises.map(ex => (
+                        <div key={ex.id} className="p-3 rounded-lg bg-muted/50">
+                          <p className="font-medium">{ex.exercise_type}</p>
+                          {ex.notes && <p className="text-sm text-muted-foreground mt-1">{ex.notes}</p>}
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-center py-4">Inga övningar registrerade.</p>
