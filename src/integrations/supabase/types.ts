@@ -1351,6 +1351,38 @@ export type Database = {
           },
         ]
       }
+      logbook_exercises: {
+        Row: {
+          created_at: string
+          exercise_type: string
+          id: string
+          logbook_id: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          exercise_type: string
+          id?: string
+          logbook_id: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          exercise_type?: string
+          id?: string
+          logbook_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logbook_exercises_logbook_id_fkey"
+            columns: ["logbook_id"]
+            isOneToOne: false
+            referencedRelation: "logbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logbook_stops: {
         Row: {
           arrival_location: string | null

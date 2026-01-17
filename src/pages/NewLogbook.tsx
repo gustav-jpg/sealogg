@@ -17,8 +17,17 @@ import { useValidation } from '@/hooks/useValidation';
 import { LogbookStops, StopEntry } from '@/components/LogbookStops';
 import { CrewRole, CREW_ROLE_LABELS } from '@/lib/types';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
-import { Plus, Trash2, Ship, Users, Save, MapPin, Gauge } from 'lucide-react';
+import { Plus, Trash2, Ship, Users, Save, MapPin, Gauge, GraduationCap } from 'lucide-react';
 import { format } from 'date-fns';
+
+const EXERCISE_TYPES = [
+  { value: 'sjukdomsfall', label: 'Sjukdomsfall' },
+  { value: 'overgivande_fartyg', label: 'Övergivande av fartyg' },
+  { value: 'brand', label: 'Brand' },
+  { value: 'grundstotning', label: 'Grundstötning' },
+  { value: 'kollision', label: 'Kollision' },
+  { value: 'vattenfororening', label: 'Vattenförorening' },
+] as const;
 
 
 interface CrewMember {
@@ -54,6 +63,8 @@ export default function NewLogbook() {
   const [crew, setCrew] = useState<CrewMember[]>([]);
   const [engineHours, setEngineHours] = useState<EngineHourEntry[]>([]);
   const [overrideValidation, setOverrideValidation] = useState(false);
+  const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
+  const [exercisesNotes, setExercisesNotes] = useState('');
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -205,6 +216,18 @@ export default function NewLogbook() {
           }))
         );
         if (engineError) throw engineError;
+      }
+
+      // Insert exercises
+      if (selectedExercises.length > 0) {
+        const { error: exercisesError } = await supabase.from('logbook_exercises').insert(
+          selectedExercises.map((exerciseType, index) => ({
+            logbook_id: logbook.id,
+            exercise_type: exerciseType,
+            notes: index === 0 ? (exercisesNotes || null) : null,
+          }))
+        );
+        if (exercisesError) throw exercisesError;
       }
 
       return logbook;
@@ -368,6 +391,57 @@ export default function NewLogbook() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Övningar */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5" />
+                  Övningar
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {EXERCISE_TYPES.map(exercise => (
+                      <label
+                        key={exercise.value}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                          selectedExercises.includes(exercise.value)
+                            ? 'bg-primary/10 border-primary text-primary'
+                            : 'bg-muted/50 border-border hover:bg-muted'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedExercises.includes(exercise.value)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setSelectedExercises([...selectedExercises, exercise.value]);
+                            } else {
+                              setSelectedExercises(selectedExercises.filter(v => v !== exercise.value));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-input"
+                        />
+                        <span className="text-sm">{exercise.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedExercises.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Anteckningar (valfritt)</Label>
+                      <Textarea
+                        value={exercisesNotes}
+                        onChange={e => setExercisesNotes(e.target.value)}
+                        placeholder="T.ex. hur övningen gick, deltagare..."
+                        rows={2}
+                      />
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
