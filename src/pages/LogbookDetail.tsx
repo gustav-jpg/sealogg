@@ -144,6 +144,8 @@ export default function LogbookDetail() {
         arrivalTime: s.arrival_time || '',
         arrivalLocation: s.arrival_location || '',
         passengerCount: s.passenger_count?.toString() || '',
+        paxOn: (s as any).pax_on?.toString() || '',
+        paxOff: (s as any).pax_off?.toString() || '',
         notes: s.notes || '',
       })));
       setStopsInitialized(true);
@@ -340,6 +342,8 @@ export default function LogbookDetail() {
             arrival_time: s.arrivalTime || null,
             arrival_location: s.arrivalLocation || null,
             passenger_count: s.passengerCount ? parseInt(s.passengerCount) : null,
+            pax_on: s.paxOn ? parseInt(s.paxOn) : 0,
+            pax_off: s.paxOff ? parseInt(s.paxOff) : 0,
             notes: s.notes || null,
           }))
         );
@@ -436,6 +440,8 @@ export default function LogbookDetail() {
             arrival_time: s.arrivalTime || null,
             arrival_location: s.arrivalLocation || null,
             passenger_count: s.passengerCount ? parseInt(s.passengerCount) : null,
+            pax_on: s.paxOn ? parseInt(s.paxOn) : 0,
+            pax_off: s.paxOff ? parseInt(s.paxOff) : 0,
             notes: s.notes || null,
           }))
         );
