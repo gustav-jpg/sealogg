@@ -11,10 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Plus, Trash2, GraduationCap, Ship, Users, BarChart3 } from 'lucide-react';
+import { format } from 'date-fns';
+import { sv } from 'date-fns/locale';
 
 export default function ExercisesAdmin() {
   const { toast } = useToast();
@@ -75,11 +78,11 @@ export default function ExercisesAdmin() {
     enabled: !!selectedOrgId,
   });
 
-  // Fetch exercise statistics
+  // Fetch exercise statistics with more detailed data
   const { data: exerciseStats } = useQuery({
     queryKey: ['exercise-stats', selectedOrgId, selectedVessel, selectedUser],
     queryFn: async () => {
-      if (!selectedOrgId) return { byVessel: [], byUser: [], byCategory: [] };
+      if (!selectedOrgId) return { byVessel: [], byUser: [], byCategory: [], exercises: [] };
       
       // Get exercises with logbook and crew info
       let query = supabase
@@ -96,7 +99,8 @@ export default function ExercisesAdmin() {
             vessel:vessels!inner(id, name, organization_id)
           )
         `)
-        .eq('logbook.vessel.organization_id', selectedOrgId);
+        .eq('logbook.vessel.organization_id', selectedOrgId)
+        .order('created_at', { ascending: false });
 
       if (selectedVessel !== 'all') {
         query = query.eq('logbook.vessel_id', selectedVessel);
@@ -119,35 +123,37 @@ export default function ExercisesAdmin() {
         if (!crewError) crewData = crew || [];
       }
 
-      // Calculate stats by vessel
-      const vesselMap = new Map<string, { name: string; count: number; exercises: string[] }>();
+      // Calculate stats by vessel with category breakdown
+      const vesselMap = new Map<string, { name: string; categoryCount: Record<string, number>; lastDate: string }>();
       (exercises || []).forEach((ex: any) => {
         const vesselId = ex.logbook?.vessel_id;
         const vesselName = ex.logbook?.vessel?.name;
+        const date = ex.logbook?.date;
         if (vesselId && vesselName) {
-          const existing = vesselMap.get(vesselId) || { name: vesselName, count: 0, exercises: [] };
-          existing.count += 1;
-          if (!existing.exercises.includes(ex.exercise_type)) {
-            existing.exercises.push(ex.exercise_type);
+          const existing = vesselMap.get(vesselId) || { name: vesselName, categoryCount: {}, lastDate: '' };
+          existing.categoryCount[ex.exercise_type] = (existing.categoryCount[ex.exercise_type] || 0) + 1;
+          if (!existing.lastDate || date > existing.lastDate) {
+            existing.lastDate = date;
           }
           vesselMap.set(vesselId, existing);
         }
       });
 
-      // Calculate stats by user
-      const userMap = new Map<string, { name: string; count: number; exercises: string[] }>();
+      // Calculate stats by user with category breakdown
+      const userMap = new Map<string, { name: string; categoryCount: Record<string, number>; lastDate: string }>();
       (exercises || []).forEach((ex: any) => {
         const logbookId = ex.logbook?.id;
+        const date = ex.logbook?.date;
         const logbookCrew = crewData.filter(c => c.logbook_id === logbookId);
         logbookCrew.forEach((crew: any) => {
           const userId = crew.profile?.id;
           const userName = crew.profile?.full_name;
           if (userId && userName) {
             if (selectedUser !== 'all' && userId !== selectedUser) return;
-            const existing = userMap.get(userId) || { name: userName, count: 0, exercises: [] };
-            existing.count += 1;
-            if (!existing.exercises.includes(ex.exercise_type)) {
-              existing.exercises.push(ex.exercise_type);
+            const existing = userMap.get(userId) || { name: userName, categoryCount: {}, lastDate: '' };
+            existing.categoryCount[ex.exercise_type] = (existing.categoryCount[ex.exercise_type] || 0) + 1;
+            if (!existing.lastDate || date > existing.lastDate) {
+              existing.lastDate = date;
             }
             userMap.set(userId, existing);
           }
@@ -161,10 +167,14 @@ export default function ExercisesAdmin() {
         categoryMap.set(ex.exercise_type, current + 1);
       });
 
+      // Get unique categories for table headers
+      const allCategories = [...new Set((exercises || []).map((ex: any) => ex.exercise_type))];
+
       return {
         byVessel: Array.from(vesselMap.entries()).map(([id, data]) => ({ id, ...data })),
         byUser: Array.from(userMap.entries()).map(([id, data]) => ({ id, ...data })),
         byCategory: Array.from(categoryMap.entries()).map(([name, count]) => ({ name, count })),
+        allCategories,
         total: exercises?.length || 0,
       };
     },
@@ -239,18 +249,15 @@ export default function ExercisesAdmin() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="statistics" className="space-y-6">
+          <TabsContent value="statistics" className="space-y-4">
             {/* Filters */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Filter</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Fartyg</Label>
+              <CardContent className="pt-4">
+                <div className="flex flex-wrap gap-4 items-end">
+                  <div className="space-y-1 min-w-[180px]">
+                    <Label className="text-xs">Fartyg</Label>
                     <Select value={selectedVessel} onValueChange={setSelectedVessel}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -261,134 +268,138 @@ export default function ExercisesAdmin() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Besättningsmedlem</Label>
+                  <div className="space-y-1 min-w-[180px]">
+                    <Label className="text-xs">Besättningsmedlem</Label>
                     <Select value={selectedUser} onValueChange={setSelectedUser}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Alla användare</SelectItem>
+                        <SelectItem value="all">Alla</SelectItem>
                         {profiles?.map(p => (
                           <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="flex gap-4 text-sm text-muted-foreground ml-auto">
+                    <span>Totalt: <strong className="text-foreground">{exerciseStats?.total || 0}</strong> övningar</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Summary */}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold">{exerciseStats?.total || 0}</p>
-                    <p className="text-muted-foreground text-sm mt-1">Totalt antal övningar</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold">{exerciseStats?.byVessel?.length || 0}</p>
-                    <p className="text-muted-foreground text-sm mt-1">Fartyg med övningar</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold">{exerciseStats?.byCategory?.length || 0}</p>
-                    <p className="text-muted-foreground text-sm mt-1">Olika övningstyper</p>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Summary per category - compact */}
+            <div className="flex flex-wrap gap-2">
+              {exerciseStats?.byCategory?.map((stat: any) => (
+                <Badge key={stat.name} variant="secondary" className="text-xs py-1 px-2">
+                  {getCategoryLabel(stat.name)}: {stat.count}
+                </Badge>
+              ))}
             </div>
 
-            {/* By Category */}
+            {/* By Vessel - compact table */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5" />
-                  Per övningstyp
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {exerciseStats?.byCategory && exerciseStats.byCategory.length > 0 ? (
-                  <div className="space-y-2">
-                    {exerciseStats.byCategory.map((stat: any) => (
-                      <div key={stat.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="font-medium">{getCategoryLabel(stat.name)}</span>
-                        <Badge variant="secondary">{stat.count} st</Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Inga övningar registrerade</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* By Vessel */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Ship className="h-5 w-5" />
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Ship className="h-4 w-4" />
                   Per fartyg
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {exerciseStats?.byVessel && exerciseStats.byVessel.length > 0 ? (
-                  <div className="space-y-3">
-                    {exerciseStats.byVessel.map((stat: any) => (
-                      <div key={stat.id} className="p-3 rounded-lg bg-muted/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{stat.name}</span>
-                          <Badge variant="secondary">{stat.count} övningar</Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {stat.exercises.map((ex: string) => (
-                            <Badge key={ex} variant="outline" className="text-xs">{getCategoryLabel(ex)}</Badge>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="text-xs">
+                          <TableHead className="w-[150px]">Fartyg</TableHead>
+                          <TableHead className="w-[100px]">Senast</TableHead>
+                          {exerciseStats.allCategories?.map((cat: string) => (
+                            <TableHead key={cat} className="text-center w-[80px]">
+                              <span className="text-xs truncate block max-w-[70px]" title={getCategoryLabel(cat)}>
+                                {getCategoryLabel(cat).substring(0, 10)}
+                              </span>
+                            </TableHead>
                           ))}
-                        </div>
-                      </div>
-                    ))}
+                          <TableHead className="text-right w-[60px]">Totalt</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {exerciseStats.byVessel.map((stat: any) => {
+                          const total = Object.values(stat.categoryCount as Record<string, number>).reduce((a: number, b: number) => a + b, 0);
+                          return (
+                            <TableRow key={stat.id} className="text-sm">
+                              <TableCell className="font-medium py-2">{stat.name}</TableCell>
+                              <TableCell className="text-muted-foreground py-2 text-xs">
+                                {stat.lastDate ? format(new Date(stat.lastDate), 'd MMM yy', { locale: sv }) : '-'}
+                              </TableCell>
+                              {exerciseStats.allCategories?.map((cat: string) => (
+                                <TableCell key={cat} className="text-center py-2">
+                                  {stat.categoryCount[cat] || <span className="text-muted-foreground/50">-</span>}
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-right font-semibold py-2">{total}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-center py-4">Inga övningar registrerade</p>
+                  <p className="text-muted-foreground text-center py-6 text-sm">Inga övningar registrerade</p>
                 )}
               </CardContent>
             </Card>
 
-            {/* By User */}
+            {/* By User - compact table */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Users className="h-4 w-4" />
                   Per besättningsmedlem
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {exerciseStats?.byUser && exerciseStats.byUser.length > 0 ? (
-                  <div className="space-y-3">
-                    {exerciseStats.byUser.map((stat: any) => (
-                      <div key={stat.id} className="p-3 rounded-lg bg-muted/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{stat.name}</span>
-                          <Badge variant="secondary">{stat.count} övningar</Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {stat.exercises.map((ex: string) => (
-                            <Badge key={ex} variant="outline" className="text-xs">{getCategoryLabel(ex)}</Badge>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="text-xs">
+                          <TableHead className="w-[150px]">Namn</TableHead>
+                          <TableHead className="w-[100px]">Senast</TableHead>
+                          {exerciseStats.allCategories?.map((cat: string) => (
+                            <TableHead key={cat} className="text-center w-[80px]">
+                              <span className="text-xs truncate block max-w-[70px]" title={getCategoryLabel(cat)}>
+                                {getCategoryLabel(cat).substring(0, 10)}
+                              </span>
+                            </TableHead>
                           ))}
-                        </div>
-                      </div>
-                    ))}
+                          <TableHead className="text-right w-[60px]">Totalt</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {exerciseStats.byUser.map((stat: any) => {
+                          const total = Object.values(stat.categoryCount as Record<string, number>).reduce((a: number, b: number) => a + b, 0);
+                          return (
+                            <TableRow key={stat.id} className="text-sm">
+                              <TableCell className="font-medium py-2">{stat.name}</TableCell>
+                              <TableCell className="text-muted-foreground py-2 text-xs">
+                                {stat.lastDate ? format(new Date(stat.lastDate), 'd MMM yy', { locale: sv }) : '-'}
+                              </TableCell>
+                              {exerciseStats.allCategories?.map((cat: string) => (
+                                <TableCell key={cat} className="text-center py-2">
+                                  {stat.categoryCount[cat] || <span className="text-muted-foreground/50">-</span>}
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-right font-semibold py-2">{total}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-center py-4">Inga övningar registrerade för besättning</p>
+                  <p className="text-muted-foreground text-center py-6 text-sm">Inga övningar registrerade</p>
                 )}
               </CardContent>
             </Card>
