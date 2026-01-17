@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -88,7 +89,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PageTracker() {
-  const { usePageTracking } = require('@/hooks/usePageTracking');
   usePageTracking();
   return null;
 }
