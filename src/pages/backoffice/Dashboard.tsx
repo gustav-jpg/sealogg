@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Ship, FileText } from 'lucide-react';
+import { Building2, Users, Ship, FileText, Eye, TrendingUp, Clock, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useMemo } from 'react';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { sv } from 'date-fns/locale';
 
 export default function BackofficeDashboard() {
   const { data: stats } = useQuery({
@@ -37,11 +40,193 @@ export default function BackofficeDashboard() {
     },
   });
 
+  // Fetch page views for the last 30 days
+  const { data: pageViews } = useQuery({
+    queryKey: ['page-views-stats'],
+    queryFn: async () => {
+      const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
+      const { data, error } = await supabase
+        .from('page_views')
+        .select('id, created_at, path, session_id, user_id')
+        .gte('created_at', thirtyDaysAgo)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Calculate analytics from page views
+  const analytics = useMemo(() => {
+    if (!pageViews) return null;
+
+    const today = new Date();
+    const todayStart = startOfDay(today).toISOString();
+    const yesterdayStart = startOfDay(subDays(today, 1)).toISOString();
+    const yesterdayEnd = endOfDay(subDays(today, 1)).toISOString();
+    const weekAgo = subDays(today, 7).toISOString();
+
+    // Today's views
+    const todayViews = pageViews.filter(v => v.created_at >= todayStart);
+    
+    // Yesterday's views
+    const yesterdayViews = pageViews.filter(v => v.created_at >= yesterdayStart && v.created_at < todayStart);
+    
+    // Last 7 days views
+    const weekViews = pageViews.filter(v => v.created_at >= weekAgo);
+
+    // Unique sessions
+    const todaySessions = new Set(todayViews.map(v => v.session_id)).size;
+    const weekSessions = new Set(weekViews.map(v => v.session_id)).size;
+
+    // Unique logged-in users
+    const todayUsers = new Set(todayViews.filter(v => v.user_id).map(v => v.user_id)).size;
+    const weekUsers = new Set(weekViews.filter(v => v.user_id).map(v => v.user_id)).size;
+
+    // Top pages
+    const pageCounts: Record<string, number> = {};
+    weekViews.forEach(v => {
+      pageCounts[v.path] = (pageCounts[v.path] || 0) + 1;
+    });
+    const topPages = Object.entries(pageCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    // Daily breakdown for chart (last 7 days)
+    const dailyData: { date: string; views: number; sessions: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = subDays(today, i);
+      const dayStart = startOfDay(date).toISOString();
+      const dayEnd = endOfDay(date).toISOString();
+      const dayViews = pageViews.filter(v => v.created_at >= dayStart && v.created_at <= dayEnd);
+      dailyData.push({
+        date: format(date, 'EEE', { locale: sv }),
+        views: dayViews.length,
+        sessions: new Set(dayViews.map(v => v.session_id)).size,
+      });
+    }
+
+    return {
+      totalViews: pageViews.length,
+      todayViews: todayViews.length,
+      yesterdayViews: yesterdayViews.length,
+      weekViews: weekViews.length,
+      todaySessions,
+      weekSessions,
+      todayUsers,
+      weekUsers,
+      topPages,
+      dailyData,
+    };
+  }, [pageViews]);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Back Office</h1>
         <p className="text-muted-foreground">Välkommen till SeaLogg administration</p>
+      </div>
+
+      {/* Analytics Section */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Eye className="h-5 w-5" />
+          Besöksstatistik
+        </h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Idag</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics?.todayViews || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics?.todaySessions || 0} unika sessioner
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Senaste 7 dagar</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics?.weekViews || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics?.weekSessions || 0} unika sessioner
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Inloggade idag</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics?.todayUsers || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics?.weekUsers || 0} senaste veckan
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Totalt (30 dagar)</CardTitle>
+              <Globe className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics?.totalViews || 0}</div>
+              <p className="text-xs text-muted-foreground">sidvisningar</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Daily breakdown */}
+        {analytics?.dailyData && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Sidvisningar per dag (senaste 7 dagar)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-2 h-32">
+                {analytics.dailyData.map((day, i) => {
+                  const maxViews = Math.max(...analytics.dailyData.map(d => d.views), 1);
+                  const height = (day.views / maxViews) * 100;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-xs font-medium">{day.views}</span>
+                      <div
+                        className="w-full bg-primary/80 rounded-t transition-all"
+                        style={{ height: `${Math.max(height, 4)}%` }}
+                      />
+                      <span className="text-xs text-muted-foreground">{day.date}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Top pages */}
+        {analytics?.topPages && analytics.topPages.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Mest besökta sidor (7 dagar)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {analytics.topPages.map(([path, count]) => (
+                  <div key={path} className="flex items-center justify-between text-sm">
+                    <span className="font-mono text-muted-foreground truncate max-w-[300px]">{path}</span>
+                    <span className="font-medium">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Stats */}
