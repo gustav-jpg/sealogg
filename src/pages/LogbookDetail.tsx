@@ -76,6 +76,7 @@ export default function LogbookDetail() {
   const [exercisesInitialized, setExercisesInitialized] = useState(false);
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
   const [newExerciseType, setNewExerciseType] = useState('');
+  const [newExerciseNotes, setNewExerciseNotes] = useState('');
 
 
   const { data: logbook, isLoading } = useQuery({
@@ -942,6 +943,15 @@ export default function LogbookDetail() {
                               </SelectContent>
                             </Select>
                           </div>
+                          <div className="space-y-2">
+                            <Label>Kommentar</Label>
+                            <Textarea
+                              value={newExerciseNotes}
+                              onChange={e => setNewExerciseNotes(e.target.value)}
+                              placeholder="Beskriv vad ni övade..."
+                              rows={3}
+                            />
+                          </div>
                           <Button
                             className="w-full"
                             onClick={() => {
@@ -949,9 +959,10 @@ export default function LogbookDetail() {
                                 setEditableExercises([...editableExercises, {
                                   tempId: crypto.randomUUID(),
                                   exerciseType: newExerciseType,
-                                  notes: ''
+                                  notes: newExerciseNotes
                                 }]);
                                 setNewExerciseType('');
+                                setNewExerciseNotes('');
                                 setExerciseDialogOpen(false);
                               }
                             }}
@@ -972,9 +983,14 @@ export default function LogbookDetail() {
                   ) : (
                     <div className="space-y-3">
                       {editableExercises.map(exercise => (
-                        <div key={exercise.tempId} className="p-3 rounded-lg border bg-muted/50 space-y-2">
+                        <div key={exercise.tempId} className="p-3 rounded-lg border bg-muted/50">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{exercise.exerciseType}</span>
+                            <div>
+                              <span className="font-medium">{exercise.exerciseType}</span>
+                              {exercise.notes && (
+                                <p className="text-sm text-muted-foreground mt-1">{exercise.notes}</p>
+                              )}
+                            </div>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -982,17 +998,6 @@ export default function LogbookDetail() {
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Kommentar</Label>
-                            <Textarea
-                              value={exercise.notes}
-                              onChange={e => setEditableExercises(editableExercises.map(ex => 
-                                ex.tempId === exercise.tempId ? { ...ex, notes: e.target.value } : ex
-                              ))}
-                              placeholder="Beskriv vad ni övade..."
-                              rows={2}
-                            />
                           </div>
                         </div>
                       ))}
