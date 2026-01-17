@@ -1300,6 +1300,54 @@ export type Database = {
           },
         ]
       }
+      intranet_documents: {
+        Row: {
+          created_at: string
+          display_name: string
+          file_name: string
+          file_url: string
+          id: string
+          message_id: string
+          organization_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          file_name: string
+          file_url: string
+          id?: string
+          message_id: string
+          organization_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          message_id?: string
+          organization_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intranet_documents_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "intranet_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intranet_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intranet_messages: {
         Row: {
           content: string | null

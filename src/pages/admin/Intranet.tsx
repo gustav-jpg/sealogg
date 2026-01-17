@@ -8,17 +8,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Home, Plus, Trash2, CalendarIcon, FileText, Upload, X } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isFuture, isPast } from 'date-fns';
+import { Home, Plus, Trash2, CalendarIcon, FileText, Download, X } from 'lucide-react';
+import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isPast } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+
+interface DocumentToUpload {
+  id: string;
+  file: File;
+  displayName: string;
+}
+
+interface ExistingDocument {
+  id: string;
+  display_name: string;
+  file_name: string;
+  file_url: string;
+}
 
 export default function IntranetAdmin() {
   const { toast } = useToast();
@@ -32,9 +45,9 @@ export default function IntranetAdmin() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [existingDocUrl, setExistingDocUrl] = useState<string | null>(null);
-  const [existingDocName, setExistingDocName] = useState<string | null>(null);
+  const [documentsToUpload, setDocumentsToUpload] = useState<DocumentToUpload[]>([]);
+  const [existingDocuments, setExistingDocuments] = useState<ExistingDocument[]>([]);
+  const [documentsToDelete, setDocumentsToDelete] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; message: { id: string; title: string } | null }>({ open: false, message: null });
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -67,20 +80,29 @@ export default function IntranetAdmin() {
     setSelectedDate(new Date());
     setTitle('');
     setContent('');
-    setFile(null);
-    setExistingDocUrl(null);
-    setExistingDocName(null);
+    setDocumentsToUpload([]);
+    setExistingDocuments([]);
+    setDocumentsToDelete([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const openDialog = (date?: Date, message?: any) => {
+  const openDialog = async (date?: Date, message?: any) => {
     if (message) {
       setEditingId(message.id);
       setSelectedDate(new Date(message.message_date));
       setTitle(message.title);
       setContent(message.content || '');
-      setExistingDocUrl(message.document_url);
-      setExistingDocName(message.document_name);
+      
+      // Fetch existing documents for this message
+      const { data: docs } = await supabase
+        .from('intranet_documents')
+        .select('id, display_name, file_name, file_url')
+        .eq('message_id', message.id)
+        .order('created_at');
+      
+      setExistingDocuments(docs || []);
+      setDocumentsToUpload([]);
+      setDocumentsToDelete([]);
     } else {
       resetForm();
       if (date) setSelectedDate(date);
@@ -88,40 +110,50 @@ export default function IntranetAdmin() {
     setDialogOpen(true);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    const newDocs: DocumentToUpload[] = Array.from(files).map(file => ({
+      id: crypto.randomUUID(),
+      file,
+      displayName: file.name.replace(/\.[^/.]+$/, ''), // Remove extension for display name
+    }));
+    
+    setDocumentsToUpload(prev => [...prev, ...newDocs]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const updateDocumentDisplayName = (id: string, displayName: string) => {
+    setDocumentsToUpload(prev => 
+      prev.map(doc => doc.id === id ? { ...doc, displayName } : doc)
+    );
+  };
+
+  const removeDocumentToUpload = (id: string) => {
+    setDocumentsToUpload(prev => prev.filter(doc => doc.id !== id));
+  };
+
+  const markExistingDocForDeletion = (id: string) => {
+    setDocumentsToDelete(prev => [...prev, id]);
+    setExistingDocuments(prev => prev.filter(doc => doc.id !== id));
+  };
+
   const saveMessage = useMutation({
     mutationFn: async () => {
       if (!selectedOrgId || !user) throw new Error('Ingen organisation vald');
       
-      let documentUrl = existingDocUrl;
-      let documentName = existingDocName;
-      
-      // Upload new file if provided
-      if (file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${selectedOrgId}/${format(selectedDate, 'yyyy-MM-dd')}_${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('intranet-documents')
-          .upload(fileName, file);
-        
-        if (uploadError) throw uploadError;
-        
-        const { data: urlData } = supabase.storage
-          .from('intranet-documents')
-          .getPublicUrl(fileName);
-        
-        documentUrl = urlData.publicUrl;
-        documentName = file.name;
-      }
+      let messageId = editingId;
       
       const messageData = {
         organization_id: selectedOrgId,
         message_date: format(selectedDate, 'yyyy-MM-dd'),
         title,
         content: content || null,
-        document_url: documentUrl,
-        document_name: documentName,
         created_by: user.id,
+        // Keep old fields null for backwards compatibility
+        document_url: null,
+        document_name: null,
       };
       
       if (editingId) {
@@ -131,10 +163,53 @@ export default function IntranetAdmin() {
           .eq('id', editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('intranet_messages')
-          .upsert(messageData, { onConflict: 'organization_id,message_date' });
+          .upsert(messageData, { onConflict: 'organization_id,message_date' })
+          .select('id')
+          .single();
         if (error) throw error;
+        messageId = data.id;
+      }
+      
+      if (!messageId) throw new Error('Kunde inte spara meddelande');
+      
+      // Delete marked documents
+      if (documentsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('intranet_documents')
+          .delete()
+          .in('id', documentsToDelete);
+        if (deleteError) throw deleteError;
+      }
+      
+      // Upload new documents
+      for (const doc of documentsToUpload) {
+        const fileExt = doc.file.name.split('.').pop();
+        const fileName = `${selectedOrgId}/${messageId}/${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('intranet-documents')
+          .upload(fileName, doc.file);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from('intranet-documents')
+          .getPublicUrl(fileName);
+        
+        const { error: docInsertError } = await supabase
+          .from('intranet_documents')
+          .insert({
+            message_id: messageId,
+            organization_id: selectedOrgId,
+            display_name: doc.displayName || doc.file.name,
+            file_name: doc.file.name,
+            file_url: urlData.publicUrl,
+            uploaded_by: user.id,
+          });
+        
+        if (docInsertError) throw docInsertError;
       }
     },
     onSuccess: () => {
@@ -150,6 +225,7 @@ export default function IntranetAdmin() {
 
   const deleteMessage = useMutation({
     mutationFn: async (messageId: string) => {
+      // Documents will be cascade deleted due to FK constraint
       const { error } = await supabase
         .from('intranet_messages')
         .delete()
@@ -169,6 +245,25 @@ export default function IntranetAdmin() {
   const getMessageForDate = (date: Date) => {
     return messages?.find(m => m.message_date === format(date, 'yyyy-MM-dd'));
   };
+
+  const downloadDocument = async (doc: ExistingDocument) => {
+    try {
+      const response = await fetch(doc.file_url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.file_name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({ title: 'Fel', description: 'Kunde inte ladda ner filen', variant: 'destructive' });
+    }
+  };
+
+  const totalDocuments = existingDocuments.length + documentsToUpload.length;
 
   return (
     <MainLayout>
@@ -252,7 +347,7 @@ export default function IntranetAdmin() {
                     {message ? (
                       <div className="flex-1 space-y-1">
                         <p className="text-xs font-medium line-clamp-2">{message.title}</p>
-                        {message.document_name && (
+                        {(message.document_name) && (
                           <Badge variant="secondary" className="text-[10px] py-0">
                             <FileText className="h-2.5 w-2.5 mr-1" />
                             Dokument
@@ -279,7 +374,7 @@ export default function IntranetAdmin() {
           setDialogOpen(open);
           if (!open) resetForm();
         }}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingId ? 'Redigera meddelande' : 'Nytt meddelande'}
@@ -332,36 +427,86 @@ export default function IntranetAdmin() {
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label>Dokument</Label>
-                {existingDocName && !file && (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm flex-1 truncate">{existingDocName}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => {
-                        setExistingDocUrl(null);
-                        setExistingDocName(null);
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-                <div className="flex gap-2">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Dokument ({totalDocuments})</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Lägg till fil
+                  </Button>
                   <Input
                     ref={fileInputRef}
                     type="file"
-                    onChange={e => setFile(e.target.files?.[0] || null)}
-                    className="flex-1"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
                   />
                 </div>
-                {file && (
-                  <p className="text-xs text-muted-foreground">
-                    Ny fil: {file.name}
+                
+                {/* Existing documents */}
+                {existingDocuments.map((doc) => (
+                  <div key={doc.id} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                    <FileText className="h-4 w-4 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{doc.display_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{doc.file_name}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => downloadDocument(doc)}
+                      title="Ladda ner"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => markExistingDocForDeletion(doc.id)}
+                      title="Ta bort"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+                
+                {/* New documents to upload */}
+                {documentsToUpload.map((doc) => (
+                  <div key={doc.id} className="space-y-2 p-2 bg-primary/5 rounded-lg border border-primary/20">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 shrink-0 text-primary" />
+                      <span className="text-xs text-muted-foreground truncate flex-1">
+                        {doc.file.name}
+                      </span>
+                      <Badge variant="outline" className="text-[10px]">Ny</Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
+                        onClick={() => removeDocumentToUpload(doc.id)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Input
+                      value={doc.displayName}
+                      onChange={(e) => updateDocumentDisplayName(doc.id, e.target.value)}
+                      placeholder="Titel för dokumentet"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                ))}
+                
+                {totalDocuments === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Inga dokument tillagda
                   </p>
                 )}
               </div>
