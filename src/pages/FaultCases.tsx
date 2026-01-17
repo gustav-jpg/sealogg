@@ -38,7 +38,7 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrint } from '@/hooks/usePrint';
 import { ImageAnnotator } from '@/components/ImageAnnotator';
-
+import { sanitizeStorageFileName } from '@/lib/storage';
 export default function FaultCases() {
   const { user } = useAuth();
   const { selectedOrgId } = useOrganization();
@@ -139,11 +139,11 @@ export default function FaultCases() {
 
       // Upload files
       for (const fileItem of files) {
-        const filePath = `fault-cases/${faultCase.id}/${Date.now()}-${fileItem.file.name}`;
+        const safeName = sanitizeStorageFileName(fileItem.file.name);
+        const filePath = `fault-cases/${faultCase.id}/${Date.now()}-${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('attachments')
           .upload(filePath, fileItem.file);
-
         if (uploadError) {
           console.error('Upload error:', uploadError);
           continue;

@@ -27,7 +27,7 @@ import {
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer } from 'lucide-react';
-
+import { sanitizeStorageFileName } from '@/lib/storage';
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -114,11 +114,11 @@ export default function FaultCaseDetail() {
 
       // Upload files for comment
       for (const file of commentFiles) {
-        const filePath = `fault-cases/${id}/comments/${comment.id}/${Date.now()}-${file.name}`;
+        const safeName = sanitizeStorageFileName(file.name);
+        const filePath = `fault-cases/${id}/comments/${comment.id}/${Date.now()}-${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('attachments')
           .upload(filePath, file);
-
         if (uploadError) {
           console.error('Upload error:', uploadError);
           continue;
