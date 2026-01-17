@@ -1,18 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText } from 'lucide-react';
+import { Plus, Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Search, X, AlertTriangle, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -25,13 +26,15 @@ export default function AdminVessels() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [engineDialogOpen, setEngineDialogOpen] = useState(false);
   const [certDialogOpen, setCertDialogOpen] = useState(false);
-  const [selectedVessel, setSelectedVessel] = useState<{ id: string; name: string; main_engine_count: number; auxiliary_engine_count: number } | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedVessel, setSelectedVessel] = useState<{ id: string; name: string; description: string | null; main_engine_count: number; auxiliary_engine_count: number } | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [mainEngineCount, setMainEngineCount] = useState(1);
   const [auxiliaryEngineCount, setAuxiliaryEngineCount] = useState(0);
   const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -49,7 +52,6 @@ export default function AdminVessels() {
   });
 
   const vesselIds = vessels?.map((v) => v.id) || [];
-
 
   const { data: vesselEngineHours } = useQuery({
     queryKey: ['vessel-engine-hours', vesselIds],
@@ -80,6 +82,39 @@ export default function AdminVessels() {
     },
   });
 
+  const today = new Date().toISOString().split('T')[0];
+  const warningDate = new Date();
+  warningDate.setMonth(warningDate.getMonth() + 2);
+  const warningDateStr = warningDate.toISOString().split('T')[0];
+
+  const processedVessels = useMemo(() => {
+    if (!vessels) return [];
+    return vessels.map(vessel => {
+      const certs = vesselCertificates?.filter(c => c.vessel_id === vessel.id) || [];
+      const expiredCount = certs.filter(c => !c.is_indefinite && c.expiry_date && c.expiry_date < today).length;
+      const expiringCount = certs.filter(c => !c.is_indefinite && c.expiry_date && c.expiry_date >= today && c.expiry_date <= warningDateStr).length;
+      const engines = vesselEngineHours?.filter(e => e.vessel_id === vessel.id) || [];
+      const totalEngines = vessel.main_engine_count + vessel.auxiliary_engine_count;
+      return {
+        ...vessel,
+        certCount: certs.length,
+        expiredCount,
+        expiringCount,
+        engines,
+        totalEngines,
+      };
+    });
+  }, [vessels, vesselCertificates, vesselEngineHours, today, warningDateStr]);
+
+  const filteredVessels = useMemo(() => {
+    if (!searchQuery.trim()) return processedVessels;
+    const q = searchQuery.toLowerCase();
+    return processedVessels.filter(v =>
+      v.name.toLowerCase().includes(q) ||
+      (v.description && v.description.toLowerCase().includes(q))
+    );
+  }, [processedVessels, searchQuery]);
+
   const createVessel = useMutation({
     mutationFn: async () => {
       if (!selectedOrgId) throw new Error('Ingen organisation vald');
@@ -97,7 +132,6 @@ export default function AdminVessels() {
         .single();
       if (vesselError) throw vesselError;
 
-      // Skapa engine hours records för alla maskiner
       const engineRecords = [];
       for (let i = 1; i <= mainEngineCount; i++) {
         engineRecords.push({ vessel_id: vessel.id, engine_type: 'main', engine_number: i, current_hours: 0, name: `Huvudmaskin ${i}` });
@@ -156,7 +190,7 @@ export default function AdminVessels() {
   });
 
   const openEngineDialog = (vessel: { id: string; name: string; main_engine_count: number; auxiliary_engine_count: number }) => {
-    setSelectedVessel(vessel);
+    setSelectedVessel({ ...vessel, description: null });
     const existingHours = vesselEngineHours?.filter(h => h.vessel_id === vessel.id) || [];
     const inputs: { engine_type: string; engine_number: number; current_hours: number; name: string }[] = [];
     
@@ -191,20 +225,28 @@ export default function AdminVessels() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vessels'] });
       toast({ title: 'Borttaget', description: 'Fartyget har tagits bort.' });
+      setDetailDialogOpen(false);
+      setSelectedVessel(null);
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     },
   });
 
+  const openVesselDetail = (vessel: typeof processedVessels[0]) => {
+    setSelectedVessel(vessel);
+    setDetailDialogOpen(true);
+  };
+
+  const selectedVesselCerts = vesselCertificates?.filter(c => c.vessel_id === selectedVessel?.id) || [];
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold">Fartyg</h1>
-            <p className="text-muted-foreground mt-1">Hantera fartyg och certifikat</p>
+            <h1 className="text-3xl font-display font-bold">Fartygsregister</h1>
+            <p className="text-muted-foreground mt-1">Hantera fartyg, maskintimmar och certifikat</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -244,100 +286,213 @@ export default function AdminVessels() {
           </Dialog>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {vessels?.map(vessel => {
-            const vesselCerts = vesselCertificates?.filter(c => c.vessel_id === vessel.id) || [];
-            const today = new Date().toISOString().split('T')[0];
-            const warningDate = new Date();
-            warningDate.setMonth(warningDate.getMonth() + 2);
-            const warningDateStr = warningDate.toISOString().split('T')[0];
-            
-            return (
-              <Card key={vessel.id} className="overflow-hidden">
-                <CardHeader className="pb-3 bg-muted/30">
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Ship className="h-5 w-5 text-primary" />
-                      {vessel.name}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setDeleteConfirm({ open: true, vessel: { id: vessel.id, name: vessel.name } })}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </CardTitle>
-                  {vessel.description && (
-                    <p className="text-sm text-muted-foreground">{vessel.description}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="pt-4 space-y-4">
-                  {/* Maskiner */}
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {vessel.main_engine_count} huvudmaskin{vessel.main_engine_count !== 1 ? 'er' : ''}
-                        {vessel.auxiliary_engine_count > 0 && (
-                          <span className="text-muted-foreground"> + {vessel.auxiliary_engine_count} hjälp</span>
-                        )}
-                      </span>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openEngineDialog(vessel)}>
-                      <Settings className="h-3.5 w-3.5 mr-1" />
-                      Timmar
-                    </Button>
-                  </div>
-                  
-                  {/* Certifikat - med färgkodade namn */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
-                        <Award className="h-3 w-3" />
-                        Certifikat
-                      </p>
-                      {vesselCerts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">Inga certifikat</p>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {vesselCerts.map(cert => {
-                            const isExpired = cert.expiry_date < today;
-                            const isExpiring = cert.expiry_date >= today && cert.expiry_date <= warningDateStr;
-                            
-                            return (
-                              <Badge 
-                                key={cert.id}
-                                variant={isExpired ? "destructive" : isExpiring ? "secondary" : "default"}
-                                className={`text-xs ${
-                                  isExpiring 
-                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200' 
-                                    : !isExpired 
-                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200' 
-                                      : ''
-                                }`}
-                              >
-                                {cert.name}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => {
-                      setSelectedVessel(vessel);
-                      setCertDialogOpen(true);
-                    }}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        {/* Search */}
+        <div className="flex gap-4 items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Sök på namn eller beskrivning..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <span className="text-sm text-muted-foreground">
+            Visar {filteredVessels.length} av {processedVessels.length}
+          </span>
         </div>
 
+        {/* Table */}
+        <Card>
+          <CardContent className="p-0">
+            <div className="max-h-[calc(100vh-320px)] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fartyg</TableHead>
+                    <TableHead className="w-[120px]">Maskiner</TableHead>
+                    <TableHead className="w-[150px]">Certifikat</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredVessels.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                        {searchQuery ? 'Inga fartyg matchar sökningen' : 'Inga fartyg ännu'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredVessels.map(vessel => (
+                      <TableRow
+                        key={vessel.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => openVesselDetail(vessel)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Ship className="h-5 w-5 text-primary shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{vessel.name}</p>
+                              {vessel.description && (
+                                <p className="text-xs text-muted-foreground truncate max-w-[250px]">
+                                  {vessel.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Gauge className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{vessel.totalEngines}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {vessel.expiredCount > 0 ? (
+                            <Badge variant="destructive" className="text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {vessel.expiredCount} utgångna
+                            </Badge>
+                          ) : vessel.expiringCount > 0 ? (
+                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                              {vessel.expiringCount} går ut snart
+                            </Badge>
+                          ) : vessel.certCount > 0 ? (
+                            <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {vessel.certCount} cert.
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Inga</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Detail Dialog */}
+        <Dialog open={detailDialogOpen} onOpenChange={(open) => { setDetailDialogOpen(open); if (!open) setSelectedVessel(null); }}>
+          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+            {selectedVessel && (
+              <div className="space-y-6">
+                <DialogHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Ship className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-xl">{selectedVessel.name}</DialogTitle>
+                        {selectedVessel.description && (
+                          <p className="text-sm text-muted-foreground mt-0.5">{selectedVessel.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                {/* Maskiner */}
+                <div className="p-4 rounded-lg bg-muted/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Maskiner</span>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => openEngineDialog(selectedVessel)}>
+                      <Settings className="h-3.5 w-3.5 mr-1.5" />
+                      Redigera timmar
+                    </Button>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedVessel.main_engine_count} huvudmaskin{selectedVessel.main_engine_count !== 1 ? 'er' : ''}
+                    {selectedVessel.auxiliary_engine_count > 0 && (
+                      <span> + {selectedVessel.auxiliary_engine_count} hjälpmaskin{selectedVessel.auxiliary_engine_count !== 1 ? 'er' : ''}</span>
+                    )}
+                  </div>
+                  {vesselEngineHours?.filter(e => e.vessel_id === selectedVessel.id).map(engine => (
+                    <div key={engine.id} className="flex items-center justify-between text-sm">
+                      <span>{engine.name || `${engine.engine_type === 'main' ? 'Huvudmaskin' : 'Hjälpmaskin'} ${engine.engine_number}`}</span>
+                      <Badge variant="secondary">{engine.current_hours} h</Badge>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Certifikat */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Certifikat</span>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setCertDialogOpen(true)}>
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                      Hantera
+                    </Button>
+                  </div>
+                  {selectedVesselCerts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">Inga certifikat tillagda</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedVesselCerts.map(cert => {
+                        const isExpired = !cert.is_indefinite && cert.expiry_date && cert.expiry_date < today;
+                        const isExpiring = !cert.is_indefinite && cert.expiry_date && cert.expiry_date >= today && cert.expiry_date <= warningDateStr;
+                        return (
+                          <Badge
+                            key={cert.id}
+                            variant={isExpired ? 'destructive' : 'secondary'}
+                            className={`text-xs ${
+                              isExpiring
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                : !isExpired
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                  : ''
+                            }`}
+                          >
+                            {cert.name}
+                            {cert.expiry_date && !cert.is_indefinite && (
+                              <span className="ml-1 opacity-70">
+                                ({format(new Date(cert.expiry_date), 'yyyy-MM-dd')})
+                              </span>
+                            )}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteConfirm({ open: true, vessel: { id: selectedVessel.id, name: selectedVessel.name } })}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1.5" />
+                    Ta bort fartyg
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Engine Hours Dialog */}
         <Dialog open={engineDialogOpen} onOpenChange={setEngineDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -401,12 +556,11 @@ export default function AdminVessels() {
           </DialogContent>
         </Dialog>
 
-
         <VesselCertificatesDialog 
           open={certDialogOpen}
           onOpenChange={setCertDialogOpen}
           vessel={selectedVessel}
-          certificates={vesselCertificates?.filter(c => c.vessel_id === selectedVessel?.id) || []}
+          certificates={selectedVesselCerts}
           userId={user?.id}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['vessel-certificates'] });
