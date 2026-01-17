@@ -26,8 +26,9 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2 } from 'lucide-react';
 import { sanitizeStorageFileName } from '@/lib/storage';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export default function FaultCaseDetail() {
   const [newComment, setNewComment] = useState('');
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const [newStatus, setNewStatus] = useState<FaultStatus | ''>('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: faultCase, isLoading } = useQuery({
     queryKey: ['fault-case', id],
@@ -174,6 +176,39 @@ export default function FaultCaseDetail() {
     },
   });
 
+  const deleteFaultCase = useMutation({
+    mutationFn: async () => {
+      // First delete all attachments from storage
+      if (attachments && attachments.length > 0) {
+        for (const att of attachments) {
+          // Extract path from URL
+          const url = new URL(att.file_url);
+          const pathMatch = url.pathname.match(/\/object\/public\/attachments\/(.+)/);
+          if (pathMatch) {
+            await supabase.storage.from('attachments').remove([pathMatch[1]]);
+          }
+        }
+        // Delete attachment records
+        await supabase.from('fault_attachments').delete().eq('fault_case_id', id);
+      }
+      
+      // Delete all comments
+      await supabase.from('fault_comments').delete().eq('fault_case_id', id);
+      
+      // Delete the fault case
+      const { error } = await supabase.from('fault_cases').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fault-cases'] });
+      toast({ title: 'Raderat', description: 'Felärendet har raderats.' });
+      navigate('/portal/fault-cases');
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const getPriorityColor = (prio: FaultPriority) => {
     switch (prio) {
       case 'kritisk': return 'destructive';
@@ -241,16 +276,28 @@ export default function FaultCaseDetail() {
               {(faultCase as any).vessel?.name} • Skapad {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => printContent('faultcase-print-content', {
-              title: `Felärende - ${faultCase.title}`,
-              subtitle: `${(faultCase as any).vessel?.name} • Skapad ${format(new Date(faultCase.created_at), 'PPP', { locale: sv })}`,
-            })}
-          >
-            <Printer className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => printContent('faultcase-print-content', {
+                title: `Felärende - ${faultCase.title}`,
+                subtitle: `${(faultCase as any).vessel?.name} • Skapad ${format(new Date(faultCase.created_at), 'PPP', { locale: sv })}`,
+              })}
+            >
+              <Printer className="h-5 w-5" />
+            </Button>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div id="faultcase-print-content" className="grid gap-6 lg:grid-cols-3">
@@ -450,6 +497,16 @@ export default function FaultCaseDetail() {
           </div>
         </div>
       </div>
+      
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Radera felärende"
+        description={`Är du säker på att du vill radera "${faultCase.title}"? Detta kommer att ta bort alla kommentarer och bilagor. Åtgärden kan inte ångras.`}
+        confirmLabel="Radera"
+        onConfirm={() => deleteFaultCase.mutate()}
+        variant="destructive"
+      />
     </MainLayout>
   );
 }
