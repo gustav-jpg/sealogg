@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings, Search, Users, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -446,117 +447,193 @@ export default function AdminUsers() {
     },
   });
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   const selectedProfile = profiles?.find(p => p.id === selectedProfileId);
   const selectedUserRoles = selectedProfile?.user_id ? userRoles?.filter(r => r.user_id === selectedProfile.user_id) || [] : [];
   const selectedUserCerts = userCertificates?.filter(c => c.profile_id === selectedProfile?.id) || [];
   const selectedUserInductions = inductions?.filter(i => i.profile_id === selectedProfile?.id) || [];
   const isExternalUser = selectedProfile?.is_external === true;
 
+  // Process profiles with certificate status
+  const processedProfiles = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const warningDate = new Date();
+    warningDate.setMonth(warningDate.getMonth() + 2);
+    const warningDateStr = warningDate.toISOString().split('T')[0];
+
+    return (profiles || []).map(profile => {
+      const profileCerts = userCertificates?.filter(c => c.profile_id === profile.id) || [];
+      const expiredCerts = profileCerts.filter(c => c.expiry_date < today);
+      const expiringCerts = profileCerts.filter(c => c.expiry_date >= today && c.expiry_date <= warningDateStr);
+      const profileRoles = profile.user_id ? userRoles?.filter(r => r.user_id === profile.user_id) || [] : [];
+      const profileInductions = inductions?.filter(i => i.profile_id === profile.id) || [];
+
+      return {
+        ...profile,
+        hasExpired: expiredCerts.length > 0,
+        hasExpiring: expiringCerts.length > 0,
+        certCount: profileCerts.length,
+        roleCount: profileRoles.length,
+        inductionCount: profileInductions.length,
+        roles: profileRoles,
+      };
+    });
+  }, [profiles, userCertificates, userRoles, inductions]);
+
+  // Filtered profiles based on search
+  const filteredProfiles = useMemo(() => {
+    if (!searchQuery.trim()) return processedProfiles;
+    const query = searchQuery.toLowerCase();
+    return processedProfiles.filter(p => 
+      p.full_name.toLowerCase().includes(query) ||
+      (p.email && p.email.toLowerCase().includes(query))
+    );
+  }, [processedProfiles, searchQuery]);
+
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-display font-bold">Användare</h1>
-          <p className="text-muted-foreground mt-1">Hantera användare, roller, certifikat och inskolningar</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-display font-bold">Personregister</h1>
+            <p className="text-muted-foreground mt-1">
+              {profiles?.length || 0} personer registrerade
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <InviteUserDialog 
+              onInvite={(data) => invitePortalUserMutation.mutate(data)} 
+              isLoading={invitePortalUserMutation.isPending}
+            />
+            <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
+          </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Användare
-                </span>
-                <div className="flex gap-1">
-                  <InviteUserDialog 
-                    onInvite={(data) => invitePortalUserMutation.mutate(data)} 
-                    isLoading={invitePortalUserMutation.isPending}
-                  />
-                  <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {profiles?.map(profile => {
-                  // Check for expiring certificates
-                  const profileCerts = userCertificates?.filter(c => c.profile_id === profile.id) || [];
-                  const today = new Date().toISOString().split('T')[0];
-                  const warningDate = new Date();
-                  warningDate.setMonth(warningDate.getMonth() + 2);
-                  const warningDateStr = warningDate.toISOString().split('T')[0];
-                  
-                  const expiredCerts = profileCerts.filter(c => c.expiry_date < today);
-                  const expiringCerts = profileCerts.filter(c => c.expiry_date >= today && c.expiry_date <= warningDateStr);
-                  
-                  const hasExpired = expiredCerts.length > 0;
-                  const hasExpiring = expiringCerts.length > 0;
-                  
-                  return (
-                    <div
-                      key={profile.id}
-                      className={`flex items-center justify-between p-2 rounded transition-colors ${
-                        selectedProfileId === profile.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                      }`}
-                    >
-                      <button
-                        onClick={() => setSelectedProfileId(profile.id)}
-                        className="flex-1 text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{profile.full_name}</p>
-                          {profile.is_external && (
-                            <Badge variant="outline" className="text-xs">Extern</Badge>
-                          )}
-                          {hasExpired && (
-                            <Badge variant="destructive" className="text-xs gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Utgånget
-                            </Badge>
-                          )}
-                          {!hasExpired && hasExpiring && (
-                            <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                              <AlertTriangle className="h-3 w-3" />
-                              Går ut snart
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs opacity-70">{profile.email || 'Ingen e-post'}</p>
-                      </button>
-                      {profile.email && !profile.is_external && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-8 w-8 shrink-0 ${selectedProfileId === profile.id ? 'hover:bg-primary-foreground/20' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            resendWelcomeEmailMutation.mutate({ 
-                              email: profile.email!, 
-                              fullName: profile.full_name 
-                            });
-                          }}
-                          disabled={resendWelcomeEmailMutation.isPending}
-                          title="Skicka välkomstmail"
+        {/* Search and filters */}
+        <div className="flex gap-4 items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Sök på namn eller e-post..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {filteredProfiles.length !== processedProfiles.length && (
+              <span>Visar {filteredProfiles.length} av {processedProfiles.length}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-5">
+          {/* User table */}
+          <Card className="xl:col-span-2">
+            <CardContent className="p-0">
+              <div className="max-h-[600px] overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-card z-10">
+                    <TableRow>
+                      <TableHead>Namn</TableHead>
+                      <TableHead className="w-20 text-center">Cert.</TableHead>
+                      <TableHead className="w-16"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProfiles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                          {searchQuery ? 'Inga träffar' : 'Inga personer registrerade'}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredProfiles.map(profile => (
+                        <TableRow 
+                          key={profile.id}
+                          className={`cursor-pointer ${selectedProfileId === profile.id ? 'bg-primary/10' : ''}`}
+                          onClick={() => setSelectedProfileId(profile.id)}
                         >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate">{profile.full_name}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {profile.email || 'Ingen e-post'}
+                                </p>
+                              </div>
+                              {profile.is_external && (
+                                <Badge variant="outline" className="text-xs shrink-0">Ext</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {profile.hasExpired ? (
+                              <Badge variant="destructive" className="text-xs gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                              </Badge>
+                            ) : profile.hasExpiring ? (
+                              <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                <AlertTriangle className="h-3 w-3" />
+                              </Badge>
+                            ) : profile.certCount > 0 ? (
+                              <span className="text-xs text-muted-foreground">{profile.certCount}</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">–</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {profile.email && !profile.is_external && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  resendWelcomeEmailMutation.mutate({ 
+                                    email: profile.email!, 
+                                    fullName: profile.full_name 
+                                  });
+                                }}
+                                disabled={resendWelcomeEmailMutation.isPending}
+                                title="Skicka välkomstmail"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-2">
+          {/* Detail panel */}
+          <Card className="xl:col-span-3">
             {selectedProfile ? (
               <>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        {selectedProfile.full_name}
+                <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <CardTitle className="flex items-center gap-2 flex-wrap">
+                        <span className="truncate">{selectedProfile.full_name}</span>
                         <EditNameDialog 
                           profileId={selectedProfile.id}
                           currentName={selectedProfile.full_name}
@@ -564,12 +641,13 @@ export default function AdminUsers() {
                           isLoading={updateProfileName.isPending}
                         />
                       </CardTitle>
-                      {isExternalUser && (
-                        <p className="text-sm text-muted-foreground mt-1">Extern besättning (ingen inloggning)</p>
-                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {selectedProfile.email || 'Ingen e-post'}
+                        {isExternalUser && ' • Extern besättning'}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 shrink-0">
                     {isExternalUser && (
                       <LinkEmailDialog 
                         profileId={selectedProfile.id}
@@ -579,8 +657,9 @@ export default function AdminUsers() {
                       />
                     )}
                     <Button 
-                      variant="destructive" 
+                      variant="outline" 
                       size="sm"
+                      className="text-destructive hover:text-destructive"
                       onClick={() => setDeleteConfirm({ 
                         open: true, 
                         type: 'user', 
@@ -588,18 +667,17 @@ export default function AdminUsers() {
                         name: selectedProfile.full_name 
                       })}
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Ta bort
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue={isExternalUser ? "certificates" : "roles"}>
-                    <TabsList>
+                    <TabsList className="w-full justify-start">
                       {!isExternalUser && (
                         <TabsTrigger value="roles">
                           <Shield className="h-4 w-4 mr-1" />
-                          Approller
+                          Roller
                         </TabsTrigger>
                       )}
                       <TabsTrigger value="certificates">
@@ -612,7 +690,7 @@ export default function AdminUsers() {
                       </TabsTrigger>
                       <TabsTrigger value="settings">
                         <Settings className="h-4 w-4 mr-1" />
-                        Inställningar
+                        Övrigt
                       </TabsTrigger>
                     </TabsList>
 
@@ -635,6 +713,9 @@ export default function AdminUsers() {
                               </button>
                             </Badge>
                           ))}
+                          {selectedUserRoles.length === 0 && (
+                            <p className="text-sm text-muted-foreground">Inga roller tilldelade</p>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <Select onValueChange={v => addRole.mutate({ userId: selectedProfile.user_id!, role: v as AppRole })}>
@@ -653,31 +734,35 @@ export default function AdminUsers() {
 
                     <TabsContent value="certificates" className="space-y-4 mt-4">
                       <div className="space-y-2">
-                        {selectedUserCerts.map(cert => (
-                          <CertificateItem
-                            key={cert.id}
-                            cert={cert}
-                            oderId={selectedProfile.id}
-                            onRemove={() => setDeleteConfirm({ 
-                              open: true, 
-                              type: 'certificate', 
-                              id: cert.id, 
-                              name: cert.certificate_type?.name || 'Certifikat' 
-                            })}
-                            onUpload={(file) => uploadCertificateFile.mutate({ 
-                              certId: cert.id, 
-                              oderId: selectedProfile.id, 
-                              file 
-                            })}
-                            onRenew={(newDate, newFile) => renewCertificate.mutate({
-                              certId: cert.id,
-                              newExpiryDate: newDate,
-                              oldFileUrl: cert.file_url,
-                              newFile,
-                              profileId: selectedProfile.id
-                            })}
-                          />
-                        ))}
+                        {selectedUserCerts.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-4">Inga certifikat registrerade</p>
+                        ) : (
+                          selectedUserCerts.map(cert => (
+                            <CertificateItem
+                              key={cert.id}
+                              cert={cert}
+                              oderId={selectedProfile.id}
+                              onRemove={() => setDeleteConfirm({ 
+                                open: true, 
+                                type: 'certificate', 
+                                id: cert.id, 
+                                name: cert.certificate_type?.name || 'Certifikat' 
+                              })}
+                              onUpload={(file) => uploadCertificateFile.mutate({ 
+                                certId: cert.id, 
+                                oderId: selectedProfile.id, 
+                                file 
+                              })}
+                              onRenew={(newDate, newFile) => renewCertificate.mutate({
+                                certId: cert.id,
+                                newExpiryDate: newDate,
+                                oldFileUrl: cert.file_url,
+                                newFile,
+                                profileId: selectedProfile.id
+                              })}
+                            />
+                          ))
+                        )}
                       </div>
                       <AddCertificateDialog
                         certificateTypes={certificateTypes || []}
@@ -692,18 +777,22 @@ export default function AdminUsers() {
 
                     <TabsContent value="inductions" className="space-y-4 mt-4">
                       <div className="space-y-2">
-                        {selectedUserInductions.map(ind => (
-                          <InductionItem 
-                            key={ind.id}
-                            induction={ind}
-                            onRemove={() => setDeleteConfirm({ 
-                              open: true, 
-                              type: 'induction', 
-                              id: ind.id, 
-                              name: (ind as any).vessel?.name || 'Inskolning' 
-                            })}
-                          />
-                        ))}
+                        {selectedUserInductions.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-4">Inga inskolningar registrerade</p>
+                        ) : (
+                          selectedUserInductions.map(ind => (
+                            <InductionItem 
+                              key={ind.id}
+                              induction={ind}
+                              onRemove={() => setDeleteConfirm({ 
+                                open: true, 
+                                type: 'induction', 
+                                id: ind.id, 
+                                name: (ind as any).vessel?.name || 'Inskolning' 
+                              })}
+                            />
+                          ))
+                        )}
                       </div>
                       <AddInductionDialog
                         vessels={vessels || []}
@@ -750,9 +839,10 @@ export default function AdminUsers() {
                 </CardContent>
               </>
             ) : (
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Välj en användare för att se detaljer</p>
+              <CardContent className="py-16 text-center text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="font-medium">Välj en person</p>
+                <p className="text-sm mt-1">Klicka på en rad i listan för att se och redigera detaljer</p>
               </CardContent>
             )}
           </Card>
