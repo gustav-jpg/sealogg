@@ -13,6 +13,16 @@ interface UFSWarning {
   url: string;
 }
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,90 +30,64 @@ Deno.serve(async (req) => {
 
   try {
     const { limit = 10 } = await req.json().catch(() => ({ limit: 10 }));
-
-    console.log('Fetching UFS warnings from Sjöfartsverket...');
     
     const response = await fetch(
       'https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=99&SearchFormModel.SearchTimePeriod=0',
       {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; SeaLog/1.0)',
-          'Accept': 'text/html,application/xhtml+xml',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html',
         },
       }
     );
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch UFS page: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const html = await response.text();
-    
-    // Parse the HTML table to extract warnings
     const warnings: UFSWarning[] = [];
     
-    // Find the table body with notices
-    const tableMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/gi);
+    const tbodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+    if (!tbodyMatch) {
+      return new Response(JSON.stringify({ success: true, data: [] }), 
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     
-    if (tableMatch) {
-      for (const tbody of tableMatch) {
-        // Extract each row
-        const rowMatches = tbody.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rowMatch;
+    
+    while ((rowMatch = rowRegex.exec(tbodyMatch[1])) !== null && warnings.length < limit) {
+      const rowHtml = rowMatch[1];
+      const hrefMatch = rowHtml.match(/href=["']([^"']+)["']/i);
+      
+      const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+      const cells: string[] = [];
+      let tdMatch;
+      while ((tdMatch = tdRegex.exec(rowHtml)) !== null) {
+        cells.push(decodeHtmlEntities(tdMatch[1].replace(/<[^>]+>/g, '').trim()));
+      }
+      
+      // cells[0]=NotisNr, cells[1]=Sjökort, cells[2]=Publicerat, cells[3]=Rubrik
+      if (cells.length >= 4 && /^\d/.test(cells[0])) {
+        const noticeCell = cells[0];
+        const noticeNumber = noticeCell.replace(/[^0-9]/g, '');
         
-        for (const rowMatch of rowMatches) {
-          const row = rowMatch[1];
-          
-          // Extract cells
-          const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m => m[1]);
-          
-          if (cells.length >= 4) {
-            // Extract notice number and link
-            const noticeCell = cells[0];
-            const linkMatch = noticeCell.match(/href="([^"]+)"[^>]*>([^<]+)/);
-            const noticeNumber = linkMatch ? linkMatch[2].trim() : '';
-            const noticeUrl = linkMatch ? `https://ufs.sjofartsverket.se${linkMatch[1]}` : '';
-            
-            // Check for (T) or (P) markers
-            const isTemporary = noticeCell.includes('(T)');
-            const isPreliminary = noticeCell.includes('(P)');
-            
-            // Extract other fields
-            const chartNumber = cells[1].replace(/<[^>]+>/g, '').trim();
-            const publishedDate = cells[2].replace(/<[^>]+>/g, '').trim();
-            const headline = cells[3].replace(/<[^>]+>/g, '').trim();
-            
-            if (noticeNumber && headline) {
-              warnings.push({
-                noticeNumber,
-                chartNumber,
-                publishedDate,
-                headline,
-                isTemporary,
-                isPreliminary,
-                url: noticeUrl,
-              });
-            }
-          }
-          
-          if (warnings.length >= limit) break;
-        }
-        
-        if (warnings.length >= limit) break;
+        warnings.push({
+          noticeNumber: noticeCell.replace(/\s+/g, ' ').trim(),
+          chartNumber: cells[1] || '',
+          publishedDate: cells[2] || '',
+          headline: cells[3] || '',
+          isTemporary: noticeCell.includes('(T)'),
+          isPreliminary: noticeCell.includes('(P)'),
+          url: hrefMatch ? `https://ufs.sjofartsverket.se${hrefMatch[1]}` : `https://ufs.sjofartsverket.se/Notice/Details/${noticeNumber}`,
+        });
       }
     }
 
-    console.log(`Found ${warnings.length} UFS warnings`);
-
-    return new Response(
-      JSON.stringify({ success: true, data: warnings }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true, data: warnings }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
-    console.error('Error fetching UFS warnings:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch UFS warnings';
-    return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('Error:', error);
+    return new Response(JSON.stringify({ success: false, error: String(error) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
