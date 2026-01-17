@@ -83,7 +83,8 @@ export default function Qualifications() {
   warningDate.setMonth(warningDate.getMonth() + 2);
   const warningDateStr = warningDate.toISOString().split('T')[0];
 
-  const getCertificateStatus = (expiryDate: string) => {
+  const getCertificateStatus = (expiryDate: string | null, isIndefinite?: boolean) => {
+    if (isIndefinite || !expiryDate) return 'valid';
     if (expiryDate < today) return 'expired';
     if (expiryDate <= warningDateStr) return 'expiring';
     return 'valid';
@@ -187,8 +188,9 @@ export default function Qualifications() {
             ) : (
               <div className="grid gap-4">
                 {vesselCertificates?.map(cert => {
-                  const status = getCertificateStatus(cert.expiry_date);
-                  const daysUntilExpiry = differenceInDays(new Date(cert.expiry_date), new Date());
+                  const isIndefinite = cert.is_indefinite === true;
+                  const status = getCertificateStatus(cert.expiry_date, isIndefinite);
+                  const daysUntilExpiry = cert.expiry_date ? differenceInDays(new Date(cert.expiry_date), new Date()) : null;
                   
                   return (
                     <Card key={cert.id} className={status === 'expired' ? 'border-destructive/50' : status === 'expiring' ? 'border-amber-500/50' : ''}>
@@ -200,9 +202,17 @@ export default function Qualifications() {
                               {getStatusBadge(status)}
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
-                              {(cert.vessel as any)?.name} • Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
-                              {status !== 'expired' && (
-                                <span className="ml-2">({daysUntilExpiry} dagar kvar)</span>
+                              {(cert.vessel as any)?.name} • {isIndefinite ? (
+                                <span className="text-green-600 dark:text-green-400">Tillsvidare</span>
+                              ) : cert.expiry_date ? (
+                                <>
+                                  Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
+                                  {status !== 'expired' && daysUntilExpiry !== null && (
+                                    <span className="ml-2">({daysUntilExpiry} dagar kvar)</span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">Inget utgångsdatum</span>
                               )}
                             </p>
                             {cert.description && (
