@@ -60,25 +60,28 @@ export const CookieConsent = () => {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background border-t shadow-lg">
-      <div className="container mx-auto max-w-4xl flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <Cookie className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="text-foreground">
-              Vi använder cookies för att analysera trafik och förbättra din upplevelse.{" "}
-              <Link to="/privacy" className="text-primary hover:underline">
-                Läs mer i vår integritetspolicy
-              </Link>
-            </p>
+    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-card border rounded-xl shadow-2xl max-w-md w-full p-8 text-center space-y-6">
+        <div className="flex justify-center">
+          <div className="bg-primary/10 p-4 rounded-full">
+            <Cookie className="h-10 w-10 text-primary" />
           </div>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
-          <Button variant="outline" size="sm" onClick={handleDecline}>
-            Avböj
+        <div className="space-y-3">
+          <h2 className="text-xl font-semibold text-foreground">Vi använder cookies</h2>
+          <p className="text-muted-foreground">
+            Vi använder cookies för att analysera trafik och förbättra din upplevelse.{" "}
+            <Link to="/privacy" className="text-primary hover:underline">
+              Läs mer i vår integritetspolicy
+            </Link>
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Button className="w-full" onClick={handleAccept}>
+            Acceptera cookies
           </Button>
-          <Button size="sm" onClick={handleAccept}>
-            Acceptera
+          <Button variant="outline" className="w-full" onClick={handleDecline}>
+            Avböj
           </Button>
         </div>
       </div>
