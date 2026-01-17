@@ -187,6 +187,9 @@ export default function FaultCases() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     
+    // Find first image to auto-open annotation
+    const firstImage = selectedFiles.find(file => file.type.startsWith('image/'));
+    
     // Create previews for images
     const newPreviews = selectedFiles
       .filter(file => file.type.startsWith('image/'))
@@ -197,6 +200,11 @@ export default function FaultCases() {
     
     setFiles(prev => [...prev, ...selectedFiles]);
     setFilePreviews(prev => [...prev, ...newPreviews]);
+    
+    // Auto-open annotation dialog for the first image
+    if (firstImage) {
+      setFileToAnnotate(firstImage);
+    }
     
     // Reset input so the same file can be selected again
     if (fileInputRef.current) {

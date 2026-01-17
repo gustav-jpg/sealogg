@@ -53,33 +53,48 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
     };
   }, [file]);
 
-  // Set canvas size based on container and image
+  // Set canvas size based on container and image - responsive
   useEffect(() => {
     if (!imageLoaded || !imageRef.current || !containerRef.current) return;
 
-    const container = containerRef.current;
-    const img = imageRef.current;
+    const updateSize = () => {
+      const container = containerRef.current;
+      const img = imageRef.current;
+      if (!container || !img) return;
 
-    const maxWidth = container.clientWidth - 32;
-    const maxHeight = window.innerHeight * 0.5;
+      // Responsive max dimensions based on viewport
+      const isMobile = window.innerWidth < 640;
+      const isTablet = window.innerWidth < 1024;
+      
+      const maxWidth = container.clientWidth - (isMobile ? 16 : 32);
+      const maxHeight = isMobile 
+        ? window.innerHeight * 0.4 
+        : isTablet 
+          ? window.innerHeight * 0.5 
+          : window.innerHeight * 0.6;
 
-    let width = img.naturalWidth;
-    let height = img.naturalHeight;
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
 
-    // Scale down if needed
-    if (width > maxWidth) {
-      const ratio = maxWidth / width;
-      width = maxWidth;
-      height = height * ratio;
-    }
+      // Scale down if needed
+      if (width > maxWidth) {
+        const ratio = maxWidth / width;
+        width = maxWidth;
+        height = height * ratio;
+      }
 
-    if (height > maxHeight) {
-      const ratio = maxHeight / height;
-      height = maxHeight;
-      width = width * ratio;
-    }
+      if (height > maxHeight) {
+        const ratio = maxHeight / height;
+        height = maxHeight;
+        width = width * ratio;
+      }
 
-    setCanvasSize({ width, height });
+      setCanvasSize({ width, height });
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
   }, [imageLoaded]);
 
   // Draw everything on canvas
@@ -205,15 +220,15 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Pencil className="h-5 w-5 text-red-500" />
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col p-3 sm:p-6">
+        <DialogHeader className="pb-2 sm:pb-4">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Pencil className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
             Markera på bilden
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto" ref={containerRef}>
+        <div className="flex-1 overflow-auto min-h-0" ref={containerRef}>
           <div className="flex justify-center">
             {canvasSize.width > 0 && (
               <canvas
@@ -233,16 +248,16 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 pt-4 border-t">
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 sm:pt-4 border-t">
+          <div className="flex gap-2 justify-center sm:justify-start">
             <Button
               variant="outline"
               size="sm"
               onClick={handleUndo}
               disabled={paths.length === 0}
             >
-              <Undo2 className="h-4 w-4 mr-1" />
-              Ångra
+              <Undo2 className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Ångra</span>
             </Button>
             <Button
               variant="outline"
@@ -250,25 +265,26 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
               onClick={handleClear}
               disabled={paths.length === 0}
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Rensa
+              <Trash2 className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Rensa</span>
             </Button>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onCancel}>
-              <X className="h-4 w-4 mr-1" />
-              Avbryt
+          <div className="flex gap-2 justify-center sm:justify-end">
+            <Button variant="outline" size="sm" onClick={onCancel}>
+              <X className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Avbryt</span>
             </Button>
-            <Button onClick={handleSave}>
-              <Check className="h-4 w-4 mr-1" />
-              Spara markering
+            <Button size="sm" onClick={handleSave}>
+              <Check className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Spara</span>
+              <span className="sm:hidden">Spara</span>
             </Button>
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground text-center">
-          Rita med röd penna för att markera läckage, skador eller andra problem på bilden
+        <p className="text-xs text-muted-foreground text-center hidden sm:block">
+          Rita med röd penna för att markera läckage, skador eller andra problem
         </p>
       </DialogContent>
     </Dialog>
