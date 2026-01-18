@@ -61,7 +61,7 @@ type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'ch
 
 // Map modules to nav items
 const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any }> = {
-  logbook: { href: '/portal', label: 'Loggböcker', icon: BookOpen },
+  logbook: { href: '/portal/logbooks', label: 'Loggböcker', icon: BookOpen },
   deviations: { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
   fault_cases: { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
   self_control: { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
