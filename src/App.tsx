@@ -107,8 +107,9 @@ function AppRoutes() {
         <Route path="/portal/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/portal/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/portal/reset-password" element={<ResetPassword />} />
-        <Route path="/portal" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/portal/startsida" element={<ProtectedRoute><Startsida /></ProtectedRoute>} />
+        <Route path="/portal" element={<ProtectedRoute><Startsida /></ProtectedRoute>} />
+        <Route path="/portal/startsida" element={<Navigate to="/portal" replace />} />
+        <Route path="/portal/logbooks" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/portal/logbook/new" element={<ProtectedRoute><NewLogbook /></ProtectedRoute>} />
         <Route path="/portal/logbook/:id" element={<ProtectedRoute><LogbookDetail /></ProtectedRoute>} />
         <Route path="/portal/deviations" element={<ProtectedRoute><Deviations /></ProtectedRoute>} />
