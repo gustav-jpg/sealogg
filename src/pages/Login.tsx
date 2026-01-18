@@ -35,7 +35,7 @@ export default function Login() {
         description: 'Kontrollera e-post och lösenord.',
       });
     } else {
-      navigate('/portal/start');
+      navigate('/portal/startsida');
     }
 
     setIsLoading(false);
