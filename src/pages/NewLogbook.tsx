@@ -355,8 +355,8 @@ export default function NewLogbook() {
     <MainLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-display font-bold">Ny loggbok</h1>
-          <p className="text-muted-foreground mt-1">Skapa en ny fartygsloggbok</p>
+          <h1 className="text-3xl font-display font-bold">Ny Dagsrapport</h1>
+          <p className="text-muted-foreground mt-1">Skapa en ny dagsrapport</p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -445,7 +445,7 @@ export default function NewLogbook() {
                   {vesselId && engineHours.length === 0 && (
                     <Button variant="outline" size="sm" onClick={initializeEngineHours}>
                       <Plus className="h-4 w-4 mr-1" />
-                      Ladda maskiner
+                      Hämta maskindata
                     </Button>
                   )}
                 </CardTitle>
@@ -454,7 +454,7 @@ export default function NewLogbook() {
                 {!vesselId ? (
                   <p className="text-muted-foreground text-center py-4">Välj ett fartyg först.</p>
                 ) : engineHours.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Klicka på "Ladda maskiner" för att hämta aktuella maskintimmar.</p>
+                  <p className="text-muted-foreground text-center py-4">Klicka på "Hämta maskindata" för att hämta aktuella maskintimmar.</p>
                 ) : (
                   <div className="space-y-3">
                     {engineHours.map(entry => (
@@ -463,11 +463,29 @@ export default function NewLogbook() {
                         <div className="flex gap-2 items-end">
                           <div className="w-24 space-y-1">
                             <Label className="text-xs">Start</Label>
-                            <Input type="number" value={entry.startHours} onChange={e => updateEngineHour(entry.tempId, 'startHours', parseInt(e.target.value) || 0)} />
+                            <Input 
+                              type="number" 
+                              min="0"
+                              value={entry.startHours === 0 ? '' : entry.startHours} 
+                              onChange={e => {
+                                const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0);
+                                updateEngineHour(entry.tempId, 'startHours', val);
+                              }} 
+                              placeholder="0"
+                            />
                           </div>
                           <div className="w-24 space-y-1">
                             <Label className="text-xs">Stopp</Label>
-                            <Input type="number" value={entry.stopHours} onChange={e => updateEngineHour(entry.tempId, 'stopHours', parseInt(e.target.value) || 0)} />
+                            <Input 
+                              type="number" 
+                              min="0"
+                              value={entry.stopHours === 0 ? '' : entry.stopHours} 
+                              onChange={e => {
+                                const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0);
+                                updateEngineHour(entry.tempId, 'stopHours', val);
+                              }} 
+                              placeholder="0"
+                            />
                           </div>
                           <div className="w-20 space-y-1">
                             <Label className="text-xs">Diff</Label>
@@ -482,6 +500,76 @@ export default function NewLogbook() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Besättning */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Besättning
+                  </span>
+                  <Button variant="outline" size="sm" onClick={addCrewMember}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Lägg till
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {crew.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Ingen besättning tillagd ännu.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {crew.map(member => {
+                      // Get user IDs already selected by other crew members
+                      const selectedUserIds = crew
+                        .filter(c => c.tempId !== member.tempId && c.userId)
+                        .map(c => c.userId);
+                      
+                      return (
+                        <div key={member.tempId} className="flex gap-2 items-end">
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Person</Label>
+                            <Select value={member.userId} onValueChange={v => updateCrewMember(member.tempId, 'userId', v)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Välj person" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {profiles?.map(p => (
+                                  <SelectItem 
+                                    key={p.id} 
+                                    value={p.id}
+                                    disabled={selectedUserIds.includes(p.id)}
+                                  >
+                                    {p.full_name}{p.is_external ? ' (extern)' : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">Roll</Label>
+                            <Select value={member.role} onValueChange={v => updateCrewMember(member.tempId, 'role', v as CrewRole)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => removeCrewMember(member.tempId)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -580,76 +668,6 @@ export default function NewLogbook() {
                 )}
               </CardContent>
             </Card>
-
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Besättning
-                  </span>
-                  <Button variant="outline" size="sm" onClick={addCrewMember}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Lägg till
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {crew.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">Ingen besättning tillagd ännu.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {crew.map(member => {
-                      // Get user IDs already selected by other crew members
-                      const selectedUserIds = crew
-                        .filter(c => c.tempId !== member.tempId && c.userId)
-                        .map(c => c.userId);
-                      
-                      return (
-                        <div key={member.tempId} className="flex gap-2 items-end">
-                          <div className="flex-1 space-y-1">
-                            <Label className="text-xs">Person</Label>
-                            <Select value={member.userId} onValueChange={v => updateCrewMember(member.tempId, 'userId', v)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Välj person" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {profiles?.map(p => (
-                                  <SelectItem 
-                                    key={p.id} 
-                                    value={p.id}
-                                    disabled={selectedUserIds.includes(p.id)}
-                                  >
-                                    {p.full_name}{p.is_external ? ' (extern)' : ''}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <Label className="text-xs">Roll</Label>
-                            <Select value={member.role} onValueChange={v => updateCrewMember(member.tempId, 'role', v as CrewRole)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button variant="ghost" size="icon" onClick={() => removeCrewMember(member.tempId)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
               </>
             )}
           </div>
@@ -676,15 +694,6 @@ export default function NewLogbook() {
               </>
             )}
 
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={() => createLogbook.mutate()}
-              disabled={createLogbook.isPending || !vesselId || (!validation.isValid && !overrideValidation)}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {createLogbook.isPending ? 'Skapar...' : 'Skapa loggbok'}
-            </Button>
           </div>
         </div>
       </div>
