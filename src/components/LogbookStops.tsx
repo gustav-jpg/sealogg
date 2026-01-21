@@ -107,30 +107,38 @@ export function LogbookStops({
       );
     }
 
+    const showPassengerOption = passengerSession || onActivatePassengerRegistration;
+
     return (
       <div className="text-center py-6">
-        <p className="text-muted-foreground mb-4">Inga stopp tillagda ännu. Välj ett alternativ:</p>
+        <p className="text-muted-foreground mb-4">
+          {showPassengerOption ? 'Inga stopp tillagda ännu. Välj ett alternativ:' : 'Inga stopp tillagda ännu.'}
+        </p>
         {!disabled && (
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button variant="outline" onClick={addStop}>
               <Plus className="h-4 w-4 mr-2" />
               Lägg till första stoppet
             </Button>
-            <span className="text-muted-foreground text-sm">eller</span>
-            {passengerSession ? (
-              <Button variant="default" onClick={onOpenPassengerSession}>
-                <Users className="h-4 w-4 mr-2" />
-                Öppna passagerarregistrering
-              </Button>
-            ) : onActivatePassengerRegistration && (
-              <Button 
-                variant="default" 
-                onClick={onActivatePassengerRegistration}
-                disabled={isActivatingPassenger}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                {isActivatingPassenger ? 'Aktiverar...' : 'Aktivera passagerarregistrering'}
-              </Button>
+            {showPassengerOption && (
+              <>
+                <span className="text-muted-foreground text-sm">eller</span>
+                {passengerSession ? (
+                  <Button variant="default" onClick={onOpenPassengerSession}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Öppna passagerarregistrering
+                  </Button>
+                ) : onActivatePassengerRegistration && (
+                  <Button 
+                    variant="default" 
+                    onClick={onActivatePassengerRegistration}
+                    disabled={isActivatingPassenger}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    {isActivatingPassenger ? 'Aktiverar...' : 'Aktivera passagerarregistrering'}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}
