@@ -38,6 +38,10 @@ interface PassengerEntry {
   pax_off: number;
   entry_order: number;
   created_at: string;
+  registered_by: string;
+  registered_by_profile?: {
+    full_name: string;
+  } | null;
 }
 
 interface RouteStop {
@@ -189,7 +193,7 @@ export default function PassengerSession() {
     enabled: !!selectedOrgId,
   });
 
-  // Fetch entries
+  // Fetch entries with registered_by profile
   const { data: entries = [] } = useQuery({
     queryKey: ['passenger-entries', sessionId],
     queryFn: async () => {
@@ -200,7 +204,20 @@ export default function PassengerSession() {
         .order('entry_order', { ascending: true });
 
       if (error) throw error;
-      return data as PassengerEntry[];
+      
+      // Fetch profiles for all registered_by users
+      const userIds = [...new Set((data || []).map(e => e.registered_by).filter(Boolean))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.user_id, { full_name: p.full_name }]) || []);
+      
+      return (data || []).map(entry => ({
+        ...entry,
+        registered_by_profile: profileMap.get(entry.registered_by) || null,
+      })) as PassengerEntry[];
     },
     enabled: !!sessionId,
   });
@@ -496,13 +513,14 @@ export default function PassengerSession() {
                   <TableHead className="text-center w-20">På</TableHead>
                   <TableHead className="text-center w-20">Av</TableHead>
                   <TableHead className="text-center w-24">Ombord</TableHead>
+                  <TableHead>Rapporterad av</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {entries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       Inga registreringar ännu. Börja registrera passagerare ovan.
                     </TableCell>
                   </TableRow>
@@ -512,30 +530,33 @@ export default function PassengerSession() {
                       .slice(0, index + 1)
                       .reduce((sum, e) => sum + e.pax_on - e.pax_off, 0);
                     
-                    return (
-                      <TableRow key={entry.id}>
-                        <TableCell className="text-muted-foreground">{entry.entry_order}</TableCell>
-                        <TableCell className="font-mono">{entry.departure_time?.slice(0, 5)}</TableCell>
-                        <TableCell>{entry.dock_name}</TableCell>
-                        <TableCell className="text-center font-semibold text-primary">
-                          {entry.pax_on > 0 ? `+${entry.pax_on}` : '-'}
-                        </TableCell>
-                        <TableCell className="text-center font-semibold text-destructive">
-                          {entry.pax_off > 0 ? `-${entry.pax_off}` : '-'}
-                        </TableCell>
-                        <TableCell className="text-center font-bold">{runningTotal}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteEntry.mutate(entry.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
+                      return (
+                        <TableRow key={entry.id}>
+                          <TableCell className="text-muted-foreground">{entry.entry_order}</TableCell>
+                          <TableCell className="font-mono">{entry.departure_time?.slice(0, 5)}</TableCell>
+                          <TableCell>{entry.dock_name}</TableCell>
+                          <TableCell className="text-center font-semibold text-primary">
+                            {entry.pax_on > 0 ? `+${entry.pax_on}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-center font-semibold text-destructive">
+                            {entry.pax_off > 0 ? `-${entry.pax_off}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-center font-bold">{runningTotal}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {entry.registered_by_profile?.full_name || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => deleteEntry.mutate(entry.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
                   })
                 )}
               </TableBody>
