@@ -272,6 +272,9 @@ export default function PassengerSession() {
   // Add entry mutation
   const addEntry = useMutation({
     mutationFn: async () => {
+      if (!session?.is_active) {
+        throw new Error('Sessionen är låst');
+      }
       const dockId = useManualDock ? (selectedDockId || null) : (nextRouteDock?.dock_id || selectedDockId || null);
       const dockName = useManualDock 
         ? (manualDockName || allDocks.find(d => d.id === selectedDockId)?.name || 'Okänd brygga')
@@ -304,6 +307,10 @@ export default function PassengerSession() {
       toast.success('Registrering sparad');
     },
     onError: (error) => {
+      if ((error as any)?.message?.includes('låst')) {
+        toast.error('Sessionen är låst och kan inte ändras');
+        return;
+      }
       toast.error('Kunde inte spara registrering');
       console.error(error);
     },
@@ -312,6 +319,9 @@ export default function PassengerSession() {
   // Delete entry mutation
   const deleteEntry = useMutation({
     mutationFn: async (entryId: string) => {
+      if (!session?.is_active) {
+        throw new Error('Sessionen är låst');
+      }
       const { error } = await supabase
         .from('passenger_entries')
         .delete()
@@ -323,11 +333,22 @@ export default function PassengerSession() {
       queryClient.invalidateQueries({ queryKey: ['passenger-entries', sessionId] });
       toast.success('Registrering borttagen');
     },
+    onError: (error) => {
+      if ((error as any)?.message?.includes('låst')) {
+        toast.error('Sessionen är låst och kan inte ändras');
+        return;
+      }
+      toast.error('Kunde inte ta bort registrering');
+      console.error(error);
+    },
   });
 
   // Update route mutation
   const updateRoute = useMutation({
     mutationFn: async (routeId: string | null) => {
+      if (!session?.is_active) {
+        throw new Error('Sessionen är låst');
+      }
       const { error } = await supabase
         .from('passenger_sessions')
         .update({ route_id: routeId })
@@ -340,10 +361,19 @@ export default function PassengerSession() {
       queryClient.invalidateQueries({ queryKey: ['route-stops'] });
       toast.success('Rutt uppdaterad');
     },
+    onError: (error) => {
+      if ((error as any)?.message?.includes('låst')) {
+        toast.error('Sessionen är låst och kan inte ändras');
+        return;
+      }
+      toast.error('Kunde inte uppdatera rutt');
+      console.error(error);
+    },
   });
 
   // Handle form submit with Enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!session?.is_active) return;
     if (e.key === 'Enter' && !addEntry.isPending) {
       e.preventDefault();
       addEntry.mutate();
@@ -431,6 +461,7 @@ export default function PassengerSession() {
             <div className="flex items-center gap-4">
               <Label className="whitespace-nowrap">Rutt:</Label>
               <Select
+                disabled={!session.is_active}
                 value={session.route_id || 'none'}
                 onValueChange={(value) => updateRoute.mutate(value === 'none' ? null : value)}
               >
@@ -468,6 +499,7 @@ export default function PassengerSession() {
                   type="time"
                   value={departureTime}
                   onChange={(e) => setDepartureTime(e.target.value)}
+                  disabled={!session.is_active}
                   className="h-10"
                 />
               </div>
@@ -481,7 +513,7 @@ export default function PassengerSession() {
                     className="h-10 bg-muted"
                   />
                 ) : (
-                  <Select value={selectedDockId} onValueChange={setSelectedDockId}>
+                  <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
                     <SelectTrigger className="h-10">
                       <SelectValue placeholder="Välj brygga" />
                     </SelectTrigger>
@@ -504,6 +536,7 @@ export default function PassengerSession() {
                   min="0"
                   value={paxOn}
                   onChange={(e) => setPaxOn(e.target.value)}
+                  disabled={!session.is_active}
                   placeholder="0"
                   className="h-10 text-lg font-semibold text-center"
                 />
@@ -517,6 +550,7 @@ export default function PassengerSession() {
                   max={currentOnboard}
                   value={paxOff}
                   onChange={(e) => setPaxOff(e.target.value)}
+                  disabled={!session.is_active}
                   placeholder="0"
                   className="h-10 text-lg font-semibold text-center"
                 />
@@ -525,7 +559,7 @@ export default function PassengerSession() {
               <div className="flex items-end">
                 <Button 
                   onClick={() => addEntry.mutate()} 
-                  disabled={addEntry.isPending}
+                  disabled={!session.is_active || addEntry.isPending}
                   className="w-full h-10"
                 >
                   <Plus className="h-4 w-4 mr-1" />
@@ -586,6 +620,7 @@ export default function PassengerSession() {
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-destructive"
                               onClick={() => deleteEntry.mutate(entry.id)}
+                              disabled={!session.is_active}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
