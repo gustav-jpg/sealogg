@@ -6,6 +6,7 @@ import { useOrganization } from "@/contexts/OrganizationContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,7 +81,6 @@ export default function PassengerSession() {
   const [paxOn, setPaxOn] = useState<string>('');
   const [paxOff, setPaxOff] = useState<string>('');
   const [useManualDock, setUseManualDock] = useState(false);
-  const [showCloseDialog, setShowCloseDialog] = useState(false);
   
   const paxOnRef = useRef<HTMLInputElement>(null);
 
@@ -341,32 +341,6 @@ export default function PassengerSession() {
     },
   });
 
-  // Close session mutation
-  const closeSession = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('passenger_sessions')
-        .update({ 
-          is_active: false,
-          ended_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['passenger-session', sessionId] });
-      queryClient.invalidateQueries({ queryKey: ['active-passenger-sessions'] });
-      toast.success('Passagerarregistrering stängd');
-      setShowCloseDialog(false);
-      navigate('/portal/passagerare');
-    },
-    onError: (error) => {
-      toast.error('Kunde inte stänga registrering');
-      console.error(error);
-    },
-  });
-
   // Handle form submit with Enter key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !addEntry.isPending) {
@@ -441,15 +415,11 @@ export default function PassengerSession() {
               <div className="text-3xl font-bold text-primary">{currentOnboard}</div>
               <div className="text-sm text-muted-foreground">ombord</div>
             </div>
-            {session.is_active && entries.length > 0 && (
-              <Button 
-                variant="default" 
-                onClick={() => setShowCloseDialog(true)}
-                className="gap-2"
-              >
-                <Lock className="h-4 w-4" />
-                Stäng registrering
-              </Button>
+            {!session.is_active && (
+              <Badge variant="secondary" className="gap-1">
+                <Lock className="h-3 w-3" />
+                Låst
+              </Badge>
             )}
           </div>
         </div>
@@ -628,84 +598,6 @@ export default function PassengerSession() {
           </CardContent>
         </Card>
 
-        {/* Close Session Dialog */}
-        <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
-                Stäng passagerarregistrering
-              </DialogTitle>
-              <DialogDescription>
-                Granska dagens summering innan du stänger registreringen.
-              </DialogDescription>
-            </DialogHeader>
-            
-            {summary && (
-              <div className="space-y-4 py-4">
-                {/* Time summary */}
-                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="h-5 w-5" />
-                    <span>Tid</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-mono text-lg font-semibold">
-                      {summary.firstDeparture} – {summary.lastDeparture}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Passenger summary */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg">
-                    <div className="flex items-center gap-2 text-primary">
-                      <UserPlus className="h-5 w-5" />
-                      <span>Påstigande</span>
-                    </div>
-                    <span className="text-2xl font-bold text-primary">
-                      {summary.totalPaxOn}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-destructive/10 rounded-lg">
-                    <div className="flex items-center gap-2 text-destructive">
-                      <UserMinus className="h-5 w-5" />
-                      <span>Avstigande</span>
-                    </div>
-                    <span className="text-2xl font-bold text-destructive">
-                      {summary.totalPaxOff}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Stop count */}
-                <div className="text-center text-sm text-muted-foreground">
-                  Totalt {summary.stopCount} stopp registrerade
-                </div>
-
-                {currentOnboard > 0 && (
-                  <div className="p-3 bg-accent border border-border rounded-lg text-sm text-accent-foreground">
-                    ⚠️ Det finns fortfarande {currentOnboard} passagerare ombord. Säkerställ att alla har stigit av innan du stänger.
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => setShowCloseDialog(false)}>
-                Avbryt
-              </Button>
-              <Button 
-                onClick={() => closeSession.mutate()}
-                disabled={closeSession.isPending}
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Stäng registrering
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </MainLayout>
   );

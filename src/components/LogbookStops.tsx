@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, CheckCircle2, Lock, Unlock, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +48,10 @@ interface LogbookStopsProps {
   onActivatePassengerRegistration?: () => void;
   isActivatingPassenger?: boolean;
   onOpenPassengerSession?: () => void;
+  onLockPassengerSession?: () => void;
+  onUnlockPassengerSession?: () => void;
+  isLockingSession?: boolean;
+  canLockSession?: boolean;
 }
 
 // Calculate running total of passengers onboard
@@ -70,6 +74,10 @@ export function LogbookStops({
   onActivatePassengerRegistration,
   isActivatingPassenger,
   onOpenPassengerSession,
+  onLockPassengerSession,
+  onUnlockPassengerSession,
+  isLockingSession,
+  canLockSession,
 }: LogbookStopsProps) {
   const sortedStops = [...stops].sort((a, b) => a.stopOrder - b.stopOrder);
 
@@ -105,72 +113,66 @@ export function LogbookStops({
   if (stops.length === 0) {
     // Show passenger summary if session is closed and has data
     if (passengerSession && !passengerSession.is_active && passengerSummary) {
+      // Compact view: show only times and totals with "Visa hela" button
       return (
         <div className="space-y-4">
-          {/* Summary header */}
+          {/* Summary header with lock status */}
           <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              <span className="font-semibold">Passagerarregistrering avslutad</span>
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              <span className="font-semibold">Passagerarregistrering låst</span>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span className="font-mono">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span className="font-mono">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
+              </div>
+              {canLockSession && onUnlockPassengerSession && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onUnlockPassengerSession}
+                  disabled={isLockingSession}
+                  className="gap-1"
+                >
+                  <Unlock className="h-3 w-3" />
+                  Lås upp
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Summary stats */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Compact summary stats */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
               <div className="flex items-center gap-2 text-primary">
                 <UserPlus className="h-4 w-4" />
-                <span className="text-sm">Påstigande totalt</span>
+                <span className="text-sm">Påstigande</span>
               </div>
               <span className="text-xl font-bold text-primary">{passengerSummary.totalPaxOn}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
               <div className="flex items-center gap-2 text-destructive">
                 <UserMinus className="h-4 w-4" />
-                <span className="text-sm">Avstigande totalt</span>
+                <span className="text-sm">Avstigande</span>
               </div>
               <span className="text-xl font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
             </div>
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm text-muted-foreground">Stopp</span>
+              <span className="text-xl font-bold">{passengerSummary.stopCount}</span>
+            </div>
           </div>
 
-          {/* Stops table */}
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Tid</TableHead>
-                <TableHead>Brygga</TableHead>
-                <TableHead className="text-center w-20">På</TableHead>
-                <TableHead className="text-center w-20">Av</TableHead>
-                <TableHead className="text-center w-24">Ombord</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {passengerSummary.stops.map((stop, index) => {
-                const runningTotal = passengerSummary.stops
-                  .slice(0, index + 1)
-                  .reduce((sum, s) => sum + s.paxOn - s.paxOff, 0);
-                return (
-                  <TableRow key={stop.order}>
-                    <TableCell className="text-muted-foreground">{stop.order}</TableCell>
-                    <TableCell className="font-mono">{stop.time}</TableCell>
-                    <TableCell>{stop.dock}</TableCell>
-                    <TableCell className="text-center font-semibold text-primary">
-                      {stop.paxOn > 0 ? `+${stop.paxOn}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-center font-semibold text-destructive">
-                      {stop.paxOff > 0 ? `-${stop.paxOff}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-center font-bold">{runningTotal}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          {/* View full details button */}
+          <Button 
+            variant="outline" 
+            className="w-full gap-2"
+            onClick={() => window.open(`/portal/passagerare/${passengerSession.id}`, '_blank')}
+          >
+            <ExternalLink className="h-4 w-4" />
+            Visa hela
+          </Button>
         </div>
       );
     }
@@ -186,12 +188,25 @@ export function LogbookStops({
           <p className="text-sm text-muted-foreground mb-4">
             Stopp registreras via passagerarregistreringen
           </p>
-          {!disabled && onOpenPassengerSession && (
-            <Button variant="default" onClick={onOpenPassengerSession}>
-              <Users className="h-4 w-4 mr-2" />
-              Öppna passagerarregistrering
-            </Button>
-          )}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            {!disabled && onOpenPassengerSession && (
+              <Button variant="outline" onClick={onOpenPassengerSession}>
+                <Users className="h-4 w-4 mr-2" />
+                Öppna passagerarregistrering
+              </Button>
+            )}
+            {canLockSession && onLockPassengerSession && (
+              <Button 
+                variant="default" 
+                onClick={onLockPassengerSession}
+                disabled={isLockingSession}
+                className="gap-2"
+              >
+                <Lock className="h-4 w-4" />
+                {isLockingSession ? 'Låser...' : 'Lås registrering'}
+              </Button>
+            )}
+          </div>
         </div>
       );
     }

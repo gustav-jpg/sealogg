@@ -38,7 +38,7 @@ export default function PassengerRegistration() {
   const navigate = useNavigate();
   const { selectedOrgId } = useOrganization();
 
-  const { data: activeSessions = [], isLoading } = useQuery({
+  const { data: sessions = [], isLoading } = useQuery({
     queryKey: ['passenger-sessions', selectedOrgId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -49,12 +49,13 @@ export default function PassengerRegistration() {
           vessel_id,
           is_active,
           started_at,
+          ended_at,
           route_id,
           vessel:vessels(id, name),
           logbook:logbooks(id, date)
         `)
-        .eq('is_active', true)
-        .order('started_at', { ascending: false });
+        .order('started_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
 
@@ -95,7 +96,7 @@ export default function PassengerRegistration() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-display font-bold">Passagerarregistrering</h1>
-            <p className="text-muted-foreground text-sm">Aktiva registreringssessioner</p>
+            <p className="text-muted-foreground text-sm">Registreringssessioner</p>
           </div>
         </div>
 
@@ -105,11 +106,11 @@ export default function PassengerRegistration() {
               <div key={i} className="h-10 bg-muted animate-pulse rounded" />
             ))}
           </div>
-        ) : activeSessions.length === 0 ? (
+        ) : sessions.length === 0 ? (
           <Card className="text-center py-8">
             <CardContent>
               <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-              <h3 className="text-base font-medium mb-1">Inga aktiva sessioner</h3>
+              <h3 className="text-base font-medium mb-1">Inga sessioner</h3>
               <p className="text-muted-foreground text-sm mb-3">
                 Aktivera passagerarregistrering från en öppen loggbok för att börja.
               </p>
@@ -131,7 +132,7 @@ export default function PassengerRegistration() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeSessions.map((session) => (
+                {sessions.map((session) => (
                   <TableRow 
                     key={session.id} 
                     className="cursor-pointer"
@@ -157,9 +158,15 @@ export default function PassengerRegistration() {
                       </Badge>
                     </TableCell>
                     <TableCell className="py-2">
-                      <Badge variant="default" className="text-xs">
-                        Aktiv
-                      </Badge>
+                      {session.is_active ? (
+                        <Badge variant="default" className="text-xs">
+                          Aktiv
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          Låst
+                        </Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
