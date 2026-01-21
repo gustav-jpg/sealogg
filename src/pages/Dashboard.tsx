@@ -14,7 +14,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { LOGBOOK_STATUS_LABELS } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { usePrint } from '@/hooks/usePrint';
+import { useLogbooksPrint } from '@/hooks/useLogbooksPrint';
 
 type SortField = 'date' | 'vessel' | 'creator';
 type SortDirection = 'asc' | 'desc';
@@ -22,7 +22,7 @@ type SortDirection = 'asc' | 'desc';
 export default function Dashboard() {
   const { canEdit } = useAuth();
   const { selectedOrgId } = useOrganization();
-  const { printContent } = usePrint();
+  const { printLogbooks } = useLogbooksPrint();
   
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -156,10 +156,22 @@ export default function Dashboard() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => printContent('logbooks-list', { 
-                title: 'Loggböcker', 
-                subtitle: 'Alla loggböcker'
-              })}
+              onClick={() => printLogbooks(
+                filteredAndSortedLogbooks.map(l => ({
+                  id: l.id,
+                  date: l.date,
+                  status: l.status,
+                  vessel: (l as any).vessel,
+                  creator_name: (l as any).creator_name
+                })),
+                { 
+                  title: 'Loggböcker', 
+                  subtitle: `${filteredAndSortedLogbooks.length} loggböcker`,
+                  vesselFilter: vessels.find(v => v.id === vesselFilter)?.name,
+                  creatorFilter: creators.find(c => c.id === creatorFilter)?.name
+                }
+              )}
+              disabled={filteredAndSortedLogbooks.length === 0}
             >
               <Printer className="h-4 w-4 mr-1" />
               Skriv ut
