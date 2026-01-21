@@ -129,7 +129,7 @@ export function AppSidebar() {
         vesselNavItems.splice(logbookIndex + 1, 0, { href: '/portal/passagerare', label: 'Passagerare', icon: UserCheck });
       }
     }
-    vesselNavItems.push({ href: '/portal/qualifications', label: 'Behörigheter', icon: Award });
+    vesselNavItems.push({ href: '/portal/qualifications', label: 'Certifikat', icon: Award });
   }
 
   // Base admin items always shown

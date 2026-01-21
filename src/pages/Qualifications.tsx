@@ -7,17 +7,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Ship, Users, Award, AlertTriangle, FileText, ExternalLink, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Ship, Users, Award, AlertTriangle, FileText, ExternalLink, Filter, Search } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export default function Qualifications() {
   const { toast } = useToast();
   const { selectedOrgId } = useOrganization();
   const [selectedVesselId, setSelectedVesselId] = useState<string>('all');
+  const [searchText, setSearchText] = useState('');
 
   const { data: vessels } = useOrgVessels(selectedOrgId);
   const { data: profiles } = useOrgProfiles(selectedOrgId);
@@ -140,11 +150,16 @@ export default function Qualifications() {
     ? profiles
     : profiles?.filter(p => inductions?.some(i => i.profile_id === p.id && i.vessel_id === selectedVesselId));
 
+  // Filter profiles by search text
+  const searchFilteredProfiles = relevantProfiles?.filter(p => 
+    p.full_name.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   return (
     <MainLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-display font-bold">Behörigheter & Certifikat</h1>
+          <h1 className="text-3xl font-display font-bold">Certifikat</h1>
           <p className="text-muted-foreground mt-1">Översikt över fartygs- och besättningscertifikat</p>
         </div>
 
@@ -169,6 +184,15 @@ export default function Qualifications() {
                   ))}
                 </SelectContent>
               </Select>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Sök på namn..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -249,95 +273,102 @@ export default function Qualifications() {
           </TabsContent>
 
           <TabsContent value="crew" className="space-y-4">
-            {relevantProfiles?.length === 0 ? (
+            {searchFilteredProfiles?.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Ingen besättning registrerad</p>
+                  <p>{searchText ? 'Inga resultat matchade sökningen' : 'Ingen besättning registrerad'}</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
-                {relevantProfiles?.map(profile => {
-                  const profileCerts = filteredUserCertificates?.filter(c => c.profile_id === profile.id) || [];
-                  const profileInductions = inductions?.filter(i => i.profile_id === profile.id) || [];
-                  
-                  const hasExpired = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expired');
-                  const hasExpiring = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expiring');
-                  
-                  return (
-                    <Card key={profile.id} className={hasExpired ? 'border-destructive/50' : hasExpiring ? 'border-amber-500/50' : ''}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
-                          {profile.full_name}
-                          {profile.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
-                          {hasExpired && <Badge variant="destructive" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" />Utgånget certifikat</Badge>}
-                          {!hasExpired && hasExpiring && <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"><AlertTriangle className="h-3 w-3" />Certifikat går ut snart</Badge>}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {/* Certifikat */}
-                        <div>
-                          <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
-                            <Award className="h-4 w-4" />
-                            Certifikat ({profileCerts.length})
-                          </h4>
-                          {profileCerts.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Inga certifikat registrerade</p>
-                          ) : (
-                            <div className="space-y-2">
-                              {profileCerts.map(cert => {
-                                const status = getCertificateStatus(cert.expiry_date);
-                                return (
-                                  <div key={cert.id} className="flex items-center justify-between p-2 rounded bg-muted/50 gap-2 flex-wrap">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="font-medium">{(cert.certificate_type as any)?.name}</span>
-                                      {getStatusBadge(status)}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm text-muted-foreground">
-                                        {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
-                                      </span>
-                                      {cert.file_url && (
-                                        <Button 
-                                          variant="ghost" 
-                                          size="sm"
-                                          onClick={() => handleViewFile(cert.file_url!, 'certificates')}
-                                        >
-                                          <FileText className="h-4 w-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Namn</TableHead>
+                        <TableHead>Certifikat</TableHead>
+                        <TableHead>Utgår</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Inskolningar</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {searchFilteredProfiles?.flatMap(profile => {
+                        const profileCerts = filteredUserCertificates?.filter(c => c.profile_id === profile.id) || [];
+                        const profileInductions = inductions?.filter(i => i.profile_id === profile.id) || [];
                         
-                        {/* Inskolningar */}
-                        <div>
-                          <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
-                            <Ship className="h-4 w-4" />
-                            Inskolningar ({profileInductions.length})
-                          </h4>
-                          {profileInductions.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Inga inskolningar registrerade</p>
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {profileInductions.map(ind => (
-                                <Badge key={ind.id} variant="secondary">
-                                  {(ind.vessel as any)?.name}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                        if (profileCerts.length === 0) {
+                          return [(
+                            <TableRow key={profile.id}>
+                              <TableCell className="font-medium">
+                                {profile.full_name}
+                                {profile.is_external && <Badge variant="outline" className="ml-2 text-xs">Extern</Badge>}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">Inga certifikat</TableCell>
+                              <TableCell>-</TableCell>
+                              <TableCell>-</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {profileInductions.map(ind => (
+                                    <Badge key={ind.id} variant="secondary" className="text-xs">
+                                      {(ind.vessel as any)?.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell></TableCell>
+                            </TableRow>
+                          )];
+                        }
+                        
+                        return profileCerts.map((cert, idx) => {
+                          const status = getCertificateStatus(cert.expiry_date);
+                          return (
+                            <TableRow key={cert.id}>
+                              <TableCell className="font-medium">
+                                {idx === 0 && (
+                                  <>
+                                    {profile.full_name}
+                                    {profile.is_external && <Badge variant="outline" className="ml-2 text-xs">Extern</Badge>}
+                                  </>
+                                )}
+                              </TableCell>
+                              <TableCell>{(cert.certificate_type as any)?.name}</TableCell>
+                              <TableCell>{format(new Date(cert.expiry_date), 'yyyy-MM-dd')}</TableCell>
+                              <TableCell>{getStatusBadge(status)}</TableCell>
+                              <TableCell>
+                                {idx === 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {profileInductions.map(ind => (
+                                      <Badge key={ind.id} variant="secondary" className="text-xs">
+                                        {(ind.vessel as any)?.name}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {cert.file_url && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleViewFile(cert.file_url!, 'certificates')}
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        });
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
