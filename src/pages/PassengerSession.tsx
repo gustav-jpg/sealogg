@@ -81,7 +81,7 @@ export default function PassengerSession() {
   const [manualDockName, setManualDockName] = useState('');
   const [paxOn, setPaxOn] = useState<string>('');
   const [paxOff, setPaxOff] = useState<string>('');
-  const [userChangedDock, setUserChangedDock] = useState(false);
+  const [lastEntriesCount, setLastEntriesCount] = useState(0);
   
   const paxOnRef = useRef<HTMLInputElement>(null);
 
@@ -261,14 +261,13 @@ export default function PassengerSession() {
     return routeStops[nextIndex];
   }, [session?.route_id, routeStops, entries.length]);
 
-  // Set dock when route dock is available (always update unless user just changed it)
+  // Set dock when a new entry is added (entries.length increases)
   useEffect(() => {
-    if (nextRouteDock && !userChangedDock) {
+    if (nextRouteDock && entries.length > lastEntriesCount) {
       setSelectedDockId(nextRouteDock.dock_id);
     }
-    // Reset the flag when entries change (new entry was added)
-    setUserChangedDock(false);
-  }, [nextRouteDock, entries.length]);
+    setLastEntriesCount(entries.length);
+  }, [entries.length, nextRouteDock, lastEntriesCount]);
 
   // Add entry mutation
   const addEntry = useMutation({
@@ -505,7 +504,7 @@ export default function PassengerSession() {
               
               <div>
                 <Label className="text-xs">Brygga</Label>
-                <Select value={selectedDockId} onValueChange={(val) => { setSelectedDockId(val); setUserChangedDock(true); }} disabled={!session.is_active}>
+                <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
                   <SelectTrigger className="h-10">
                     <SelectValue placeholder="Välj brygga" />
                   </SelectTrigger>
