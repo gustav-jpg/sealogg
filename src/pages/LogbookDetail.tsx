@@ -224,10 +224,13 @@ export default function LogbookDetail() {
         .eq('id', passengerSession.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] });
-      queryClient.invalidateQueries({ queryKey: ['passenger-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['passenger-summary'] });
+    onSuccess: async () => {
+      // Wait for cache invalidation to complete before showing success
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] }),
+        queryClient.invalidateQueries({ queryKey: ['passenger-sessions'] }),
+        queryClient.invalidateQueries({ queryKey: ['passenger-summary'] }),
+      ]);
       toast({ title: 'Borttagen', description: 'Passagerarregistreringen har tagits bort.' });
     },
     onError: () => {
