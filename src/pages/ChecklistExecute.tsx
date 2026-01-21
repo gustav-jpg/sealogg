@@ -382,7 +382,7 @@ export default function ChecklistExecute() {
             .from('fault_cases')
             .insert({
               vessel_id: vessel.id,
-              title: `Avvikelse: ${step.title}`,
+              title: `Felärende: ${step.title}`,
               description: result.comment || `Avvikelse upptäckt vid checklista "${template.name}" - ${step.instruction}`,
               created_by: user.id,
               priority: 'normal',
