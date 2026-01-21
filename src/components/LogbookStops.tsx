@@ -86,6 +86,27 @@ export function LogbookStops({
   };
 
   if (stops.length === 0) {
+    // Show different message if passenger registration is active
+    if (passengerSession?.is_active) {
+      return (
+        <div className="text-center py-6">
+          <div className="flex items-center justify-center gap-2 text-primary mb-2">
+            <Users className="h-5 w-5" />
+            <span className="font-semibold">Passagerarregistrering aktiv</span>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Stopp registreras via passagerarregistreringen
+          </p>
+          {!disabled && onOpenPassengerSession && (
+            <Button variant="default" onClick={onOpenPassengerSession}>
+              <Users className="h-4 w-4 mr-2" />
+              Öppna passagerarregistrering
+            </Button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="text-center py-6">
         <p className="text-muted-foreground mb-4">Inga stopp tillagda ännu. Välj ett alternativ:</p>
