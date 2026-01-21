@@ -872,34 +872,22 @@ export default function LogbookDetail() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Reseinformation
-                  </span>
-                  {isOpen && canEditThis && (
-                    passengerSession ? (
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/portal/passagerare/${passengerSession.id}`)}>
-                        <UserCheck className="h-4 w-4 mr-1" />
-                        Öppna passagerarregistrering
-                      </Button>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => activatePassengerRegistration.mutate()}
-                        disabled={activatePassengerRegistration.isPending}
-                      >
-                        <UserCheck className="h-4 w-4 mr-1" />
-                        {activatePassengerRegistration.isPending ? 'Aktiverar...' : 'Aktivera passagerarregistrering'}
-                      </Button>
-                    )
-                  )}
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Reseinformation
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {isOpen ? (
-                  <LogbookStops stops={stops} onStopsChange={setStops} disabled={!canEditThis} />
+                  <LogbookStops 
+                    stops={stops} 
+                    onStopsChange={setStops} 
+                    disabled={!canEditThis}
+                    passengerSession={passengerSession}
+                    onActivatePassengerRegistration={() => activatePassengerRegistration.mutate()}
+                    isActivatingPassenger={activatePassengerRegistration.isPending}
+                    onOpenPassengerSession={() => navigate(`/portal/passagerare/${passengerSession?.id}`)}
+                  />
                 ) : (
                   <LogbookStopsDisplay stops={logbookStops || []} />
                 )}
