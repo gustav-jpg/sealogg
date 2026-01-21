@@ -254,6 +254,15 @@ export default function PassengerSession() {
     };
   }, [entries]);
 
+  // Reset selected dock when route changes
+  useEffect(() => {
+    if (routeStops.length > 0) {
+      setSelectedDockId(routeStops[0].dock_id);
+    } else {
+      setSelectedDockId('');
+    }
+  }, [session?.route_id]);
+
   // Advance to next dock in list after saving (cycles)
   useEffect(() => {
     if (routeStops.length === 0) return;
