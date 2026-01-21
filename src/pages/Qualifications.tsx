@@ -251,56 +251,74 @@ export default function Qualifications() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
-                {vesselCertificates?.map(cert => {
-                  const isIndefinite = cert.is_indefinite === true;
-                  const status = getCertificateStatus(cert.expiry_date, isIndefinite);
-                  const daysUntilExpiry = cert.expiry_date ? differenceInDays(new Date(cert.expiry_date), new Date()) : null;
-                  
-                  return (
-                    <Card key={cert.id} className={status === 'expired' ? 'border-destructive/50' : status === 'expiring' ? 'border-amber-500/50' : ''}>
-                      <CardContent className="py-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-semibold">{cert.name}</h3>
-                              {getStatusBadge(status)}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {(cert.vessel as any)?.name} • {isIndefinite ? (
-                                <span className="text-green-600 dark:text-green-400">Tillsvidare</span>
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Certifikat</TableHead>
+                        <TableHead>Fartyg</TableHead>
+                        <TableHead>Utgår</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {vesselCertificates?.map(cert => {
+                        const isIndefinite = cert.is_indefinite === true;
+                        const status = getCertificateStatus(cert.expiry_date, isIndefinite);
+                        const daysUntilExpiry = cert.expiry_date ? differenceInDays(new Date(cert.expiry_date), new Date()) : null;
+                        
+                        return (
+                          <TableRow 
+                            key={cert.id} 
+                            className={status === 'expired' ? 'bg-destructive/5' : status === 'expiring' ? 'bg-amber-50 dark:bg-amber-950/20' : ''}
+                          >
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{cert.name}</p>
+                                {cert.description && (
+                                  <p className="text-xs text-muted-foreground truncate max-w-[200px]">{cert.description}</p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {(cert.vessel as any)?.name}
+                            </TableCell>
+                            <TableCell>
+                              {isIndefinite ? (
+                                <span className="text-green-600 dark:text-green-400 text-sm">Tillsvidare</span>
                               ) : cert.expiry_date ? (
-                                <>
-                                  Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
+                                <div className="text-sm">
+                                  <span>{format(new Date(cert.expiry_date), 'yyyy-MM-dd')}</span>
                                   {status !== 'expired' && daysUntilExpiry !== null && (
-                                    <span className="ml-2">({daysUntilExpiry} dagar kvar)</span>
+                                    <span className="text-muted-foreground text-xs ml-1">({daysUntilExpiry}d)</span>
                                   )}
-                                </>
+                                </div>
                               ) : (
-                                <span className="text-muted-foreground">Inget utgångsdatum</span>
+                                <span className="text-muted-foreground text-sm">–</span>
                               )}
-                            </p>
-                            {cert.description && (
-                              <p className="text-sm text-muted-foreground mt-1">{cert.description}</p>
-                            )}
-                          </div>
-                          {cert.file_url && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleViewFile(cert.file_url!, 'vessel-certificates')}
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Visa dokument
-                              <ExternalLink className="h-3 w-3 ml-1" />
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                            </TableCell>
+                            <TableCell>{getStatusBadge(status)}</TableCell>
+                            <TableCell>
+                              {cert.file_url && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleViewFile(cert.file_url!, 'vessel-certificates')}
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
