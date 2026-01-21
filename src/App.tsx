@@ -30,7 +30,7 @@ import RoleRules from "./pages/admin/RoleRules";
 import ControlPoints from "./pages/admin/ControlPoints";
 import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
 import AdminStatus from "./pages/admin/Status";
-import SeaDays from "./pages/admin/SeaDays";
+
 import ExercisesAdmin from "./pages/admin/Exercises";
 import IntranetAdmin from "./pages/admin/Intranet";
 import Startsida from "./pages/Startsida";
@@ -130,7 +130,7 @@ function AppRoutes() {
         <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
         <Route path="/portal/admin/checklists" element={<ProtectedRoute adminOnly><ChecklistTemplates /></ProtectedRoute>} />
         <Route path="/portal/admin/status" element={<ProtectedRoute adminOnly><AdminStatus /></ProtectedRoute>} />
-        <Route path="/portal/admin/sea-days" element={<ProtectedRoute adminOnly><SeaDays /></ProtectedRoute>} />
+        
         <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/intranet" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />

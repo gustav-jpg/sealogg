@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
-import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings, Search, Users, X } from 'lucide-react';
+import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings, Search, Users, X, Anchor } from 'lucide-react';
+import { SeaDaysTab } from '@/components/admin/SeaDaysTab';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -494,134 +495,156 @@ export default function AdminUsers() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold">Personregister</h1>
-            <p className="text-muted-foreground mt-1">
-              {profiles?.length || 0} personer registrerade
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <InviteUserDialog 
-              onInvite={(data) => invitePortalUserMutation.mutate(data)} 
-              isLoading={invitePortalUserMutation.isPending}
-            />
-            <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
-          </div>
+        <div>
+          <h1 className="text-3xl font-display font-bold">Besättning</h1>
+          <p className="text-muted-foreground mt-1">Hantera personal och sjödagar</p>
         </div>
 
-        {/* Search and filters */}
-        <div className="flex gap-4 items-center">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Sök på namn eller e-post..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                onClick={() => setSearchQuery('')}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {filteredProfiles.length !== processedProfiles.length && (
-              <span>Visar {filteredProfiles.length} av {processedProfiles.length}</span>
-            )}
-          </div>
-        </div>
-
-        {/* User table */}
-        <Card>
-          <CardContent className="p-0">
-            <div className="max-h-[calc(100vh-280px)] overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-card z-10">
-                  <TableRow>
-                    <TableHead>Namn</TableHead>
-                    <TableHead className="hidden sm:table-cell">E-post</TableHead>
-                    <TableHead className="w-20 text-center">Cert.</TableHead>
-                    <TableHead className="w-16"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProfiles.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        {searchQuery ? 'Inga träffar' : 'Inga personer registrerade'}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredProfiles.map(profile => (
-                      <TableRow 
-                        key={profile.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setSelectedProfileId(profile.id)}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{profile.full_name}</p>
-                            {profile.is_external && (
-                              <Badge variant="outline" className="text-xs">Ext</Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground sm:hidden">
-                            {profile.email || 'Ingen e-post'}
-                          </p>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground">
-                          {profile.email || '–'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {profile.hasExpired ? (
-                            <Badge variant="destructive" className="text-xs gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                            </Badge>
-                          ) : profile.hasExpiring ? (
-                            <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                              <AlertTriangle className="h-3 w-3" />
-                            </Badge>
-                          ) : profile.certCount > 0 ? (
-                            <span className="text-xs text-muted-foreground">{profile.certCount}</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">–</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {profile.email && !profile.is_external && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                resendWelcomeEmailMutation.mutate({ 
-                                  email: profile.email!, 
-                                  fullName: profile.full_name 
-                                });
-                              }}
-                              disabled={resendWelcomeEmailMutation.isPending}
-                              title="Skicka välkomstmail"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+        <Tabs defaultValue="users" className="w-full">
+          <TabsList>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              Personal
+            </TabsTrigger>
+            <TabsTrigger value="seadays" className="gap-2">
+              <Anchor className="h-4 w-4" />
+              Sjödagar
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="users" className="mt-6 space-y-6">
+            {/* Header with actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <p className="text-muted-foreground">
+                {profiles?.length || 0} personer registrerade
+              </p>
+              <div className="flex gap-2">
+                <InviteUserDialog 
+                  onInvite={(data) => invitePortalUserMutation.mutate(data)} 
+                  isLoading={invitePortalUserMutation.isPending}
+                />
+                <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Search and filters */}
+            <div className="flex gap-4 items-center">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Sök på namn eller e-post..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {filteredProfiles.length !== processedProfiles.length && (
+                  <span>Visar {filteredProfiles.length} av {processedProfiles.length}</span>
+                )}
+              </div>
+            </div>
+
+            {/* User table */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="max-h-[calc(100vh-380px)] overflow-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-card z-10">
+                      <TableRow>
+                        <TableHead>Namn</TableHead>
+                        <TableHead className="hidden sm:table-cell">E-post</TableHead>
+                        <TableHead className="w-20 text-center">Cert.</TableHead>
+                        <TableHead className="w-16"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProfiles.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            {searchQuery ? 'Inga träffar' : 'Inga personer registrerade'}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredProfiles.map(profile => (
+                          <TableRow 
+                            key={profile.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => setSelectedProfileId(profile.id)}
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{profile.full_name}</p>
+                                {profile.is_external && (
+                                  <Badge variant="outline" className="text-xs">Ext</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground sm:hidden">
+                                {profile.email || 'Ingen e-post'}
+                              </p>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell text-muted-foreground">
+                              {profile.email || '–'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {profile.hasExpired ? (
+                                <Badge variant="destructive" className="text-xs gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                </Badge>
+                              ) : profile.hasExpiring ? (
+                                <Badge variant="secondary" className="text-xs gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                  <AlertTriangle className="h-3 w-3" />
+                                </Badge>
+                              ) : profile.certCount > 0 ? (
+                                <span className="text-xs text-muted-foreground">{profile.certCount}</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">–</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {profile.email && !profile.is_external && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    resendWelcomeEmailMutation.mutate({ 
+                                      email: profile.email!, 
+                                      fullName: profile.full_name 
+                                    });
+                                  }}
+                                  disabled={resendWelcomeEmailMutation.isPending}
+                                  title="Skicka välkomstmail"
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="seadays" className="mt-6">
+            <SeaDaysTab />
+          </TabsContent>
+        </Tabs>
 
         {/* Detail dialog */}
         <Dialog open={!!selectedProfile} onOpenChange={(open) => !open && setSelectedProfileId(null)}>
