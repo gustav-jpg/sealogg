@@ -28,6 +28,10 @@ interface LogbookStopsProps {
   stops: StopEntry[];
   onStopsChange: (stops: StopEntry[]) => void;
   disabled?: boolean;
+  passengerSession?: { id: string; is_active: boolean } | null;
+  onActivatePassengerRegistration?: () => void;
+  isActivatingPassenger?: boolean;
+  onOpenPassengerSession?: () => void;
 }
 
 // Calculate running total of passengers onboard
@@ -41,7 +45,15 @@ function calculateOnboard(stops: StopEntry[], currentIndex: number): number {
   return Math.max(0, total);
 }
 
-export function LogbookStops({ stops, onStopsChange, disabled = false }: LogbookStopsProps) {
+export function LogbookStops({ 
+  stops, 
+  onStopsChange, 
+  disabled = false,
+  passengerSession,
+  onActivatePassengerRegistration,
+  isActivatingPassenger,
+  onOpenPassengerSession,
+}: LogbookStopsProps) {
   const sortedStops = [...stops].sort((a, b) => a.stopOrder - b.stopOrder);
 
   const addStop = () => {
@@ -76,12 +88,30 @@ export function LogbookStops({ stops, onStopsChange, disabled = false }: Logbook
   if (stops.length === 0) {
     return (
       <div className="text-center py-6">
-        <p className="text-muted-foreground mb-4">Inga stopp tillagda ännu.</p>
+        <p className="text-muted-foreground mb-4">Inga stopp tillagda ännu. Välj ett alternativ:</p>
         {!disabled && (
-          <Button variant="outline" onClick={addStop}>
-            <Plus className="h-4 w-4 mr-2" />
-            Lägg till första stoppet
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button variant="outline" onClick={addStop}>
+              <Plus className="h-4 w-4 mr-2" />
+              Lägg till första stoppet
+            </Button>
+            <span className="text-muted-foreground text-sm">eller</span>
+            {passengerSession ? (
+              <Button variant="default" onClick={onOpenPassengerSession}>
+                <Users className="h-4 w-4 mr-2" />
+                Öppna passagerarregistrering
+              </Button>
+            ) : onActivatePassengerRegistration && (
+              <Button 
+                variant="default" 
+                onClick={onActivatePassengerRegistration}
+                disabled={isActivatingPassenger}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                {isActivatingPassenger ? 'Aktiverar...' : 'Aktivera passagerarregistrering'}
+              </Button>
+            )}
+          </div>
         )}
       </div>
     );
