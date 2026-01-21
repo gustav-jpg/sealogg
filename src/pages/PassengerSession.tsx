@@ -81,7 +81,7 @@ export default function PassengerSession() {
   const [manualDockName, setManualDockName] = useState('');
   const [paxOn, setPaxOn] = useState<string>('');
   const [paxOff, setPaxOff] = useState<string>('');
-  const [useManualDock, setUseManualDock] = useState(false);
+  const [userChangedDock, setUserChangedDock] = useState(false);
   
   const paxOnRef = useRef<HTMLInputElement>(null);
 
@@ -261,12 +261,14 @@ export default function PassengerSession() {
     return routeStops[nextIndex];
   }, [session?.route_id, routeStops, entries.length]);
 
-  // Set dock when route dock is available
+  // Set dock when route dock is available (always update unless user just changed it)
   useEffect(() => {
-    if (nextRouteDock && !useManualDock) {
+    if (nextRouteDock && !userChangedDock) {
       setSelectedDockId(nextRouteDock.dock_id);
     }
-  }, [nextRouteDock, useManualDock]);
+    // Reset the flag when entries change (new entry was added)
+    setUserChangedDock(false);
+  }, [nextRouteDock, entries.length]);
 
   // Add entry mutation
   const addEntry = useMutation({
@@ -274,10 +276,8 @@ export default function PassengerSession() {
       if (!session?.is_active) {
         throw new Error('Sessionen är låst');
       }
-      const dockId = useManualDock ? (selectedDockId || null) : (nextRouteDock?.dock_id || selectedDockId || null);
-      const dockName = useManualDock 
-        ? (manualDockName || allDocks.find(d => d.id === selectedDockId)?.name || 'Okänd brygga')
-        : (nextRouteDock?.dock?.name || allDocks.find(d => d.id === selectedDockId)?.name || 'Okänd brygga');
+      const dockId = selectedDockId || null;
+      const dockName = allDocks.find(d => d.id === selectedDockId)?.name || manualDockName || 'Okänd brygga';
 
       const { error } = await supabase
         .from('passenger_entries')
@@ -505,7 +505,7 @@ export default function PassengerSession() {
               
               <div>
                 <Label className="text-xs">Brygga</Label>
-                <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
+                <Select value={selectedDockId} onValueChange={(val) => { setSelectedDockId(val); setUserChangedDock(true); }} disabled={!session.is_active}>
                   <SelectTrigger className="h-10">
                     <SelectValue placeholder="Välj brygga" />
                   </SelectTrigger>
