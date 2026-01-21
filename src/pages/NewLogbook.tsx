@@ -152,10 +152,37 @@ export default function NewLogbook() {
     setEngineHours(entries);
   };
 
-  // Återställ engine hours när fartyg ändras
+  // Skapa loggbok direkt när fartyg väljs
+  const createLogbookOnVesselSelect = useMutation({
+    mutationFn: async (selectedVesselId: string) => {
+      if (!user) throw new Error('Ej inloggad');
+
+      const { data: logbook, error: logbookError } = await supabase
+        .from('logbooks')
+        .insert({
+          vessel_id: selectedVesselId,
+          date: format(new Date(), 'yyyy-MM-dd'),
+          created_by: user.id,
+          status: 'oppen',
+        })
+        .select()
+        .single();
+
+      if (logbookError) throw logbookError;
+      return logbook;
+    },
+    onSuccess: (logbook) => {
+      queryClient.invalidateQueries({ queryKey: ['logbooks'] });
+      toast({ title: 'Loggbok skapad', description: 'Du kan nu fylla i uppgifterna.' });
+      navigate(`/portal/logbook/${logbook.id}`);
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const handleVesselChange = (newVesselId: string) => {
-    setVesselId(newVesselId);
-    setEngineHours([]);
+    createLogbookOnVesselSelect.mutate(newVesselId);
   };
 
   const crewForValidation = crew
