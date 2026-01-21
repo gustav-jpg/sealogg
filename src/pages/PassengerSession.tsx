@@ -506,11 +506,17 @@ export default function PassengerSession() {
                     <SelectValue placeholder="Välj brygga" />
                   </SelectTrigger>
                   <SelectContent>
-                    {allDocks.map((dock) => (
-                      <SelectItem key={dock.id} value={dock.id}>
-                        {dock.name}
-                      </SelectItem>
-                    ))}
+                    {session.route_id && routeStops.length > 0
+                      ? routeStops.map((stop) => (
+                          <SelectItem key={stop.dock_id} value={stop.dock_id}>
+                            {stop.dock?.name}
+                          </SelectItem>
+                        ))
+                      : allDocks.map((dock) => (
+                          <SelectItem key={dock.id} value={dock.id}>
+                            {dock.name}
+                          </SelectItem>
+                        ))}
                   </SelectContent>
                 </Select>
               </div>
