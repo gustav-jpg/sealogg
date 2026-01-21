@@ -363,8 +363,13 @@ export default function FaultCases() {
                       multiple
                       accept="image/*,.pdf"
                       onChange={handleFileSelect}
-                      className="flex-1"
+                      className={`flex-1 ${filePreviews.length > 0 ? 'file:mr-2' : ''}`}
                     />
+                    {filePreviews.length > 0 && (
+                      <span className="text-sm text-muted-foreground self-center">
+                        {filePreviews.length} fil(er) valda
+                      </span>
+                    )}
                   </div>
                   
                   {/* File previews with annotation option */}
