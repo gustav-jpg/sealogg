@@ -8,13 +8,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Ship, Printer, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Plus, Ship, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { LOGBOOK_STATUS_LABELS } from '@/lib/types';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { useLogbooksPrint } from '@/hooks/useLogbooksPrint';
+
 
 type SortField = 'date' | 'vessel' | 'creator';
 type SortDirection = 'asc' | 'desc';
@@ -22,7 +22,7 @@ type SortDirection = 'asc' | 'desc';
 export default function Dashboard() {
   const { canEdit } = useAuth();
   const { selectedOrgId } = useOrganization();
-  const { printLogbooks } = useLogbooksPrint();
+  
   
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -157,39 +157,14 @@ export default function Dashboard() {
             <h1 className="text-2xl font-display font-bold">Loggböcker</h1>
             <p className="text-muted-foreground text-sm">Hantera och visa fartygsloggböcker</p>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => printLogbooks(
-                filteredAndSortedLogbooks.map(l => ({
-                  id: l.id,
-                  date: l.date,
-                  status: l.status,
-                  vessel: (l as any).vessel,
-                  creator_name: (l as any).creator_name
-                })),
-                { 
-                  title: 'Loggböcker', 
-                  subtitle: `${filteredAndSortedLogbooks.length} loggböcker`,
-                  vesselFilter: vessels.find(v => v.id === vesselFilter)?.name,
-                  creatorFilter: creators.find(c => c.id === creatorFilter)?.name
-                }
-              )}
-              disabled={filteredAndSortedLogbooks.length === 0}
-            >
-              <Printer className="h-4 w-4 mr-1" />
-              Skriv ut
+          {canEdit && (
+            <Button size="sm" asChild>
+              <Link to="/portal/logbook/new">
+                <Plus className="h-4 w-4 mr-1" />
+                Ny loggbok
+              </Link>
             </Button>
-            {canEdit && (
-              <Button size="sm" asChild>
-                <Link to="/portal/logbook/new">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Ny loggbok
-                </Link>
-              </Button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Month selector */}
