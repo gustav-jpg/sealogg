@@ -161,7 +161,7 @@ export default function Dashboard() {
             <Button size="sm" asChild>
               <Link to="/portal/logbook/new">
                 <Plus className="h-4 w-4 mr-1" />
-                Ny loggbok
+                Ny Dagsrapport
               </Link>
             </Button>
           )}
@@ -238,7 +238,7 @@ export default function Dashboard() {
                   <Button size="sm" asChild>
                     <Link to="/portal/logbook/new">
                       <Plus className="h-4 w-4 mr-1" />
-                      Skapa loggbok
+                      Ny Dagsrapport
                     </Link>
                   </Button>
                 )}

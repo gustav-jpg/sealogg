@@ -1117,7 +1117,7 @@ export default function LogbookDetail() {
                   {canEditThis && editableEngineHours.length === 0 && vesselEngineHours && vesselEngineHours.length > 0 && (
                     <Button variant="outline" size="sm" onClick={initializeEngineHoursFromVessel}>
                       <Plus className="h-4 w-4 mr-1" />
-                      Ladda maskiner
+                      Hämta maskindata
                     </Button>
                   )}
                 </CardTitle>
@@ -1131,7 +1131,7 @@ export default function LogbookDetail() {
                       {vesselEngineHours && vesselEngineHours.length > 0 && (
                         <Button variant="outline" size="sm" className="mt-2" onClick={initializeEngineHoursFromVessel}>
                           <Plus className="h-4 w-4 mr-1" />
-                          Ladda maskiner från fartyg
+                          Hämta maskindata
                         </Button>
                       )}
                       {(!vesselEngineHours || vesselEngineHours.length === 0) && (
@@ -1150,17 +1150,26 @@ export default function LogbookDetail() {
                               <Label className="text-xs">Start</Label>
                               <Input 
                                 type="number" 
-                                value={entry.startHours} 
-                                onChange={e => updateEngineHour(entry.tempId, 'startHours', parseInt(e.target.value) || 0)} 
+                                min="0"
+                                value={entry.startHours === 0 ? '' : entry.startHours} 
+                                onChange={e => {
+                                  const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0);
+                                  updateEngineHour(entry.tempId, 'startHours', val);
+                                }} 
+                                placeholder="0"
                               />
                             </div>
                             <div className="w-24 space-y-1">
                               <Label className="text-xs">Stopp</Label>
                               <Input 
                                 type="number" 
-                                value={entry.stopHours ?? ''} 
-                                onChange={e => updateEngineHour(entry.tempId, 'stopHours', e.target.value ? parseInt(e.target.value) : null)} 
-                                placeholder="—"
+                                min="0"
+                                value={entry.stopHours === null ? '' : (entry.stopHours === 0 ? '' : entry.stopHours)} 
+                                onChange={e => {
+                                  const val = e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0);
+                                  updateEngineHour(entry.tempId, 'stopHours', val);
+                                }} 
+                                placeholder="0"
                               />
                             </div>
                             <div className="w-20 space-y-1">
