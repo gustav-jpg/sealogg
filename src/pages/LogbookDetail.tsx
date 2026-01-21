@@ -22,7 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
-import { usePrint } from '@/hooks/usePrint';
+import { useLogbookPrint } from '@/hooks/useLogbookPrint';
 import { ValidationPanel } from '@/components/ValidationPanel';
 import { useValidation } from '@/hooks/useValidation';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -57,7 +57,7 @@ export default function LogbookDetail() {
   const navigate = useNavigate();
   const { user, canEdit, isAdmin } = useAuth();
   const { toast } = useToast();
-  const { printContent } = usePrint();
+  const { printLogbook } = useLogbookPrint();
   const queryClient = useQueryClient();
 
   const [weather, setWeather] = useState('');
@@ -1285,9 +1285,27 @@ export default function LogbookDetail() {
               <Button
                 className="flex-1"
                 variant="outline"
-                onClick={() => printContent('logbook-print-content', {
-                  title: `Loggbok - ${(logbook as any).vessel?.name}`,
-                  subtitle: format(new Date(logbook.date), 'PPPP', { locale: sv }),
+                onClick={() => printLogbook({
+                  logbook: {
+                    id: logbook.id,
+                    date: logbook.date,
+                    status: logbook.status,
+                    weather: logbook.weather || undefined,
+                    wind: logbook.wind || undefined,
+                    general_notes: logbook.general_notes || undefined,
+                    bunker_liters: logbook.bunker_liters || undefined,
+                    vessel: (logbook as any).vessel,
+                    created_by_profile: (logbook as any).created_by_profile,
+                  },
+                  stops: logbookStops || [],
+                  crewMembers: crewMembers?.map(c => ({
+                    profile: (c as any).profile,
+                    role: c.role,
+                  })) || [],
+                  engineHours: engineHours || [],
+                  exercises: exercises || [],
+                  passengerSummary: passengerSummary,
+                  signatures: signatures,
                 })}
               >
                 <FileDown className="h-4 w-4 mr-2" />
