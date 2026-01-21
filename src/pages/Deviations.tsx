@@ -248,7 +248,7 @@ export default function Deviations() {
                   Ny avvikelse
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Skapa ny avvikelse</DialogTitle>
               </DialogHeader>

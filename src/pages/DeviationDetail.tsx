@@ -16,6 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrint } from '@/hooks/usePrint';
@@ -29,7 +36,7 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, Plus, FileText, MessageSquare, Image, X, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, MessageSquare, Image, X, Printer, Pencil, Trash2 } from 'lucide-react';
 
 export default function DeviationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +48,17 @@ export default function DeviationDetail() {
   const [newAction, setNewAction] = useState('');
   const [newResponse, setNewResponse] = useState('');
   const [newStatus, setNewStatus] = useState<DeviationStatus | ''>('');
+  
+  // Edit dialog state
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editType, setEditType] = useState<DeviationType>('avvikelse');
+  const [editSeverity, setEditSeverity] = useState<DeviationSeverity>('medel');
+  
+  // Delete dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
 
   const { data: deviation, isLoading } = useQuery({
     queryKey: ['deviation', id],
@@ -196,6 +214,72 @@ export default function DeviationDetail() {
     },
   });
 
+  const updateDeviation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('deviations')
+        .update({
+          title: editTitle,
+          description: editDescription,
+          type: editType,
+          severity: editSeverity,
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deviation', id] });
+      queryClient.invalidateQueries({ queryKey: ['deviations'] });
+      toast({ title: 'Uppdaterad', description: 'Avvikelsen har uppdaterats.' });
+      setShowEditDialog(false);
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteDeviation = useMutation({
+    mutationFn: async () => {
+      // First add a comment with the deletion reason
+      await supabase
+        .from('deviation_actions')
+        .insert({
+          deviation_id: id,
+          action_text: `[RADERAD] ${deleteReason}`,
+          created_by: user?.id,
+        });
+
+      // Then update the deviation to be closed with "Raderad" in title
+      const { error } = await supabase
+        .from('deviations')
+        .update({
+          title: `[RADERAD] ${deviation?.title}`,
+          status: 'stangd',
+          closed_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deviations'] });
+      toast({ title: 'Raderad', description: 'Avvikelsen har markerats som raderad.' });
+      navigate('/portal/deviations');
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const openEditDialog = () => {
+    if (deviation) {
+      setEditTitle(deviation.title);
+      setEditDescription(deviation.description);
+      setEditType(deviation.type as DeviationType);
+      setEditSeverity(deviation.severity as DeviationSeverity);
+      setShowEditDialog(true);
+    }
+  };
+
   const getSeverityColor = (sev: DeviationSeverity) => {
     switch (sev) {
       case 'hog': return 'destructive';
@@ -238,6 +322,8 @@ export default function DeviationDetail() {
   }
 
   const isOpen = deviation.status !== 'stangd';
+  const isOwnDeviation = deviation.created_by === user?.id;
+  const canEditDeviation = isOwnDeviation && isOpen;
 
   return (
     <MainLayout>
@@ -260,17 +346,132 @@ export default function DeviationDetail() {
               {(deviation as any).vessel?.name} • {format(new Date(deviation.date), 'PPP', { locale: sv })}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => printContent('deviation-print-content', {
-              title: `Avvikelse - ${deviation.title}`,
-              subtitle: `${(deviation as any).vessel?.name} • ${format(new Date(deviation.date), 'PPP', { locale: sv })}`,
-            })}
-          >
-            <Printer className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            {canEditDeviation && (
+              <>
+                <Button variant="outline" size="icon" onClick={openEditDialog}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setShowDeleteDialog(true)} className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => printContent('deviation-print-content', {
+                title: `Avvikelse - ${deviation.title}`,
+                subtitle: `${(deviation as any).vessel?.name} • ${format(new Date(deviation.date), 'PPP', { locale: sv })}`,
+              })}
+            >
+              <Printer className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Redigera avvikelse</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateDeviation.mutate();
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label>Rubrik *</Label>
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Typ *</Label>
+                  <Select value={editType} onValueChange={(v) => setEditType(v as DeviationType)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(DEVIATION_TYPE_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Allvarlighetsgrad *</Label>
+                  <Select value={editSeverity} onValueChange={(v) => setEditSeverity(v as DeviationSeverity)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(DEVIATION_SEVERITY_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Beskrivning *</Label>
+                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required rows={4} />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                  Avbryt
+                </Button>
+                <Button type="submit" disabled={updateDeviation.isPending}>
+                  {updateDeviation.isPending ? 'Sparar...' : 'Spara ändringar'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Radera avvikelse</DialogTitle>
+              <DialogDescription>
+                Avvikelsen kommer att markeras som raderad och stängas. Du måste ange en anledning.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                deleteDeviation.mutate();
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label>Anledning till radering *</Label>
+                <Textarea 
+                  value={deleteReason} 
+                  onChange={(e) => setDeleteReason(e.target.value)} 
+                  required 
+                  rows={3} 
+                  placeholder="Beskriv varför avvikelsen raderas..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                  Avbryt
+                </Button>
+                <Button type="submit" variant="destructive" disabled={deleteDeviation.isPending || !deleteReason.trim()}>
+                  {deleteDeviation.isPending ? 'Raderar...' : 'Radera avvikelse'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <div id="deviation-print-content" className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
@@ -336,7 +537,7 @@ export default function DeviationDetail() {
                 {actions && actions.length > 0 ? (
                   <div className="space-y-2">
                     {actions.map((action) => (
-                      <div key={action.id} className="p-3 rounded bg-muted/50">
+                      <div key={action.id} className={`p-3 rounded ${action.action_text.startsWith('[RADERAD]') ? 'bg-destructive/10 border border-destructive/20' : 'bg-muted/50'}`}>
                         <p>{action.action_text}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {(action as any).creator_name} • {format(new Date(action.created_at), 'PPP HH:mm', { locale: sv })}
