@@ -112,9 +112,9 @@ export default function LogbookDetail() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] });
-      navigate(`/portal/passagerare/${data.id}`);
+      toast({ title: 'Passagerarregistrering aktiverad', description: 'Besättningen kan nu registrera passagerare.' });
     },
     onError: () => {
       toast({ title: 'Fel', description: 'Kunde inte aktivera passagerarregistrering', variant: 'destructive' });
