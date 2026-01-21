@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users } from 'lucide-react';
+import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,11 +24,27 @@ export interface StopEntry {
   notes: string;
 }
 
+interface PassengerSummary {
+  firstDeparture: string;
+  lastDeparture: string;
+  totalPaxOn: number;
+  totalPaxOff: number;
+  stopCount: number;
+  stops: {
+    order: number;
+    time: string;
+    dock: string;
+    paxOn: number;
+    paxOff: number;
+  }[];
+}
+
 interface LogbookStopsProps {
   stops: StopEntry[];
   onStopsChange: (stops: StopEntry[]) => void;
   disabled?: boolean;
   passengerSession?: { id: string; is_active: boolean } | null;
+  passengerSummary?: PassengerSummary | null;
   onActivatePassengerRegistration?: () => void;
   isActivatingPassenger?: boolean;
   onOpenPassengerSession?: () => void;
@@ -50,6 +66,7 @@ export function LogbookStops({
   onStopsChange, 
   disabled = false,
   passengerSession,
+  passengerSummary,
   onActivatePassengerRegistration,
   isActivatingPassenger,
   onOpenPassengerSession,
@@ -86,6 +103,78 @@ export function LogbookStops({
   };
 
   if (stops.length === 0) {
+    // Show passenger summary if session is closed and has data
+    if (passengerSession && !passengerSession.is_active && passengerSummary) {
+      return (
+        <div className="space-y-4">
+          {/* Summary header */}
+          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Passagerarregistrering avslutad</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span className="font-mono">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
+            </div>
+          </div>
+
+          {/* Summary stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+              <div className="flex items-center gap-2 text-primary">
+                <UserPlus className="h-4 w-4" />
+                <span className="text-sm">Påstigande totalt</span>
+              </div>
+              <span className="text-xl font-bold text-primary">{passengerSummary.totalPaxOn}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
+              <div className="flex items-center gap-2 text-destructive">
+                <UserMinus className="h-4 w-4" />
+                <span className="text-sm">Avstigande totalt</span>
+              </div>
+              <span className="text-xl font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
+            </div>
+          </div>
+
+          {/* Stops table */}
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-12">#</TableHead>
+                <TableHead>Tid</TableHead>
+                <TableHead>Brygga</TableHead>
+                <TableHead className="text-center w-20">På</TableHead>
+                <TableHead className="text-center w-20">Av</TableHead>
+                <TableHead className="text-center w-24">Ombord</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {passengerSummary.stops.map((stop, index) => {
+                const runningTotal = passengerSummary.stops
+                  .slice(0, index + 1)
+                  .reduce((sum, s) => sum + s.paxOn - s.paxOff, 0);
+                return (
+                  <TableRow key={stop.order}>
+                    <TableCell className="text-muted-foreground">{stop.order}</TableCell>
+                    <TableCell className="font-mono">{stop.time}</TableCell>
+                    <TableCell>{stop.dock}</TableCell>
+                    <TableCell className="text-center font-semibold text-primary">
+                      {stop.paxOn > 0 ? `+${stop.paxOn}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-center font-semibold text-destructive">
+                      {stop.paxOff > 0 ? `-${stop.paxOff}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-center font-bold">{runningTotal}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      );
+    }
+
     // Show different message if passenger registration is active
     if (passengerSession?.is_active) {
       return (

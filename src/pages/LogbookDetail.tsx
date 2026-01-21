@@ -88,13 +88,50 @@ export default function LogbookDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('passenger_sessions')
-        .select('id, is_active')
+        .select('id, is_active, started_at, ended_at')
         .eq('logbook_id', id)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!id,
+  });
+
+  // Passenger entries summary (for closed sessions)
+  const { data: passengerSummary } = useQuery({
+    queryKey: ['passenger-summary', passengerSession?.id],
+    queryFn: async () => {
+      if (!passengerSession?.id) return null;
+      
+      const { data: entries, error } = await supabase
+        .from('passenger_entries')
+        .select('departure_time, pax_on, pax_off, dock_name')
+        .eq('session_id', passengerSession.id)
+        .order('entry_order', { ascending: true });
+      
+      if (error) throw error;
+      if (!entries || entries.length === 0) return null;
+
+      const sortedByTime = [...entries].sort((a, b) => 
+        (a.departure_time || '').localeCompare(b.departure_time || '')
+      );
+
+      return {
+        firstDeparture: sortedByTime[0]?.departure_time?.slice(0, 5) || '-',
+        lastDeparture: sortedByTime[sortedByTime.length - 1]?.departure_time?.slice(0, 5) || '-',
+        totalPaxOn: entries.reduce((sum, e) => sum + (e.pax_on || 0), 0),
+        totalPaxOff: entries.reduce((sum, e) => sum + (e.pax_off || 0), 0),
+        stopCount: entries.length,
+        stops: entries.map((e, i) => ({
+          order: i + 1,
+          time: e.departure_time?.slice(0, 5) || '-',
+          dock: e.dock_name || '-',
+          paxOn: e.pax_on || 0,
+          paxOff: e.pax_off || 0,
+        })),
+      };
+    },
+    enabled: !!passengerSession?.id,
   });
 
   const activatePassengerRegistration = useMutation({
@@ -884,6 +921,7 @@ export default function LogbookDetail() {
                     onStopsChange={setStops} 
                     disabled={!canEditThis}
                     passengerSession={passengerSession}
+                    passengerSummary={passengerSummary}
                     onActivatePassengerRegistration={() => activatePassengerRegistration.mutate()}
                     isActivatingPassenger={activatePassengerRegistration.isPending}
                     onOpenPassengerSession={() => navigate(`/portal/passagerare/${passengerSession?.id}`)}
