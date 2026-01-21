@@ -1,12 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Anchor, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
@@ -29,7 +28,7 @@ interface SeaDayRow {
   days: number;
 }
 
-export default function SeaDays() {
+export function SeaDaysTab() {
   const { selectedOrgId } = useOrganization();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
@@ -184,159 +183,145 @@ export default function SeaDays() {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold flex items-center gap-3">
-              <Anchor className="h-8 w-8" />
-              Sjödagar
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Rapportering till Transportstyrelsen
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Filters */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-lg">Filter</CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportToCSV} disabled={seaDayRows.length === 0}>
+            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={seaDayRows.length === 0}>
               <Download className="h-4 w-4 mr-2" />
               CSV
             </Button>
-            <Button variant="outline" onClick={exportToText} disabled={seaDayRows.length === 0}>
+            <Button variant="outline" size="sm" onClick={exportToText} disabled={seaDayRows.length === 0}>
               <Download className="h-4 w-4 mr-2" />
               Text
             </Button>
           </div>
-        </div>
-
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Filter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <Label>År</Label>
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Fartyg</Label>
-                <Select value={selectedVessel} onValueChange={setSelectedVessel}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alla fartyg</SelectItem>
-                    {vessels?.map((vessel) => (
-                      <SelectItem key={vessel.id} value={vessel.id}>
-                        {vessel.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Personal</Label>
-                <Select value={selectedProfile} onValueChange={setSelectedProfile}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alla anställda</SelectItem>
-                    {profiles?.map((profile) => (
-                      <SelectItem key={profile.id} value={profile.id}>
-                        {profile.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Befattning</Label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alla befattningar</SelectItem>
-                    {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="space-y-2">
+              <Label>År</Label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label>Fartyg</Label>
+              <Select value={selectedVessel} onValueChange={setSelectedVessel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla fartyg</SelectItem>
+                  {vessels?.map((vessel) => (
+                    <SelectItem key={vessel.id} value={vessel.id}>
+                      {vessel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Personal</Label>
+              <Select value={selectedProfile} onValueChange={setSelectedProfile}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla anställda</SelectItem>
+                  {profiles?.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Befattning</Label>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla befattningar</SelectItem>
+                  {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Results */}
-        <Card>
-          <CardContent className="pt-6">
-            {isLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-10 bg-muted animate-pulse rounded" />
-                ))}
-              </div>
-            ) : seaDayRows.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                Inga sjödagar hittades för valt år och filter
-              </p>
-            ) : (
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left p-3 font-medium">Namn</th>
-                      <th className="text-left p-3 font-medium">Fartyg</th>
-                      <th className="text-left p-3 font-medium">Befattning</th>
-                      <th className="text-right p-3 font-medium">Antal dagar</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {seaDayRows.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-muted/30">
-                        <td className="p-3">{row.profileName}</td>
-                        <td className="p-3">{row.vesselName}</td>
-                        <td className="p-3">{CREW_ROLE_LABELS[row.role]}</td>
-                        <td className="p-3 text-right font-medium">{row.days}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-muted/50">
-                    <tr>
-                      <td colSpan={3} className="p-3 font-semibold">Totalt</td>
-                      <td className="p-3 text-right font-bold">{totalSeaDays}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Info box */}
-        <Card className="bg-muted/50">
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">
-              <strong>OBS:</strong> En sjödag räknas per person, roll och dag. Arbetar man som befälhavare på förmiddagen och jungman på eftermiddagen får man 2 dagar. Om man arbetar samma roll på flera fartyg samma dag räknas den föredragna båten (ställs in i användarens profil).
+      {/* Results */}
+      <Card>
+        <CardContent className="pt-6">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+              ))}
+            </div>
+          ) : seaDayRows.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              Inga sjödagar hittades för valt år och filter
             </p>
-          </CardContent>
-        </Card>
-      </div>
-    </MainLayout>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-3 font-medium">Namn</th>
+                    <th className="text-left p-3 font-medium">Fartyg</th>
+                    <th className="text-left p-3 font-medium">Befattning</th>
+                    <th className="text-right p-3 font-medium">Antal dagar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {seaDayRows.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-muted/30">
+                      <td className="p-3">{row.profileName}</td>
+                      <td className="p-3">{row.vesselName}</td>
+                      <td className="p-3">{CREW_ROLE_LABELS[row.role]}</td>
+                      <td className="p-3 text-right font-medium">{row.days}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-muted/50">
+                  <tr>
+                    <td colSpan={3} className="p-3 font-semibold">Totalt</td>
+                    <td className="p-3 text-right font-bold">{totalSeaDays}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Info box */}
+      <Card className="bg-muted/50">
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">
+            <strong>OBS:</strong> En sjödag räknas per person, roll och dag. Arbetar man som befälhavare på förmiddagen och jungman på eftermiddagen får man 2 dagar. Om man arbetar samma roll på flera fartyg samma dag räknas den föredragna båten (ställs in i användarens profil).
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
