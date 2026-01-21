@@ -110,9 +110,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear local state first to ensure UI updates even if signOut fails
+    setUser(null);
+    setSession(null);
     setProfile(null);
     setRoles([]);
+    
+    // Attempt to sign out from Supabase - ignore errors (session may already be invalid)
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Session was already invalid, which is fine - user is logged out locally
+    }
   };
 
   const isAdmin = roles.includes('admin');
