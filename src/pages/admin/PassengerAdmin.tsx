@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, Edit, Route, Anchor } from "lucide-react";
+import { Plus, Trash2, Edit, Route, Anchor, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface Dock {
@@ -250,6 +250,36 @@ export default function PassengerAdmin() {
       queryClient.invalidateQueries({ queryKey: ['admin-route-stops'] });
       toast.success('Stopp borttaget');
     },
+  });
+
+  const moveRouteStop = useMutation({
+    mutationFn: async ({ stopId, direction }: { stopId: string; direction: 'up' | 'down' }) => {
+      const currentIndex = routeStops.findIndex(s => s.id === stopId);
+      if (currentIndex === -1) return;
+      
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex < 0 || targetIndex >= routeStops.length) return;
+
+      const currentStop = routeStops[currentIndex];
+      const targetStop = routeStops[targetIndex];
+
+      // Swap stop_order values
+      const { error: error1 } = await supabase
+        .from('passenger_route_stops')
+        .update({ stop_order: targetStop.stop_order })
+        .eq('id', currentStop.id);
+      if (error1) throw error1;
+
+      const { error: error2 } = await supabase
+        .from('passenger_route_stops')
+        .update({ stop_order: currentStop.stop_order })
+        .eq('id', targetStop.id);
+      if (error2) throw error2;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-route-stops'] });
+    },
+    onError: () => toast.error('Kunde inte flytta stopp'),
   });
 
   const openDockDialog = (dock?: Dock) => {
@@ -516,7 +546,27 @@ export default function PassengerAdmin() {
               ) : (
                 <div className="divide-y">
                   {routeStops.map((stop, index) => (
-                    <div key={stop.id} className="flex items-center gap-3 px-4 py-2">
+                    <div key={stop.id} className="flex items-center gap-2 px-4 py-2">
+                      <div className="flex flex-col">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          disabled={index === 0 || moveRouteStop.isPending}
+                          onClick={() => moveRouteStop.mutate({ stopId: stop.id, direction: 'up' })}
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          disabled={index === routeStops.length - 1 || moveRouteStop.isPending}
+                          onClick={() => moveRouteStop.mutate({ stopId: stop.id, direction: 'down' })}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <span className="text-muted-foreground w-6">{index + 1}.</span>
                       <span className="flex-1 font-medium">{stop.dock?.name}</span>
                       <Button
