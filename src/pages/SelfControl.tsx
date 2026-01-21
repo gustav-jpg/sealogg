@@ -527,7 +527,7 @@ export default function SelfControl() {
                           size="sm"
                           onClick={collapseAllCategories}
                         >
-                          Kollapsa alla
+                          Minimera alla
                         </Button>
                       </div>
                       <span className="text-sm text-muted-foreground">
