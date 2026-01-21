@@ -204,6 +204,36 @@ export default function LogbookDetail() {
     },
   });
 
+  // Delete passenger session (if activated by mistake and has no entries)
+  const deletePassengerSession = useMutation({
+    mutationFn: async () => {
+      if (!passengerSession?.id) throw new Error('Ingen passagerarsession');
+      
+      // First delete any entries
+      const { error: entriesError } = await supabase
+        .from('passenger_entries')
+        .delete()
+        .eq('session_id', passengerSession.id);
+      if (entriesError) throw entriesError;
+
+      // Then delete the session
+      const { error } = await supabase
+        .from('passenger_sessions')
+        .delete()
+        .eq('id', passengerSession.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] });
+      queryClient.invalidateQueries({ queryKey: ['passenger-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['passenger-summary'] });
+      toast({ title: 'Borttagen', description: 'Passagerarregistreringen har tagits bort.' });
+    },
+    onError: () => {
+      toast({ title: 'Fel', description: 'Kunde inte ta bort passagerarregistrering', variant: 'destructive' });
+    },
+  });
+
   const { data: signatures } = useLogbookSignatures(id);
   const signLogbook = useSignLogbook();
 
@@ -1026,7 +1056,9 @@ export default function LogbookDetail() {
                     onOpenPassengerSession={() => navigate(`/portal/passagerare/${passengerSession?.id}`)}
                     onLockPassengerSession={() => lockPassengerSession.mutate()}
                     onUnlockPassengerSession={() => unlockPassengerSession.mutate()}
+                    onDeletePassengerSession={() => deletePassengerSession.mutate()}
                     isLockingSession={lockPassengerSession.isPending || unlockPassengerSession.isPending}
+                    isDeletingSession={deletePassengerSession.isPending}
                     canLockSession={canEditThis}
                   />
                 ) : (

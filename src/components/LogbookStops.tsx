@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, CheckCircle2, Lock, Unlock, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, Lock, Unlock, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -50,7 +50,9 @@ interface LogbookStopsProps {
   onOpenPassengerSession?: () => void;
   onLockPassengerSession?: () => void;
   onUnlockPassengerSession?: () => void;
+  onDeletePassengerSession?: () => void;
   isLockingSession?: boolean;
+  isDeletingSession?: boolean;
   canLockSession?: boolean;
 }
 
@@ -76,7 +78,9 @@ export function LogbookStops({
   onOpenPassengerSession,
   onLockPassengerSession,
   onUnlockPassengerSession,
+  onDeletePassengerSession,
   isLockingSession,
+  isDeletingSession,
   canLockSession,
 }: LogbookStopsProps) {
   const sortedStops = [...stops].sort((a, b) => a.stopOrder - b.stopOrder);
@@ -207,6 +211,17 @@ export function LogbookStops({
               >
                 <Lock className="h-4 w-4" />
                 {isLockingSession ? 'Låser...' : 'Lås registrering'}
+              </Button>
+            )}
+            {canLockSession && onDeletePassengerSession && (
+              <Button 
+                variant="destructive" 
+                onClick={onDeletePassengerSession}
+                disabled={isDeletingSession}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeletingSession ? 'Tar bort...' : 'Ta bort'}
               </Button>
             )}
           </div>
