@@ -505,27 +505,35 @@ export default function PassengerSession() {
               </div>
               
               <div>
-                <Label className="text-xs">Brygga</Label>
-                {session.route_id && nextRouteDock ? (
-                  <Input
-                    value={nextRouteDock.dock?.name || ''}
-                    disabled
-                    className="h-10 bg-muted"
-                  />
-                ) : (
-                  <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Välj brygga" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allDocks.map((dock) => (
+                <Label className="text-xs">
+                  Brygga
+                  {session.route_id && nextRouteDock && (
+                    <span className="ml-1 text-muted-foreground font-normal">(nästa: {nextRouteDock.dock?.name})</span>
+                  )}
+                </Label>
+                <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Välj brygga" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {session.route_id && routeStops.length > 0 ? (
+                      <>
+                        {routeStops.map((stop, index) => (
+                          <SelectItem key={stop.dock_id} value={stop.dock_id}>
+                            {index + 1}. {stop.dock?.name}
+                            {stop.dock_id === nextRouteDock?.dock_id && ' ✓'}
+                          </SelectItem>
+                        ))}
+                      </>
+                    ) : (
+                      allDocks.map((dock) => (
                         <SelectItem key={dock.id} value={dock.id}>
                           {dock.name}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
