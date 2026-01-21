@@ -81,6 +81,7 @@ export default function LogbookDetail() {
   const [newExerciseNotes, setNewExerciseNotes] = useState('');
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showDeletePassengerSessionDialog, setShowDeletePassengerSessionDialog] = useState(false);
 
   // Passenger session
   const { data: passengerSession } = useQuery({
@@ -1056,7 +1057,7 @@ export default function LogbookDetail() {
                     onOpenPassengerSession={() => navigate(`/portal/passagerare/${passengerSession?.id}`)}
                     onLockPassengerSession={() => lockPassengerSession.mutate()}
                     onUnlockPassengerSession={() => unlockPassengerSession.mutate()}
-                    onDeletePassengerSession={() => deletePassengerSession.mutate()}
+                    onDeletePassengerSession={() => setShowDeletePassengerSessionDialog(true)}
                     isLockingSession={lockPassengerSession.isPending || unlockPassengerSession.isPending}
                     isDeletingSession={deletePassengerSession.isPending}
                     canLockSession={canEditThis}
@@ -1655,6 +1656,23 @@ export default function LogbookDetail() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={showDeletePassengerSessionDialog}
+        onOpenChange={setShowDeletePassengerSessionDialog}
+        title="Ta bort passagerarregistrering"
+        description={
+          passengerSummary && passengerSummary.totalPaxOn > 0
+            ? `Varning: Det finns ${passengerSummary.totalPaxOn} registrerade passagerare. Är du säker på att du vill ta bort passagerarregistreringen? All data kommer att raderas.`
+            : 'Är du säker på att du vill ta bort passagerarregistreringen?'
+        }
+        confirmLabel="Ta bort"
+        onConfirm={() => {
+          deletePassengerSession.mutate();
+          setShowDeletePassengerSessionDialog(false);
+        }}
+        variant="destructive"
+      />
     </MainLayout>
   );
 }
