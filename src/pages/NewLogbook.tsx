@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useToast } from '@/hooks/use-toast';
@@ -18,8 +18,9 @@ import { useValidation } from '@/hooks/useValidation';
 import { LogbookStops, StopEntry } from '@/components/LogbookStops';
 import { CrewRole, CREW_ROLE_LABELS } from '@/lib/types';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
-import { Plus, Trash2, Ship, Users, Save, MapPin, Gauge, GraduationCap } from 'lucide-react';
+import { Plus, Trash2, Ship, Users, Save, MapPin, Gauge, GraduationCap, BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
+import { sv } from 'date-fns/locale';
 
 interface ExerciseEntry {
   tempId: string;
@@ -44,6 +45,13 @@ interface EngineHourEntry {
   notes: string;
 }
 
+interface ExistingLogbookInfo {
+  id: string;
+  vesselId: string;
+  vesselName: string;
+  date: string;
+}
+
 export default function NewLogbook() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -65,6 +73,7 @@ export default function NewLogbook() {
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
   const [newExerciseType, setNewExerciseType] = useState('');
   const [newExerciseNotes, setNewExerciseNotes] = useState('');
+  const [existingLogbookDialog, setExistingLogbookDialog] = useState<ExistingLogbookInfo | null>(null);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -152,25 +161,38 @@ export default function NewLogbook() {
     setEngineHours(entries);
   };
 
-  // Skapa loggbok direkt när fartyg väljs
-  const createLogbookOnVesselSelect = useMutation({
+  // Kolla om loggbok redan finns när fartyg väljs
+  const checkExistingLogbook = async (selectedVesselId: string) => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const vessel = vessels?.find(v => v.id === selectedVesselId);
+
+    const { data: existingLogbook } = await supabase
+      .from('logbooks')
+      .select('id')
+      .eq('vessel_id', selectedVesselId)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (existingLogbook) {
+      // Visa dialog för att fråga användaren
+      setExistingLogbookDialog({
+        id: existingLogbook.id,
+        vesselId: selectedVesselId,
+        vesselName: vessel?.name || 'Okänt fartyg',
+        date: today,
+      });
+    } else {
+      // Skapa ny loggbok direkt
+      createNewLogbook.mutate(selectedVesselId);
+    }
+  };
+
+  // Skapa ny loggbok
+  const createNewLogbook = useMutation({
     mutationFn: async (selectedVesselId: string) => {
       if (!user) throw new Error('Ej inloggad');
 
       const today = format(new Date(), 'yyyy-MM-dd');
-
-      // Check if logbook already exists for this vessel and date
-      const { data: existingLogbook } = await supabase
-        .from('logbooks')
-        .select('id')
-        .eq('vessel_id', selectedVesselId)
-        .eq('date', today)
-        .maybeSingle();
-
-      if (existingLogbook) {
-        // Return existing logbook instead of creating new one
-        return { id: existingLogbook.id, isExisting: true };
-      }
 
       const { data: logbook, error: logbookError } = await supabase
         .from('logbooks')
@@ -184,16 +206,12 @@ export default function NewLogbook() {
         .single();
 
       if (logbookError) throw logbookError;
-      return { id: logbook.id, isExisting: false };
+      return logbook;
     },
-    onSuccess: (result) => {
+    onSuccess: (logbook) => {
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
-      if (result.isExisting) {
-        toast({ title: 'Loggbok finns redan', description: 'Öppnar befintlig loggbok för dagens datum.' });
-      } else {
-        toast({ title: 'Loggbok skapad', description: 'Du kan nu fylla i uppgifterna.' });
-      }
-      navigate(`/portal/logbook/${result.id}`);
+      toast({ title: 'Loggbok skapad', description: 'Du kan nu fylla i uppgifterna.' });
+      navigate(`/portal/logbook/${logbook.id}`);
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -201,7 +219,21 @@ export default function NewLogbook() {
   });
 
   const handleVesselChange = (newVesselId: string) => {
-    createLogbookOnVesselSelect.mutate(newVesselId);
+    checkExistingLogbook(newVesselId);
+  };
+
+  const handleOpenExisting = () => {
+    if (existingLogbookDialog) {
+      navigate(`/portal/logbook/${existingLogbookDialog.id}`);
+      setExistingLogbookDialog(null);
+    }
+  };
+
+  const handleCreateNew = () => {
+    if (existingLogbookDialog) {
+      createNewLogbook.mutate(existingLogbookDialog.vesselId);
+      setExistingLogbookDialog(null);
+    }
   };
 
   const crewForValidation = crew
@@ -656,6 +688,33 @@ export default function NewLogbook() {
           </div>
         </div>
       </div>
+
+      {/* Dialog för befintlig loggbok */}
+      <Dialog open={!!existingLogbookDialog} onOpenChange={(open) => !open && setExistingLogbookDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Loggbok finns redan
+            </DialogTitle>
+            <DialogDescription>
+              Det finns redan en loggbok för <strong>{existingLogbookDialog?.vesselName}</strong> den{' '}
+              <strong>{existingLogbookDialog?.date ? format(new Date(existingLogbookDialog.date), 'd MMMM yyyy', { locale: sv }) : ''}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 text-sm text-muted-foreground">
+            Vill du öppna den befintliga loggboken eller skapa en ny för samma datum?
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={handleOpenExisting} className="w-full sm:w-auto">
+              Öppna befintlig
+            </Button>
+            <Button onClick={handleCreateNew} disabled={createNewLogbook.isPending} className="w-full sm:w-auto">
+              {createNewLogbook.isPending ? 'Skapar...' : 'Skapa ny ändå'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
