@@ -45,6 +45,9 @@ import NewBooking from "./pages/bookings/NewBooking";
 import BookingDetail from "./pages/bookings/BookingDetail";
 import MenusAdmin from "./pages/bookings/admin/MenusAdmin";
 import DrinksAdmin from "./pages/bookings/admin/DrinksAdmin";
+import PassengerRegistration from "./pages/PassengerRegistration";
+import PassengerSession from "./pages/PassengerSession";
+import PassengerAdmin from "./pages/admin/PassengerAdmin";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +133,11 @@ function AppRoutes() {
         <Route path="/portal/admin/sea-days" element={<ProtectedRoute adminOnly><SeaDays /></ProtectedRoute>} />
         <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/intranet" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
+        
+        {/* Passenger registration routes */}
+        <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
+        <Route path="/portal/passagerare/:sessionId" element={<ProtectedRoute><PassengerSession /></ProtectedRoute>} />
         
         {/* Booking routes */}
         <Route path="/bookings" element={<ProtectedRoute><BookingCalendar /></ProtectedRoute>} />

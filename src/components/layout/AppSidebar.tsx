@@ -27,6 +27,8 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Check,
+  UserCheck,
+  Route,
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo.png';
 import {
@@ -117,9 +119,16 @@ export function AppSidebar() {
   const vesselNavItems = activeVesselModules.map(m => MODULE_NAV_MAP[m]);
   const bookingNavItems = activeBookingModules.map(m => MODULE_NAV_MAP[m]);
 
-  // Always show Startsida first and Qualifications at end for vessel section
+  // Always show Startsida first, Passagerare after logbook, and Qualifications at end for vessel section
   if (vesselNavItems.length > 0 || isSuperadmin) {
     vesselNavItems.unshift({ href: '/portal/startsida', label: 'Startsida', icon: Home });
+    // Add Passagerare link after logbook if logbook module is active
+    if (orgModules?.includes('logbook') || isSuperadmin) {
+      const logbookIndex = vesselNavItems.findIndex(item => item.href === '/portal/logbooks');
+      if (logbookIndex !== -1) {
+        vesselNavItems.splice(logbookIndex + 1, 0, { href: '/portal/passagerare', label: 'Passagerare', icon: UserCheck });
+      }
+    }
     vesselNavItems.push({ href: '/portal/qualifications', label: 'Behörigheter', icon: Award });
   }
 
@@ -138,6 +147,7 @@ export function AppSidebar() {
     { module: 'checklists', href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
     { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
     { module: 'logbook', href: '/portal/admin/intranet', label: 'Intranät', icon: Home },
+    { module: 'logbook', href: '/portal/admin/passagerare', label: 'Passagerarrutter', icon: Route },
   ];
 
   // Filter module-specific items based on active modules
