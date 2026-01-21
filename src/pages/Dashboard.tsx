@@ -232,20 +232,20 @@ export default function Dashboard() {
                   <TableRow className="hover:bg-transparent">
                     <TableHead 
                       className="h-9 cursor-pointer select-none"
-                      onClick={() => handleSort('vessel')}
-                    >
-                      <div className="flex items-center">
-                        Fartyg
-                        <SortIcon field="vessel" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="h-9 cursor-pointer select-none"
                       onClick={() => handleSort('date')}
                     >
                       <div className="flex items-center">
                         Datum
                         <SortIcon field="date" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="h-9 cursor-pointer select-none"
+                      onClick={() => handleSort('vessel')}
+                    >
+                      <div className="flex items-center">
+                        Fartyg
+                        <SortIcon field="vessel" />
                       </div>
                     </TableHead>
                     <TableHead 
@@ -267,11 +267,11 @@ export default function Dashboard() {
                       className="cursor-pointer"
                       onClick={() => window.location.href = `/portal/logbook/${logbook.id}`}
                     >
-                      <TableCell className="py-2 font-medium">
-                        {(logbook as any).vessel?.name || 'Okänt fartyg'}
-                      </TableCell>
                       <TableCell className="py-2 text-muted-foreground text-sm">
                         {format(new Date(logbook.date), 'd MMM yyyy', { locale: sv })}
+                      </TableCell>
+                      <TableCell className="py-2 font-medium">
+                        {(logbook as any).vessel?.name || 'Okänt fartyg'}
                       </TableCell>
                       <TableCell className="py-2 text-sm">
                         {(logbook as any).creator_name || 'Okänd'}
