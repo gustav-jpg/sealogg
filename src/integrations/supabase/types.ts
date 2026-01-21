@@ -2571,8 +2571,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_skeppare: { Args: { _user_id: string }; Returns: boolean }
+      is_logbook_crew: {
+        Args: { _logbook_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_org_admin: {
         Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_session_crew: {
+        Args: { _session_id: string; _user_id: string }
         Returns: boolean
       }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }

@@ -71,8 +71,43 @@ export default function PassengerSession() {
   
   const paxOnRef = useRef<HTMLInputElement>(null);
 
+  // Check if current user is crew on the logbook
+  const { data: isCrewMember, isLoading: crewCheckLoading } = useQuery({
+    queryKey: ['is-crew-member', sessionId, user?.id],
+    queryFn: async () => {
+      // First get the session to find the logbook_id
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('passenger_sessions')
+        .select('logbook_id')
+        .eq('id', sessionId)
+        .single();
+      
+      if (sessionError || !sessionData) return false;
+
+      // Get user's profile id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (!profile) return false;
+
+      // Check if user is in logbook crew
+      const { data: crewData } = await supabase
+        .from('logbook_crew')
+        .select('id')
+        .eq('logbook_id', sessionData.logbook_id)
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+      
+      return !!crewData;
+    },
+    enabled: !!sessionId && !!user?.id,
+  });
+
   // Fetch session data
-  const { data: session, isLoading: sessionLoading } = useQuery({
+  const { data: session, isLoading: sessionLoading, error: sessionError } = useQuery({
     queryKey: ['passenger-session', sessionId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -271,7 +306,7 @@ export default function PassengerSession() {
     }
   };
 
-  if (sessionLoading) {
+  if (sessionLoading || crewCheckLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -281,12 +316,31 @@ export default function PassengerSession() {
     );
   }
 
-  if (!session) {
+  if (!session || sessionError) {
     return (
       <MainLayout>
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Session hittades inte</p>
+          <p className="text-muted-foreground">Session hittades inte eller du har inte tillgång</p>
           <Button variant="outline" className="mt-4" onClick={() => navigate('/portal/passagerare')}>
+            Tillbaka
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isCrewMember) {
+    return (
+      <MainLayout>
+        <div className="text-center py-12">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Users className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">Ingen åtkomst</h2>
+          <p className="text-muted-foreground mb-4">
+            Du måste vara registrerad i loggbokens besättning för att kunna registrera passagerare.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/portal/passagerare')}>
             Tillbaka
           </Button>
         </div>
