@@ -254,14 +254,36 @@ export default function PassengerSession() {
     };
   }, [entries]);
 
-  // Get next dock from route (cycles back to start when complete)
+  // Get next dock strictly based on the route order.
+  // - Before first entry: "next" is the currently selected start dock (or first stop if none selected)
+  // - After entries exist: "next" is the stop AFTER the last reported dock
   const nextRouteDock = useMemo(() => {
     if (!session?.route_id || routeStops.length === 0) return null;
-    const nextIndex = entries.length % routeStops.length;
-    return routeStops[nextIndex];
-  }, [session?.route_id, routeStops, entries.length]);
 
-  // Set dock when a new entry is added (entries.length increases)
+    // No entries yet: allow user to pick a starting dock in the middle.
+    if (entries.length === 0) {
+      const selectedIndex = selectedDockId
+        ? routeStops.findIndex((s) => s.dock_id === selectedDockId)
+        : -1;
+      return routeStops[selectedIndex >= 0 ? selectedIndex : 0];
+    }
+
+    const lastEntry = entries[entries.length - 1];
+    const lastIndex = lastEntry?.dock_id
+      ? routeStops.findIndex((s) => s.dock_id === lastEntry.dock_id)
+      : -1;
+    const nextIndex = ((lastIndex >= 0 ? lastIndex : -1) + 1) % routeStops.length;
+    return routeStops[nextIndex];
+  }, [session?.route_id, routeStops, entries, selectedDockId]);
+
+  // Initialize dock (only if user hasn't chosen one yet)
+  useEffect(() => {
+    if (!selectedDockId && nextRouteDock) {
+      setSelectedDockId(nextRouteDock.dock_id);
+    }
+  }, [nextRouteDock, selectedDockId]);
+
+  // Advance dock when a new entry is added (entries.length increases)
   useEffect(() => {
     if (nextRouteDock && entries.length > lastEntriesCount) {
       setSelectedDockId(nextRouteDock.dock_id);
