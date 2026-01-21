@@ -8,11 +8,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Ship, Printer, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Ship, Printer, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { LOGBOOK_STATUS_LABELS } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { useLogbooksPrint } from '@/hooks/useLogbooksPrint';
 
@@ -28,9 +28,13 @@ export default function Dashboard() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [vesselFilter, setVesselFilter] = useState<string>('all');
   const [creatorFilter, setCreatorFilter] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+
+  const monthStart = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
 
   const { data: logbooks, isLoading } = useQuery({
-    queryKey: ['logbooks', selectedOrgId],
+    queryKey: ['logbooks', selectedOrgId, monthStart, monthEnd],
     queryFn: async () => {
       if (!selectedOrgId) return [];
       
@@ -50,8 +54,9 @@ export default function Dashboard() {
           vessel:vessels(*)
         `)
         .in('vessel_id', vesselIds)
-        .order('date', { ascending: false })
-        .limit(50);
+        .gte('date', monthStart)
+        .lte('date', monthEnd)
+        .order('date', { ascending: false });
       if (error) throw error;
       
       if (data && data.length > 0) {
@@ -187,31 +192,58 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-3 flex-wrap">
-          <Select value={vesselFilter} onValueChange={setVesselFilter}>
-            <SelectTrigger className="w-[180px] h-8 text-sm">
-              <SelectValue placeholder="Alla fartyg" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla fartyg</SelectItem>
-              {vessels.map(v => (
-                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Month selector */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2 px-3 min-w-[140px] justify-center">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium capitalize">
+                {format(selectedMonth, 'MMMM yyyy', { locale: sv })}
+              </span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
           
-          <Select value={creatorFilter} onValueChange={setCreatorFilter}>
-            <SelectTrigger className="w-[180px] h-8 text-sm">
-              <SelectValue placeholder="Alla befäl" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla befäl</SelectItem>
-              {creators.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-3 flex-wrap">
+            <Select value={vesselFilter} onValueChange={setVesselFilter}>
+              <SelectTrigger className="w-[160px] h-8 text-sm">
+                <SelectValue placeholder="Alla fartyg" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla fartyg</SelectItem>
+                {vessels.map(v => (
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={creatorFilter} onValueChange={setCreatorFilter}>
+              <SelectTrigger className="w-[160px] h-8 text-sm">
+                <SelectValue placeholder="Alla befäl" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla befäl</SelectItem>
+                {creators.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div id="logbooks-list">
