@@ -606,6 +606,9 @@ export default function SelfControl() {
                                           </Badge>
                                         )}
                                       </div>
+                                      {cp.description && (
+                                        <p className="text-sm text-muted-foreground mt-1 mb-2">{cp.description}</p>
+                                      )}
                                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                         <span>
                                           Intervall: {cp.type === 'calendar' 
