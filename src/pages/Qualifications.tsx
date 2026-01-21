@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Ship, Users, Award, AlertTriangle, FileText, ExternalLink } from 'lucide-react';
+import { Ship, Users, Award, AlertTriangle, FileText, ExternalLink, Filter } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
@@ -143,26 +143,35 @@ export default function Qualifications() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold">Behörigheter & Certifikat</h1>
-            <p className="text-muted-foreground mt-1">Översikt över fartygs- och besättningscertifikat</p>
-          </div>
-          
-          <div className="w-full sm:w-64">
-            <Select value={selectedVesselId} onValueChange={setSelectedVesselId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrera på fartyg" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alla fartyg</SelectItem>
-                {vessels?.map(v => (
-                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div>
+          <h1 className="text-3xl font-display font-bold">Behörigheter & Certifikat</h1>
+          <p className="text-muted-foreground mt-1">Översikt över fartygs- och besättningscertifikat</p>
         </div>
+
+        {/* Filter */}
+        <Card>
+          <CardHeader className="py-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Filter
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Select value={selectedVesselId} onValueChange={setSelectedVesselId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Alla fartyg" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla fartyg</SelectItem>
+                  {vessels?.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="vessel" className="space-y-4">
           <TabsList>
