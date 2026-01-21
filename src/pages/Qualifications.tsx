@@ -14,6 +14,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -24,10 +25,12 @@ import {
 } from '@/components/ui/table';
 
 export default function Qualifications() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { selectedOrgId } = useOrganization();
   const [selectedVesselId, setSelectedVesselId] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
+  const [activeTab, setActiveTab] = useState<'vessel' | 'crew'>('vessel');
 
   const { data: vessels } = useOrgVessels(selectedOrgId);
   const { data: profiles } = useOrgProfiles(selectedOrgId);
@@ -173,31 +176,35 @@ export default function Qualifications() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Select value={selectedVesselId} onValueChange={setSelectedVesselId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Alla fartyg" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alla fartyg</SelectItem>
-                  {vessels?.map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Sök på namn..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+              {activeTab === 'vessel' && (
+                <Select value={selectedVesselId} onValueChange={setSelectedVesselId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Alla fartyg" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alla fartyg</SelectItem>
+                    {vessels?.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {activeTab === 'crew' && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Sök på namn..."
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="vessel" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'vessel' | 'crew')} className="space-y-4">
           <TabsList>
             <TabsTrigger value="vessel" className="gap-2">
               <Ship className="h-4 w-4" />
@@ -298,10 +305,16 @@ export default function Qualifications() {
                       {searchFilteredProfiles?.flatMap(profile => {
                         const profileCerts = filteredUserCertificates?.filter(c => c.profile_id === profile.id) || [];
                         const profileInductions = inductions?.filter(i => i.profile_id === profile.id) || [];
+                        const hasExpired = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expired');
+                        const hasExpiring = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expiring');
                         
                         if (profileCerts.length === 0) {
                           return [(
-                            <TableRow key={profile.id}>
+                            <TableRow 
+                              key={profile.id} 
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => navigate(`/portal/admin/users?user=${profile.id}`)}
+                            >
                               <TableCell className="font-medium">
                                 {profile.full_name}
                                 {profile.is_external && <Badge variant="outline" className="ml-2 text-xs">Extern</Badge>}
@@ -326,13 +339,19 @@ export default function Qualifications() {
                         return profileCerts.map((cert, idx) => {
                           const status = getCertificateStatus(cert.expiry_date);
                           return (
-                            <TableRow key={cert.id}>
+                            <TableRow 
+                              key={cert.id} 
+                              className={`cursor-pointer hover:bg-muted/50 ${idx === 0 && hasExpired ? 'bg-destructive/5' : idx === 0 && hasExpiring ? 'bg-warning/5' : ''}`}
+                              onClick={() => navigate(`/portal/admin/users?user=${profile.id}`)}
+                            >
                               <TableCell className="font-medium">
                                 {idx === 0 && (
-                                  <>
-                                    {profile.full_name}
-                                    {profile.is_external && <Badge variant="outline" className="ml-2 text-xs">Extern</Badge>}
-                                  </>
+                                  <div className="flex items-center gap-2">
+                                    {hasExpired && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                                    {!hasExpired && hasExpiring && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                                    <span>{profile.full_name}</span>
+                                    {profile.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
+                                  </div>
                                 )}
                               </TableCell>
                               <TableCell>{(cert.certificate_type as any)?.name}</TableCell>
@@ -355,7 +374,10 @@ export default function Qualifications() {
                                     variant="ghost" 
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => handleViewFile(cert.file_url!, 'certificates')}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewFile(cert.file_url!, 'certificates');
+                                    }}
                                   >
                                     <FileText className="h-4 w-4" />
                                   </Button>
