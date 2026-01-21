@@ -408,13 +408,7 @@ export default function ChecklistTemplates() {
 
       {/* Steps */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label className="text-base font-semibold">Steg</Label>
-          <Button type="button" variant="outline" size="sm" onClick={addStep}>
-            <Plus className="h-4 w-4 mr-1" />
-            Lägg till steg
-          </Button>
-        </div>
+        <Label className="text-base font-semibold">Steg</Label>
 
         {steps.length === 0 ? (
           <div className="text-center py-8 border rounded-lg border-dashed">
@@ -511,6 +505,11 @@ export default function ChecklistTemplates() {
             ))}
           </div>
         )}
+        
+        <Button type="button" variant="outline" size="sm" onClick={addStep} className="w-full mt-3">
+          <Plus className="h-4 w-4 mr-1" />
+          Lägg till steg
+        </Button>
       </div>
     </div>
   );
