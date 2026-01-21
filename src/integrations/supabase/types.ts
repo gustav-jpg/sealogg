@@ -1882,6 +1882,230 @@ export type Database = {
           },
         ]
       }
+      passenger_docks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passenger_docks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passenger_entries: {
+        Row: {
+          created_at: string
+          departure_time: string
+          dock_id: string | null
+          dock_name: string
+          entry_order: number
+          id: string
+          pax_off: number
+          pax_on: number
+          registered_by: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          departure_time: string
+          dock_id?: string | null
+          dock_name: string
+          entry_order: number
+          id?: string
+          pax_off?: number
+          pax_on?: number
+          registered_by: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          departure_time?: string
+          dock_id?: string | null
+          dock_name?: string
+          entry_order?: number
+          id?: string
+          pax_off?: number
+          pax_on?: number
+          registered_by?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passenger_entries_dock_id_fkey"
+            columns: ["dock_id"]
+            isOneToOne: false
+            referencedRelation: "passenger_docks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "passenger_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passenger_route_stops: {
+        Row: {
+          created_at: string
+          dock_id: string
+          id: string
+          route_id: string
+          stop_order: number
+        }
+        Insert: {
+          created_at?: string
+          dock_id: string
+          id?: string
+          route_id: string
+          stop_order: number
+        }
+        Update: {
+          created_at?: string
+          dock_id?: string
+          id?: string
+          route_id?: string
+          stop_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passenger_route_stops_dock_id_fkey"
+            columns: ["dock_id"]
+            isOneToOne: false
+            referencedRelation: "passenger_docks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "passenger_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passenger_routes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passenger_routes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passenger_sessions: {
+        Row: {
+          current_stop_index: number
+          ended_at: string | null
+          id: string
+          is_active: boolean
+          logbook_id: string
+          route_id: string | null
+          started_at: string
+          started_by: string
+          vessel_id: string
+        }
+        Insert: {
+          current_stop_index?: number
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          logbook_id: string
+          route_id?: string | null
+          started_at?: string
+          started_by: string
+          vessel_id: string
+        }
+        Update: {
+          current_stop_index?: number
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          logbook_id?: string
+          route_id?: string | null
+          started_at?: string
+          started_by?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passenger_sessions_logbook_id_fkey"
+            columns: ["logbook_id"]
+            isOneToOne: true
+            referencedRelation: "logbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_sessions_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "passenger_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_sessions_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

@@ -31,7 +31,7 @@ import { useLogbookSignatures, useSignLogbook } from '@/hooks/useLogbookSignatur
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2, History } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2, History, UserCheck } from 'lucide-react';
 
 interface EngineHourEntry {
   id?: string;
@@ -81,6 +81,45 @@ export default function LogbookDetail() {
   const [newExerciseNotes, setNewExerciseNotes] = useState('');
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+
+  // Passenger session
+  const { data: passengerSession } = useQuery({
+    queryKey: ['passenger-session-for-logbook', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('passenger_sessions')
+        .select('id, is_active')
+        .eq('logbook_id', id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const activatePassengerRegistration = useMutation({
+    mutationFn: async () => {
+      if (!logbook) throw new Error('No logbook');
+      const { data, error } = await supabase
+        .from('passenger_sessions')
+        .insert({
+          logbook_id: id,
+          vessel_id: logbook.vessel_id,
+          started_by: user?.id,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] });
+      navigate(`/portal/passagerare/${data.id}`);
+    },
+    onError: () => {
+      toast({ title: 'Fel', description: 'Kunde inte aktivera passagerarregistrering', variant: 'destructive' });
+    },
+  });
 
   // Signatures
   const { data: signatures } = useLogbookSignatures(id);
@@ -833,9 +872,29 @@ export default function LogbookDetail() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Reseinformation
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Reseinformation
+                  </span>
+                  {isOpen && canEditThis && (
+                    passengerSession ? (
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/portal/passagerare/${passengerSession.id}`)}>
+                        <UserCheck className="h-4 w-4 mr-1" />
+                        Öppna passagerarregistrering
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => activatePassengerRegistration.mutate()}
+                        disabled={activatePassengerRegistration.isPending}
+                      >
+                        <UserCheck className="h-4 w-4 mr-1" />
+                        {activatePassengerRegistration.isPending ? 'Aktiverar...' : 'Aktivera passagerarregistrering'}
+                      </Button>
+                    )
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
