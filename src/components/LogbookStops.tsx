@@ -83,12 +83,15 @@ export function LogbookStops({
 
   const addStop = () => {
     const newOrder = stops.length > 0 ? Math.max(...stops.map(s => s.stopOrder)) + 1 : 1;
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
     onStopsChange([
       ...stops,
       {
         tempId: crypto.randomUUID(),
         stopOrder: newOrder,
-        departureTime: '',
+        departureTime: currentTime,
         departureLocation: '',
         arrivalTime: '',
         arrivalLocation: '',
