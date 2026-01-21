@@ -158,7 +158,52 @@ export default function LogbookDetail() {
     },
   });
 
-  // Signatures
+  // Lock passenger session (befälhavare only)
+  const lockPassengerSession = useMutation({
+    mutationFn: async () => {
+      if (!passengerSession?.id) throw new Error('Ingen passagerarsession');
+      const { error } = await supabase
+        .from('passenger_sessions')
+        .update({ 
+          is_active: false,
+          ended_at: new Date().toISOString(),
+        })
+        .eq('id', passengerSession.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] });
+      queryClient.invalidateQueries({ queryKey: ['passenger-sessions'] });
+      toast({ title: 'Låst', description: 'Passagerarregistreringen är nu låst.' });
+    },
+    onError: () => {
+      toast({ title: 'Fel', description: 'Kunde inte låsa passagerarregistrering', variant: 'destructive' });
+    },
+  });
+
+  // Unlock passenger session (befälhavare only)
+  const unlockPassengerSession = useMutation({
+    mutationFn: async () => {
+      if (!passengerSession?.id) throw new Error('Ingen passagerarsession');
+      const { error } = await supabase
+        .from('passenger_sessions')
+        .update({ 
+          is_active: true,
+          ended_at: null,
+        })
+        .eq('id', passengerSession.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] });
+      queryClient.invalidateQueries({ queryKey: ['passenger-sessions'] });
+      toast({ title: 'Upplåst', description: 'Passagerarregistreringen är nu aktiv igen.' });
+    },
+    onError: () => {
+      toast({ title: 'Fel', description: 'Kunde inte låsa upp passagerarregistrering', variant: 'destructive' });
+    },
+  });
+
   const { data: signatures } = useLogbookSignatures(id);
   const signLogbook = useSignLogbook();
 
@@ -925,6 +970,10 @@ export default function LogbookDetail() {
                     onActivatePassengerRegistration={() => activatePassengerRegistration.mutate()}
                     isActivatingPassenger={activatePassengerRegistration.isPending}
                     onOpenPassengerSession={() => navigate(`/portal/passagerare/${passengerSession?.id}`)}
+                    onLockPassengerSession={() => lockPassengerSession.mutate()}
+                    onUnlockPassengerSession={() => unlockPassengerSession.mutate()}
+                    isLockingSession={lockPassengerSession.isPending || unlockPassengerSession.isPending}
+                    canLockSession={canEditThis}
                   />
                 ) : (
                   <LogbookStopsDisplay stops={logbookStops || []} />
