@@ -199,29 +199,29 @@ export function AppSidebar() {
         {/* Organization Switcher */}
         {userOrgs && userOrgs.length > 0 && (
           <SidebarGroup>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  className={cn(
-                    "w-full justify-between",
-                    !isCollapsed && "px-2"
-                  )}
-                  tooltip={selectedOrg?.name || 'Välj organisation'}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Building2 className="h-4 w-4 shrink-0" />
-                    {!isCollapsed && (
-                      <span className="truncate font-medium">
-                        {selectedOrg?.name || 'Välj organisation'}
-                      </span>
+            {hasMultipleOrgs ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                    className={cn(
+                      "w-full justify-between",
+                      !isCollapsed && "px-2"
                     )}
-                  </div>
-                  {!isCollapsed && hasMultipleOrgs && (
-                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-                  )}
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              {hasMultipleOrgs && (
+                    tooltip={selectedOrg?.name || 'Välj organisation'}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Building2 className="h-4 w-4 shrink-0" />
+                      {!isCollapsed && (
+                        <span className="truncate font-medium">
+                          {selectedOrg?.name || 'Välj organisation'}
+                        </span>
+                      )}
+                    </div>
+                    {!isCollapsed && (
+                      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                    )}
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   {userOrgs.map((org) => {
                     const orgData = org.organizations as any;
@@ -239,8 +239,22 @@ export function AppSidebar() {
                     );
                   })}
                 </DropdownMenuContent>
-              )}
-            </DropdownMenu>
+              </DropdownMenu>
+            ) : (
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-2 py-2 text-sidebar-foreground",
+                  isCollapsed && "justify-center"
+                )}
+              >
+                <Building2 className="h-4 w-4 shrink-0" />
+                {!isCollapsed && (
+                  <span className="truncate font-medium text-sm">
+                    {selectedOrg?.name}
+                  </span>
+                )}
+              </div>
+            )}
           </SidebarGroup>
         )}
 
