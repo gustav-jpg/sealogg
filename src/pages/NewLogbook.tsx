@@ -157,11 +157,26 @@ export default function NewLogbook() {
     mutationFn: async (selectedVesselId: string) => {
       if (!user) throw new Error('Ej inloggad');
 
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      // Check if logbook already exists for this vessel and date
+      const { data: existingLogbook } = await supabase
+        .from('logbooks')
+        .select('id')
+        .eq('vessel_id', selectedVesselId)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (existingLogbook) {
+        // Return existing logbook instead of creating new one
+        return { id: existingLogbook.id, isExisting: true };
+      }
+
       const { data: logbook, error: logbookError } = await supabase
         .from('logbooks')
         .insert({
           vessel_id: selectedVesselId,
-          date: format(new Date(), 'yyyy-MM-dd'),
+          date: today,
           created_by: user.id,
           status: 'oppen',
         })
@@ -169,12 +184,16 @@ export default function NewLogbook() {
         .single();
 
       if (logbookError) throw logbookError;
-      return logbook;
+      return { id: logbook.id, isExisting: false };
     },
-    onSuccess: (logbook) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
-      toast({ title: 'Loggbok skapad', description: 'Du kan nu fylla i uppgifterna.' });
-      navigate(`/portal/logbook/${logbook.id}`);
+      if (result.isExisting) {
+        toast({ title: 'Loggbok finns redan', description: 'Öppnar befintlig loggbok för dagens datum.' });
+      } else {
+        toast({ title: 'Loggbok skapad', description: 'Du kan nu fylla i uppgifterna.' });
+      }
+      navigate(`/portal/logbook/${result.id}`);
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
