@@ -31,8 +31,8 @@ export const LOGBOOK_STATUS_LABELS: Record<LogbookStatus, string> = {
 };
 
 export const DEVIATION_TYPE_LABELS: Record<DeviationType, string> = {
-  incident: 'Incident',
-  tillbud: 'Tillbud',
+  incident: 'Incident (med tillbud)',
+  tillbud: 'Incident (utan tillbud)',
   avvikelse: 'Avvikelse',
   ovrigt: 'Övrigt',
 };

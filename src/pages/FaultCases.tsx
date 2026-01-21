@@ -33,8 +33,8 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Wrench, Plus, Filter, Eye, Archive, Printer, Pencil, X, ImageIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Wrench, Plus, Filter, Archive, Printer, Pencil, X, ImageIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrint } from '@/hooks/usePrint';
 import { ImageAnnotator } from '@/components/ImageAnnotator';
@@ -45,6 +45,7 @@ export default function FaultCases() {
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [filterVessel, setFilterVessel] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -551,12 +552,15 @@ export default function FaultCases() {
                   <th className="text-left p-2 border-b">Prioritet</th>
                   <th className="text-left p-2 border-b">Status</th>
                   <th className="text-left p-2 border-b">Datum</th>
-                  <th className="text-left p-2 border-b print:hidden"></th>
                 </tr>
               </thead>
               <tbody>
                 {faultCases?.map((faultCase) => (
-                  <tr key={faultCase.id} className="hover:bg-muted/50">
+                  <tr 
+                    key={faultCase.id} 
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => navigate(`/portal/fault-cases/${faultCase.id}`)}
+                  >
                     <td className="p-2 border-b font-medium">{faultCase.title}</td>
                     <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
                     <td className="p-2 border-b">
@@ -571,14 +575,6 @@ export default function FaultCases() {
                     </td>
                     <td className="p-2 border-b text-muted-foreground text-sm">
                       {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
-                    </td>
-                    <td className="p-2 border-b print:hidden">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/portal/fault-cases/${faultCase.id}`}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          Visa
-                        </Link>
-                      </Button>
                     </td>
                   </tr>
                 ))}

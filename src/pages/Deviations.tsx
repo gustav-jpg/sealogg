@@ -35,8 +35,9 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { AlertTriangle, Plus, Filter, X, Upload, Eye, Printer } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { AlertTriangle, Plus, Filter, X, Upload, Printer, Archive } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrint } from '@/hooks/usePrint';
 
 export default function Deviations() {
@@ -45,11 +46,13 @@ export default function Deviations() {
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [filterVessel, setFilterVessel] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
 
   // Form state
   const [vesselId, setVesselId] = useState('');
@@ -96,7 +99,7 @@ export default function Deviations() {
   const vesselIds = vessels?.map((v) => v.id) || [];
 
   const { data: deviations, isLoading } = useQuery({
-    queryKey: ['deviations', selectedOrgId, vesselIds, filterVessel, filterStatus, filterType, filterSeverity],
+    queryKey: ['deviations', selectedOrgId, vesselIds, filterVessel, filterStatus, filterType, filterSeverity, activeTab],
     enabled: !!selectedOrgId,
     queryFn: async () => {
       if (!selectedOrgId) return [];
@@ -107,6 +110,13 @@ export default function Deviations() {
         .select(`*, vessel:vessels(*)`)
         .in('vessel_id', vesselIds)
         .order('date', { ascending: false });
+
+      // Filter by active/archive tab
+      if (activeTab === 'active') {
+        query = query.neq('status', 'stangd');
+      } else {
+        query = query.eq('status', 'stangd');
+      }
 
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);
       if (filterStatus !== 'all') query = query.eq('status', filterStatus as DeviationStatus);
@@ -225,7 +235,7 @@ export default function Deviations() {
               variant="outline" 
               onClick={() => printContent('deviations-list', { 
                 title: 'Avvikelser', 
-                subtitle: 'Alla avvikelser'
+                subtitle: activeTab === 'active' ? 'Aktiva avvikelser' : 'Arkiverade avvikelser'
               })}
             >
               <Printer className="h-4 w-4 mr-2" />
@@ -265,7 +275,7 @@ export default function Deviations() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Datum *</Label>
+                    <Label>Datum för avvikelsen *</Label>
                     <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
@@ -354,6 +364,20 @@ export default function Deviations() {
           </div>
         </div>
 
+        {/* Tabs for active/archive */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'archive')}>
+          <TabsList>
+            <TabsTrigger value="active" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Aktiva
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="flex items-center gap-2">
+              <Archive className="h-4 w-4" />
+              Arkiv
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Filters */}
         <Card>
           <CardHeader className="py-4">
@@ -440,12 +464,15 @@ export default function Deviations() {
                   <th className="text-left p-2 border-b">Allvarlighet</th>
                   <th className="text-left p-2 border-b">Status</th>
                   <th className="text-left p-2 border-b">Datum</th>
-                  <th className="text-left p-2 border-b print:hidden"></th>
                 </tr>
               </thead>
               <tbody>
                 {deviations?.map((deviation) => (
-                  <tr key={deviation.id} className="hover:bg-muted/50">
+                  <tr 
+                    key={deviation.id} 
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => navigate(`/portal/deviations/${deviation.id}`)}
+                  >
                     <td className="p-2 border-b font-medium">{deviation.title}</td>
                     <td className="p-2 border-b">{(deviation as any).vessel?.name}</td>
                     <td className="p-2 border-b">
@@ -463,14 +490,6 @@ export default function Deviations() {
                     </td>
                     <td className="p-2 border-b text-muted-foreground text-sm">
                       {format(new Date(deviation.date), 'PPP', { locale: sv })}
-                    </td>
-                    <td className="p-2 border-b print:hidden">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/portal/deviations/${deviation.id}`}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          Visa
-                        </Link>
-                      </Button>
                     </td>
                   </tr>
                 ))}
