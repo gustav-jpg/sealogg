@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus } from "lucide-react";
+import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { toast } from "sonner";
@@ -505,35 +505,39 @@ export default function PassengerSession() {
               </div>
               
               <div>
-                <Label className="text-xs">
-                  Brygga
-                  {session.route_id && nextRouteDock && (
-                    <span className="ml-1 text-muted-foreground font-normal">(nästa: {nextRouteDock.dock?.name})</span>
-                  )}
-                </Label>
-                <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Välj brygga" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {session.route_id && routeStops.length > 0 ? (
-                      <>
-                        {routeStops.map((stop, index) => (
-                          <SelectItem key={stop.dock_id} value={stop.dock_id}>
-                            {index + 1}. {stop.dock?.name}
-                            {stop.dock_id === nextRouteDock?.dock_id && ' ✓'}
-                          </SelectItem>
-                        ))}
-                      </>
-                    ) : (
-                      allDocks.map((dock) => (
+                <Label className="text-xs">Brygga</Label>
+                {session.route_id && nextRouteDock && !useManualDock ? (
+                  <div className="flex gap-1">
+                    <Input
+                      value={nextRouteDock.dock?.name || ''}
+                      disabled
+                      className="h-10 bg-muted flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 shrink-0"
+                      onClick={() => setUseManualDock(true)}
+                      title="Välj annan brygga"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Välj brygga" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allDocks.map((dock) => (
                         <SelectItem key={dock.id} value={dock.id}>
                           {dock.name}
                         </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div>
