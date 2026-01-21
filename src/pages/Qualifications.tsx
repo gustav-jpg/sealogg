@@ -8,13 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Ship, Users, Award, AlertTriangle, FileText, ExternalLink, Filter, Search } from 'lucide-react';
+import { Ship, Users, Award, AlertTriangle, FileText, ExternalLink, Filter, Search, ChevronRight } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -23,14 +22,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function Qualifications() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { selectedOrgId } = useOrganization();
   const [selectedVesselId, setSelectedVesselId] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState<'vessel' | 'crew'>('vessel');
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
 
   const { data: vessels } = useOrgVessels(selectedOrgId);
   const { data: profiles } = useOrgProfiles(selectedOrgId);
@@ -140,23 +145,43 @@ export default function Qualifications() {
     }
   };
 
-  // Filter user certificates by vessel inductions if a vessel is selected
-  const filteredUserCertificates = selectedVesselId === 'all' 
-    ? userCertificates 
-    : userCertificates?.filter(cert => {
-        const profileInductions = inductions?.filter(i => i.profile_id === cert.profile_id);
-        return profileInductions?.some(i => i.vessel_id === selectedVesselId);
-      });
-
-  // Get profiles that have inductions for selected vessel
-  const relevantProfiles = selectedVesselId === 'all'
-    ? profiles
-    : profiles?.filter(p => inductions?.some(i => i.profile_id === p.id && i.vessel_id === selectedVesselId));
-
   // Filter profiles by search text
-  const searchFilteredProfiles = relevantProfiles?.filter(p => 
+  const searchFilteredProfiles = profiles?.filter(p => 
     p.full_name.toLowerCase().includes(searchText.toLowerCase())
   );
+
+  // Get profile status summary
+  const getProfileStatus = (profileId: string) => {
+    const profileCerts = userCertificates?.filter(c => c.profile_id === profileId) || [];
+    const hasExpired = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expired');
+    const hasExpiring = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expiring');
+    
+    if (hasExpired) return 'expired';
+    if (hasExpiring) return 'expiring';
+    if (profileCerts.length === 0) return 'none';
+    return 'valid';
+  };
+
+  const getProfileStatusBadge = (status: string) => {
+    switch (status) {
+      case 'expired':
+        return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />Utgånget</Badge>;
+      case 'expiring':
+        return <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"><AlertTriangle className="h-3 w-3" />Går ut snart</Badge>;
+      case 'none':
+        return <Badge variant="outline" className="text-muted-foreground">Inga certifikat</Badge>;
+      default:
+        return <Badge variant="outline" className="text-green-600">OK</Badge>;
+    }
+  };
+
+  // Get selected profile data
+  const selectedProfileCerts = selectedProfile 
+    ? userCertificates?.filter(c => c.profile_id === selectedProfile.id) || []
+    : [];
+  const selectedProfileInductions = selectedProfile
+    ? inductions?.filter(i => i.profile_id === selectedProfile.id) || []
+    : [];
 
   return (
     <MainLayout>
@@ -294,98 +319,33 @@ export default function Qualifications() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Namn</TableHead>
-                        <TableHead>Certifikat</TableHead>
-                        <TableHead>Utgår</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Inskolningar</TableHead>
                         <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {searchFilteredProfiles?.flatMap(profile => {
-                        const profileCerts = filteredUserCertificates?.filter(c => c.profile_id === profile.id) || [];
-                        const profileInductions = inductions?.filter(i => i.profile_id === profile.id) || [];
-                        const hasExpired = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expired');
-                        const hasExpiring = profileCerts.some(c => getCertificateStatus(c.expiry_date) === 'expiring');
-                        
-                        if (profileCerts.length === 0) {
-                          return [(
-                            <TableRow 
-                              key={profile.id} 
-                              className="cursor-pointer hover:bg-muted/50"
-                              onClick={() => navigate(`/portal/admin/users?user=${profile.id}`)}
-                            >
-                              <TableCell className="font-medium">
-                                {profile.full_name}
-                                {profile.is_external && <Badge variant="outline" className="ml-2 text-xs">Extern</Badge>}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">Inga certifikat</TableCell>
-                              <TableCell>-</TableCell>
-                              <TableCell>-</TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {profileInductions.map(ind => (
-                                    <Badge key={ind.id} variant="secondary" className="text-xs">
-                                      {(ind.vessel as any)?.name}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </TableCell>
-                              <TableCell></TableCell>
-                            </TableRow>
-                          )];
-                        }
-                        
-                        return profileCerts.map((cert, idx) => {
-                          const status = getCertificateStatus(cert.expiry_date);
-                          return (
-                            <TableRow 
-                              key={cert.id} 
-                              className={`cursor-pointer hover:bg-muted/50 ${idx === 0 && hasExpired ? 'bg-destructive/5' : idx === 0 && hasExpiring ? 'bg-warning/5' : ''}`}
-                              onClick={() => navigate(`/portal/admin/users?user=${profile.id}`)}
-                            >
-                              <TableCell className="font-medium">
-                                {idx === 0 && (
-                                  <div className="flex items-center gap-2">
-                                    {hasExpired && <AlertTriangle className="h-4 w-4 text-destructive" />}
-                                    {!hasExpired && hasExpiring && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-                                    <span>{profile.full_name}</span>
-                                    {profile.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell>{(cert.certificate_type as any)?.name}</TableCell>
-                              <TableCell>{format(new Date(cert.expiry_date), 'yyyy-MM-dd')}</TableCell>
-                              <TableCell>{getStatusBadge(status)}</TableCell>
-                              <TableCell>
-                                {idx === 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {profileInductions.map(ind => (
-                                      <Badge key={ind.id} variant="secondary" className="text-xs">
-                                        {(ind.vessel as any)?.name}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {cert.file_url && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleViewFile(cert.file_url!, 'certificates');
-                                    }}
-                                  >
-                                    <FileText className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        });
+                      {searchFilteredProfiles?.map(profile => {
+                        const status = getProfileStatus(profile.id);
+                        return (
+                          <TableRow 
+                            key={profile.id} 
+                            className={`cursor-pointer hover:bg-muted/50 ${status === 'expired' ? 'bg-destructive/5' : status === 'expiring' ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
+                            onClick={() => setSelectedProfile(profile)}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {status === 'expired' && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                                {status === 'expiring' && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                                <span>{profile.full_name}</span>
+                                {profile.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
+                              </div>
+                            </TableCell>
+                            <TableCell>{getProfileStatusBadge(status)}</TableCell>
+                            <TableCell>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </TableCell>
+                          </TableRow>
+                        );
                       })}
                     </TableBody>
                   </Table>
@@ -395,6 +355,85 @@ export default function Qualifications() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Profile Detail Dialog */}
+      <Dialog open={!!selectedProfile} onOpenChange={(open) => !open && setSelectedProfile(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedProfile?.full_name}
+              {selectedProfile?.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Certificates */}
+            <div>
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <Award className="h-4 w-4" />
+                Certifikat
+              </h4>
+              {selectedProfileCerts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Inga certifikat registrerade</p>
+              ) : (
+                <div className="space-y-2">
+                  {selectedProfileCerts.map(cert => {
+                    const status = getCertificateStatus(cert.expiry_date);
+                    return (
+                      <div 
+                        key={cert.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg border ${status === 'expired' ? 'border-destructive/50 bg-destructive/5' : status === 'expiring' ? 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/20' : 'bg-muted/30'}`}
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{(cert.certificate_type as any)?.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Utgår: {format(new Date(cert.expiry_date), 'yyyy-MM-dd')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(status)}
+                          {cert.file_url && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleViewFile(cert.file_url!, 'certificates')}
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Inductions */}
+            <div>
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <Ship className="h-4 w-4" />
+                Inskolningar
+              </h4>
+              {selectedProfileInductions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Inga inskolningar registrerade</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {selectedProfileInductions.map(ind => (
+                    <Badge key={ind.id} variant="secondary" className="gap-1">
+                      {(ind.vessel as any)?.name}
+                      <span className="text-muted-foreground text-xs">
+                        ({format(new Date(ind.inducted_at), 'yyyy-MM-dd')})
+                      </span>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
