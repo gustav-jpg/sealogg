@@ -620,6 +620,18 @@ export default function LogbookDetail() {
         if (engineInsertError) throw engineInsertError;
       }
 
+      // Auto-lock passenger session if active
+      if (passengerSession?.is_active) {
+        const { error: lockError } = await supabase
+          .from('passenger_sessions')
+          .update({ 
+            is_active: false,
+            ended_at: new Date().toISOString(),
+          })
+          .eq('id', passengerSession.id);
+        if (lockError) console.error('Failed to lock passenger session:', lockError);
+      }
+
       // Save all data before closing
       const { error } = await supabase
         .from('logbooks')
@@ -636,6 +648,30 @@ export default function LogbookDetail() {
       if (error) throw error;
       
       // Create digital signature
+      // Fetch passenger summary for signature if session exists
+      let passengerDataForSignature = null;
+      if (passengerSession?.id) {
+        const { data: paxEntries } = await supabase
+          .from('passenger_entries')
+          .select('departure_time, pax_on, pax_off, dock_name, entry_order')
+          .eq('session_id', passengerSession.id)
+          .order('entry_order', { ascending: true });
+        
+        if (paxEntries && paxEntries.length > 0) {
+          passengerDataForSignature = {
+            totalPaxOn: paxEntries.reduce((sum, e) => sum + (e.pax_on || 0), 0),
+            totalPaxOff: paxEntries.reduce((sum, e) => sum + (e.pax_off || 0), 0),
+            stopCount: paxEntries.length,
+            stops: paxEntries.map(e => ({
+              time: e.departure_time,
+              dock: e.dock_name,
+              paxOn: e.pax_on,
+              paxOff: e.pax_off,
+            })),
+          };
+        }
+      }
+
       const logbookDataForSignature = {
         id,
         date: logbook?.date,
@@ -660,6 +696,7 @@ export default function LogbookDetail() {
         })),
         crew: crewMembers?.map(c => ({ profileId: c.profile_id, role: c.role })) || [],
         exercises: editableExercises.map(e => ({ type: e.exerciseType, notes: e.notes })),
+        passengers: passengerDataForSignature,
       };
 
       await signLogbook.mutateAsync({
@@ -692,6 +729,8 @@ export default function LogbookDetail() {
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
       queryClient.invalidateQueries({ queryKey: ['logbook-engine-hours', id] });
       queryClient.invalidateQueries({ queryKey: ['logbook-signatures', id] });
+      queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] });
+      queryClient.invalidateQueries({ queryKey: ['passenger-summary', passengerSession?.id] });
       setShowSignDialog(false);
       toast({ title: 'Signerad & Stängd', description: 'Loggboken har signerats digitalt och stängts. Maskintimmar har uppdaterats.' });
     },
@@ -714,6 +753,21 @@ export default function LogbookDetail() {
         .delete()
         .eq('logbook_id', id);
       if (engineError) throw engineError;
+
+      // Delete passenger entries and session if exists
+      if (passengerSession?.id) {
+        const { error: entriesError } = await supabase
+          .from('passenger_entries')
+          .delete()
+          .eq('session_id', passengerSession.id);
+        if (entriesError) throw entriesError;
+
+        const { error: sessionError } = await supabase
+          .from('passenger_sessions')
+          .delete()
+          .eq('id', passengerSession.id);
+        if (sessionError) throw sessionError;
+      }
 
       // Then delete the logbook
       const { error } = await supabase
