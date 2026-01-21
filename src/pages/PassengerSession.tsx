@@ -254,11 +254,10 @@ export default function PassengerSession() {
     };
   }, [entries]);
 
-  // Get next dock from route
+  // Get next dock from route (cycles back to start when complete)
   const nextRouteDock = useMemo(() => {
     if (!session?.route_id || routeStops.length === 0) return null;
-    const nextIndex = entries.length;
-    if (nextIndex >= routeStops.length) return null;
+    const nextIndex = entries.length % routeStops.length;
     return routeStops[nextIndex];
   }, [session?.route_id, routeStops, entries.length]);
 
