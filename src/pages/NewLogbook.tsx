@@ -166,17 +166,24 @@ export default function NewLogbook() {
     const today = format(new Date(), 'yyyy-MM-dd');
     const vessel = vessels?.find(v => v.id === selectedVesselId);
 
-    const { data: existingLogbook } = await supabase
+    const { data: existingLogbooks, error } = await supabase
       .from('logbooks')
       .select('id')
       .eq('vessel_id', selectedVesselId)
       .eq('date', today)
-      .maybeSingle();
+      .limit(1);
 
-    if (existingLogbook) {
+    if (error) {
+      console.error('Error checking existing logbook:', error);
+      // On error, proceed to create new logbook
+      createNewLogbook.mutate(selectedVesselId);
+      return;
+    }
+
+    if (existingLogbooks && existingLogbooks.length > 0) {
       // Visa dialog för att fråga användaren
       setExistingLogbookDialog({
-        id: existingLogbook.id,
+        id: existingLogbooks[0].id,
         vesselId: selectedVesselId,
         vesselName: vessel?.name || 'Okänt fartyg',
         date: today,
