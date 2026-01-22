@@ -3,6 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
+// Public app URL used in emails (where users should land after verifying the token)
+const APP_URL = "https://sealogg.se";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -174,6 +177,9 @@ serve(async (req) => {
     const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email,
+      options: {
+        redirectTo: `${APP_URL}/portal/reset-password`,
+      },
     });
 
     if (resetError) {
