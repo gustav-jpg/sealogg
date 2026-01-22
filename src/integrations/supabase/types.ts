@@ -2558,6 +2558,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_profile_name_by_user_id: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       get_user_modules: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_module"][]

@@ -286,7 +286,19 @@ export default function LogbookDetail() {
         .eq('user_id', data.created_by)
         .maybeSingle();
       
-      return { ...data, created_by_profile: profile };
+      // If profile not visible due to RLS, fetch just the name via RPC
+      let creatorName = profile?.full_name;
+      if (!creatorName && data.created_by) {
+        const { data: nameData } = await supabase.rpc('get_profile_name_by_user_id', { 
+          _user_id: data.created_by 
+        });
+        creatorName = nameData;
+      }
+      
+      return { 
+        ...data, 
+        created_by_profile: profile || { full_name: creatorName || 'Okänd' } 
+      };
     },
     enabled: !!id,
   });
