@@ -54,6 +54,7 @@ export default function ChecklistExecute() {
   const [execution, setExecution] = useState<any>(null);
   const [showCommentField, setShowCommentField] = useState(false);
   const [showHelpText, setShowHelpText] = useState(false);
+  const [isInDeviationMode, setIsInDeviationMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch or create execution
@@ -262,8 +263,9 @@ export default function ChecklistExecute() {
         setPhotoPreview(null);
         setShowCommentField(false);
       }
-      // Always hide help text when switching steps
+      // Always hide help text and reset deviation mode when switching steps
       setShowHelpText(false);
+      setIsInDeviationMode(false);
     }
   }, [currentStepIndex, steps, stepResults]);
 
@@ -608,12 +610,15 @@ export default function ChecklistExecute() {
                   onClick={() => {
                     if (!currentStep) return;
 
-                    if (!currentComment && !showCommentField) {
+                    // If not in deviation mode, enter it and show comment field
+                    if (!isInDeviationMode) {
+                      setIsInDeviationMode(true);
                       setShowCommentField(true);
                       toast({ title: 'Beskriv felet', description: 'Lägg till en kommentar som beskriver problemet' });
                       return;
                     }
 
+                    // In deviation mode - save the deviation
                     setCurrentValue('deviation');
                     saveStepResult.mutate({
                       value: 'deviation',
@@ -622,6 +627,7 @@ export default function ChecklistExecute() {
                       photoFile: currentPhoto,
                       photoPreviewUrl: photoPreview,
                     });
+                    setIsInDeviationMode(false);
                   }}
                   disabled={saveStepResult.isPending}
                   className="h-16 bg-amber-500 hover:bg-amber-600 text-white font-semibold text-base"
@@ -631,38 +637,54 @@ export default function ChecklistExecute() {
                   ) : (
                     <AlertTriangle className="h-6 w-6 mr-2" />
                   )}
-                  Felärende
+                  {isInDeviationMode ? 'Bekräfta felärende' : 'Felärende'}
                 </Button>
                 
-                <Button
-                  onClick={() => {
-                    if (!currentStep) return;
+                {isInDeviationMode ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsInDeviationMode(false);
+                      setShowCommentField(false);
+                      setCurrentComment('');
+                    }}
+                    disabled={saveStepResult.isPending}
+                    className="h-16 font-semibold text-base"
+                  >
+                    <ArrowLeft className="h-6 w-6 mr-2" />
+                    Avbryt
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      if (!currentStep) return;
 
-                    // If changing from deviation to ok, show confirmation dialog
-                    if (isCurrentStepDeviation) {
-                      setShowChangeToOkDialog(true);
-                      return;
-                    }
+                      // If changing from deviation to ok, show confirmation dialog
+                      if (isCurrentStepDeviation) {
+                        setShowChangeToOkDialog(true);
+                        return;
+                      }
 
-                    setCurrentValue('ok');
-                    saveStepResult.mutate({
-                      value: 'ok',
-                      stepId: currentStep.id,
-                      comment: currentComment,
-                      photoFile: currentPhoto,
-                      photoPreviewUrl: photoPreview,
-                    });
-                  }}
-                  disabled={saveStepResult.isPending}
-                  className="h-16 bg-green-600 hover:bg-green-700 text-white font-semibold text-base"
-                >
-                  {saveStepResult.isPending && currentValue === 'ok' ? (
-                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  ) : (
-                    <Check className="h-6 w-6 mr-2" />
-                  )}
-                  OK
-                </Button>
+                      setCurrentValue('ok');
+                      saveStepResult.mutate({
+                        value: 'ok',
+                        stepId: currentStep.id,
+                        comment: currentComment,
+                        photoFile: currentPhoto,
+                        photoPreviewUrl: photoPreview,
+                      });
+                    }}
+                    disabled={saveStepResult.isPending}
+                    className="h-16 bg-green-600 hover:bg-green-700 text-white font-semibold text-base"
+                  >
+                    {saveStepResult.isPending && currentValue === 'ok' ? (
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                    ) : (
+                      <Check className="h-6 w-6 mr-2" />
+                    )}
+                    OK
+                  </Button>
+                )}
               </div>
 
               {/* Show prominent completion section when all steps are done */}
