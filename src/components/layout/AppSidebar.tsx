@@ -30,7 +30,7 @@ import {
   UserCheck,
   Route,
 } from 'lucide-react';
-import sealoggLogo from '@/assets/sealog-logo.png';
+import sealoggLogo from '@/assets/sealog-logo-white.png';
 import {
   Sidebar,
   SidebarContent,
