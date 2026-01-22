@@ -417,7 +417,7 @@ export default function ChecklistExecute() {
       if (deviationCount > 0) {
         toast({ 
           title: 'Checklista slutförd',
-          description: `${deviationCount} felärende(n) har skapats för avvikelser`,
+          description: `${deviationCount} felärende${deviationCount > 1 ? 'n' : ''} har skapats`,
         });
       } else {
         toast({ title: 'Checklista slutförd' });
@@ -675,7 +675,7 @@ export default function ChecklistExecute() {
                   {deviationCount > 0 && (
                     <p className="text-amber-600 mb-3 text-sm">
                       <AlertTriangle className="h-4 w-4 inline mr-1" />
-                      {deviationCount} avvikelse(r) - felärenden skapas automatiskt
+                      {deviationCount} felärende{deviationCount > 1 ? 'n' : ''} skapas automatiskt
                     </p>
                   )}
                   <Button
