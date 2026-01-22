@@ -16,7 +16,7 @@ import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns
 import { sv } from 'date-fns/locale';
 
 
-type SortField = 'date' | 'vessel' | 'creator';
+type SortField = 'date' | 'vessel' | 'commander';
 type SortDirection = 'asc' | 'desc';
 
 export default function Dashboard() {
@@ -27,7 +27,7 @@ export default function Dashboard() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [vesselFilter, setVesselFilter] = useState<string>('all');
-  const [creatorFilter, setCreatorFilter] = useState<string>('all');
+  const [commanderFilter, setCommanderFilter] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
 
   const monthStart = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
@@ -51,7 +51,11 @@ export default function Dashboard() {
         .from('logbooks')
         .select(`
           *,
-          vessel:vessels(*)
+          vessel:vessels(*),
+          logbook_crew(
+            role,
+            profile:profiles(id, full_name)
+          )
         `)
         .in('vessel_id', vesselIds)
         .gte('date', monthStart)
@@ -59,22 +63,21 @@ export default function Dashboard() {
         .order('date', { ascending: false });
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        const creatorIds = [...new Set(data.map(l => l.created_by))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name')
-          .in('user_id', creatorIds);
+      // Extract commander names from crew
+      return (data || []).map(logbook => {
+        const commanders = (logbook.logbook_crew || [])
+          .filter((c: any) => c.role === 'befalhavare')
+          .map((c: any) => c.profile?.full_name)
+          .filter(Boolean);
         
-        const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
-        
-        return data.map(logbook => ({
+        return {
           ...logbook,
-          creator_name: profileMap.get(logbook.created_by) || 'Okänd'
-        }));
-      }
-      
-      return data;
+          commander_names: commanders.length > 0 ? commanders.join(', ') : null,
+          commander_ids: (logbook.logbook_crew || [])
+            .filter((c: any) => c.role === 'befalhavare')
+            .map((c: any) => c.profile?.id)
+        };
+      });
     },
     enabled: !!selectedOrgId,
   });
@@ -90,11 +93,15 @@ export default function Dashboard() {
     return Array.from(unique.entries()).map(([id, name]) => ({ id, name }));
   }, [logbooks]);
 
-  const creators = useMemo(() => {
+  const commanders = useMemo(() => {
     if (!logbooks) return [];
-    const unique = new Map();
+    const unique = new Map<string, string>();
     logbooks.forEach(l => {
-      unique.set(l.created_by, (l as any).creator_name);
+      const ids = (l as any).commander_ids || [];
+      const names = ((l as any).commander_names || '').split(', ').filter(Boolean);
+      ids.forEach((id: string, idx: number) => {
+        if (id && names[idx]) unique.set(id, names[idx]);
+      });
     });
     return Array.from(unique.entries()).map(([id, name]) => ({ id, name }));
   }, [logbooks]);
@@ -109,8 +116,8 @@ export default function Dashboard() {
     if (vesselFilter !== 'all') {
       result = result.filter(l => (l as any).vessel?.id === vesselFilter);
     }
-    if (creatorFilter !== 'all') {
-      result = result.filter(l => l.created_by === creatorFilter);
+    if (commanderFilter !== 'all') {
+      result = result.filter(l => (l as any).commander_ids?.includes(commanderFilter));
     }
     
     // Apply sorting
@@ -123,15 +130,15 @@ export default function Dashboard() {
         case 'vessel':
           comparison = ((a as any).vessel?.name || '').localeCompare((b as any).vessel?.name || '');
           break;
-        case 'creator':
-          comparison = ((a as any).creator_name || '').localeCompare((b as any).creator_name || '');
+        case 'commander':
+          comparison = ((a as any).commander_names || '').localeCompare((b as any).commander_names || '');
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
     
     return result;
-  }, [logbooks, vesselFilter, creatorFilter, sortField, sortDirection]);
+  }, [logbooks, vesselFilter, commanderFilter, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -207,13 +214,13 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
             
-            <Select value={creatorFilter} onValueChange={setCreatorFilter}>
+            <Select value={commanderFilter} onValueChange={setCommanderFilter}>
               <SelectTrigger className="w-[160px] h-8 text-sm">
                 <SelectValue placeholder="Alla befäl" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alla befäl</SelectItem>
-                {creators.map(c => (
+                {commanders.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -269,11 +276,11 @@ export default function Dashboard() {
                     </TableHead>
                     <TableHead 
                       className="h-9 cursor-pointer select-none"
-                      onClick={() => handleSort('creator')}
+                      onClick={() => handleSort('commander')}
                     >
                       <div className="flex items-center">
                         Befäl
-                        <SortIcon field="creator" />
+                        <SortIcon field="commander" />
                       </div>
                     </TableHead>
                     <TableHead className="h-9">Status</TableHead>
@@ -293,7 +300,7 @@ export default function Dashboard() {
                         {(logbook as any).vessel?.name || 'Okänt fartyg'}
                       </TableCell>
                       <TableCell className="py-2 text-sm">
-                        {(logbook as any).creator_name || 'Okänd'}
+                        {(logbook as any).commander_names || <span className="text-muted-foreground italic">Ingen befälhavare</span>}
                       </TableCell>
                       <TableCell className="py-2">
                         <Badge 
