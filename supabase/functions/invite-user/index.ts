@@ -8,6 +8,9 @@ const corsHeaders = {
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
+// Public app URL used in emails (where users should land after verifying the token)
+const APP_URL = "https://sealogg.se";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -145,6 +148,9 @@ serve(async (req) => {
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email,
+        options: {
+          redirectTo: `${APP_URL}/portal/reset-password`,
+        },
       });
 
       if (linkError) {
