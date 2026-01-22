@@ -55,6 +55,7 @@ export default function ChecklistExecute() {
   const [showCommentField, setShowCommentField] = useState(false);
   const [showHelpText, setShowHelpText] = useState(false);
   const [isInDeviationMode, setIsInDeviationMode] = useState(false);
+  const [isEditingStep, setIsEditingStep] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch or create execution
@@ -514,8 +515,8 @@ export default function ChecklistExecute() {
           </div>
         </div>
 
-        {/* Completion section - shown when all steps are done */}
-        {allStepsCompleted && (
+        {/* Completion section - shown when all steps are done and not editing */}
+        {allStepsCompleted && !isEditingStep && (
           <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950/30">
             <CardContent className="py-8 text-center">
               <CheckCircle className="h-16 w-16 mx-auto text-green-600 mb-4" />
@@ -531,25 +532,36 @@ export default function ChecklistExecute() {
                   {deviationCount} felärende{deviationCount > 1 ? 'n' : ''} skapas automatiskt
                 </p>
               )}
-              <Button
-                size="lg"
-                onClick={() => completeChecklist.mutate()}
-                disabled={completeChecklist.isPending}
-                className="w-full max-w-sm bg-green-600 hover:bg-green-700 text-white font-semibold h-14 text-lg"
-              >
-                {completeChecklist.isPending ? (
-                  <Loader2 className="h-6 w-6 mr-2 animate-spin" />
-                ) : (
-                  <Check className="h-6 w-6 mr-2" />
-                )}
-                Slutför checklista
-              </Button>
+              <div className="space-y-3 max-w-sm mx-auto">
+                <Button
+                  size="lg"
+                  onClick={() => completeChecklist.mutate()}
+                  disabled={completeChecklist.isPending}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-14 text-lg"
+                >
+                  {completeChecklist.isPending ? (
+                    <Loader2 className="h-6 w-6 mr-2 animate-spin" />
+                  ) : (
+                    <Check className="h-6 w-6 mr-2" />
+                  )}
+                  Slutför checklista
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setIsEditingStep(true)}
+                  className="w-full h-12"
+                >
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  Ändra svar
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Current Step - only show when NOT all steps completed */}
-        {currentStep && !allStepsCompleted && (
+        {/* Current Step - show when NOT all steps completed OR when editing */}
+        {currentStep && (!allStepsCompleted || isEditingStep) && (
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between mb-2">
@@ -735,6 +747,15 @@ export default function ChecklistExecute() {
                 ) : (
                   <div />
                 )}
+                {allStepsCompleted && isEditingStep && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => setIsEditingStep(false)}
+                  >
+                    Tillbaka till slutförande
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -808,7 +829,12 @@ export default function ChecklistExecute() {
                 return (
                   <button
                     key={step.id}
-                    onClick={() => setCurrentStepIndex(index)}
+                    onClick={() => {
+                      setCurrentStepIndex(index);
+                      if (allStepsCompleted) {
+                        setIsEditingStep(true);
+                      }
+                    }}
                     className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-colors ${
                       isCurrent ? 'bg-primary/10 border border-primary' : 'hover:bg-muted'
                     }`}
