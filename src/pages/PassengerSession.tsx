@@ -254,14 +254,26 @@ export default function PassengerSession() {
     };
   }, [entries]);
 
+  // Track previous route to detect route changes
+  const prevRouteIdRef = useRef<string | null | undefined>(undefined);
+
   // Reset selected dock when route changes
   useEffect(() => {
-    if (routeStops.length > 0) {
+    // Only reset when route actually changes, not on initial load
+    if (prevRouteIdRef.current !== undefined && prevRouteIdRef.current !== session?.route_id) {
+      if (routeStops.length > 0) {
+        setSelectedDockId(routeStops[0].dock_id);
+      } else if (allDocks.length > 0) {
+        setSelectedDockId(allDocks[0].id);
+      } else {
+        setSelectedDockId('');
+      }
+    } else if (prevRouteIdRef.current === undefined && routeStops.length > 0 && !selectedDockId) {
+      // Initial load: set first dock if none selected
       setSelectedDockId(routeStops[0].dock_id);
-    } else {
-      setSelectedDockId('');
     }
-  }, [session?.route_id]);
+    prevRouteIdRef.current = session?.route_id;
+  }, [session?.route_id, routeStops, allDocks]);
 
   // Advance to next dock in list after saving (cycles)
   useEffect(() => {
@@ -278,7 +290,7 @@ export default function PassengerSession() {
     const nextIndex = (lastIndex + 1) % routeStops.length;
     setSelectedDockId(routeStops[nextIndex].dock_id);
     setLastEntriesCount(entries.length);
-  }, [entries, routeStops, lastEntriesCount]);
+  }, [entries.length, routeStops]);
 
   // Add entry mutation
   const addEntry = useMutation({
