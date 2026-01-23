@@ -159,13 +159,13 @@ export default function Dashboard() {
   return (
     <MainLayout>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-display font-bold">Loggböcker</h1>
+            <h1 className="text-xl md:text-2xl font-display font-bold">Loggböcker</h1>
             <p className="text-muted-foreground text-sm">Hantera och visa fartygsloggböcker</p>
           </div>
           {canEdit && (
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="w-full sm:w-auto">
               <Link to="/portal/logbook/new">
                 <Plus className="h-4 w-4 mr-1" />
                 Ny Dagsrapport
@@ -175,8 +175,8 @@ export default function Dashboard() {
         </div>
 
         {/* Month selector */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1 w-full sm:w-auto justify-center sm:justify-start">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -201,9 +201,9 @@ export default function Dashboard() {
             </Button>
           </div>
           
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Select value={vesselFilter} onValueChange={setVesselFilter}>
-              <SelectTrigger className="w-[160px] h-8 text-sm">
+              <SelectTrigger className="flex-1 sm:w-[140px] h-8 text-sm">
                 <SelectValue placeholder="Alla fartyg" />
               </SelectTrigger>
               <SelectContent>
@@ -215,7 +215,7 @@ export default function Dashboard() {
             </Select>
             
             <Select value={commanderFilter} onValueChange={setCommanderFilter}>
-              <SelectTrigger className="w-[160px] h-8 text-sm">
+              <SelectTrigger className="flex-1 sm:w-[140px] h-8 text-sm">
                 <SelectValue placeholder="Alla befäl" />
               </SelectTrigger>
               <SelectContent>
@@ -232,7 +232,7 @@ export default function Dashboard() {
           {isLoading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+                <div key={i} className="h-16 md:h-10 bg-muted animate-pulse rounded" />
               ))}
             </div>
           ) : filteredAndSortedLogbooks?.length === 0 ? (
@@ -252,69 +252,108 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead 
-                      className="h-9 cursor-pointer select-none"
-                      onClick={() => handleSort('date')}
-                    >
-                      <div className="flex items-center">
-                        Datum
-                        <SortIcon field="date" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="h-9 cursor-pointer select-none"
-                      onClick={() => handleSort('vessel')}
-                    >
-                      <div className="flex items-center">
-                        Fartyg
-                        <SortIcon field="vessel" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="h-9 cursor-pointer select-none"
-                      onClick={() => handleSort('commander')}
-                    >
-                      <div className="flex items-center">
-                        Befäl
-                        <SortIcon field="commander" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="h-9">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedLogbooks?.map((logbook) => (
-                    <TableRow 
-                      key={logbook.id} 
-                      className="cursor-pointer"
-                      onClick={() => window.location.href = `/portal/logbook/${logbook.id}`}
-                    >
-                      <TableCell className="py-2 text-muted-foreground text-sm">
-                        {format(new Date(logbook.date), 'd MMM yyyy', { locale: sv })}
-                      </TableCell>
-                      <TableCell className="py-2 font-medium">
-                        {(logbook as any).vessel?.name || 'Okänt fartyg'}
-                      </TableCell>
-                      <TableCell className="py-2 text-sm">
-                        {(logbook as any).commander_names || <span className="text-muted-foreground italic">Ingen befälhavare</span>}
-                      </TableCell>
-                      <TableCell className="py-2">
+            <>
+              {/* Mobile card view */}
+              <div className="space-y-2 md:hidden">
+                {filteredAndSortedLogbooks?.map((logbook) => (
+                  <Card 
+                    key={logbook.id} 
+                    className="cursor-pointer active:bg-accent/50 transition-colors"
+                    onClick={() => window.location.href = `/portal/logbook/${logbook.id}`}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Ship className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="font-medium truncate">{(logbook as any).vessel?.name || 'Okänt fartyg'}</span>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {format(new Date(logbook.date), 'd MMM yyyy', { locale: sv })}
+                          </div>
+                          {(logbook as any).commander_names && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Befäl: {(logbook as any).commander_names}
+                            </div>
+                          )}
+                        </div>
                         <Badge 
                           variant={logbook.status === 'oppen' ? 'default' : 'secondary'}
-                          className="text-xs"
+                          className="text-xs flex-shrink-0"
                         >
                           {LOGBOOK_STATUS_LABELS[logbook.status as keyof typeof LOGBOOK_STATUS_LABELS]}
                         </Badge>
-                      </TableCell>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="border rounded-lg hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead 
+                        className="h-9 cursor-pointer select-none"
+                        onClick={() => handleSort('date')}
+                      >
+                        <div className="flex items-center">
+                          Datum
+                          <SortIcon field="date" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="h-9 cursor-pointer select-none"
+                        onClick={() => handleSort('vessel')}
+                      >
+                        <div className="flex items-center">
+                          Fartyg
+                          <SortIcon field="vessel" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="h-9 cursor-pointer select-none"
+                        onClick={() => handleSort('commander')}
+                      >
+                        <div className="flex items-center">
+                          Befäl
+                          <SortIcon field="commander" />
+                        </div>
+                      </TableHead>
+                      <TableHead className="h-9">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedLogbooks?.map((logbook) => (
+                      <TableRow 
+                        key={logbook.id} 
+                        className="cursor-pointer"
+                        onClick={() => window.location.href = `/portal/logbook/${logbook.id}`}
+                      >
+                        <TableCell className="py-2 text-muted-foreground text-sm">
+                          {format(new Date(logbook.date), 'd MMM yyyy', { locale: sv })}
+                        </TableCell>
+                        <TableCell className="py-2 font-medium">
+                          {(logbook as any).vessel?.name || 'Okänt fartyg'}
+                        </TableCell>
+                        <TableCell className="py-2 text-sm">
+                          {(logbook as any).commander_names || <span className="text-muted-foreground italic">Ingen befälhavare</span>}
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <Badge 
+                            variant={logbook.status === 'oppen' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {LOGBOOK_STATUS_LABELS[logbook.status as keyof typeof LOGBOOK_STATUS_LABELS]}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </div>
       </div>

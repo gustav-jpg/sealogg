@@ -413,33 +413,34 @@ export default function SelfControl() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-display font-bold">Egenkontroll</h1>
-            <p className="text-muted-foreground mt-1">Planerade kontroller och service</p>
+            <h1 className="text-xl md:text-3xl font-display font-bold">Egenkontroll</h1>
+            <p className="text-muted-foreground text-sm mt-1">Planerade kontroller och service</p>
           </div>
           {selectedVessel && (
             <Button 
-              variant="outline" 
+              variant="outline"
+              size="sm"
               onClick={() => printContent('self-control-list', { 
                 title: 'Egenkontrollprogram', 
                 subtitle: vessels?.find(v => v.id === selectedVessel)?.name || ''
               })}
             >
               <Printer className="h-4 w-4 mr-2" />
-              Skriv ut
+              <span className="hidden sm:inline">Skriv ut</span>
             </Button>
           )}
         </div>
 
         {/* Vessel selector */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Label className="whitespace-nowrap">Välj fartyg:</Label>
+          <CardContent className="py-4 md:pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <Label className="whitespace-nowrap text-sm">Välj fartyg:</Label>
               <Select value={selectedVessel} onValueChange={setSelectedVessel}>
-                <SelectTrigger className="max-w-xs">
+                <SelectTrigger className="w-full sm:max-w-xs">
                   <SelectValue placeholder="Välj fartyg" />
                 </SelectTrigger>
                 <SelectContent>
@@ -463,25 +464,25 @@ export default function SelfControl() {
           <>
             {/* Warnings */}
             {(overdueCount > 0 || upcomingCount > 0) && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                 {overdueCount > 0 && (
                   <Card className="border-destructive/50 bg-destructive/5">
-                    <CardContent className="pt-6 flex items-center gap-4">
-                      <AlertTriangle className="h-8 w-8 text-destructive" />
+                    <CardContent className="p-4 md:pt-6 flex items-center gap-3 md:gap-4">
+                      <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-destructive flex-shrink-0" />
                       <div>
-                        <p className="font-medium text-destructive">Förfallna kontroller</p>
-                        <p className="text-sm text-muted-foreground">{overdueCount} kontroll(er) har passerat förfallodatum</p>
+                        <p className="font-medium text-destructive text-sm md:text-base">Förfallna kontroller</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">{overdueCount} kontroll(er)</p>
                       </div>
                     </CardContent>
                   </Card>
                 )}
                 {upcomingCount > 0 && (
                   <Card className="border-primary/50 bg-primary/5">
-                    <CardContent className="pt-6 flex items-center gap-4">
-                      <Clock className="h-8 w-8 text-primary" />
+                    <CardContent className="p-4 md:pt-6 flex items-center gap-3 md:gap-4">
+                      <Clock className="h-6 w-6 md:h-8 md:w-8 text-primary flex-shrink-0" />
                       <div>
-                        <p className="font-medium text-primary">Kommande kontroller</p>
-                        <p className="text-sm text-muted-foreground">{upcomingCount} kontroll(er) närmar sig förfallodatum</p>
+                        <p className="font-medium text-primary text-sm md:text-base">Kommande kontroller</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">{upcomingCount} kontroll(er)</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -492,13 +493,13 @@ export default function SelfControl() {
             {/* Tabs and list */}
             <div id="self-control-list">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="all">Alla ({controlPointsWithState.length})</TabsTrigger>
-                <TabsTrigger value="upcoming">Kommande ({upcomingCount})</TabsTrigger>
-                <TabsTrigger value="overdue">Förfallna ({overdueCount})</TabsTrigger>
-                <TabsTrigger value="history">
-                  <History className="h-4 w-4 mr-1" />
-                  Historik
+              <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:flex">
+                <TabsTrigger value="all" className="text-xs sm:text-sm">Alla</TabsTrigger>
+                <TabsTrigger value="upcoming" className="text-xs sm:text-sm">Kommande</TabsTrigger>
+                <TabsTrigger value="overdue" className="text-xs sm:text-sm">Förfallna</TabsTrigger>
+                <TabsTrigger value="history" className="text-xs sm:text-sm">
+                  <History className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Historik</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -511,26 +512,28 @@ export default function SelfControl() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {/* Category controls */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={expandAllCategories}
+                          className="text-xs"
                         >
-                          Expandera alla
+                          Expandera
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={collapseAllCategories}
+                          className="text-xs"
                         >
-                          Minimera alla
+                          Minimera
                         </Button>
                       </div>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs sm:text-sm text-muted-foreground">
                         {sortedCategories.length} kategorier, {filteredControlPoints.length} kontroller
                       </span>
                     </div>
@@ -545,23 +548,23 @@ export default function SelfControl() {
                       return (
                         <Card key={category} className="overflow-hidden">
                           <div
-                            className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                            className="flex items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
                             onClick={() => toggleCategory(category)}
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                               {isExpanded ? (
-                                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
                               ) : (
-                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
                               )}
-                              <FolderOpen className="h-5 w-5 text-primary" />
-                              <span className="font-medium">{category}</span>
-                              <Badge variant="secondary">{categoryPoints.length}</Badge>
+                              <FolderOpen className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+                              <span className="font-medium text-sm md:text-base">{category}</span>
+                              <Badge variant="secondary" className="text-xs">{categoryPoints.length}</Badge>
                               {categoryOverdue > 0 && (
-                                <Badge variant="destructive">{categoryOverdue} förfallna</Badge>
+                                <Badge variant="destructive" className="text-xs">{categoryOverdue}</Badge>
                               )}
                               {categoryUpcoming > 0 && (
-                                <Badge variant="default">{categoryUpcoming} kommande</Badge>
+                                <Badge variant="default" className="text-xs hidden sm:inline-flex">{categoryUpcoming} kommande</Badge>
                               )}
                             </div>
                           </div>
@@ -569,64 +572,62 @@ export default function SelfControl() {
                           {isExpanded && (
                             <div className="border-t">
                               {categoryPoints.map((cp) => (
-                                <div key={cp.id} className="p-4 border-b last:border-b-0 hover:bg-muted/30 transition-colors">
-                                  <div className="flex items-start justify-between gap-4">
+                                <div key={cp.id} className="p-3 md:p-4 border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 md:gap-4">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                                        <span className="font-medium">{cp.name}</span>
+                                        <span className="font-medium text-sm md:text-base">{cp.name}</span>
                                         {/* Show badges like checklists: green for days remaining, red for overdue */}
                                         {cp.nextDue === 'Ej utförd' && (
-                                          <Badge variant="destructive" className="gap-1">
+                                          <Badge variant="destructive" className="gap-1 text-xs">
                                             <AlertTriangle className="h-3 w-3" />
                                             Ej utförd
                                           </Badge>
                                         )}
                                         {cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining < 0 && (
-                                          <Badge variant="destructive" className="gap-1">
+                                          <Badge variant="destructive" className="gap-1 text-xs">
                                             <AlertTriangle className="h-3 w-3" />
-                                            Försenad {Math.abs(cp.daysRemaining)} dagar
+                                            -{Math.abs(cp.daysRemaining)}d
                                           </Badge>
                                         )}
                                         {cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining < 0 && (
-                                          <Badge variant="destructive" className="gap-1">
+                                          <Badge variant="destructive" className="gap-1 text-xs">
                                             <AlertTriangle className="h-3 w-3" />
-                                            Försenad {Math.abs(cp.hoursRemaining)}h
+                                            -{Math.abs(cp.hoursRemaining)}h
                                           </Badge>
                                         )}
                                         {cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining >= 0 && (
-                                          <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                                          <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30 text-xs">
                                             <Clock className="h-3 w-3" />
-                                            Utför inom {cp.daysRemaining} dagar
+                                            {cp.daysRemaining}d
                                           </Badge>
                                         )}
                                         {cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining >= 0 && (
-                                          <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30">
+                                          <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30 text-xs">
                                             <Clock className="h-3 w-3" />
-                                            Utför inom {cp.hoursRemaining}h
+                                            {cp.hoursRemaining}h
                                           </Badge>
                                         )}
                                       </div>
                                       {cp.description && (
-                                        <p className="text-sm text-muted-foreground mt-1 mb-2">{cp.description}</p>
+                                        <p className="text-xs md:text-sm text-muted-foreground mt-1 mb-2 line-clamp-2">{cp.description}</p>
                                       )}
-                                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                      <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground">
                                         <span>
-                                          Intervall: {cp.type === 'calendar' 
+                                          {cp.type === 'calendar' 
                                             ? `${cp.interval_months} mån` 
                                             : `${cp.interval_engine_hours}h`}
                                         </span>
                                         {cp.nextDue !== 'Ej utförd' && (
-                                          <span>Nästa: {cp.nextDue}</span>
+                                          <span className="hidden sm:inline">Nästa: {cp.nextDue}</span>
                                         )}
                                       </div>
                                     </div>
                                     {isAdmin && (
-                                      <div className="flex gap-2">
-                                        <Button variant="default" size="sm" onClick={(e) => { e.stopPropagation(); openPerformDialog(cp); }}>
-                                          <Check className="h-4 w-4 mr-1" />
-                                          Utför
-                                        </Button>
-                                      </div>
+                                      <Button variant="default" size="sm" className="w-full sm:w-auto" onClick={(e) => { e.stopPropagation(); openPerformDialog(cp); }}>
+                                        <Check className="h-4 w-4 mr-1" />
+                                        Utför
+                                      </Button>
                                     )}
                                   </div>
                                 </div>

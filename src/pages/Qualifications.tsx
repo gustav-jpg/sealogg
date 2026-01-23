@@ -185,25 +185,25 @@ export default function Qualifications() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <div>
-          <h1 className="text-3xl font-display font-bold">Certifikat</h1>
-          <p className="text-muted-foreground mt-1">Översikt över fartygs- och besättningscertifikat</p>
+          <h1 className="text-xl md:text-3xl font-display font-bold">Certifikat</h1>
+          <p className="text-muted-foreground text-sm mt-1">Översikt över fartygs- och besättningscertifikat</p>
         </div>
 
         {/* Filter */}
         <Card>
-          <CardHeader className="py-4">
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="py-3 md:py-4">
+            <CardTitle className="text-sm md:text-base flex items-center gap-2">
               <Filter className="h-4 w-4" />
               Filter
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               {activeTab === 'vessel' && (
                 <Select value={selectedVesselId} onValueChange={setSelectedVesselId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Alla fartyg" />
                   </SelectTrigger>
                   <SelectContent>
@@ -221,7 +221,7 @@ export default function Qualifications() {
                     placeholder="Sök på namn..."
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 h-9"
                   />
                 </div>
               )}
@@ -230,14 +230,16 @@ export default function Qualifications() {
         </Card>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'vessel' | 'crew')} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="vessel" className="gap-2">
+          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
+            <TabsTrigger value="vessel" className="gap-2 text-xs sm:text-sm">
               <Ship className="h-4 w-4" />
-              Fartygscertifikat
+              <span className="hidden sm:inline">Fartygscertifikat</span>
+              <span className="sm:hidden">Fartyg</span>
             </TabsTrigger>
-            <TabsTrigger value="crew" className="gap-2">
+            <TabsTrigger value="crew" className="gap-2 text-xs sm:text-sm">
               <Users className="h-4 w-4" />
-              Besättningscertifikat
+              <span className="hidden sm:inline">Besättningscertifikat</span>
+              <span className="sm:hidden">Besättning</span>
             </TabsTrigger>
           </TabsList>
 
@@ -251,56 +253,33 @@ export default function Qualifications() {
                 </CardContent>
               </Card>
             ) : (
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Certifikat</TableHead>
-                        <TableHead>Fartyg</TableHead>
-                        <TableHead>Utgår</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {vesselCertificates?.map(cert => {
-                        const isIndefinite = cert.is_indefinite === true;
-                        const status = getCertificateStatus(cert.expiry_date, isIndefinite);
-                        const daysUntilExpiry = cert.expiry_date ? differenceInDays(new Date(cert.expiry_date), new Date()) : null;
-                        
-                        return (
-                          <TableRow 
-                            key={cert.id} 
-                            className={status === 'expired' ? 'bg-destructive/5' : status === 'expiring' ? 'bg-amber-50 dark:bg-amber-950/20' : ''}
-                          >
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{cert.name}</p>
-                                {cert.description && (
-                                  <p className="text-xs text-muted-foreground truncate max-w-[200px]">{cert.description}</p>
-                                )}
+              <>
+                {/* Mobile card view */}
+                <div className="space-y-2 md:hidden">
+                  {vesselCertificates?.map(cert => {
+                    const isIndefinite = cert.is_indefinite === true;
+                    const status = getCertificateStatus(cert.expiry_date, isIndefinite);
+                    
+                    return (
+                      <Card 
+                        key={cert.id}
+                        className={status === 'expired' ? 'border-destructive/50 bg-destructive/5' : status === 'expiring' ? 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/20' : ''}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{cert.name}</p>
+                              <p className="text-xs text-muted-foreground">{(cert.vessel as any)?.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {isIndefinite ? (
+                                  <span className="text-green-600 text-xs">Tillsvidare</span>
+                                ) : cert.expiry_date ? (
+                                  <span className="text-xs text-muted-foreground">{format(new Date(cert.expiry_date), 'yyyy-MM-dd')}</span>
+                                ) : null}
                               </div>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {(cert.vessel as any)?.name}
-                            </TableCell>
-                            <TableCell>
-                              {isIndefinite ? (
-                                <span className="text-green-600 dark:text-green-400 text-sm">Tillsvidare</span>
-                              ) : cert.expiry_date ? (
-                                <div className="text-sm">
-                                  <span>{format(new Date(cert.expiry_date), 'yyyy-MM-dd')}</span>
-                                  {status !== 'expired' && daysUntilExpiry !== null && (
-                                    <span className="text-muted-foreground text-xs ml-1">({daysUntilExpiry}d)</span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">–</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{getStatusBadge(status)}</TableCell>
-                            <TableCell>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getStatusBadge(status)}
                               {cert.file_url && (
                                 <Button 
                                   variant="ghost" 
@@ -311,14 +290,84 @@ export default function Qualifications() {
                                   <FileText className="h-4 w-4" />
                                 </Button>
                               )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop table view */}
+                <Card className="hidden md:block">
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Certifikat</TableHead>
+                          <TableHead>Fartyg</TableHead>
+                          <TableHead>Utgår</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {vesselCertificates?.map(cert => {
+                          const isIndefinite = cert.is_indefinite === true;
+                          const status = getCertificateStatus(cert.expiry_date, isIndefinite);
+                          const daysUntilExpiry = cert.expiry_date ? differenceInDays(new Date(cert.expiry_date), new Date()) : null;
+                          
+                          return (
+                            <TableRow 
+                              key={cert.id} 
+                              className={status === 'expired' ? 'bg-destructive/5' : status === 'expiring' ? 'bg-amber-50 dark:bg-amber-950/20' : ''}
+                            >
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{cert.name}</p>
+                                  {cert.description && (
+                                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">{cert.description}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {(cert.vessel as any)?.name}
+                              </TableCell>
+                              <TableCell>
+                                {isIndefinite ? (
+                                  <span className="text-green-600 dark:text-green-400 text-sm">Tillsvidare</span>
+                                ) : cert.expiry_date ? (
+                                  <div className="text-sm">
+                                    <span>{format(new Date(cert.expiry_date), 'yyyy-MM-dd')}</span>
+                                    {status !== 'expired' && daysUntilExpiry !== null && (
+                                      <span className="text-muted-foreground text-xs ml-1">({daysUntilExpiry}d)</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">–</span>
+                                )}
+                              </TableCell>
+                              <TableCell>{getStatusBadge(status)}</TableCell>
+                              <TableCell>
+                                {cert.file_url && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleViewFile(cert.file_url!, 'vessel-certificates')}
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </TabsContent>
 
@@ -331,44 +380,76 @@ export default function Qualifications() {
                 </CardContent>
               </Card>
             ) : (
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Namn</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {searchFilteredProfiles?.map(profile => {
-                        const status = getProfileStatus(profile.id);
-                        return (
-                          <TableRow 
-                            key={profile.id} 
-                            className={`cursor-pointer hover:bg-muted/50 ${status === 'expired' ? 'bg-destructive/5' : status === 'expiring' ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
-                            onClick={() => setSelectedProfile(profile)}
-                          >
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {status === 'expired' && <AlertTriangle className="h-4 w-4 text-destructive" />}
-                                {status === 'expiring' && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-                                <span>{profile.full_name}</span>
-                                {profile.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
-                              </div>
-                            </TableCell>
-                            <TableCell>{getProfileStatusBadge(status)}</TableCell>
-                            <TableCell>
+              <>
+                {/* Mobile card view */}
+                <div className="space-y-2 md:hidden">
+                  {searchFilteredProfiles?.map(profile => {
+                    const status = getProfileStatus(profile.id);
+                    return (
+                      <Card 
+                        key={profile.id}
+                        className={`cursor-pointer active:bg-accent/50 transition-colors ${status === 'expired' ? 'border-destructive/50 bg-destructive/5' : status === 'expiring' ? 'border-amber-500/50 bg-amber-50 dark:bg-amber-950/20' : ''}`}
+                        onClick={() => setSelectedProfile(profile)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {status === 'expired' && <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />}
+                              {status === 'expiring' && <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />}
+                              <span className="font-medium text-sm truncate">{profile.full_name}</span>
+                              {profile.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getProfileStatusBadge(status)}
                               <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop table view */}
+                <Card className="hidden md:block">
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Namn</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {searchFilteredProfiles?.map(profile => {
+                          const status = getProfileStatus(profile.id);
+                          return (
+                            <TableRow 
+                              key={profile.id} 
+                              className={`cursor-pointer hover:bg-muted/50 ${status === 'expired' ? 'bg-destructive/5' : status === 'expiring' ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
+                              onClick={() => setSelectedProfile(profile)}
+                            >
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  {status === 'expired' && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                                  {status === 'expiring' && <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                                  <span>{profile.full_name}</span>
+                                  {profile.is_external && <Badge variant="outline" className="text-xs">Extern</Badge>}
+                                </div>
+                              </TableCell>
+                              <TableCell>{getProfileStatusBadge(status)}</TableCell>
+                              <TableCell>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </TabsContent>
         </Tabs>

@@ -281,26 +281,28 @@ export default function FaultCases() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-display font-bold">Felärenden</h1>
-            <p className="text-muted-foreground mt-1">Hantera tekniska och operativa fel</p>
+            <h1 className="text-xl md:text-3xl font-display font-bold">Felärenden</h1>
+            <p className="text-muted-foreground text-sm mt-1">Hantera tekniska och operativa fel</p>
           </div>
           <div className="flex gap-2">
             <Button 
-              variant="outline" 
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-initial"
               onClick={() => printContent('fault-cases-list', { 
                 title: 'Felärenden', 
                 subtitle: activeTab === 'active' ? 'Aktiva ärenden' : 'Arkiverade ärenden'
               })}
             >
               <Printer className="h-4 w-4 mr-2" />
-              Skriv ut
+              <span className="hidden sm:inline">Skriv ut</span>
             </Button>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button>
+                <Button size="sm" className="flex-1 sm:flex-initial">
                   <Plus className="h-4 w-4 mr-2" />
                   Nytt felärende
                 </Button>
@@ -476,16 +478,16 @@ export default function FaultCases() {
 
         {/* Filters */}
         <Card>
-          <CardHeader className="py-4">
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="py-3 md:py-4">
+            <CardTitle className="text-sm md:text-base flex items-center gap-2">
               <Filter className="h-4 w-4" />
               Filter
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-4">
               <Select value={filterVessel} onValueChange={setFilterVessel}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="Alla fartyg" />
                 </SelectTrigger>
                 <SelectContent>
@@ -498,7 +500,7 @@ export default function FaultCases() {
 
               {activeTab === 'active' && (
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Alla statusar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -513,7 +515,7 @@ export default function FaultCases() {
               )}
 
               <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="Alla prioriteter" />
                 </SelectTrigger>
                 <SelectContent>
@@ -528,6 +530,7 @@ export default function FaultCases() {
                 placeholder="Sök..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
+                className="h-9"
               />
             </div>
           </CardContent>
@@ -536,7 +539,7 @@ export default function FaultCases() {
         {/* List */}
         <div id="fault-cases-list">
           {isLoading ? (
-            <div className="animate-pulse space-y-4">
+            <div className="animate-pulse space-y-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-20 bg-muted rounded-lg" />
               ))}
@@ -549,42 +552,75 @@ export default function FaultCases() {
               </CardContent>
             </Card>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="text-left p-2 border-b">Rubrik</th>
-                  <th className="text-left p-2 border-b">Fartyg</th>
-                  <th className="text-left p-2 border-b">Prioritet</th>
-                  <th className="text-left p-2 border-b">Status</th>
-                  <th className="text-left p-2 border-b">Datum</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile card view */}
+              <div className="space-y-2 md:hidden">
                 {faultCases?.map((faultCase) => (
-                  <tr 
-                    key={faultCase.id} 
-                    className="hover:bg-muted/50 cursor-pointer"
+                  <Card 
+                    key={faultCase.id}
+                    className="cursor-pointer active:bg-accent/50 transition-colors"
                     onClick={() => navigate(`/portal/fault-cases/${faultCase.id}`)}
                   >
-                    <td className="p-2 border-b font-medium">{faultCase.title}</td>
-                    <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
-                    <td className="p-2 border-b">
-                      <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
-                        {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
-                      </Badge>
-                    </td>
-                    <td className="p-2 border-b">
-                      <Badge variant={getStatusColor(faultCase.status as FaultStatus)}>
-                        {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
-                      </Badge>
-                    </td>
-                    <td className="p-2 border-b text-muted-foreground text-sm">
-                      {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
-                    </td>
-                  </tr>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <span className="font-medium text-sm line-clamp-1">{faultCase.title}</span>
+                        <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)} className="text-xs flex-shrink-0">
+                          {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{(faultCase as any).vessel?.name}</span>
+                          <span>•</span>
+                          <span>{format(new Date(faultCase.created_at), 'd MMM', { locale: sv })}</span>
+                        </div>
+                        <Badge variant={getStatusColor(faultCase.status as FaultStatus)} className="text-xs">
+                          {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop table view */}
+              <table className="w-full hidden md:table">
+                <thead>
+                  <tr>
+                    <th className="text-left p-2 border-b">Rubrik</th>
+                    <th className="text-left p-2 border-b">Fartyg</th>
+                    <th className="text-left p-2 border-b">Prioritet</th>
+                    <th className="text-left p-2 border-b">Status</th>
+                    <th className="text-left p-2 border-b">Datum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {faultCases?.map((faultCase) => (
+                    <tr 
+                      key={faultCase.id} 
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => navigate(`/portal/fault-cases/${faultCase.id}`)}
+                    >
+                      <td className="p-2 border-b font-medium">{faultCase.title}</td>
+                      <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
+                      <td className="p-2 border-b">
+                        <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
+                          {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
+                        </Badge>
+                      </td>
+                      <td className="p-2 border-b">
+                        <Badge variant={getStatusColor(faultCase.status as FaultStatus)}>
+                          {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
+                        </Badge>
+                      </td>
+                      <td className="p-2 border-b text-muted-foreground text-sm">
+                        {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </div>
