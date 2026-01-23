@@ -95,7 +95,7 @@ export default function PassengerRegistration() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-display font-bold">Passagerarregistrering</h1>
+            <h1 className="text-xl md:text-2xl font-display font-bold">Passagerarregistrering</h1>
             <p className="text-muted-foreground text-sm">Registreringssessioner</p>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function PassengerRegistration() {
         {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+              <div key={i} className="h-16 md:h-10 bg-muted animate-pulse rounded" />
             ))}
           </div>
         ) : sessions.length === 0 ? (
@@ -120,59 +120,106 @@ export default function PassengerRegistration() {
             </CardContent>
           </Card>
         ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-9">Datum</TableHead>
-                  <TableHead className="h-9">Fartyg</TableHead>
-                  <TableHead className="h-9">Rutt</TableHead>
-                  <TableHead className="h-9 text-center">Registreringar</TableHead>
-                  <TableHead className="h-9">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sessions.map((session) => (
-                  <TableRow 
-                    key={session.id} 
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/portal/passagerare/${session.id}`)}
-                  >
-                    <TableCell className="py-2 text-muted-foreground text-sm">
-                      {session.logbook?.date 
-                        ? format(new Date(session.logbook.date), 'd MMM yyyy', { locale: sv }) 
-                        : '-'}
-                    </TableCell>
-                    <TableCell className="py-2 font-medium">
-                      <div className="flex items-center gap-2">
-                        <Ship className="h-4 w-4 text-muted-foreground" />
-                        {session.vessel?.name || 'Okänt fartyg'}
+          <>
+            {/* Mobile card view */}
+            <div className="space-y-2 md:hidden">
+              {sessions.map((session) => (
+                <Card 
+                  key={session.id} 
+                  className="cursor-pointer active:bg-accent/50 transition-colors"
+                  onClick={() => navigate(`/portal/passagerare/${session.id}`)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Ship className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="font-medium truncate">{session.vessel?.name || 'Okänt fartyg'}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {session.logbook?.date 
+                            ? format(new Date(session.logbook.date), 'd MMM yyyy', { locale: sv }) 
+                            : '-'}
+                          {session.route?.name && (
+                            <span className="ml-2">• {session.route.name}</span>
+                          )}
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="py-2 text-sm">
-                      {session.route?.name || <span className="text-muted-foreground">Ingen rutt</span>}
-                    </TableCell>
-                    <TableCell className="py-2 text-center">
-                      <Badge variant="outline" className="font-mono">
-                        {session._count?.entries || 0}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-2">
-                      {session.is_active ? (
-                        <Badge variant="default" className="text-xs">
-                          Aktiv
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {session._count?.entries || 0} reg
                         </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          Låst
-                        </Badge>
-                      )}
-                    </TableCell>
+                        {session.is_active ? (
+                          <Badge variant="default" className="text-xs">
+                            Aktiv
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Låst
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="border rounded-lg hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-9">Datum</TableHead>
+                    <TableHead className="h-9">Fartyg</TableHead>
+                    <TableHead className="h-9">Rutt</TableHead>
+                    <TableHead className="h-9 text-center">Registreringar</TableHead>
+                    <TableHead className="h-9">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((session) => (
+                    <TableRow 
+                      key={session.id} 
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/portal/passagerare/${session.id}`)}
+                    >
+                      <TableCell className="py-2 text-muted-foreground text-sm">
+                        {session.logbook?.date 
+                          ? format(new Date(session.logbook.date), 'd MMM yyyy', { locale: sv }) 
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="py-2 font-medium">
+                        <div className="flex items-center gap-2">
+                          <Ship className="h-4 w-4 text-muted-foreground" />
+                          {session.vessel?.name || 'Okänt fartyg'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-2 text-sm">
+                        {session.route?.name || <span className="text-muted-foreground">Ingen rutt</span>}
+                      </TableCell>
+                      <TableCell className="py-2 text-center">
+                        <Badge variant="outline" className="font-mono">
+                          {session._count?.entries || 0}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-2">
+                        {session.is_active ? (
+                          <Badge variant="default" className="text-xs">
+                            Aktiv
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Låst
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
     </MainLayout>

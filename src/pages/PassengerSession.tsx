@@ -433,48 +433,48 @@ export default function PassengerSession() {
 
   return (
     <MainLayout>
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/portal/passagerare')}>
-              <ArrowLeft className="h-5 w-5" />
+      <div className="space-y-3 md:space-y-4">
+        {/* Header - Mobile optimized */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 md:gap-4 min-w-0">
+            <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0 mt-0.5" onClick={() => navigate('/portal/passagerare')}>
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                <Ship className="h-5 w-5" />
-                {(session as any).vessel?.name}
+            <div className="min-w-0">
+              <h1 className="text-base md:text-xl font-bold flex items-center gap-2 truncate">
+                <Ship className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                <span className="truncate">{(session as any).vessel?.name}</span>
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {(session as any).logbook?.date ? format(new Date((session as any).logbook.date), 'd MMMM yyyy', { locale: sv }) : ''}
+              <p className="text-xs md:text-sm text-muted-foreground">
+                {(session as any).logbook?.date ? format(new Date((session as any).logbook.date), 'd MMM yyyy', { locale: sv }) : ''}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary">{currentOnboard}</div>
-              <div className="text-sm text-muted-foreground">ombord</div>
+              <div className="text-2xl md:text-3xl font-bold text-primary">{currentOnboard}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">ombord</div>
             </div>
             {!session.is_active && (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1 text-xs">
                 <Lock className="h-3 w-3" />
-                Låst
+                <span className="hidden sm:inline">Låst</span>
               </Badge>
             )}
           </div>
         </div>
 
-        {/* Route Selection */}
+        {/* Route Selection - Mobile optimized */}
         <Card>
-          <CardContent className="py-3">
-            <div className="flex items-center gap-4">
-              <Label className="whitespace-nowrap">Rutt:</Label>
+          <CardContent className="py-2 md:py-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <Label className="whitespace-nowrap text-xs md:text-sm">Rutt:</Label>
               <Select
                 disabled={!session.is_active}
                 value={session.route_id || 'none'}
                 onValueChange={(value) => updateRoute.mutate(value === 'none' ? null : value)}
               >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px] h-9">
                   <SelectValue placeholder="Välj rutt" />
                 </SelectTrigger>
                 <SelectContent>
@@ -490,90 +490,233 @@ export default function PassengerSession() {
           </CardContent>
         </Card>
 
-        {/* Quick Entry Form */}
+        {/* Quick Entry Form - Mobile optimized */}
         <Card>
-          <CardHeader className="py-3">
-            <CardTitle className="text-base">Ny registrering</CardTitle>
+          <CardHeader className="py-2 md:py-3">
+            <CardTitle className="text-sm md:text-base">Ny registrering</CardTitle>
           </CardHeader>
-          <CardContent className="py-3">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3" onKeyDown={handleKeyDown}>
-              <div>
-                <Label className="text-xs">Avgång</Label>
-                <Input
-                  type="time"
-                  value={departureTime}
-                  onChange={(e) => setDepartureTime(e.target.value)}
-                  disabled={!session.is_active}
-                  className="h-10"
-                />
+          <CardContent className="py-2 md:py-3">
+            <div className="space-y-3 md:space-y-0" onKeyDown={handleKeyDown}>
+              {/* Mobile: stacked layout */}
+              <div className="grid grid-cols-2 gap-2 md:hidden">
+                <div>
+                  <Label className="text-xs">Avgång</Label>
+                  <Input
+                    type="time"
+                    value={departureTime}
+                    onChange={(e) => setDepartureTime(e.target.value)}
+                    disabled={!session.is_active}
+                    className="h-12 text-base"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Brygga</Label>
+                  <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
+                    <SelectTrigger className="h-12 text-base">
+                      <SelectValue placeholder="Välj" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {session.route_id && routeStops.length > 0
+                        ? routeStops.map((stop) => (
+                            <SelectItem key={stop.dock_id} value={stop.dock_id}>
+                              {stop.dock?.name}
+                            </SelectItem>
+                          ))
+                        : allDocks.map((dock) => (
+                            <SelectItem key={dock.id} value={dock.id}>
+                              {dock.name}
+                            </SelectItem>
+                          ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
-              <div>
-                <Label className="text-xs">Brygga</Label>
-                <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Välj brygga" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {session.route_id && routeStops.length > 0
-                      ? routeStops.map((stop) => (
-                          <SelectItem key={stop.dock_id} value={stop.dock_id}>
-                            {stop.dock?.name}
-                          </SelectItem>
-                        ))
-                      : allDocks.map((dock) => (
-                          <SelectItem key={dock.id} value={dock.id}>
-                            {dock.name}
-                          </SelectItem>
-                        ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-2 md:hidden">
+                <div>
+                  <Label className="text-xs flex items-center gap-1">
+                    <UserPlus className="h-3 w-3 text-primary" /> På
+                  </Label>
+                  <Input
+                    ref={paxOnRef}
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={paxOn}
+                    onChange={(e) => setPaxOn(e.target.value)}
+                    disabled={!session.is_active}
+                    placeholder="0"
+                    className="h-14 text-2xl font-bold text-center"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs flex items-center gap-1">
+                    <UserMinus className="h-3 w-3 text-destructive" /> Av
+                  </Label>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max={currentOnboard}
+                    value={paxOff}
+                    onChange={(e) => setPaxOff(e.target.value)}
+                    disabled={!session.is_active}
+                    placeholder="0"
+                    className="h-14 text-2xl font-bold text-center"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label className="text-xs">På</Label>
-                <Input
-                  ref={paxOnRef}
-                  type="number"
-                  min="0"
-                  value={paxOn}
-                  onChange={(e) => setPaxOn(e.target.value)}
-                  disabled={!session.is_active}
-                  placeholder="0"
-                  className="h-10 text-lg font-semibold text-center"
-                />
-              </div>
+              <Button 
+                onClick={() => addEntry.mutate()} 
+                disabled={!session.is_active || addEntry.isPending}
+                className="w-full h-12 text-base md:hidden"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Registrera
+              </Button>
 
-              <div>
-                <Label className="text-xs">Av</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max={currentOnboard}
-                  value={paxOff}
-                  onChange={(e) => setPaxOff(e.target.value)}
-                  disabled={!session.is_active}
-                  placeholder="0"
-                  className="h-10 text-lg font-semibold text-center"
-                />
-              </div>
+              {/* Desktop: grid layout */}
+              <div className="hidden md:grid md:grid-cols-5 gap-3">
+                <div>
+                  <Label className="text-xs">Avgång</Label>
+                  <Input
+                    type="time"
+                    value={departureTime}
+                    onChange={(e) => setDepartureTime(e.target.value)}
+                    disabled={!session.is_active}
+                    className="h-10"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Brygga</Label>
+                  <Select value={selectedDockId} onValueChange={setSelectedDockId} disabled={!session.is_active}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Välj brygga" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {session.route_id && routeStops.length > 0
+                        ? routeStops.map((stop) => (
+                            <SelectItem key={stop.dock_id} value={stop.dock_id}>
+                              {stop.dock?.name}
+                            </SelectItem>
+                          ))
+                        : allDocks.map((dock) => (
+                            <SelectItem key={dock.id} value={dock.id}>
+                              {dock.name}
+                            </SelectItem>
+                          ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="flex items-end">
-                <Button 
-                  onClick={() => addEntry.mutate()} 
-                  disabled={!session.is_active || addEntry.isPending}
-                  className="w-full h-10"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Registrera
-                </Button>
+                <div>
+                  <Label className="text-xs">På</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={paxOn}
+                    onChange={(e) => setPaxOn(e.target.value)}
+                    disabled={!session.is_active}
+                    placeholder="0"
+                    className="h-10 text-lg font-semibold text-center"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs">Av</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max={currentOnboard}
+                    value={paxOff}
+                    onChange={(e) => setPaxOff(e.target.value)}
+                    disabled={!session.is_active}
+                    placeholder="0"
+                    className="h-10 text-lg font-semibold text-center"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <Button 
+                    onClick={() => addEntry.mutate()} 
+                    disabled={!session.is_active || addEntry.isPending}
+                    className="w-full h-10"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Registrera
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Entries Table */}
-        <Card>
+        {/* Entries - Mobile card view */}
+        <div className="space-y-2 md:hidden">
+          {entries.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground text-sm">
+                Inga registreringar ännu. Börja registrera passagerare ovan.
+              </CardContent>
+            </Card>
+          ) : (
+            entries.map((entry, index) => {
+              const runningTotal = entries
+                .slice(0, index + 1)
+                .reduce((sum, e) => sum + e.pax_on - e.pax_off, 0);
+              
+              return (
+                <Card key={entry.id}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-xs text-muted-foreground w-5">{entry.entry_order}</div>
+                        <div>
+                          <div className="font-medium text-sm">{entry.dock_name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {entry.departure_time?.slice(0, 5)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          {entry.pax_on > 0 && (
+                            <span className="text-primary font-semibold">+{entry.pax_on}</span>
+                          )}
+                          {entry.pax_off > 0 && (
+                            <span className="text-destructive font-semibold">-{entry.pax_off}</span>
+                          )}
+                        </div>
+                        <div className="bg-muted px-2 py-1 rounded text-sm font-bold min-w-[40px] text-center">
+                          {runningTotal}
+                        </div>
+                        {session.is_active && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteEntry.mutate(entry.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
+
+        {/* Entries - Desktop table view */}
+        <Card className="hidden md:block">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
