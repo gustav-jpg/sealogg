@@ -292,21 +292,21 @@ export default function Checklists() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-display font-bold">Checklistor</h1>
-            <p className="text-muted-foreground mt-1">Operativa checklistor och säkerhetskontroller</p>
+            <h1 className="text-xl md:text-3xl font-display font-bold">Checklistor</h1>
+            <p className="text-muted-foreground text-sm mt-1">Operativa checklistor och säkerhetskontroller</p>
           </div>
         </div>
 
         {/* Vessel selector */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <Label className="whitespace-nowrap">Välj fartyg:</Label>
+          <CardContent className="py-4 md:pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <Label className="whitespace-nowrap text-sm">Välj fartyg:</Label>
               <Select value={selectedVessel} onValueChange={(v) => { setSelectedVessel(v); setActiveTab('overview'); }}>
-                <SelectTrigger className="max-w-xs">
+                <SelectTrigger className="w-full sm:max-w-xs">
                   <SelectValue placeholder="Välj fartyg" />
                 </SelectTrigger>
                 <SelectContent>
@@ -328,50 +328,50 @@ export default function Checklists() {
           </Card>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="overview" className="gap-2">
+            <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:flex">
+              <TabsTrigger value="overview" className="gap-2 text-xs sm:text-sm">
                 <ClipboardList className="h-4 w-4" />
-                Översikt
+                <span className="hidden sm:inline">Översikt</span>
               </TabsTrigger>
-              <TabsTrigger value="history" className="gap-2">
+              <TabsTrigger value="history" className="gap-2 text-xs sm:text-sm">
                 <History className="h-4 w-4" />
-                Historik
+                <span className="hidden sm:inline">Historik</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-4 mt-4">
+            <TabsContent value="overview" className="space-y-3 md:space-y-4 mt-4">
               {/* Status cards */}
               {(overdueCount > 0 || dueSoonCount > 0 || inProgressCount > 0) && (
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-2 md:gap-4 grid-cols-1 sm:grid-cols-3">
                   {overdueCount > 0 && (
                     <Card className="border-destructive/50 bg-destructive/5">
-                      <CardContent className="pt-6 flex items-center gap-4">
-                        <AlertTriangle className="h-8 w-8 text-destructive" />
+                      <CardContent className="p-3 md:pt-6 flex items-center gap-3 md:gap-4">
+                        <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-destructive flex-shrink-0" />
                         <div>
-                          <p className="font-medium text-destructive">Förfallna</p>
-                          <p className="text-sm text-muted-foreground">{overdueCount} checklista(or)</p>
+                          <p className="font-medium text-destructive text-sm md:text-base">Förfallna</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">{overdueCount} checklista(or)</p>
                         </div>
                       </CardContent>
                     </Card>
                   )}
                   {dueSoonCount > 0 && (
                     <Card className="border-primary/50 bg-primary/5">
-                      <CardContent className="pt-6 flex items-center gap-4">
-                        <Clock className="h-8 w-8 text-primary" />
+                      <CardContent className="p-3 md:pt-6 flex items-center gap-3 md:gap-4">
+                        <Clock className="h-6 w-6 md:h-8 md:w-8 text-primary flex-shrink-0" />
                         <div>
-                          <p className="font-medium text-primary">Kommande</p>
-                          <p className="text-sm text-muted-foreground">{dueSoonCount} checklista(or)</p>
+                          <p className="font-medium text-primary text-sm md:text-base">Kommande</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">{dueSoonCount} checklista(or)</p>
                         </div>
                       </CardContent>
                     </Card>
                   )}
                   {inProgressCount > 0 && (
                     <Card className="border-yellow-500/50 bg-yellow-500/5">
-                      <CardContent className="pt-6 flex items-center gap-4">
-                        <RefreshCw className="h-8 w-8 text-yellow-600" />
+                      <CardContent className="p-3 md:pt-6 flex items-center gap-3 md:gap-4">
+                        <RefreshCw className="h-6 w-6 md:h-8 md:w-8 text-yellow-600 flex-shrink-0" />
                         <div>
-                          <p className="font-medium text-yellow-600">Pågående</p>
-                          <p className="text-sm text-muted-foreground">{inProgressCount} checklista(or)</p>
+                          <p className="font-medium text-yellow-600 text-sm md:text-base">Pågående</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">{inProgressCount} checklista(or)</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -388,63 +388,64 @@ export default function Checklists() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-3">
+              <div className="space-y-2 md:space-y-3">
                   {checklistsWithStatus.map((checklist) => (
                     <Card key={checklist.id} className={checklist.status === 'overdue' ? 'border-destructive/50' : ''}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4">
+                      <CardContent className="p-3 md:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 md:gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-medium">{checklist.name}</span>
+                              <span className="font-medium text-sm md:text-base">{checklist.name}</span>
                               {getStatusBadge(checklist)}
                               {checklist.interval_days && checklist.daysRemaining !== null && (
                                 checklist.daysRemaining >= 0 ? (
-                                  <Badge className="gap-1 bg-green-600 hover:bg-green-600 text-white">
+                                  <Badge className="gap-1 bg-green-600 hover:bg-green-600 text-white text-xs">
                                     <Clock className="h-3 w-3" />
-                                    {checklist.daysRemaining === 0 ? 'Utför idag' : `Utför inom ${checklist.daysRemaining} dagar`}
+                                    <span className="hidden sm:inline">Utför inom </span>{checklist.daysRemaining}d
                                   </Badge>
                                 ) : (
-                                  <Badge className="gap-1 bg-red-600 hover:bg-red-600 text-white">
+                                  <Badge className="gap-1 bg-red-600 hover:bg-red-600 text-white text-xs">
                                     <AlertTriangle className="h-3 w-3" />
-                                    Försenat {Math.abs(checklist.daysRemaining)} dagar
+                                    -{Math.abs(checklist.daysRemaining)}d
                                   </Badge>
                                 )
                               )}
                               {!checklist.interval_days && (
-                                <Badge variant="outline">Manuell</Badge>
+                                <Badge variant="outline" className="text-xs">Manuell</Badge>
                               )}
                             </div>
                             {checklist.description && (
-                              <p className="text-sm text-muted-foreground line-clamp-1">{checklist.description}</p>
+                              <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{checklist.description}</p>
                             )}
                             {checklist.lastCompleted && (
-                              <p className="text-sm text-muted-foreground mt-1">
+                              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                                 Senast: {format(new Date(checklist.lastCompleted), 'd MMM yyyy', { locale: sv })}
                               </p>
                             )}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 w-full sm:w-auto">
                             {checklist.inProgressId ? (
                               <>
-                                <Button asChild>
+                                <Button asChild className="flex-1 sm:flex-initial" size="sm">
                                   <Link to={`/portal/checklists/execute/${checklist.inProgressId}`}>
-                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                    Fortsätt
+                                    <RefreshCw className="h-4 w-4 mr-1 sm:mr-2" />
+                                    <span className="hidden sm:inline">Fortsätt</span>
+                                    <span className="sm:hidden">Fortsätt</span>
                                   </Link>
                                 </Button>
                                 <Button
                                   variant="outline"
+                                  size="sm"
                                   className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                                   onClick={() => setAbortConfirm({ open: true, executionId: checklist.inProgressId })}
                                 >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Avbryt
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </>
                             ) : (
-                              <Button asChild>
+                              <Button asChild className="w-full sm:w-auto" size="sm">
                                 <Link to={`/portal/checklists/execute?template=${checklist.id}&vessel=${selectedVessel}`}>
-                                  <Play className="h-4 w-4 mr-2" />
+                                  <Play className="h-4 w-4 mr-1 sm:mr-2" />
                                   Starta
                                 </Link>
                               </Button>
