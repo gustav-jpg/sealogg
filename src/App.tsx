@@ -48,7 +48,7 @@ import DrinksAdmin from "./pages/bookings/admin/DrinksAdmin";
 import PassengerRegistration from "./pages/PassengerRegistration";
 import PassengerSession from "./pages/PassengerSession";
 import PassengerAdmin from "./pages/admin/PassengerAdmin";
-
+import NotificationSettingsPage from "./pages/admin/NotificationSettings";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
@@ -134,6 +134,7 @@ function AppRoutes() {
         <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/intranet" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
         
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
