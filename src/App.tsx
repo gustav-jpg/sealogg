@@ -134,7 +134,7 @@ function AppRoutes() {
         <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/intranet" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
-        <Route path="/portal/admin/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
+        <Route path="/portal/admin/notifications" element={<ProtectedRoute adminOnly><NotificationSettingsPage /></ProtectedRoute>} />
         
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />

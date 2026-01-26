@@ -131,7 +131,6 @@ export function AppSidebar() {
       }
     }
     vesselNavItems.push({ href: '/portal/qualifications', label: 'Certifikat', icon: Award });
-    vesselNavItems.push({ href: '/portal/admin/notifications', label: 'Notifikationer', icon: Bell });
   }
 
   // Base admin items always shown
@@ -140,6 +139,7 @@ export function AppSidebar() {
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Besättning', icon: Users },
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
+    { href: '/portal/admin/notifications', label: 'Notifikationer', icon: Bell },
   ];
 
   // Module-specific admin items
