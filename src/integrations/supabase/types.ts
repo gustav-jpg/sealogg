@@ -1735,6 +1735,127 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          body: string | null
+          category: string
+          created_at: string
+          error_message: string | null
+          id: string
+          notification_type: string
+          organization_id: string | null
+          reference_id: string | null
+          reference_table: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          category: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          organization_id?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          category?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          organization_id?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          days_before_warning: number
+          email_daily_digest: boolean
+          email_expiring_certificates: boolean
+          email_expiring_controls: boolean
+          email_new_deviations: boolean
+          email_new_faults: boolean
+          email_unsigned_logbooks: boolean
+          id: string
+          organization_id: string
+          push_enabled: boolean
+          push_expiring_controls: boolean
+          push_new_deviations: boolean
+          push_new_faults: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_before_warning?: number
+          email_daily_digest?: boolean
+          email_expiring_certificates?: boolean
+          email_expiring_controls?: boolean
+          email_new_deviations?: boolean
+          email_new_faults?: boolean
+          email_unsigned_logbooks?: boolean
+          id?: string
+          organization_id: string
+          push_enabled?: boolean
+          push_expiring_controls?: boolean
+          push_new_deviations?: boolean
+          push_new_faults?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_before_warning?: number
+          email_daily_digest?: boolean
+          email_expiring_certificates?: boolean
+          email_expiring_controls?: boolean
+          email_new_deviations?: boolean
+          email_new_faults?: boolean
+          email_unsigned_logbooks?: boolean
+          id?: string
+          organization_id?: string
+          push_enabled?: boolean
+          push_expiring_controls?: boolean
+          push_new_deviations?: boolean
+          push_new_faults?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_features: {
         Row: {
           created_at: string
@@ -2156,6 +2277,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       superadmins: {
         Row: {
