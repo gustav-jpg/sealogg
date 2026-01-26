@@ -1795,6 +1795,7 @@ export type Database = {
         Row: {
           created_at: string
           days_before_warning: number
+          digest_frequency: string
           email_daily_digest: boolean
           email_expiring_certificates: boolean
           email_expiring_controls: boolean
@@ -1813,6 +1814,7 @@ export type Database = {
         Insert: {
           created_at?: string
           days_before_warning?: number
+          digest_frequency?: string
           email_daily_digest?: boolean
           email_expiring_certificates?: boolean
           email_expiring_controls?: boolean
@@ -1831,6 +1833,7 @@ export type Database = {
         Update: {
           created_at?: string
           days_before_warning?: number
+          digest_frequency?: string
           email_daily_digest?: boolean
           email_expiring_certificates?: boolean
           email_expiring_controls?: boolean

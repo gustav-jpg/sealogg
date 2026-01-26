@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bell, Mail, Smartphone, Loader2 } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,9 +13,12 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+type DigestFrequency = 'daily' | 'weekly';
+
 interface NotificationPreferences {
   id?: string;
   email_daily_digest: boolean;
+  digest_frequency: DigestFrequency;
   email_expiring_certificates: boolean;
   email_expiring_controls: boolean;
   email_new_deviations: boolean;
@@ -29,6 +33,7 @@ interface NotificationPreferences {
 
 const defaultPreferences: NotificationPreferences = {
   email_daily_digest: false,
+  digest_frequency: 'daily',
   email_expiring_certificates: true,
   email_expiring_controls: true,
   email_new_deviations: true,
@@ -69,6 +74,7 @@ export function NotificationSettings() {
           setPreferences({
             id: data.id,
             email_daily_digest: data.email_daily_digest,
+            digest_frequency: (data.digest_frequency as DigestFrequency) || 'daily',
             email_expiring_certificates: data.email_expiring_certificates,
             email_expiring_controls: data.email_expiring_controls,
             email_new_deviations: data.email_new_deviations,
@@ -134,7 +140,7 @@ export function NotificationSettings() {
     }
   };
 
-  const updatePreference = (key: keyof NotificationPreferences, value: boolean | number) => {
+  const updatePreference = (key: keyof NotificationPreferences, value: boolean | number | string) => {
     setPreferences(prev => ({ ...prev, [key]: value }));
   };
 
@@ -162,9 +168,9 @@ export function NotificationSettings() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="email_daily_digest" className="flex flex-col">
-              <span>Daglig sammanfattning</span>
+              <span>Sammanfattning via e-post</span>
               <span className="text-sm text-muted-foreground font-normal">
-                Få en översikt varje morgon
+                Få en översikt med utgående certifikat, kontroller, avvikelser och fel
               </span>
             </Label>
             <Switch
@@ -173,6 +179,29 @@ export function NotificationSettings() {
               onCheckedChange={(checked) => updatePreference('email_daily_digest', checked)}
             />
           </div>
+
+          {preferences.email_daily_digest && (
+            <div className="flex items-center justify-between pl-4 border-l-2 border-muted">
+              <Label htmlFor="digest_frequency" className="flex flex-col">
+                <span>Frekvens</span>
+                <span className="text-sm text-muted-foreground font-normal">
+                  Hur ofta vill du få sammanfattningen
+                </span>
+              </Label>
+              <Select
+                value={preferences.digest_frequency}
+                onValueChange={(value) => updatePreference('digest_frequency', value)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Dagligen</SelectItem>
+                  <SelectItem value="weekly">Veckovis</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <Separator />
 
