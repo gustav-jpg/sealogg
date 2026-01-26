@@ -206,36 +206,6 @@ export function NotificationSettings() {
           <Separator />
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="email_expiring_certificates" className="flex flex-col">
-              <span>Certifikat som går ut</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Påminnelse innan certifikat går ut
-              </span>
-            </Label>
-            <Switch
-              id="email_expiring_certificates"
-              checked={preferences.email_expiring_certificates}
-              onCheckedChange={(checked) => updatePreference('email_expiring_certificates', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="email_expiring_controls" className="flex flex-col">
-              <span>Egenkontroller som förfaller</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Påminnelse för schemalagda kontroller
-              </span>
-            </Label>
-            <Switch
-              id="email_expiring_controls"
-              checked={preferences.email_expiring_controls}
-              onCheckedChange={(checked) => updatePreference('email_expiring_controls', checked)}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
             <Label htmlFor="email_new_deviations" className="flex flex-col">
               <span>Nya avvikelser</span>
               <span className="text-sm text-muted-foreground font-normal">
