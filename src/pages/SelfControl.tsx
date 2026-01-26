@@ -34,6 +34,7 @@ import {
 import { format, addMonths, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { ClipboardCheck, AlertTriangle, CheckCircle, Clock, Calendar, Gauge, Eye, Check, History, Printer, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { HistorySection } from '@/components/selfcontrol/HistorySection';
 import {
   Accordion,
   AccordionContent,
@@ -130,27 +131,6 @@ export default function SelfControl() {
         .eq('vessel_id', selectedVessel)
         .order('engine_type', { ascending: true })
         .order('engine_number', { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedVessel,
-  });
-
-  // Fetch control point records for history
-  const { data: controlRecords } = useQuery({
-    queryKey: ['control-point-records', selectedVessel],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('control_point_records')
-        .select(`
-          *,
-          control_point:control_points(*),
-          engine:vessel_engine_hours(*),
-          performer:profiles!control_point_records_performed_by_fkey(full_name)
-        `)
-        .eq('vessel_id', selectedVessel)
-        .order('performed_at', { ascending: false })
-        .limit(100);
       if (error) throw error;
       return data;
     },
@@ -749,49 +729,11 @@ export default function SelfControl() {
               </TabsContent>
 
               <TabsContent value="history" className="mt-4">
-                {!controlRecords || controlRecords.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <History className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">Ingen historik ännu</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {controlRecords.map((record: any) => (
-                      <Card key={record.id}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium">{record.control_point?.name || 'Okänd kontrollpunkt'}</span>
-                                <Badge variant="secondary">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Utförd
-                                </Badge>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                <span>Datum: {format(new Date(record.performed_at), 'yyyy-MM-dd', { locale: sv })}</span>
-                                <span>Utförd av: {record.performer?.full_name || 'Okänd'}</span>
-                                {record.engine_hours_at_perform && (
-                                  <span>
-                                    Maskintimmar: {record.engine_hours_at_perform}h
-                                    {record.engine && ` (${getEngineName(record.engine)})`}
-                                  </span>
-                                )}
-                              </div>
-                              {record.notes && (
-                                <p className="text-sm text-muted-foreground mt-2 p-2 bg-muted/50 rounded">
-                                  {record.notes}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                <HistorySection
+                  selectedVessel={selectedVessel}
+                  controlPoints={applicableControlPoints}
+                  getEngineName={getEngineName}
+                />
               </TabsContent>
             </Tabs>
             </div>
