@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { CookieConsent } from "@/components/CookieConsent";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -53,6 +53,7 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, isLoading, isAdmin } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -63,7 +64,9 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
   }
 
   if (!user) {
-    return <Navigate to="/portal/login" replace />;
+    // Save the current URL (including query params) so we can redirect back after login
+    const currentPath = location.pathname + location.search;
+    return <Navigate to="/portal/login" state={{ from: currentPath }} replace />;
   }
 
   if (adminOnly && !isAdmin) {
