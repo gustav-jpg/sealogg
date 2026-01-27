@@ -27,7 +27,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { Plus, Edit, Trash2, ClipboardList, Calendar, List, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChecklistQRCode } from '@/components/ChecklistQRCode';
+import { Plus, Edit, Trash2, ClipboardList, Calendar, List, GripVertical, ChevronDown, ChevronUp, QrCode } from 'lucide-react';
 
 interface ChecklistStep {
   id?: string;
@@ -50,6 +51,7 @@ export default function ChecklistTemplates() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null);
   const [selectedVesselFilter, setSelectedVesselFilter] = useState<string>('');
+  const [qrTemplate, setQrTemplate] = useState<any>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -665,13 +667,27 @@ export default function ChecklistTemplates() {
                           variant="ghost" 
                           size="icon" 
                           onClick={() => setExpandedTemplateId(isExpanded ? null : template.id)}
+                          title="Visa steg"
                         >
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setQrTemplate({ 
+                            id: template.id, 
+                            name: template.name, 
+                            appliesToAll: template.applies_to_all_vessels,
+                            vesselIds: tvList.map(tv => tv.vessel_id)
+                          })}
+                          title="Generera QR-kod"
+                        >
+                          <QrCode className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)} title="Redigera">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(template.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(template.id)} title="Radera">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -717,6 +733,17 @@ export default function ChecklistTemplates() {
           description="Alla exekveringar och historik för denna checklista kommer också att raderas. Denna åtgärd kan inte ångras."
           confirmLabel="Radera"
           onConfirm={() => deleteConfirmId && deleteTemplate.mutate(deleteConfirmId)}
+        />
+
+        {/* QR Code dialog */}
+        <ChecklistQRCode
+          open={!!qrTemplate}
+          onOpenChange={(open) => !open && setQrTemplate(null)}
+          templateId={qrTemplate?.id || ''}
+          templateName={qrTemplate?.name || ''}
+          vessels={vessels || []}
+          appliesToAll={qrTemplate?.appliesToAll || false}
+          assignedVesselIds={qrTemplate?.vesselIds || []}
         />
       </div>
     </MainLayout>
