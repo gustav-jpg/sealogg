@@ -7,14 +7,14 @@ export default function Privacy() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="maritime-gradient sticky top-0 z-50">
+      <header className="bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b border-border/40">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center">
             <img src={sealoggLogo} alt="SeaLogg" className="h-8" />
           </Link>
-          <Button asChild variant="ghost" size="sm" className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10">
+          <Button asChild variant="ghost" size="sm">
             <Link to="/">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Tillbaka
             </Link>
           </Button>
@@ -148,16 +148,9 @@ export default function Privacy() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/30">
-        <div className="container py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center">
-              <img src={sealoggLogo} alt="SeaLogg" className="h-6" />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} AhrensGroup AB
-            </p>
-          </div>
+      <footer className="border-t border-border/40 bg-muted/30 mt-12">
+        <div className="container py-6 text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} SeaLogg™ – en del av AhrensGroup AB
         </div>
       </footer>
     </div>
