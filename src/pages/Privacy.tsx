@@ -35,6 +35,11 @@ export default function Privacy() {
               Organisationsnummer: 559553-5443<br />
               E-post: <a href="mailto:info@sealogg.se" className="text-primary hover:underline">info@sealogg.se</a>
             </p>
+            <p className="text-muted-foreground mt-4">
+              Vid användning av SeaLogg inom ramen för kundorganisationer är respektive kund 
+              personuppgiftsansvarig för verksamhetsdata, medan AhrensGroup AB agerar personuppgiftsbiträde 
+              enligt separat personuppgiftsbiträdesavtal.
+            </p>
           </section>
 
           <section>
