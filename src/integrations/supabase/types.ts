@@ -2729,7 +2729,27 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_skeppare: { Args: { _user_id: string }; Returns: boolean }
+      is_booking_org_admin: {
+        Args: { _booking_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_control_record_org_admin: {
+        Args: { _record_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_deviation_org_admin: {
+        Args: { _deviation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_fault_org_admin: {
+        Args: { _fault_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_logbook_crew: {
+        Args: { _logbook_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_logbook_org_admin: {
         Args: { _logbook_id: string; _user_id: string }
         Returns: boolean
       }
