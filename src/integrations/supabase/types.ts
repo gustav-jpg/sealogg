@@ -2741,7 +2741,15 @@ export type Database = {
         Args: { _session_id: string; _user_id: string }
         Returns: boolean
       }
+      is_session_org_admin: {
+        Args: { _session_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      is_vessel_org_admin: {
+        Args: { _user_id: string; _vessel_id: string }
+        Returns: boolean
+      }
       log_audit: {
         Args: {
           p_action: string
