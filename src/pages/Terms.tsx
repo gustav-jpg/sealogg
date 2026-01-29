@@ -110,7 +110,7 @@ export default function Terms() {
               </Link>
             </p>
             <p>Genom att använda Tjänsten bekräftar Kunden att denne tagit del av och accepterar Integritetspolicyn.</p>
-            <p>Vid behov kan separat personuppgiftsbiträdesavtal (PUB-avtal) tillhandahållas.</p>
+            <p>För kunder som behandlar personuppgifter inom Tjänsten ingår personuppgiftsbiträdesavtal (PBA) som bilaga till avtal eller tillhandahålls på begäran.</p>
           </section>
 
           <hr className="border-border" />
@@ -183,7 +183,28 @@ export default function Terms() {
           <hr className="border-border" />
 
           <section>
-            <h2 className="text-xl font-semibold mb-4">13. Tillämplig lag och tvist</h2>
+            <h2 className="text-xl font-semibold mb-4">13. Force Majeure</h2>
+            <p>
+              Leverantören ansvarar inte för förseningar eller fel i Tjänsten som orsakas av omständigheter utanför 
+              Leverantörens rimliga kontroll, inklusive men inte begränsat till:
+            </p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Strömavbrott eller avbrott i telekommunikation</li>
+              <li>Internetstörningar eller annan infrastruktur utanför Leverantörens kontroll</li>
+              <li>Myndighetsbeslut eller lagändringar</li>
+              <li>Krig, terrorhandlingar, sabotage eller naturkatastrofer</li>
+              <li>Pandemi eller andra extraordinära hälsokriser</li>
+            </ul>
+            <p className="mt-4">
+              Vid force majeure-situation ska Leverantören utan dröjsmål informera Kunden och vidta rimliga åtgärder 
+              för att begränsa skadan.
+            </p>
+          </section>
+
+          <hr className="border-border" />
+
+          <section>
+            <h2 className="text-xl font-semibold mb-4">14. Tillämplig lag och tvist</h2>
             <p>Avtalet regleras av svensk lag.</p>
             <p>Tvist ska i första hand lösas genom dialog, i andra hand av svensk allmän domstol.</p>
           </section>
@@ -191,7 +212,7 @@ export default function Terms() {
           <hr className="border-border" />
 
           <section>
-            <h2 className="text-xl font-semibold mb-4">14. Kontakt</h2>
+            <h2 className="text-xl font-semibold mb-4">15. Kontakt</h2>
             <address className="not-italic">
               <p className="font-medium">AhrensGroup AB</p>
               <p>Org.nr: 559553-5443</p>
