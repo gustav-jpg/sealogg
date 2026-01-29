@@ -41,6 +41,19 @@ export default function PassengerRegistration() {
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ['passenger-sessions', selectedOrgId],
     queryFn: async () => {
+      if (!selectedOrgId) return [];
+      
+      // CRITICAL: Filter by organization to prevent cross-org data leak
+      // First get vessels for this organization, then filter sessions
+      const { data: orgVessels } = await supabase
+        .from('vessels')
+        .select('id')
+        .eq('organization_id', selectedOrgId);
+      
+      const vesselIds = orgVessels?.map(v => v.id) || [];
+      
+      if (vesselIds.length === 0) return [];
+      
       const { data, error } = await supabase
         .from('passenger_sessions')
         .select(`
@@ -51,9 +64,10 @@ export default function PassengerRegistration() {
           started_at,
           ended_at,
           route_id,
-          vessel:vessels(id, name),
+          vessel:vessels(id, name, organization_id),
           logbook:logbooks(id, date)
         `)
+        .in('vessel_id', vesselIds)
         .order('started_at', { ascending: false })
         .limit(50);
 
