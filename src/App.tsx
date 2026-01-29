@@ -49,6 +49,8 @@ import PassengerRegistration from "./pages/PassengerRegistration";
 import PassengerSession from "./pages/PassengerSession";
 import PassengerAdmin from "./pages/admin/PassengerAdmin";
 import NotificationSettingsPage from "./pages/admin/NotificationSettings";
+import Changelog from "./pages/Changelog";
+import BackofficeChangelog from "./pages/backoffice/Changelog";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
@@ -106,6 +108,7 @@ function AppRoutes() {
       <Routes>
         {/* Public pages */}
         <Route path="/" element={<Home />} />
+        <Route path="/changelog" element={<Changelog />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         
@@ -154,6 +157,7 @@ function AppRoutes() {
         <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />
         <Route path="/backoffice/organizations" element={<BackofficeLayout><Organizations /></BackofficeLayout>} />
         <Route path="/backoffice/organizations/:id" element={<BackofficeLayout><OrganizationDetail /></BackofficeLayout>} />
+        <Route path="/backoffice/changelog" element={<BackofficeLayout><BackofficeChangelog /></BackofficeLayout>} />
         <Route path="/backoffice/audit-logs" element={<BackofficeLayout><AuditLogs /></BackofficeLayout>} />
         
         {/* Legacy redirects */}
