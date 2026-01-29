@@ -108,6 +108,8 @@ serve(async (req) => {
             user_id: userId,
             full_name: fullName,
             email: email,
+            is_external: false,
+            organization_id: organizationId,
           });
       }
     } else {
@@ -138,6 +140,8 @@ serve(async (req) => {
           user_id: userId,
           full_name: fullName,
           email: email,
+          is_external: false,
+          organization_id: organizationId,
         });
 
       if (profileError) {
