@@ -92,25 +92,30 @@ serve(async (req) => {
 
     if (existingUser) {
       userId = existingUser.id;
-      
-      // Ensure profile exists for existing user
-      const { data: existingProfile } = await supabaseAdmin
+
+      // Always upsert profile for existing user to avoid "Okänd" in UI
+      const { error: existingProfileUpsertError } = await supabaseAdmin
         .from('profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (!existingProfile) {
-        // Create profile for existing user if missing
-        await supabaseAdmin
-          .from('profiles')
-          .insert({
+        .upsert(
+          {
             user_id: userId,
             full_name: fullName,
             email: email,
             is_external: false,
             organization_id: organizationId,
-          });
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (existingProfileUpsertError) {
+        console.error("Failed to upsert profile for existing user:", existingProfileUpsertError);
+        return new Response(JSON.stringify({
+          error: "Failed to upsert user profile",
+          details: existingProfileUpsertError.message,
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     } else {
       isNewUser = true;
@@ -133,19 +138,29 @@ serve(async (req) => {
 
       userId = newUser.user.id;
 
-      // Create profile for new user
+      // Upsert profile for new user (required)
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .insert({
-          user_id: userId,
-          full_name: fullName,
-          email: email,
-          is_external: false,
-          organization_id: organizationId,
-        });
+        .upsert(
+          {
+            user_id: userId,
+            full_name: fullName,
+            email: email,
+            is_external: false,
+            organization_id: organizationId,
+          },
+          { onConflict: 'user_id' }
+        );
 
       if (profileError) {
-        console.error("Failed to create profile:", profileError);
+        console.error("Failed to upsert profile (required):", profileError);
+        return new Response(JSON.stringify({
+          error: "Failed to create user profile",
+          details: profileError.message,
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Generate password reset link
@@ -159,9 +174,32 @@ serve(async (req) => {
 
       if (linkError) {
         console.error("Failed to generate reset link:", linkError);
+        return new Response(JSON.stringify({
+          error: "Failed to generate password setup link",
+          details: linkError.message,
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       } else {
         const resetLink = linkData.properties?.action_link;
-        
+
+        if (!resetLink) {
+          console.error("Missing reset link in generateLink response");
+          return new Response(JSON.stringify({ error: "Missing reset link" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (!RESEND_API_KEY) {
+          console.error("RESEND_API_KEY is not configured");
+          return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         if (resetLink && RESEND_API_KEY) {
           // Send welcome email with password setup link via Resend
           const roleText = role === 'org_admin' ? 'administratör' : 'användare';
@@ -230,11 +268,16 @@ serve(async (req) => {
           const emailResponse = await res.json();
           if (!res.ok) {
             console.error("Resend API error:", emailResponse);
+            return new Response(JSON.stringify({
+              error: "Failed to send welcome email",
+              details: emailResponse,
+            }), {
+              status: 502,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
           } else {
             console.log("Welcome email sent successfully:", emailResponse);
           }
-        } else {
-          console.error("Missing reset link or RESEND_API_KEY");
         }
       }
     }
