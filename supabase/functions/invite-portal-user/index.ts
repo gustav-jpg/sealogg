@@ -119,6 +119,32 @@ serve(async (req) => {
       isNewUser = true;
       console.log("New user created with ID:", userId);
 
+      // Ensure the user's profile exists immediately so UI never shows "Okänd".
+      // We treat profile creation as REQUIRED for a successful invite.
+      const { error: initialProfileError } = await supabaseAdmin
+        .from('profiles')
+        .upsert(
+          {
+            user_id: userId,
+            full_name: fullName,
+            email: email,
+            is_external: false,
+            organization_id: organizationId,
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (initialProfileError) {
+        console.error("Failed to upsert profile (required):", initialProfileError);
+        return new Response(JSON.stringify({
+          error: "Failed to create user profile",
+          details: initialProfileError.message,
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // Generate password reset link
       console.log("Generating password reset link for:", email);
       let resetLink: string | null = null;
@@ -154,7 +180,7 @@ serve(async (req) => {
         
         console.log("Sending welcome email to:", email);
         
-        try {
+         try {
           const res = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
@@ -204,15 +230,34 @@ serve(async (req) => {
           if (!res.ok) {
             const err = await res.text();
             console.error("Failed to send welcome email via Resend:", err);
+             return new Response(JSON.stringify({
+               error: "Failed to send welcome email",
+               details: err,
+             }), {
+               status: 502,
+               headers: { ...corsHeaders, "Content-Type": "application/json" },
+             });
           } else {
             const emailResult = await res.json();
             console.log("Welcome email sent successfully:", emailResult);
           }
         } catch (emailError) {
           console.error("Exception sending email:", emailError);
+           const msg = emailError instanceof Error ? emailError.message : "Unknown error";
+           return new Response(JSON.stringify({
+             error: "Exception sending welcome email",
+             details: msg,
+           }), {
+             status: 502,
+             headers: { ...corsHeaders, "Content-Type": "application/json" },
+           });
         }
       } else {
         console.error("RESEND_API_KEY is not configured - cannot send welcome email");
+        return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
@@ -244,9 +289,7 @@ serve(async (req) => {
       console.error("Failed to add to organization:", orgError);
     }
 
-    // Ensure the user's profile exists and is scoped to the organization.
-    // NOTE: When creating users via admin API, the automatic profile trigger may not always
-    // populate the public profile as expected, so we upsert here to guarantee visibility.
+    // Keep a final upsert as a safety net (should already exist for new users)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert(
@@ -262,6 +305,13 @@ serve(async (req) => {
 
     if (profileError) {
       console.error("Failed to upsert profile:", profileError);
+      return new Response(JSON.stringify({
+        error: "Failed to upsert profile",
+        details: profileError.message,
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ 
