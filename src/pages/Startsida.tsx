@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -6,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink, Navigation, Gauge } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 interface WeatherData {
@@ -38,20 +39,26 @@ interface WindData {
   source: string;
 }
 
+type DateSelection = 'today' | 'tomorrow';
+
 export default function Startsida() {
   const { selectedOrgId } = useOrganization();
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const [dateSelection, setDateSelection] = useState<DateSelection>('today');
+  
+  const selectedDate = dateSelection === 'today' 
+    ? format(new Date(), 'yyyy-MM-dd')
+    : format(addDays(new Date(), 1), 'yyyy-MM-dd');
 
-  // Fetch today's message with documents
-  const { data: todayMessage, isLoading: messageLoading } = useQuery({
-    queryKey: ['intranet-message-today', selectedOrgId, today],
+  // Fetch message with documents for selected date
+  const { data: selectedMessage, isLoading: messageLoading } = useQuery({
+    queryKey: ['intranet-message', selectedOrgId, selectedDate],
     queryFn: async () => {
       if (!selectedOrgId) return null;
       const { data: message, error } = await supabase
         .from('intranet_messages')
         .select('*')
         .eq('organization_id', selectedOrgId)
-        .eq('message_date', today)
+        .eq('message_date', selectedDate)
         .maybeSingle();
       if (error) throw error;
       if (!message) return null;
@@ -201,34 +208,52 @@ export default function Startsida() {
           </p>
         </div>
 
-        {/* Today's Message */}
+        {/* Message with Day Toggle */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="h-5 w-5" />
-              Dagens meddelande
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5" />
+                {dateSelection === 'today' ? 'Dagens meddelande' : 'Morgondagens meddelande'}
+              </CardTitle>
+              <div className="flex gap-1">
+                <Button
+                  variant={dateSelection === 'today' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateSelection('today')}
+                >
+                  Idag
+                </Button>
+                <Button
+                  variant={dateSelection === 'tomorrow' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDateSelection('tomorrow')}
+                >
+                  Imorgon
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {messageLoading ? (
               <p className="text-muted-foreground">Laddar...</p>
-            ) : todayMessage ? (
+            ) : selectedMessage ? (
               <div className="space-y-3">
                 <div>
-                  <h3 className="font-semibold text-lg">{todayMessage.title}</h3>
-                  {todayMessage.content && (
+                  <h3 className="font-semibold text-lg">{selectedMessage.title}</h3>
+                  {selectedMessage.content && (
                     <p className="text-muted-foreground mt-1 whitespace-pre-wrap">
-                      {todayMessage.content}
+                      {selectedMessage.content}
                     </p>
                   )}
                 </div>
                 
                 {/* New documents from intranet_documents table */}
-                {todayMessage.documents && todayMessage.documents.length > 0 && (
+                {selectedMessage.documents && selectedMessage.documents.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Dokument:</p>
                     <div className="flex flex-wrap gap-2">
-                      {todayMessage.documents.map((doc: { id: string; display_name: string; file_name: string; file_url: string }) => (
+                      {selectedMessage.documents.map((doc: { id: string; display_name: string; file_name: string; file_url: string }) => (
                         <Button
                           key={doc.id}
                           variant="outline"
@@ -244,20 +269,20 @@ export default function Startsida() {
                 )}
                 
                 {/* Legacy: old single document field (for backwards compatibility) */}
-                {todayMessage.document_url && todayMessage.document_name && (!todayMessage.documents || todayMessage.documents.length === 0) && (
+                {selectedMessage.document_url && selectedMessage.document_name && (!selectedMessage.documents || selectedMessage.documents.length === 0) && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDownload(todayMessage.document_url!, todayMessage.document_name!)}
+                    onClick={() => handleDownload(selectedMessage.document_url!, selectedMessage.document_name!)}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    {todayMessage.document_name}
+                    {selectedMessage.document_name}
                   </Button>
                 )}
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-4">
-                Inget meddelande för idag
+                Inget meddelande för {dateSelection === 'today' ? 'idag' : 'imorgon'}
               </p>
             )}
           </CardContent>
