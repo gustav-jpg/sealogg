@@ -112,14 +112,14 @@ export default function Home() {
         {/* Background gradient */}
         <div className="absolute inset-0 maritime-gradient opacity-5" />
         
-        {/* Animated waves background */}
+        {/* Animated boat */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div 
-            className="absolute -bottom-10 left-0 right-0 h-40 opacity-10"
-            animate={{ x: [0, -100, 0] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-16 opacity-20"
+            animate={{ x: ["0%", "100%"] }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
           >
-            <Waves className="w-full h-full text-primary" />
+            <Ship className="h-8 w-8 text-primary" />
           </motion.div>
         </div>
 
