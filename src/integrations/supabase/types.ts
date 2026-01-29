@@ -413,6 +413,39 @@ export type Database = {
           },
         ]
       }
+      changelog: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_published: boolean
+          published_at: string
+          title: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string
+          title: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
       checklist_executions: {
         Row: {
           checklist_template_id: string
