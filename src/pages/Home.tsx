@@ -405,6 +405,11 @@ export default function Home() {
                   </Link>
                 </li>
                 <li>
+                  <Link to="/changelog" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Uppdateringshistorik
+                  </Link>
+                </li>
+                <li>
                   <a href="mailto:info@sealogg.se" className="text-muted-foreground hover:text-foreground transition-colors">
                     Kontakt
                   </a>
