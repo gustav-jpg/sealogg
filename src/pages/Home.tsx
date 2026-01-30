@@ -255,7 +255,7 @@ export default function Home() {
       {/* Value Props */}
       <section id="fordelar" className="py-20 md:py-28">
         <div className="container">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="max-w-2xl mx-auto">
             <motion.div
               initial="hidden"
               whileInView="visible"
@@ -286,23 +286,6 @@ export default function Home() {
                   </motion.li>
                 ))}
               </motion.ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.7 }}
-              className="relative hidden lg:block"
-            >
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 blur-3xl rounded-full" />
-                <img 
-                  src={devicesMockup} 
-                  alt="SeaLogg på olika enheter" 
-                  className="relative z-10 w-full max-w-md mx-auto drop-shadow-2xl"
-                />
-              </div>
             </motion.div>
           </div>
         </div>
