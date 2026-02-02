@@ -760,8 +760,11 @@ export default function SelfControl() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Datum *</Label>
+                  <Label>Datum för utförande *</Label>
                   <Input type="date" value={performDate} onChange={(e) => setPerformDate(e.target.value)} required />
+                  <p className="text-xs text-muted-foreground">
+                    Välj datum då kontrollen faktiskt utfördes. Kan vara ett tidigare datum vid import.
+                  </p>
                 </div>
 
                 {selectedControlPoint.type === 'engine_hours' && vesselEngines && vesselEngines.length > 0 && (
