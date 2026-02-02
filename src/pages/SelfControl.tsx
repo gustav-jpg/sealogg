@@ -813,15 +813,40 @@ export default function SelfControl() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Bilagor</Label>
+                  <Label>Bilagor (bilder & dokument)</Label>
                   <Input
                     type="file"
                     multiple
-                    accept="image/*,.pdf"
-                    onChange={(e) => setPerformFiles(Array.from(e.target.files || []))}
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                    onChange={(e) => {
+                      const newFiles = Array.from(e.target.files || []);
+                      setPerformFiles(prev => [...prev, ...newFiles]);
+                      e.target.value = ''; // Reset input to allow selecting same file again
+                    }}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Bilder, PDF, Word, Excel m.m. Du kan välja flera filer.
+                  </p>
                   {performFiles.length > 0 && (
-                    <p className="text-sm text-muted-foreground">{performFiles.length} fil(er) valda</p>
+                    <div className="space-y-2 mt-2">
+                      <p className="text-sm font-medium">{performFiles.length} fil(er) valda:</p>
+                      <div className="max-h-32 overflow-y-auto space-y-1">
+                        {performFiles.map((file, index) => (
+                          <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-2 p-2 bg-muted rounded text-sm">
+                            <span className="truncate flex-1">{file.name}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => setPerformFiles(prev => prev.filter((_, i) => i !== index))}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
 
