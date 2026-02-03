@@ -183,8 +183,18 @@ serve(async (req) => {
           }
         }
 
-        // Fetch new deviations
-        if (pref.email_new_deviations) {
+        // Get vessels for this organization once (used for deviations and faults)
+        let orgVesselIds: string[] = [];
+        if (pref.email_new_deviations || pref.email_new_faults) {
+          const { data: orgVessels } = await supabase
+            .from("vessels")
+            .select("id")
+            .eq("organization_id", pref.organization_id);
+          orgVesselIds = orgVessels?.map(v => v.id) || [];
+        }
+
+        // Fetch new deviations - MUST filter by vessels in user's organization
+        if (pref.email_new_deviations && orgVesselIds.length > 0) {
           const { data: deviations } = await supabase
             .from("deviations")
             .select(`
@@ -193,7 +203,7 @@ serve(async (req) => {
               created_at,
               vessels(name)
             `)
-            .eq("vessels.organization_id", pref.organization_id)
+            .in("vessel_id", orgVesselIds)
             .gte("created_at", lookbackDate)
             .order("created_at", { ascending: false });
 
@@ -207,8 +217,8 @@ serve(async (req) => {
           }
         }
 
-        // Fetch open faults
-        if (pref.email_new_faults) {
+        // Fetch open faults - MUST filter by vessels in user's organization
+        if (pref.email_new_faults && orgVesselIds.length > 0) {
           const { data: faults } = await supabase
             .from("fault_cases")
             .select(`
@@ -217,7 +227,7 @@ serve(async (req) => {
               created_at,
               vessels(name)
             `)
-            .eq("vessels.organization_id", pref.organization_id)
+            .in("vessel_id", orgVesselIds)
             .in("status", ["ny", "arbete_pagar"])
             .order("created_at", { ascending: false })
             .limit(10);
