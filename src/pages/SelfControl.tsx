@@ -361,9 +361,16 @@ export default function SelfControl() {
     // For engine_hours type, try to find the matching engine based on machine_name
     if (cp.type === 'engine_hours' && cp.machine_name && vesselEngines) {
       // Find engine that matches the control point's machine_name
+      // The machine_name might be in format "VesselName: EngineName" or just "EngineName"
       const matchingEngine = vesselEngines.find((engine: any) => {
         const engineName = getEngineName(engine);
-        return engineName === cp.machine_name;
+        // Direct match
+        if (engineName === cp.machine_name) return true;
+        // Check if machine_name ends with the engine name (format: "VesselName: EngineName")
+        if (cp.machine_name.endsWith(`: ${engineName}`)) return true;
+        // Check if machine_name contains the engine name
+        if (cp.machine_name.includes(engineName)) return true;
+        return false;
       });
       
       if (matchingEngine) {
@@ -794,8 +801,15 @@ export default function SelfControl() {
 
                 {selectedControlPoint.type === 'engine_hours' && vesselEngines && vesselEngines.length > 0 && (() => {
                   // Check if control point has a pre-defined machine that matches
+                  // The machine_name might be in format "VesselName: EngineName" or just "EngineName"
                   const hasPredefinedMachine = selectedControlPoint.machine_name && 
-                    vesselEngines.some((engine: any) => getEngineName(engine) === selectedControlPoint.machine_name);
+                    vesselEngines.some((engine: any) => {
+                      const engineName = getEngineName(engine);
+                      if (engineName === selectedControlPoint.machine_name) return true;
+                      if (selectedControlPoint.machine_name.endsWith(`: ${engineName}`)) return true;
+                      if (selectedControlPoint.machine_name.includes(engineName)) return true;
+                      return false;
+                    });
                   
                   return (
                   <>
