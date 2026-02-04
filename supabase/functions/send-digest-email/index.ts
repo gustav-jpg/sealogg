@@ -116,7 +116,7 @@ serve(async (req) => {
 
         const warningDate = new Date(now.getTime() + pref.days_before_warning * 24 * 60 * 60 * 1000).toISOString();
 
-        // Fetch expiring certificates
+        // Fetch expiring AND expired certificates
         if (pref.email_expiring_certificates) {
           const { data: certs } = await supabase
             .from("user_certificates")
@@ -126,8 +126,7 @@ serve(async (req) => {
               certificate_types(name)
             `)
             .eq("profiles.organization_id", pref.organization_id)
-            .gte("expiry_date", now.toISOString())
-            .lte("expiry_date", warningDate);
+            .lte("expiry_date", warningDate); // Include all certificates that have expired or will expire within warning period
 
           if (certs) {
             digestData.expiringCertificates = certs.map((c: any) => ({
@@ -313,20 +312,31 @@ function buildDigestHtml(periodLabel: string, data: DigestData, userName: string
   let sections = "";
 
   if (data.expiringCertificates.length > 0) {
+    const expiredCerts = data.expiringCertificates.filter(c => c.daysLeft < 0);
+    const expiringCerts = data.expiringCertificates.filter(c => c.daysLeft >= 0);
+    
     sections += `
       <div style="margin-bottom: 24px;">
-        <h2 style="color: #f59e0b; font-size: 16px; margin-bottom: 12px;">⚠️ Certifikat som snart går ut (${data.expiringCertificates.length})</h2>
+        <h2 style="color: ${expiredCerts.length > 0 ? '#ef4444' : '#f59e0b'}; font-size: 16px; margin-bottom: 12px;">
+          ${expiredCerts.length > 0 ? '🚨' : '⚠️'} Certifikat att uppmärksamma (${data.expiringCertificates.length})
+        </h2>
         <table style="width: 100%; border-collapse: collapse;">
           <tr style="background: #f3f4f6;">
             <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e5e7eb;">Person</th>
             <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e5e7eb;">Certifikat</th>
-            <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e5e7eb;">Går ut</th>
+            <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e5e7eb;">Status</th>
           </tr>
-          ${data.expiringCertificates.map(c => `
-            <tr>
+          ${data.expiringCertificates
+            .sort((a, b) => a.daysLeft - b.daysLeft)
+            .map(c => `
+            <tr style="${c.daysLeft < 0 ? 'background: #fef2f2;' : ''}">
               <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${c.userName}</td>
               <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${c.certificateName}</td>
-              <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${c.expiryDate} (${c.daysLeft} dagar)</td>
+              <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; ${c.daysLeft < 0 ? 'color: #dc2626; font-weight: 600;' : ''}">
+                ${c.daysLeft < 0 
+                  ? `Utgånget sedan ${c.expiryDate} (${Math.abs(c.daysLeft)} dagar sedan)` 
+                  : `Går ut ${c.expiryDate} (${c.daysLeft} dagar kvar)`}
+              </td>
             </tr>
           `).join("")}
         </table>
