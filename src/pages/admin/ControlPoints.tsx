@@ -23,6 +23,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -31,7 +36,7 @@ import {
   CONTROL_TYPE_LABELS,
   ControlType,
 } from '@/lib/types';
-import { Plus, Edit, Trash2, Calendar, Gauge, ClipboardCheck } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, Gauge, ClipboardCheck, ChevronDown, ChevronRight } from 'lucide-react';
 
 export default function ControlPoints() {
   const { user } = useAuth();
@@ -42,6 +47,7 @@ export default function ControlPoints() {
   const [editingControlPoint, setEditingControlPoint] = useState<any>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [selectedVesselFilter, setSelectedVesselFilter] = useState<string>('');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Form state
   const [name, setName] = useState('');
@@ -501,67 +507,102 @@ export default function ControlPoints() {
             return a.localeCompare(b, 'sv');
           });
           
+          const toggleCategory = (cat: string) => {
+            setExpandedCategories(prev => {
+              const next = new Set(prev);
+              if (next.has(cat)) {
+                next.delete(cat);
+              } else {
+                next.add(cat);
+              }
+              return next;
+            });
+          };
+          
           return (
-            <div className="space-y-6">
-              {sortedCategories.map((category) => (
-                <div key={category}>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <span className="text-primary">{category}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {grouped![category]!.length}
-                    </Badge>
-                  </h2>
-                  <div className="space-y-3">
-                    {grouped![category]!.map((cp) => {
-                      const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
-                      const vesselNames = vessels?.filter((v) => cpVessels.some((cpv) => cpv.vessel_id === v.id)).map((v) => v.name) || [];
-                      
-                      return (
-                        <Card key={cp.id} className={!cp.is_active ? 'opacity-60' : ''}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium">{cp.name}</span>
-                                  <Badge variant="outline">
-                                    {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
-                                    {CONTROL_TYPE_LABELS[cp.type as ControlType]}
-                                  </Badge>
-                                  {!cp.is_active && <Badge variant="secondary">Inaktiv</Badge>}
-                                </div>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span>
-                                    Intervall: {cp.type === 'calendar' 
-                                      ? `${cp.interval_months} mån` 
-                                      : `${cp.interval_engine_hours}h`}
-                                  </span>
-                                  <span>
-                                    {cp.applies_to_all_vessels 
-                                      ? 'Alla fartyg' 
-                                      : `${vesselNames.length} fartyg`}
-                                  </span>
-                                  {cp.machine_name && <span>Maskin: {cp.machine_name}</span>}
-                                </div>
-                                {cp.description && (
-                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{cp.description}</p>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => openEditDialog(cp)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(cp.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
+            <div className="space-y-3">
+              {sortedCategories.map((category) => {
+                const isExpanded = expandedCategories.has(category);
+                
+                return (
+                  <Collapsible
+                    key={category}
+                    open={isExpanded}
+                    onOpenChange={() => toggleCategory(category)}
+                  >
+                    <Card>
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {isExpanded ? (
+                                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                              )}
+                              <CardTitle className="text-base font-semibold">{category}</CardTitle>
+                              <Badge variant="secondary" className="text-xs">
+                                {grouped![category]!.length}
+                              </Badge>
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0 pb-4 px-4">
+                          <div className="space-y-3">
+                            {grouped![category]!.map((cp) => {
+                              const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
+                              const vesselNames = vessels?.filter((v) => cpVessels.some((cpv) => cpv.vessel_id === v.id)).map((v) => v.name) || [];
+                              
+                              return (
+                                <div key={cp.id} className={`border rounded-lg p-4 ${!cp.is_active ? 'opacity-60' : ''}`}>
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-medium">{cp.name}</span>
+                                        <Badge variant="outline">
+                                          {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
+                                          {CONTROL_TYPE_LABELS[cp.type as ControlType]}
+                                        </Badge>
+                                        {!cp.is_active && <Badge variant="secondary">Inaktiv</Badge>}
+                                      </div>
+                                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                        <span>
+                                          Intervall: {cp.type === 'calendar' 
+                                            ? `${cp.interval_months} mån` 
+                                            : `${cp.interval_engine_hours}h`}
+                                        </span>
+                                        <span>
+                                          {cp.applies_to_all_vessels 
+                                            ? 'Alla fartyg' 
+                                            : `${vesselNames.length} fartyg`}
+                                        </span>
+                                        {cp.machine_name && <span>Maskin: {cp.machine_name}</span>}
+                                      </div>
+                                      {cp.description && (
+                                        <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{cp.description}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(cp)}>
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(cp.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                );
+              })}
             </div>
           );
         })()}
