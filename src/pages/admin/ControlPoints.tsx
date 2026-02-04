@@ -55,8 +55,7 @@ export default function ControlPoints() {
   const [type, setType] = useState<ControlType>('calendar');
   const [intervalMonths, setIntervalMonths] = useState('12');
   const [intervalEngineHours, setIntervalEngineHours] = useState('250');
-  const [appliesToAll, setAppliesToAll] = useState(true);
-  const [selectedVessels, setSelectedVessels] = useState<string[]>([]);
+  const [selectedVessel, setSelectedVessel] = useState<string>('');
   const [machineName, setMachineName] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [category, setCategory] = useState('');
@@ -145,6 +144,7 @@ export default function ControlPoints() {
   const createControlPoint = useMutation({
     mutationFn: async () => {
       if (!userOrg?.organization_id) throw new Error('No organization found');
+      if (!selectedVessel) throw new Error('Välj ett fartyg');
       
       const { data: cp, error } = await supabase
         .from('control_points')
@@ -154,7 +154,7 @@ export default function ControlPoints() {
           type,
           interval_months: type === 'calendar' ? parseInt(intervalMonths) : null,
           interval_engine_hours: type === 'engine_hours' ? parseInt(intervalEngineHours) : null,
-          applies_to_all_vessels: appliesToAll,
+          applies_to_all_vessels: false,
           is_active: isActive,
           machine_name: machineName || null,
           category: category || null,
@@ -165,14 +165,11 @@ export default function ControlPoints() {
 
       if (error) throw error;
 
-      // Add vessel associations if not applying to all
-      if (!appliesToAll && selectedVessels.length > 0) {
-        const associations = selectedVessels.map((vesselId) => ({
-          control_point_id: cp.id,
-          vessel_id: vesselId,
-        }));
-        await supabase.from('control_point_vessels').insert(associations);
-      }
+      // Add vessel association
+      await supabase.from('control_point_vessels').insert({
+        control_point_id: cp.id,
+        vessel_id: selectedVessel,
+      });
 
       return cp;
     },
@@ -191,6 +188,7 @@ export default function ControlPoints() {
   const updateControlPoint = useMutation({
     mutationFn: async () => {
       if (!editingControlPoint) return;
+      if (!selectedVessel) throw new Error('Välj ett fartyg');
 
       const { error } = await supabase
         .from('control_points')
@@ -200,7 +198,7 @@ export default function ControlPoints() {
           type,
           interval_months: type === 'calendar' ? parseInt(intervalMonths) : null,
           interval_engine_hours: type === 'engine_hours' ? parseInt(intervalEngineHours) : null,
-          applies_to_all_vessels: appliesToAll,
+          applies_to_all_vessels: false,
           is_active: isActive,
           machine_name: machineName || null,
           category: category || null,
@@ -209,19 +207,16 @@ export default function ControlPoints() {
 
       if (error) throw error;
 
-      // Update vessel associations
+      // Update vessel association
       await supabase
         .from('control_point_vessels')
         .delete()
         .eq('control_point_id', editingControlPoint.id);
 
-      if (!appliesToAll && selectedVessels.length > 0) {
-        const associations = selectedVessels.map((vesselId) => ({
-          control_point_id: editingControlPoint.id,
-          vessel_id: vesselId,
-        }));
-        await supabase.from('control_point_vessels').insert(associations);
-      }
+      await supabase.from('control_point_vessels').insert({
+        control_point_id: editingControlPoint.id,
+        vessel_id: selectedVessel,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['control-points-admin'] });
@@ -256,8 +251,7 @@ export default function ControlPoints() {
     setType('calendar');
     setIntervalMonths('12');
     setIntervalEngineHours('250');
-    setAppliesToAll(true);
-    setSelectedVessels([]);
+    setSelectedVessel('');
     setMachineName('');
     setIsActive(true);
     setCategory('');
@@ -270,22 +264,15 @@ export default function ControlPoints() {
     setType(cp.type);
     setIntervalMonths(cp.interval_months?.toString() || '12');
     setIntervalEngineHours(cp.interval_engine_hours?.toString() || '250');
-    setAppliesToAll(cp.applies_to_all_vessels);
     setMachineName(cp.machine_name || '');
     setIsActive(cp.is_active);
     setCategory(cp.category || '');
     
+    // Get the vessel for this control point
     const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
-    setSelectedVessels(cpVessels.map((cpv) => cpv.vessel_id));
+    setSelectedVessel(cpVessels[0]?.vessel_id || '');
   };
 
-  const handleVesselToggle = (vesselId: string) => {
-    setSelectedVessels((prev) =>
-      prev.includes(vesselId)
-        ? prev.filter((id) => id !== vesselId)
-        : [...prev, vesselId]
-    );
-  };
 
   const formContent = (
     <div className="space-y-4">
@@ -365,29 +352,21 @@ export default function ControlPoints() {
         </>
       )}
 
-      <div className="flex items-center justify-between">
-        <Label>Gäller för alla fartyg</Label>
-        <Switch checked={appliesToAll} onCheckedChange={setAppliesToAll} />
-      </div>
-
-      {!appliesToAll && (
-        <div className="space-y-2">
-          <Label>Välj fartyg</Label>
-          <div className="grid gap-2 max-h-48 overflow-y-auto p-2 border rounded">
+      <div className="space-y-2">
+        <Label>Fartyg *</Label>
+        <Select value={selectedVessel} onValueChange={setSelectedVessel}>
+          <SelectTrigger>
+            <SelectValue placeholder="Välj fartyg..." />
+          </SelectTrigger>
+          <SelectContent>
             {vessels?.map((vessel) => (
-              <label key={vessel.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedVessels.includes(vessel.id)}
-                  onChange={() => handleVesselToggle(vessel.id)}
-                  className="h-4 w-4 rounded"
-                />
-                <span>{vessel.name}</span>
-              </label>
+              <SelectItem key={vessel.id} value={vessel.id}>
+                {vessel.name}
+              </SelectItem>
             ))}
-          </div>
-        </div>
-      )}
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="flex items-center justify-between">
         <Label>Aktiv</Label>
@@ -437,7 +416,7 @@ export default function ControlPoints() {
                   <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
                     Avbryt
                   </Button>
-                  <Button type="submit" disabled={createControlPoint.isPending || !name}>
+                  <Button type="submit" disabled={createControlPoint.isPending || !name || !selectedVessel}>
                     {createControlPoint.isPending ? 'Skapar...' : 'Skapa'}
                   </Button>
                 </div>
@@ -596,11 +575,9 @@ export default function ControlPoints() {
                                         ? `${cp.interval_months} mån` 
                                         : `${cp.interval_engine_hours}h`}
                                     </span>
-                                    <span>
-                                      {cp.applies_to_all_vessels 
-                                        ? 'Alla fartyg' 
-                                        : `${vesselNames.length} fartyg`}
-                                    </span>
+                                    {vesselNames.length > 0 && (
+                                      <span>{vesselNames.join(', ')}</span>
+                                    )}
                                     {cp.machine_name && <span>Maskin: {cp.machine_name}</span>}
                                   </div>
                                   {cp.description && (
@@ -645,7 +622,7 @@ export default function ControlPoints() {
                 <Button type="button" variant="outline" onClick={() => setEditingControlPoint(null)}>
                   Avbryt
                 </Button>
-                <Button type="submit" disabled={updateControlPoint.isPending || !name}>
+                <Button type="submit" disabled={updateControlPoint.isPending || !name || !selectedVessel}>
                   {updateControlPoint.isPending ? 'Sparar...' : 'Spara'}
                 </Button>
               </div>
