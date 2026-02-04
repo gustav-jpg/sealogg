@@ -67,7 +67,7 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
   logbook: { href: '/portal/logbooks', label: 'Loggböcker', icon: BookOpen },
   deviations: { href: '/portal/deviations', label: 'Avvikelser', icon: AlertTriangle },
   fault_cases: { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
-  self_control: { href: '/portal/self-control', label: 'Egenkontroll', icon: ClipboardCheck },
+  self_control: { href: '/portal/self-control', label: 'Underhåll', icon: ClipboardCheck },
   checklists: { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
   bookings: { href: '/bookings', label: 'Kalender', icon: CalendarDays },
 };
