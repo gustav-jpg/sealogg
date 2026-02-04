@@ -357,21 +357,46 @@ export default function SelfControl() {
 
   const openPerformDialog = (cp: any) => {
     setSelectedControlPoint(cp);
-    // Pre-select the first engine if available
-    const firstEngine = vesselEngines?.[0];
-    if (firstEngine) {
-      setSelectedEngineId(firstEngine.id);
-      setPerformEngineHours(firstEngine.current_hours?.toString() || '0');
+    
+    // For engine_hours type, try to find the matching engine based on machine_name
+    if (cp.type === 'engine_hours' && cp.machine_name && vesselEngines) {
+      // Find engine that matches the control point's machine_name
+      const matchingEngine = vesselEngines.find((engine: any) => {
+        const engineName = getEngineName(engine);
+        return engineName === cp.machine_name;
+      });
+      
+      if (matchingEngine) {
+        setSelectedEngineId(matchingEngine.id);
+        setPerformEngineHours(matchingEngine.current_hours?.toString() || '0');
+      } else {
+        // Fallback to first engine if no match found
+        const firstEngine = vesselEngines[0];
+        if (firstEngine) {
+          setSelectedEngineId(firstEngine.id);
+          setPerformEngineHours(firstEngine.current_hours?.toString() || '0');
+        } else {
+          setSelectedEngineId('');
+          setPerformEngineHours('0');
+        }
+      }
     } else {
-      setSelectedEngineId('');
-      setPerformEngineHours('0');
+      // For non-engine controls or if no vesselEngines, reset
+      const firstEngine = vesselEngines?.[0];
+      if (firstEngine) {
+        setSelectedEngineId(firstEngine.id);
+        setPerformEngineHours(firstEngine.current_hours?.toString() || '0');
+      } else {
+        setSelectedEngineId('');
+        setPerformEngineHours('0');
+      }
     }
     setPerformDialogOpen(true);
   };
 
   const getEngineName = (engine: any) => {
     if (!engine) return 'Okänd';
-    const typeLabel = engine.engine_type === 'main' ? 'Huvudmaskin' : 'Hjälpmaskin';
+    const typeLabel = engine.engine_type === 'main' ? 'Huvudmaskin' : 'Generator';
     return engine.name || `${typeLabel} ${engine.engine_number}`;
   };
 
@@ -767,29 +792,48 @@ export default function SelfControl() {
                   </p>
                 </div>
 
-                {selectedControlPoint.type === 'engine_hours' && vesselEngines && vesselEngines.length > 0 && (
+                {selectedControlPoint.type === 'engine_hours' && vesselEngines && vesselEngines.length > 0 && (() => {
+                  // Check if control point has a pre-defined machine that matches
+                  const hasPredefinedMachine = selectedControlPoint.machine_name && 
+                    vesselEngines.some((engine: any) => getEngineName(engine) === selectedControlPoint.machine_name);
+                  
+                  return (
                   <>
-                    <div className="space-y-2">
-                      <Label>Välj maskin *</Label>
-                      <Select value={selectedEngineId} onValueChange={(id) => {
-                        setSelectedEngineId(id);
-                        const engine = vesselEngines.find(e => e.id === id);
-                        if (engine) {
-                          setPerformEngineHours(engine.current_hours?.toString() || '0');
-                        }
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Välj maskin" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vesselEngines.map((engine) => (
-                            <SelectItem key={engine.id} value={engine.id}>
-                              {getEngineName(engine)} ({engine.current_hours}h)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {hasPredefinedMachine ? (
+                      // Show pre-defined machine as read-only
+                      <div className="space-y-2">
+                        <Label>Maskin</Label>
+                        <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                          <span className="text-sm font-medium">{selectedControlPoint.machine_name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({vesselEngines.find(e => e.id === selectedEngineId)?.current_hours || 0}h)
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      // Show dropdown only when no machine is pre-defined
+                      <div className="space-y-2">
+                        <Label>Välj maskin *</Label>
+                        <Select value={selectedEngineId} onValueChange={(id) => {
+                          setSelectedEngineId(id);
+                          const engine = vesselEngines.find(e => e.id === id);
+                          if (engine) {
+                            setPerformEngineHours(engine.current_hours?.toString() || '0');
+                          }
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Välj maskin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {vesselEngines.map((engine) => (
+                              <SelectItem key={engine.id} value={engine.id}>
+                                {getEngineName(engine)} ({engine.current_hours}h)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label>Maskintimmar vid utförande</Label>
                       <Input
@@ -800,7 +844,8 @@ export default function SelfControl() {
                       />
                     </div>
                   </>
-                )}
+                  );
+                })()}
 
                 <div className="space-y-2">
                   <Label>Anteckningar</Label>
