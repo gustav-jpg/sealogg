@@ -485,57 +485,86 @@ export default function ControlPoints() {
               </p>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-3">
-            {filteredControlPoints?.map((cp) => {
-              const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
-              const vesselNames = vessels?.filter((v) => cpVessels.some((cpv) => cpv.vessel_id === v.id)).map((v) => v.name) || [];
-              
-              return (
-                <Card key={cp.id} className={!cp.is_active ? 'opacity-60' : ''}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{cp.name}</span>
-                          <Badge variant="outline">
-                            {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
-                            {CONTROL_TYPE_LABELS[cp.type as ControlType]}
-                          </Badge>
-                          {!cp.is_active && <Badge variant="secondary">Inaktiv</Badge>}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>
-                            Intervall: {cp.type === 'calendar' 
-                              ? `${cp.interval_months} mån` 
-                              : `${cp.interval_engine_hours}h`}
-                          </span>
-                          <span>
-                            {cp.applies_to_all_vessels 
-                              ? 'Alla fartyg' 
-                              : `${vesselNames.length} fartyg`}
-                          </span>
-                          {cp.machine_name && <span>Maskin: {cp.machine_name}</span>}
-                        </div>
-                        {cp.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{cp.description}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(cp)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(cp.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        ) : (() => {
+          // Group control points by category
+          const grouped = filteredControlPoints?.reduce((acc, cp) => {
+            const cat = cp.category || 'Okategoriserad';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(cp);
+            return acc;
+          }, {} as Record<string, typeof filteredControlPoints>);
+          
+          // Sort categories alphabetically, but put "Okategoriserad" last
+          const sortedCategories = Object.keys(grouped || {}).sort((a, b) => {
+            if (a === 'Okategoriserad') return 1;
+            if (b === 'Okategoriserad') return -1;
+            return a.localeCompare(b, 'sv');
+          });
+          
+          return (
+            <div className="space-y-6">
+              {sortedCategories.map((category) => (
+                <div key={category}>
+                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <span className="text-primary">{category}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {grouped![category]!.length}
+                    </Badge>
+                  </h2>
+                  <div className="space-y-3">
+                    {grouped![category]!.map((cp) => {
+                      const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
+                      const vesselNames = vessels?.filter((v) => cpVessels.some((cpv) => cpv.vessel_id === v.id)).map((v) => v.name) || [];
+                      
+                      return (
+                        <Card key={cp.id} className={!cp.is_active ? 'opacity-60' : ''}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium">{cp.name}</span>
+                                  <Badge variant="outline">
+                                    {cp.type === 'calendar' ? <Calendar className="h-3 w-3 mr-1" /> : <Gauge className="h-3 w-3 mr-1" />}
+                                    {CONTROL_TYPE_LABELS[cp.type as ControlType]}
+                                  </Badge>
+                                  {!cp.is_active && <Badge variant="secondary">Inaktiv</Badge>}
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span>
+                                    Intervall: {cp.type === 'calendar' 
+                                      ? `${cp.interval_months} mån` 
+                                      : `${cp.interval_engine_hours}h`}
+                                  </span>
+                                  <span>
+                                    {cp.applies_to_all_vessels 
+                                      ? 'Alla fartyg' 
+                                      : `${vesselNames.length} fartyg`}
+                                  </span>
+                                  {cp.machine_name && <span>Maskin: {cp.machine_name}</span>}
+                                </div>
+                                {cp.description && (
+                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{cp.description}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => openEditDialog(cp)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(cp.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Edit dialog */}
         <Dialog open={!!editingControlPoint} onOpenChange={(open) => !open && setEditingControlPoint(null)}>
