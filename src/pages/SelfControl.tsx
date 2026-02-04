@@ -421,7 +421,7 @@ export default function SelfControl() {
       <div className="space-y-4 md:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl md:text-3xl font-display font-bold">Egenkontroll</h1>
+            <h1 className="text-xl md:text-3xl font-display font-bold">Underhåll och Egenkontroll</h1>
             <p className="text-muted-foreground text-sm mt-1">Planerade kontroller och service</p>
           </div>
           {selectedVessel && (
@@ -429,7 +429,7 @@ export default function SelfControl() {
               variant="outline"
               size="sm"
               onClick={() => printContent('self-control-list', { 
-                title: 'Egenkontrollprogram', 
+                title: 'Underhåll och Egenkontroll',
                 subtitle: vessels?.find(v => v.id === selectedVessel)?.name || ''
               })}
             >
