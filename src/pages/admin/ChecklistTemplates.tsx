@@ -37,12 +37,13 @@ interface ChecklistStep {
   title: string;
   instruction: string;
   help_text: string;
-  confirmation_type: 'checkbox' | 'yes_no';
+  confirmation_type: 'checkbox' | 'yes_no' | 'checklist';
   requires_comment: boolean;
   requires_photo: boolean;
   reference_image_url?: string | null;
   reference_image_file?: File | null;
   reference_image_preview?: string | null;
+  checklist_items?: string[];
 }
 
 export default function ChecklistTemplates() {
@@ -204,6 +205,7 @@ export default function ChecklistTemplates() {
             requires_comment: step.requires_comment,
             requires_photo: step.requires_photo,
             reference_image_url: referenceImageUrl,
+            checklist_items: step.confirmation_type === 'checklist' && step.checklist_items?.length ? step.checklist_items : null,
           };
         }));
         await supabase.from('checklist_steps').insert(stepsToInsert);
@@ -291,6 +293,7 @@ export default function ChecklistTemplates() {
             requires_comment: step.requires_comment,
             requires_photo: step.requires_photo,
             reference_image_url: referenceImageUrl,
+            checklist_items: step.confirmation_type === 'checklist' && step.checklist_items?.length ? step.checklist_items : null,
           };
         }));
         await supabase.from('checklist_steps').insert(stepsToInsert);
@@ -352,12 +355,13 @@ export default function ChecklistTemplates() {
       title: s.title,
       instruction: s.instruction,
       help_text: s.help_text || '',
-      confirmation_type: s.confirmation_type as 'checkbox' | 'yes_no',
+      confirmation_type: s.confirmation_type as 'checkbox' | 'yes_no' | 'checklist',
       requires_comment: s.requires_comment,
       requires_photo: s.requires_photo,
       reference_image_url: s.reference_image_url || null,
       reference_image_file: null,
       reference_image_preview: s.reference_image_url || null,
+      checklist_items: (s as any).checklist_items || [],
     })));
   };
 
@@ -381,6 +385,7 @@ export default function ChecklistTemplates() {
       reference_image_url: null,
       reference_image_file: null,
       reference_image_preview: null,
+      checklist_items: [],
     }]);
   };
 
@@ -520,14 +525,15 @@ export default function ChecklistTemplates() {
                       <div className="flex flex-wrap gap-4">
                         <Select 
                           value={step.confirmation_type} 
-                          onValueChange={(v) => updateStep(index, { confirmation_type: v as 'checkbox' | 'yes_no' })}
+                          onValueChange={(v) => updateStep(index, { confirmation_type: v as 'checkbox' | 'yes_no' | 'checklist', checklist_items: v === 'checklist' ? (step.checklist_items?.length ? step.checklist_items : ['']) : step.checklist_items })}
                         >
-                          <SelectTrigger className="w-40">
+                          <SelectTrigger className="w-44">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="checkbox">Checkbox</SelectItem>
                             <SelectItem value="yes_no">Ja/Nej</SelectItem>
+                            <SelectItem value="checklist">Checklista</SelectItem>
                           </SelectContent>
                         </Select>
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -549,6 +555,56 @@ export default function ChecklistTemplates() {
                           <span className="text-sm">Foto krävs</span>
                         </label>
                       </div>
+                      
+                      {/* Checklist items - only show when confirmation_type is 'checklist' */}
+                      {step.confirmation_type === 'checklist' && (
+                        <div className="space-y-2 mt-3 p-3 border rounded-lg bg-muted/30">
+                          <Label className="text-sm font-medium">Checklistpunkter</Label>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Alla punkter måste kryssas i för att kunna godkänna steget
+                          </p>
+                          {(step.checklist_items || []).map((item, itemIndex) => (
+                            <div key={itemIndex} className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground w-6">{itemIndex + 1}.</span>
+                              <Input
+                                value={item}
+                                onChange={(e) => {
+                                  const newItems = [...(step.checklist_items || [])];
+                                  newItems[itemIndex] = e.target.value;
+                                  updateStep(index, { checklist_items: newItems });
+                                }}
+                                placeholder="Beskriv vad som ska kontrolleras..."
+                                className="flex-1"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  const newItems = (step.checklist_items || []).filter((_, i) => i !== itemIndex);
+                                  updateStep(index, { checklist_items: newItems.length > 0 ? newItems : [''] });
+                                }}
+                                disabled={(step.checklist_items || []).length <= 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newItems = [...(step.checklist_items || []), ''];
+                              updateStep(index, { checklist_items: newItems });
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Lägg till punkt
+                          </Button>
+                        </div>
+                      )}
                       
                       {/* Reference image upload */}
                       <div className="space-y-2">

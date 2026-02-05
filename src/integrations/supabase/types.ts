@@ -550,6 +550,7 @@ export type Database = {
       }
       checklist_steps: {
         Row: {
+          checklist_items: string[] | null
           checklist_template_id: string
           confirmation_type: string
           created_at: string
@@ -563,6 +564,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          checklist_items?: string[] | null
           checklist_template_id: string
           confirmation_type?: string
           created_at?: string
@@ -576,6 +578,7 @@ export type Database = {
           title: string
         }
         Update: {
+          checklist_items?: string[] | null
           checklist_template_id?: string
           confirmation_type?: string
           created_at?: string
