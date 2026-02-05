@@ -94,7 +94,11 @@ export default function AdminStatus() {
         let dynamicStatus: string = 'ok';
         let daysOrHoursInfo: string | null = null;
         
-        if (s.next_due_date) {
+        // Check if never performed (no last_done_date and no next due)
+        if (!s.last_done_date && !s.next_due_date && !s.next_due_at_engine_hours) {
+          dynamicStatus = 'ej_utford';
+          daysOrHoursInfo = 'Ej utförd';
+        } else if (s.next_due_date) {
           // Calendar-based control
           const dueDate = new Date(s.next_due_date);
           const daysUntil = differenceInDays(dueDate, today);
@@ -351,11 +355,8 @@ export default function AdminStatus() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={(cs as any).dynamicStatus === 'forfallen' ? 'destructive' : 'default'}>
-                          {CONTROL_STATUS_LABELS[(cs as any).dynamicStatus] || (cs as any).dynamicStatus}
-                        </Badge>
                         {(cs as any).daysOrHoursInfo && (
-                          <Badge variant={(cs as any).dynamicStatus === 'forfallen' ? 'destructive' : 'secondary'}>
+                          <Badge variant={(cs as any).dynamicStatus === 'forfallen' ? 'destructive' : (cs as any).dynamicStatus === 'ej_utford' ? 'outline' : 'secondary'}>
                             {(cs as any).daysOrHoursInfo}
                           </Badge>
                         )}
