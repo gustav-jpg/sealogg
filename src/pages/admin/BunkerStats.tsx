@@ -40,22 +40,32 @@ export default function BunkerStats() {
 
   const dateRange = getDateRange(period);
 
-  // Fetch logbooks with bunker data and engine hours
-  const { data: logbooksData, isLoading } = useQuery({
+  // Fetch bunker events and engine hours
+  const { data: bunkerData, isLoading } = useQuery({
     queryKey: ['bunker-stats', vesselIds, selectedVessel, period],
     queryFn: async () => {
-      if (vesselIds.length === 0) return { logbooks: [], engineHours: [] };
+      if (vesselIds.length === 0) return { bunkerEvents: [], engineHours: [] };
       
       const targetVesselIds = selectedVessel === 'all' ? vesselIds : [selectedVessel];
       
-      // Fetch logbooks with bunker info
+      // Fetch bunker events from new table
+      const { data: bunkerEvents, error: bunkerError } = await supabase
+        .from('bunker_events')
+        .select('id, vessel_id, liters, engine_hours, engine_name, recorded_at, logbook_id')
+        .in('vessel_id', targetVesselIds)
+        .gte('recorded_at', dateRange.start.toISOString())
+        .lte('recorded_at', dateRange.end.toISOString())
+        .order('recorded_at', { ascending: false });
+      
+      if (bunkerError) throw bunkerError;
+      
+      // Fetch logbooks for engine hours calculation
       const { data: logbooks, error: logbooksError } = await supabase
         .from('logbooks')
-        .select('id, vessel_id, date, bunker_liters, status')
+        .select('id, vessel_id, date')
         .in('vessel_id', targetVesselIds)
         .gte('date', dateRange.start.toISOString().split('T')[0])
-        .lte('date', dateRange.end.toISOString().split('T')[0])
-        .order('date', { ascending: false });
+        .lte('date', dateRange.end.toISOString().split('T')[0]);
       
       if (logbooksError) throw logbooksError;
       
@@ -66,21 +76,21 @@ export default function BunkerStats() {
       if (logbookIds.length > 0) {
         const { data: ehData, error: ehError } = await supabase
           .from('logbook_engine_hours')
-          .select('logbook_id, start_hours, stop_hours, engine_name')
+          .select('logbook_id, start_hours, stop_hours, engine_name, vessel_id:logbooks!inner(vessel_id)')
           .in('logbook_id', logbookIds);
         
         if (ehError) throw ehError;
         engineHours = ehData || [];
       }
       
-      return { logbooks: logbooks || [], engineHours };
+      return { bunkerEvents: bunkerEvents || [], engineHours, logbooks: logbooks || [] };
     },
     enabled: vesselIds.length > 0,
   });
 
   // Calculate statistics per vessel
   const calculateStats = () => {
-    if (!logbooksData?.logbooks) return [];
+    if (!bunkerData) return [];
 
     const vesselStats = new Map<string, {
       vesselId: string;
@@ -107,20 +117,22 @@ export default function BunkerStats() {
       });
     });
 
-    // Aggregate logbook data
-    logbooksData.logbooks.forEach(logbook => {
+    // Aggregate bunker events
+    bunkerData.bunkerEvents.forEach(event => {
+      const stats = vesselStats.get(event.vessel_id);
+      if (!stats) return;
+      stats.totalBunker += event.liters;
+      stats.bunkerEvents++;
+    });
+
+    // Aggregate logbook data for engine hours
+    bunkerData.logbooks.forEach(logbook => {
       const stats = vesselStats.get(logbook.vessel_id);
       if (!stats) return;
-
       stats.logbookCount++;
-      
-      if (logbook.bunker_liters && logbook.bunker_liters > 0) {
-        stats.totalBunker += logbook.bunker_liters;
-        stats.bunkerEvents++;
-      }
 
       // Sum engine hours for this logbook
-      const logbookEngineHours = logbooksData.engineHours.filter(eh => eh.logbook_id === logbook.id);
+      const logbookEngineHours = bunkerData.engineHours.filter(eh => eh.logbook_id === logbook.id);
       logbookEngineHours.forEach(eh => {
         if (eh.start_hours != null && eh.stop_hours != null && eh.stop_hours > eh.start_hours) {
           stats.totalHours += (eh.stop_hours - eh.start_hours);
@@ -137,13 +149,12 @@ export default function BunkerStats() {
   const totalHours = stats.reduce((sum, s) => sum + s.totalHours, 0);
   const avgConsumption = totalHours > 0 ? (totalBunker / totalHours).toFixed(1) : '–';
 
-  // Get recent bunker events
-  const recentBunkerEvents = logbooksData?.logbooks
-    .filter(l => l.bunker_liters && l.bunker_liters > 0)
+  // Get recent bunker events from the new table
+  const recentBunkerEvents = bunkerData?.bunkerEvents
     .slice(0, 10)
-    .map(l => ({
-      ...l,
-      vesselName: vessels?.find(v => v.id === l.vessel_id)?.name || 'Okänt',
+    .map(e => ({
+      ...e,
+      vesselName: vessels?.find(v => v.id === e.vessel_id)?.name || 'Okänt',
     })) || [];
 
   return (
@@ -322,11 +333,11 @@ export default function BunkerStats() {
                       <div>
                         <p className="font-medium">{event.vesselName}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(event.date), 'PPP', { locale: sv })}
+                          {format(new Date(event.recorded_at), 'PPP', { locale: sv })}
                         </p>
                       </div>
                       <Badge variant="secondary" className="text-base">
-                        +{event.bunker_liters?.toLocaleString('sv-SE')} L
+                        +{event.liters?.toLocaleString('sv-SE')} L
                       </Badge>
                     </div>
                   ))}

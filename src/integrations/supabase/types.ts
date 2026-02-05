@@ -381,6 +381,60 @@ export type Database = {
           },
         ]
       }
+      bunker_events: {
+        Row: {
+          created_at: string
+          engine_hours: number | null
+          engine_name: string | null
+          id: string
+          liters: number
+          logbook_id: string
+          notes: string | null
+          recorded_at: string
+          recorded_by: string
+          vessel_id: string
+        }
+        Insert: {
+          created_at?: string
+          engine_hours?: number | null
+          engine_name?: string | null
+          id?: string
+          liters: number
+          logbook_id: string
+          notes?: string | null
+          recorded_at?: string
+          recorded_by: string
+          vessel_id: string
+        }
+        Update: {
+          created_at?: string
+          engine_hours?: number | null
+          engine_name?: string | null
+          id?: string
+          liters?: number
+          logbook_id?: string
+          notes?: string | null
+          recorded_at?: string
+          recorded_by?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bunker_events_logbook_id_fkey"
+            columns: ["logbook_id"]
+            isOneToOne: false
+            referencedRelation: "logbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bunker_events_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificate_types: {
         Row: {
           created_at: string
