@@ -30,6 +30,7 @@ import RoleRules from "./pages/admin/RoleRules";
 import ControlPoints from "./pages/admin/ControlPoints";
 import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
 import AdminStatus from "./pages/admin/Status";
+import BunkerStats from "./pages/admin/BunkerStats";
 
 import ExercisesAdmin from "./pages/admin/Exercises";
 import IntranetAdmin from "./pages/admin/Intranet";
@@ -136,6 +137,7 @@ function AppRoutes() {
         <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
         <Route path="/portal/admin/checklists" element={<ProtectedRoute adminOnly><ChecklistTemplates /></ProtectedRoute>} />
         <Route path="/portal/admin/status" element={<ProtectedRoute adminOnly><AdminStatus /></ProtectedRoute>} />
+        <Route path="/portal/admin/bunker" element={<ProtectedRoute adminOnly><BunkerStats /></ProtectedRoute>} />
         
         <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/intranet" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />

@@ -3,8 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Wrench, Award, Ship, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Wrench, Award, Ship, CheckCircle, Clock, AlertCircle, Fuel } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -223,6 +224,12 @@ export default function AdminStatus() {
               Kommande ärenden inom 60 dagar • {totalIssues} ärenden kräver uppmärksamhet
             </p>
           </div>
+          <Link to="/portal/admin/bunker">
+            <Button variant="outline" className="gap-2">
+              <Fuel className="h-4 w-4" />
+              Bunkerstatistik
+            </Button>
+          </Link>
         </div>
 
         {/* Summary Cards */}
