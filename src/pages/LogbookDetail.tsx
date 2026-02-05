@@ -31,7 +31,7 @@ import { useLogbookSignatures, useSignLogbook } from '@/hooks/useLogbookSignatur
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2, History, UserCheck, Fuel, Droplets, Trash } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2, History, UserCheck, Fuel, Droplets, Trash, X } from 'lucide-react';
 
 interface EngineHourEntry {
   id?: string;
@@ -85,6 +85,8 @@ export default function LogbookDetail() {
   const [showBunkerDialog, setShowBunkerDialog] = useState(false);
   const [bunkerDialogLiters, setBunkerDialogLiters] = useState('');
   const [bunkerDialogEngineHours, setBunkerDialogEngineHours] = useState('');
+  const [quickEntries, setQuickEntries] = useState<{id: string; type: 'bunkring' | 'farskvatten' | 'septik'; text: string; timestamp: string}[]>([]);
+  const [quickEntriesInitialized, setQuickEntriesInitialized] = useState(false);
 
   // Passenger session
   const { data: passengerSession } = useQuery({
@@ -512,13 +514,20 @@ export default function LogbookDetail() {
 
   const updateLogbook = useMutation({
     mutationFn: async () => {
+      // Combine general notes with quick entries
+      let combinedNotes = generalNotes || '';
+      if (quickEntries.length > 0) {
+        const entriesText = quickEntries.map(e => `${e.timestamp} - ${e.text}`).join('\n');
+        combinedNotes = combinedNotes ? `${combinedNotes}\n${entriesText}` : entriesText;
+      }
+      
       // Update main logbook data
       const { error } = await supabase
         .from('logbooks')
         .update({
           weather: weather || null,
           wind: wind || null,
-          general_notes: generalNotes || null,
+          general_notes: combinedNotes || null,
           bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
         })
         .eq('id', id);
@@ -590,6 +599,13 @@ export default function LogbookDetail() {
       }
     },
     onSuccess: () => {
+      // After saving, update generalNotes state to include quick entries and clear them
+      if (quickEntries.length > 0) {
+        const entriesText = quickEntries.map(e => `${e.timestamp} - ${e.text}`).join('\n');
+        const combined = generalNotes ? `${generalNotes}\n${entriesText}` : entriesText;
+        setGeneralNotes(combined);
+        setQuickEntries([]);
+      }
       queryClient.invalidateQueries({ queryKey: ['logbook', id] });
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
       queryClient.invalidateQueries({ queryKey: ['logbook-engine-hours', id] });
@@ -1069,8 +1085,12 @@ export default function LogbookDetail() {
                         size="sm"
                         onClick={() => {
                           const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-                          const newNote = generalNotes ? `${generalNotes}\n${timestamp} - Fyllt färskvatten` : `${timestamp} - Fyllt färskvatten`;
-                          setGeneralNotes(newNote);
+                          setQuickEntries(prev => [...prev, {
+                            id: crypto.randomUUID(),
+                            type: 'farskvatten',
+                            text: 'Fyllt färskvatten',
+                            timestamp
+                          }]);
                         }}
                         title="Lägg till färskvatten"
                       >
@@ -1083,14 +1103,46 @@ export default function LogbookDetail() {
                         size="sm"
                         onClick={() => {
                           const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-                          const newNote = generalNotes ? `${generalNotes}\n${timestamp} - Tömt septik` : `${timestamp} - Tömt septik`;
-                          setGeneralNotes(newNote);
+                          setQuickEntries(prev => [...prev, {
+                            id: crypto.randomUUID(),
+                            type: 'septik',
+                            text: 'Tömt septik',
+                            timestamp
+                          }]);
                         }}
                         title="Lägg till septiktömning"
                       >
                         <Trash className="h-4 w-4 mr-1" />
                         Septik
                       </Button>
+                    </div>
+                  )}
+                  
+                  {/* Quick entries list */}
+                  {quickEntries.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      {quickEntries.map(entry => (
+                        <div key={entry.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50 text-sm">
+                          <div className="flex items-center gap-2">
+                            {entry.type === 'bunkring' && <Fuel className="h-4 w-4 text-muted-foreground" />}
+                            {entry.type === 'farskvatten' && <Droplets className="h-4 w-4 text-muted-foreground" />}
+                            {entry.type === 'septik' && <Trash className="h-4 w-4 text-muted-foreground" />}
+                            <span className="text-muted-foreground">{entry.timestamp}</span>
+                            <span>{entry.text}</span>
+                          </div>
+                          {canEditThis && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => setQuickEntries(prev => prev.filter(e => e.id !== entry.id))}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1814,12 +1866,16 @@ export default function LogbookDetail() {
                   const engineName = primaryEngine?.name || 'Huvudmaskin';
                   
                   const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-                  let bunkerText = `${timestamp} - Bunkrat ${bunkerDialogLiters || '?'} liter`;
+                  let bunkerText = `Bunkrat ${bunkerDialogLiters || '?'} liter`;
                   if (bunkerDialogEngineHours) {
                     bunkerText += ` vid ${bunkerDialogEngineHours} h (${engineName})`;
                   }
-                  const newNote = generalNotes ? `${generalNotes}\n${bunkerText}` : bunkerText;
-                  setGeneralNotes(newNote);
+                  setQuickEntries(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    type: 'bunkring',
+                    text: bunkerText,
+                    timestamp
+                  }]);
                   setShowBunkerDialog(false);
                 }}
                 disabled={!bunkerDialogLiters}
