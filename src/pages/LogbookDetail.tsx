@@ -1864,8 +1864,8 @@ export default function LogbookDetail() {
               <Button variant="outline" onClick={() => setShowBunkerDialog(false)}>
                 Avbryt
               </Button>
-              <Button
-                onClick={() => {
+                <Button
+                onClick={async () => {
                   const vessel = logbook?.vessel as any;
                   const primaryEngineId = vessel?.primary_engine_id;
                   const primaryEngine = vesselEngineHours?.find(e => e.id === primaryEngineId);
@@ -1876,13 +1876,34 @@ export default function LogbookDetail() {
                   if (bunkerDialogEngineHours) {
                     bunkerText += ` vid ${bunkerDialogEngineHours} h (${engineName})`;
                   }
+                  
+                  // Save to bunker_events table
+                  const { error } = await supabase
+                    .from('bunker_events')
+                    .insert({
+                      logbook_id: id,
+                      vessel_id: logbook?.vessel_id,
+                      liters: parseInt(bunkerDialogLiters),
+                      engine_hours: bunkerDialogEngineHours ? parseFloat(bunkerDialogEngineHours) : null,
+                      engine_name: bunkerDialogEngineHours ? engineName : null,
+                      recorded_by: user?.id,
+                    });
+                  
+                  if (error) {
+                    toast({ title: 'Fel', description: 'Kunde inte spara bunkring', variant: 'destructive' });
+                    return;
+                  }
+                  
                   setQuickEntries(prev => [...prev, {
                     id: crypto.randomUUID(),
                     type: 'bunkring',
                     text: bunkerText,
                     timestamp
                   }]);
+                  setBunkerDialogLiters('');
+                  setBunkerDialogEngineHours('');
                   setShowBunkerDialog(false);
+                  toast({ title: 'Bunkring registrerad', description: `${bunkerDialogLiters} liter sparades` });
                 }}
                 disabled={!bunkerDialogLiters}
               >
