@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, CalendarDays, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, CalendarDays, Plus, Trash2, Send, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -216,6 +216,25 @@ export default function OrganizationDetail() {
     },
     onError: (error) => {
       toast.error('Kunde inte ta bort användare: ' + error.message);
+    },
+  });
+
+  const resendWelcomeEmailMutation = useMutation({
+    mutationFn: async ({ email, fullName }: { email: string; fullName: string }) => {
+      const response = await supabase.functions.invoke('resend-welcome-email', {
+        body: { email, fullName },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Inloggningsmail skickat!');
+    },
+    onError: (error) => {
+      toast.error('Kunde inte skicka mail: ' + error.message);
     },
   });
 
@@ -547,14 +566,37 @@ export default function OrganizationDetail() {
                           <TableCell>
                             {format(new Date(member.created_at), 'd MMM yyyy', { locale: sv })}
                           </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeMemberMutation.mutate(member.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Skicka inloggningsmail"
+                                disabled={resendWelcomeEmailMutation.isPending || !profile?.email}
+                                onClick={() => {
+                                  if (profile?.email && profile?.full_name) {
+                                    resendWelcomeEmailMutation.mutate({
+                                      email: profile.email,
+                                      fullName: profile.full_name,
+                                    });
+                                  }
+                                }}
+                              >
+                                {resendWelcomeEmailMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Send className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Ta bort användare"
+                                onClick={() => removeMemberMutation.mutate(member.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
