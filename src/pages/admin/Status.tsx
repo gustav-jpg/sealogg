@@ -62,6 +62,7 @@ export default function AdminStatus() {
   });
 
   // Fetch control point states - scoped to org vessels
+  // Calculate status dynamically based on next_due_date
   const { data: controlStates } = useQuery({
     queryKey: ['status-control-states', vesselIds],
     queryFn: async () => {
@@ -70,13 +71,27 @@ export default function AdminStatus() {
         .from('vessel_control_point_state')
         .select(`*, control_point:control_points(name, type), vessel:vessels(name)`)
         .in('vessel_id', vesselIds)
-        .in('status', ['kommande', 'forfallen'])
+        .not('next_due_date', 'is', null)
+        .lte('next_due_date', cutoffDate.toISOString().split('T')[0])
         .order('next_due_date', { ascending: true });
       if (error) throw error;
-      return data?.filter(s => {
-        if (!s.next_due_date) return true;
-        return new Date(s.next_due_date) <= cutoffDate;
-      });
+      
+      // Calculate dynamic status based on dates
+      return data?.map(s => {
+        const dueDate = new Date(s.next_due_date);
+        const daysUntil = differenceInDays(dueDate, today);
+        let dynamicStatus: string;
+        
+        if (daysUntil < 0) {
+          dynamicStatus = 'forfallen';
+        } else if (daysUntil <= 30) {
+          dynamicStatus = 'kommande';
+        } else {
+          dynamicStatus = 'ok';
+        }
+        
+        return { ...s, dynamicStatus };
+      }).filter(s => s.dynamicStatus !== 'ok');
     },
     enabled: vesselIds.length > 0,
   });
@@ -295,10 +310,10 @@ export default function AdminStatus() {
                         <p className="text-sm text-muted-foreground">{(cs as any).vessel?.name}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={cs.status === 'forfallen' ? 'destructive' : 'default'}>
-                          {CONTROL_STATUS_LABELS[cs.status]}
+                        <Badge variant={(cs as any).dynamicStatus === 'forfallen' ? 'destructive' : 'default'}>
+                          {CONTROL_STATUS_LABELS[(cs as any).dynamicStatus] || (cs as any).dynamicStatus}
                         </Badge>
-                        {cs.next_due_date && cs.status !== 'forfallen' && (
+                        {cs.next_due_date && (cs as any).dynamicStatus !== 'forfallen' && (
                           <Badge variant={getUrgencyBadge(cs.next_due_date)}>
                             {getDaysUntil(cs.next_due_date)}
                           </Badge>
