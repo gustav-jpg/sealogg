@@ -21,10 +21,11 @@ interface ChecklistStep {
   title: string;
   instruction: string;
   help_text: string | null;
-  confirmation_type: 'checkbox' | 'yes_no';
+  confirmation_type: 'checkbox' | 'yes_no' | 'checklist';
   requires_comment: boolean;
   requires_photo: boolean;
   reference_image_url: string | null;
+  checklist_items: string[] | null;
 }
 
 interface StepResult {
@@ -57,6 +58,7 @@ export default function ChecklistExecute() {
   const [showHelpText, setShowHelpText] = useState(false);
   const [isInDeviationMode, setIsInDeviationMode] = useState(false);
   const [isEditingStep, setIsEditingStep] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch or create execution
@@ -258,12 +260,19 @@ export default function ChecklistExecute() {
         setPhotoPreview(existingResult.photo_url);
         // Show comment field if there's an existing comment
         setShowCommentField(!!existingResult.comment);
+        // If checklist type and already completed, mark all items as checked
+        if (step.confirmation_type === 'checklist' && step.checklist_items) {
+          setCheckedItems(new Set(step.checklist_items.map((_, i) => i)));
+        } else {
+          setCheckedItems(new Set());
+        }
       } else {
         setCurrentValue('');
         setCurrentComment('');
         setCurrentPhoto(null);
         setPhotoPreview(null);
         setShowCommentField(false);
+        setCheckedItems(new Set());
       }
       // Always hide help text and reset deviation mode when switching steps
       setShowHelpText(false);
@@ -665,6 +674,40 @@ export default function ChecklistExecute() {
                 />
               )}
               
+              {/* Checklist items - for 'checklist' confirmation type */}
+              {currentStep.confirmation_type === 'checklist' && currentStep.checklist_items && currentStep.checklist_items.length > 0 && (
+                <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+                  <Label className="text-sm font-medium">Kontrollera följande punkter:</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Alla punkter måste kryssas i för att kunna godkänna
+                  </p>
+                  {currentStep.checklist_items.map((item, itemIndex) => (
+                    <label key={itemIndex} className="flex items-start gap-3 cursor-pointer py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={checkedItems.has(itemIndex)}
+                        onChange={(e) => {
+                          const newChecked = new Set(checkedItems);
+                          if (e.target.checked) {
+                            newChecked.add(itemIndex);
+                          } else {
+                            newChecked.delete(itemIndex);
+                          }
+                          setCheckedItems(newChecked);
+                        }}
+                        className="h-5 w-5 rounded mt-0.5 accent-primary"
+                      />
+                      <span className={`text-sm ${checkedItems.has(itemIndex) ? 'text-muted-foreground line-through' : ''}`}>
+                        {item}
+                      </span>
+                    </label>
+                  ))}
+                  <div className="text-xs text-muted-foreground pt-2 border-t mt-2">
+                    {checkedItems.size} av {currentStep.checklist_items.length} punkter markerade
+                  </div>
+                </div>
+              )}
+              
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <Button
@@ -736,8 +779,13 @@ export default function ChecklistExecute() {
                         photoPreviewUrl: photoPreview,
                       });
                     }}
-                    disabled={saveStepResult.isPending}
-                    className="h-16 bg-green-600 hover:bg-green-700 text-white font-semibold text-base"
+                    disabled={
+                      saveStepResult.isPending || 
+                      (currentStep.confirmation_type === 'checklist' && 
+                       currentStep.checklist_items && 
+                       checkedItems.size < currentStep.checklist_items.length)
+                    }
+                    className="h-16 bg-green-600 hover:bg-green-700 text-white font-semibold text-base disabled:opacity-50"
                   >
                     {saveStepResult.isPending && currentValue === 'ok' ? (
                       <Loader2 className="h-6 w-6 animate-spin mr-2" />
