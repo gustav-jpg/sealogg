@@ -556,6 +556,7 @@ export type Database = {
           help_text: string | null
           id: string
           instruction: string
+          reference_image_url: string | null
           requires_comment: boolean
           requires_photo: boolean
           step_order: number
@@ -568,6 +569,7 @@ export type Database = {
           help_text?: string | null
           id?: string
           instruction: string
+          reference_image_url?: string | null
           requires_comment?: boolean
           requires_photo?: boolean
           step_order: number
@@ -580,6 +582,7 @@ export type Database = {
           help_text?: string | null
           id?: string
           instruction?: string
+          reference_image_url?: string | null
           requires_comment?: boolean
           requires_photo?: boolean
           step_order?: number

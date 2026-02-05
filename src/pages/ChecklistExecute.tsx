@@ -24,6 +24,7 @@ interface ChecklistStep {
   confirmation_type: 'checkbox' | 'yes_no';
   requires_comment: boolean;
   requires_photo: boolean;
+  reference_image_url: string | null;
 }
 
 interface StepResult {
@@ -570,6 +571,21 @@ export default function ChecklistExecute() {
               </div>
               <CardTitle>{currentStep.title}</CardTitle>
               <CardDescription className="whitespace-pre-wrap">{currentStep.instruction}</CardDescription>
+              
+              {/* Reference image - show if available */}
+              {currentStep.reference_image_url && (
+                <div className="mt-3">
+                  <img 
+                    src={currentStep.reference_image_url} 
+                    alt="Referensbild" 
+                    className="w-full max-h-48 object-contain rounded-lg border bg-muted/50"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 text-center">
+                    Referensbild - så här ska det se ut
+                  </p>
+                </div>
+              )}
+              
               {currentStep.help_text && (
                 <div className="mt-3">
                   <Button
