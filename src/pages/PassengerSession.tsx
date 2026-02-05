@@ -257,23 +257,29 @@ export default function PassengerSession() {
   // Track previous route to detect route changes
   const prevRouteIdRef = useRef<string | null | undefined>(undefined);
 
-  // Reset selected dock when route changes
+  // ALWAYS set first dock when route changes or when routeStops load for current route
   useEffect(() => {
-    // Only reset when route actually changes, not on initial load
-    if (prevRouteIdRef.current !== undefined && prevRouteIdRef.current !== session?.route_id) {
+    const routeChanged = prevRouteIdRef.current !== undefined && prevRouteIdRef.current !== session?.route_id;
+    const initialLoad = prevRouteIdRef.current === undefined;
+    
+    // Always set first dock when route changes (even if routeStops not yet loaded)
+    if (routeChanged) {
       if (routeStops.length > 0) {
         setSelectedDockId(routeStops[0].dock_id);
-      } else if (allDocks.length > 0) {
-        setSelectedDockId(allDocks[0].id);
       } else {
+        // Clear selection until routeStops loads
         setSelectedDockId('');
       }
-    } else if (prevRouteIdRef.current === undefined && routeStops.length > 0 && !selectedDockId) {
+    } else if (initialLoad && routeStops.length > 0 && !selectedDockId) {
       // Initial load: set first dock if none selected
       setSelectedDockId(routeStops[0].dock_id);
+    } else if (!routeChanged && routeStops.length > 0 && !selectedDockId) {
+      // routeStops just loaded for current route, set first dock
+      setSelectedDockId(routeStops[0].dock_id);
     }
+    
     prevRouteIdRef.current = session?.route_id;
-  }, [session?.route_id, routeStops, allDocks]);
+  }, [session?.route_id, routeStops]);
 
   // Advance to next dock in list after saving (cycles)
   useEffect(() => {
