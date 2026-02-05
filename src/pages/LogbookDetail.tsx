@@ -230,11 +230,11 @@ export default function LogbookDetail() {
       if (error) throw error;
     },
     onSuccess: async () => {
-      // Wait for cache invalidation to complete before showing success
+      // Wait for cache invalidation AND refetch to complete before showing success
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['passenger-session-for-logbook', id] }),
-        queryClient.invalidateQueries({ queryKey: ['passenger-sessions'] }),
-        queryClient.invalidateQueries({ queryKey: ['passenger-summary'] }),
+        queryClient.refetchQueries({ queryKey: ['passenger-session-for-logbook', id] }),
+        queryClient.invalidateQueries({ queryKey: ['passenger-sessions'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['passenger-summary'], refetchType: 'all' }),
       ]);
       toast({ title: 'Borttagen', description: 'Passagerarregistreringen har tagits bort.' });
     },
