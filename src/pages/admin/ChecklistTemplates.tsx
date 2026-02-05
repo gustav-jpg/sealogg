@@ -555,7 +555,14 @@ export default function ChecklistTemplates() {
                       <div className="flex flex-wrap gap-4">
                         <Select 
                           value={step.confirmation_type} 
-                          onValueChange={(v) => updateStep(index, { confirmation_type: v as 'checkbox' | 'yes_no' | 'checklist', checklist_items: v === 'checklist' ? (step.checklist_items?.length ? step.checklist_items : ['']) : step.checklist_items })}
+                          onValueChange={(v) => {
+                            const newType = v as 'checkbox' | 'yes_no' | 'checklist';
+                            // Preserve existing checklist_items, only initialize with [''] if switching TO checklist and items are empty
+                            const newItems = newType === 'checklist' && (!step.checklist_items || step.checklist_items.length === 0)
+                              ? ['']
+                              : step.checklist_items;
+                            updateStep(index, { confirmation_type: newType, checklist_items: newItems });
+                          }}
                         >
                           <SelectTrigger className="w-44">
                             <SelectValue />
