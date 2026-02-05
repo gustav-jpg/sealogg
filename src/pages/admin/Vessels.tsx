@@ -180,15 +180,6 @@ export default function AdminVessels() {
           }, { onConflict: 'vessel_id,engine_type,engine_number' });
         if (error) throw error;
       }
-      
-      // Update primary engine if changed
-      if (selectedPrimaryEngineId !== selectedVessel.primary_engine_id) {
-        const { error: updateError } = await supabase
-          .from('vessels')
-          .update({ primary_engine_id: selectedPrimaryEngineId })
-          .eq('id', selectedVessel.id);
-        if (updateError) throw updateError;
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
@@ -445,6 +436,44 @@ export default function AdminVessels() {
                       <Badge variant="secondary">{engine.current_hours} h</Badge>
                     </div>
                   ))}
+                  
+                  {/* Primär maskin för bunkring */}
+                  {vesselEngineHours?.filter(e => e.vessel_id === selectedVessel.id && e.engine_type === 'main').length > 0 && (
+                    <div className="pt-3 mt-3 border-t space-y-2">
+                      <Label className="text-sm font-medium">Primär maskin för bunkring</Label>
+                      <p className="text-xs text-muted-foreground">Denna maskin används som standard vid registrering av bunkring i dagsrapporten.</p>
+                      <Select 
+                        value={selectedVessel.primary_engine_id || ''} 
+                        onValueChange={async (val) => {
+                          const newPrimaryId = val || null;
+                          const { error } = await supabase
+                            .from('vessels')
+                            .update({ primary_engine_id: newPrimaryId })
+                            .eq('id', selectedVessel.id);
+                          if (error) {
+                            toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+                          } else {
+                            setSelectedVessel({ ...selectedVessel, primary_engine_id: newPrimaryId });
+                            queryClient.invalidateQueries({ queryKey: ['vessels'] });
+                            toast({ title: 'Sparat', description: 'Primär maskin uppdaterad.' });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj primär maskin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vesselEngineHours
+                            ?.filter(e => e.vessel_id === selectedVessel.id && e.engine_type === 'main')
+                            .map(e => (
+                              <SelectItem key={e.id} value={e.id}>
+                                {e.name || `Huvudmaskin ${e.engine_number}`}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Certifikat */}
@@ -564,32 +593,6 @@ export default function AdminVessels() {
                   ))}
                 </div>
               )}
-              
-              {/* Primary engine selection */}
-              {engineHoursInputs.filter(e => e.engine_type === 'main').length > 0 && (
-                <div className="pt-3 border-t space-y-2">
-                  <Label className="text-sm font-medium">Primär maskin för bunkring</Label>
-                  <p className="text-xs text-muted-foreground">Denna maskin används som standard vid registrering av bunkring i dagsrapporten.</p>
-                  <Select 
-                    value={selectedPrimaryEngineId || ''} 
-                    onValueChange={(val) => setSelectedPrimaryEngineId(val || null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Välj primär maskin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {engineHoursInputs
-                        .filter(e => e.engine_type === 'main' && e.id)
-                        .map(e => (
-                          <SelectItem key={e.id} value={e.id!}>
-                            {e.name || `Huvudmaskin ${e.engine_number}`}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              
               <Button onClick={() => updateEngineHours.mutate()} disabled={updateEngineHours.isPending || engineHoursInputs.length === 0} className="w-full">
                 {updateEngineHours.isPending ? 'Sparar...' : 'Spara maskintimmar'}
               </Button>
