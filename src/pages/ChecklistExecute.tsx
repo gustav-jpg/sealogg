@@ -508,6 +508,30 @@ export default function ChecklistExecute() {
     );
   }
 
+  // Handle case when template has no steps defined
+  if (steps.length === 0) {
+    return (
+      <MainLayout>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Inga steg definierade</h2>
+            <p className="text-muted-foreground mb-4">
+              Checklistmallen "{template.name}" har inga kontrollpunkter ännu.
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Kontakta administratören för att lägga till steg i mallen.
+            </p>
+            <Button onClick={() => navigate('/portal/checklists')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Tillbaka
+            </Button>
+          </CardContent>
+        </Card>
+      </MainLayout>
+    );
+  }
+
   // Get the vessel ID for navigation
   const currentVesselId = vessel?.id || vesselId || existingExecution?.vessel_id;
 
