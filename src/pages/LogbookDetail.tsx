@@ -31,7 +31,7 @@ import { useLogbookSignatures, useSignLogbook } from '@/hooks/useLogbookSignatur
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2, History, UserCheck } from 'lucide-react';
+import { Ship, User, MapPin, Users, Lock, ArrowLeft, Save, Trash2, Printer, Pencil, Plus, FileDown, Wind, Loader2, Gauge, GraduationCap, ShieldCheck, CheckCircle2, History, UserCheck, Fuel, Droplets, Trash } from 'lucide-react';
 
 interface EngineHourEntry {
   id?: string;
@@ -82,6 +82,9 @@ export default function LogbookDetail() {
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showDeletePassengerSessionDialog, setShowDeletePassengerSessionDialog] = useState(false);
+  const [showBunkerDialog, setShowBunkerDialog] = useState(false);
+  const [bunkerDialogLiters, setBunkerDialogLiters] = useState('');
+  const [bunkerDialogEngineHours, setBunkerDialogEngineHours] = useState('');
 
   // Passenger session
   const { data: passengerSession } = useQuery({
@@ -1044,6 +1047,52 @@ export default function LogbookDetail() {
                     disabled={!canEditThis}
                     rows={3}
                   />
+                  {canEditThis && (
+                    <div className="flex gap-2 flex-wrap pt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setBunkerDialogLiters('');
+                          setBunkerDialogEngineHours('');
+                          setShowBunkerDialog(true);
+                        }}
+                        title="Lägg till bunkring"
+                      >
+                        <Fuel className="h-4 w-4 mr-1" />
+                        Bunkring
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                          const newNote = generalNotes ? `${generalNotes}\n${timestamp} - Fyllt färskvatten` : `${timestamp} - Fyllt färskvatten`;
+                          setGeneralNotes(newNote);
+                        }}
+                        title="Lägg till färskvatten"
+                      >
+                        <Droplets className="h-4 w-4 mr-1" />
+                        Färskvatten
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                          const newNote = generalNotes ? `${generalNotes}\n${timestamp} - Tömt septik` : `${timestamp} - Tömt septik`;
+                          setGeneralNotes(newNote);
+                        }}
+                        title="Lägg till septiktömning"
+                      >
+                        <Trash className="h-4 w-4 mr-1" />
+                        Septik
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
@@ -1697,6 +1746,67 @@ export default function LogbookDetail() {
         }}
         variant="destructive"
       />
+
+      {/* Bunkring Dialog */}
+      <Dialog open={showBunkerDialog} onOpenChange={setShowBunkerDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Fuel className="h-5 w-5" />
+              Registrera bunkring
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="bunker-liters">Antal liter</Label>
+              <Input
+                id="bunker-liters"
+                type="number"
+                value={bunkerDialogLiters}
+                onChange={(e) => setBunkerDialogLiters(e.target.value)}
+                placeholder="T.ex. 500"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bunker-hours">Timställning huvudmaskin</Label>
+              <Input
+                id="bunker-hours"
+                type="number"
+                value={bunkerDialogEngineHours}
+                onChange={(e) => setBunkerDialogEngineHours(e.target.value)}
+                placeholder="T.ex. 1234"
+                min="0"
+              />
+              {editableEngineHours.find(e => e.engineType === 'main' && e.engineNumber === 1) && (
+                <p className="text-xs text-muted-foreground">
+                  Nuvarande: {editableEngineHours.find(e => e.engineType === 'main' && e.engineNumber === 1)?.stopHours ?? editableEngineHours.find(e => e.engineType === 'main' && e.engineNumber === 1)?.startHours ?? '-'} h
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowBunkerDialog(false)}>
+                Avbryt
+              </Button>
+              <Button
+                onClick={() => {
+                  const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                  let bunkerText = `${timestamp} - Bunkrat ${bunkerDialogLiters || '?'} liter`;
+                  if (bunkerDialogEngineHours) {
+                    bunkerText += ` vid ${bunkerDialogEngineHours} h`;
+                  }
+                  const newNote = generalNotes ? `${generalNotes}\n${bunkerText}` : bunkerText;
+                  setGeneralNotes(newNote);
+                  setShowBunkerDialog(false);
+                }}
+                disabled={!bunkerDialogLiters}
+              >
+                Lägg till
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
