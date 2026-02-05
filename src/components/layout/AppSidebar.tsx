@@ -73,7 +73,7 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
 };
 
 export function AppSidebar() {
-  const { user, profile, isAdmin, isDeckhand, signOut } = useAuth();
+  const { user, profile, isAdmin, isSkeppare, isDeckhand, signOut } = useAuth();
   const { selectedOrgId, selectedOrg, userOrgs, setSelectedOrgId, isLoading: isOrgLoading } = useOrganization();
   const location = useLocation();
   const navigate = useNavigate();
@@ -157,13 +157,18 @@ export function AppSidebar() {
     }
   }
 
-  // Base admin items always shown
+  // Base admin items always shown (only for admin)
   const baseVesselAdminItems = [
     { href: '/portal/admin/status', label: 'Statusöversikt', icon: Activity },
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Besättning', icon: Users },
     { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
     { href: '/portal/admin/notifications', label: 'Notifikationer', icon: Bell },
+  ];
+
+  // Items that Skeppare can also access
+  const skeppareAdminItems = [
+    { href: '/portal/admin/users', label: 'Besättning', icon: Users },
   ];
 
   // Module-specific admin items
@@ -319,6 +324,33 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {vesselAdminItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.href)}
+                      tooltip={item.label}
+                    >
+                      <Link to={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Skeppare-only Settings (when not admin) */}
+        {!isAdmin && isSkeppare && vesselNavItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs text-muted-foreground px-2">
+              Inställningar
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {skeppareAdminItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
