@@ -118,70 +118,110 @@ export function LogbookStops({
   };
 
   if (stops.length === 0) {
-    // Show passenger summary if session is closed and has data
-    if (passengerSession && !passengerSession.is_active && passengerSummary) {
-      // Compact view: show only times and totals with "Visa hela" button
-      return (
-        <div className="space-y-4">
-          {/* Summary header with lock status */}
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <div className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-muted-foreground" />
+    // Show locked session view (with or without data)
+    if (passengerSession && !passengerSession.is_active) {
+      // Session is locked - show appropriate view
+      if (passengerSummary && passengerSummary.stopCount > 0) {
+        // Compact view: show only times and totals with "Visa hela" button
+        return (
+          <div className="space-y-4">
+            {/* Summary header with lock status */}
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+              <div className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-muted-foreground" />
+                <span className="font-semibold">Passagerarregistrering låst</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span className="font-mono">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
+                </div>
+                {canLockSession && onUnlockPassengerSession && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={onUnlockPassengerSession}
+                    disabled={isLockingSession}
+                    className="gap-1"
+                  >
+                    <Unlock className="h-3 w-3" />
+                    Lås upp
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Compact summary stats */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+                <div className="flex items-center gap-2 text-primary">
+                  <UserPlus className="h-4 w-4" />
+                  <span className="text-sm">Påstigande</span>
+                </div>
+                <span className="text-xl font-bold text-primary">{passengerSummary.totalPaxOn}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
+                <div className="flex items-center gap-2 text-destructive">
+                  <UserMinus className="h-4 w-4" />
+                  <span className="text-sm">Avstigande</span>
+                </div>
+                <span className="text-xl font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">Stopp</span>
+                <span className="text-xl font-bold">{passengerSummary.stopCount}</span>
+              </div>
+            </div>
+
+            {/* View full details button */}
+            <Button 
+              variant="outline" 
+              className="w-full gap-2"
+              onClick={() => window.open(`/portal/passagerare/${passengerSession.id}`, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Visa hela
+            </Button>
+          </div>
+        );
+      } else {
+        // Locked but no entries - show unlock and delete options
+        return (
+          <div className="text-center py-6">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
+              <Lock className="h-5 w-5" />
               <span className="font-semibold">Passagerarregistrering låst</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span className="font-mono">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
-              </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Sessionen är låst men har inga registreringar.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               {canLockSession && onUnlockPassengerSession && (
                 <Button 
                   variant="outline" 
-                  size="sm" 
                   onClick={onUnlockPassengerSession}
                   disabled={isLockingSession}
-                  className="gap-1"
+                  className="gap-2"
                 >
-                  <Unlock className="h-3 w-3" />
-                  Lås upp
+                  <Unlock className="h-4 w-4" />
+                  {isLockingSession ? 'Låser upp...' : 'Lås upp'}
+                </Button>
+              )}
+              {canLockSession && onDeletePassengerSession && (
+                <Button 
+                  variant="destructive" 
+                  onClick={onDeletePassengerSession}
+                  disabled={isDeletingSession}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {isDeletingSession ? 'Tar bort...' : 'Ta bort'}
                 </Button>
               )}
             </div>
           </div>
-
-          {/* Compact summary stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-              <div className="flex items-center gap-2 text-primary">
-                <UserPlus className="h-4 w-4" />
-                <span className="text-sm">Påstigande</span>
-              </div>
-              <span className="text-xl font-bold text-primary">{passengerSummary.totalPaxOn}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
-              <div className="flex items-center gap-2 text-destructive">
-                <UserMinus className="h-4 w-4" />
-                <span className="text-sm">Avstigande</span>
-              </div>
-              <span className="text-xl font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <span className="text-sm text-muted-foreground">Stopp</span>
-              <span className="text-xl font-bold">{passengerSummary.stopCount}</span>
-            </div>
-          </div>
-
-          {/* View full details button */}
-          <Button 
-            variant="outline" 
-            className="w-full gap-2"
-            onClick={() => window.open(`/portal/passagerare/${passengerSession.id}`, '_blank')}
-          >
-            <ExternalLink className="h-4 w-4" />
-            Visa hela
-          </Button>
-        </div>
-      );
+        );
+      }
     }
 
     // Show different message if passenger registration is active
