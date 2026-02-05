@@ -2902,7 +2902,7 @@ export type Database = {
         | "self_control"
         | "checklists"
         | "bookings"
-      app_role: "admin" | "skeppare" | "readonly"
+      app_role: "admin" | "skeppare" | "readonly" | "deckhand"
       blocking_reason:
         | "service"
         | "privat"
@@ -2955,7 +2955,7 @@ export type Database = {
         | "atgardad"
         | "avslutad"
       logbook_status: "oppen" | "stangd"
-      org_role: "org_admin" | "org_user"
+      org_role: "org_admin" | "org_user" | "deckhand"
       pm_type: "besattning" | "servering" | "kok" | "bar"
     }
     CompositeTypes: {
@@ -3092,7 +3092,7 @@ export const Constants = {
         "checklists",
         "bookings",
       ],
-      app_role: ["admin", "skeppare", "readonly"],
+      app_role: ["admin", "skeppare", "readonly", "deckhand"],
       blocking_reason: [
         "service",
         "privat",
@@ -3152,7 +3152,7 @@ export const Constants = {
         "avslutad",
       ],
       logbook_status: ["oppen", "stangd"],
-      org_role: ["org_admin", "org_user"],
+      org_role: ["org_admin", "org_user", "deckhand"],
       pm_type: ["besattning", "servering", "kok", "bar"],
     },
   },

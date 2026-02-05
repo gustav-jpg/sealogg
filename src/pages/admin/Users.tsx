@@ -1238,6 +1238,7 @@ function InviteUserDialog({
               <SelectContent>
                 <SelectItem value="admin">{APP_ROLE_LABELS.admin}</SelectItem>
                 <SelectItem value="skeppare">{APP_ROLE_LABELS.skeppare}</SelectItem>
+                <SelectItem value="deckhand">{APP_ROLE_LABELS.deckhand}</SelectItem>
                 <SelectItem value="readonly">{APP_ROLE_LABELS.readonly}</SelectItem>
               </SelectContent>
             </Select>
@@ -1519,8 +1520,9 @@ function LinkEmailDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="skeppare">Skeppare</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="skeppare">Skeppare</SelectItem>
+                <SelectItem value="deckhand">Däcksman</SelectItem>
                 <SelectItem value="readonly">Endast läsning</SelectItem>
               </SelectContent>
             </Select>

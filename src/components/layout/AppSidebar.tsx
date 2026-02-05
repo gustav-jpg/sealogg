@@ -73,7 +73,7 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
 };
 
 export function AppSidebar() {
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, isDeckhand, signOut } = useAuth();
   const { selectedOrgId, selectedOrg, userOrgs, setSelectedOrgId, isLoading: isOrgLoading } = useOrganization();
   const location = useLocation();
   const navigate = useNavigate();
@@ -110,27 +110,51 @@ export function AppSidebar() {
 
   const currentSelectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
 
-  // Filter nav items based on active modules
+  // Filter nav items based on active modules and user role
   const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists'];
   const bookingModules: AppModule[] = ['bookings'];
 
-  const activeVesselModules = vesselModules.filter(m => orgModules?.includes(m) || isSuperadmin);
-  const activeBookingModules = bookingModules.filter(m => orgModules?.includes(m) || isSuperadmin);
+  // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor
+  const deckhandAllowedModules: AppModule[] = ['fault_cases', 'checklists'];
+
+  let activeVesselModules = vesselModules.filter(m => orgModules?.includes(m) || isSuperadmin);
+  let activeBookingModules = bookingModules.filter(m => orgModules?.includes(m) || isSuperadmin);
+
+  // If user is deckhand (and not admin), filter to only allowed modules
+  if (isDeckhand && !isAdmin) {
+    activeVesselModules = activeVesselModules.filter(m => deckhandAllowedModules.includes(m));
+    activeBookingModules = []; // Deckhand has no access to bookings
+  }
 
   const vesselNavItems = activeVesselModules.map(m => MODULE_NAV_MAP[m]);
   const bookingNavItems = activeBookingModules.map(m => MODULE_NAV_MAP[m]);
 
-  // Always show Startsida first, Passagerare after logbook, and Qualifications at end for vessel section
-  if (vesselNavItems.length > 0 || isSuperadmin) {
+  // Always show Startsida first for all users
+  if (vesselNavItems.length > 0 || isSuperadmin || isDeckhand) {
     vesselNavItems.unshift({ href: '/portal/startsida', label: 'Startsida', icon: Home });
-    // Add Passagerare link after logbook if logbook module is active
-    if (orgModules?.includes('logbook') || isSuperadmin) {
-      const logbookIndex = vesselNavItems.findIndex(item => item.href === '/portal/logbooks');
-      if (logbookIndex !== -1) {
-        vesselNavItems.splice(logbookIndex + 1, 0, { href: '/portal/passagerare', label: 'Passagerare', icon: UserCheck });
+    
+    // Add Passagerare link for users with logbook module OR deckhand role
+    const hasLogbookAccess = orgModules?.includes('logbook') || isSuperadmin;
+    if (hasLogbookAccess || isDeckhand) {
+      // For deckhand, add after Startsida (index 1)
+      // For others, add after logbook
+      const insertIndex = isDeckhand && !isAdmin 
+        ? 1 
+        : vesselNavItems.findIndex(item => item.href === '/portal/logbooks') + 1;
+      
+      if (insertIndex > 0 || (isDeckhand && !isAdmin)) {
+        vesselNavItems.splice(
+          isDeckhand && !isAdmin ? 1 : insertIndex, 
+          0, 
+          { href: '/portal/passagerare', label: 'Passagerare', icon: UserCheck }
+        );
       }
     }
-    vesselNavItems.push({ href: '/portal/qualifications', label: 'Certifikat', icon: Award });
+    
+    // Only add Certifikat for non-deckhand users
+    if (!isDeckhand || isAdmin) {
+      vesselNavItems.push({ href: '/portal/qualifications', label: 'Certifikat', icon: Award });
+    }
   }
 
   // Base admin items always shown
