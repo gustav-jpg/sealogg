@@ -2330,6 +2330,7 @@ export type Database = {
           full_name: string
           id: string
           is_external: boolean
+          must_change_password: boolean
           organization_id: string | null
           preferred_vessel_id: string | null
           updated_at: string
@@ -2341,6 +2342,7 @@ export type Database = {
           full_name: string
           id?: string
           is_external?: boolean
+          must_change_password?: boolean
           organization_id?: string | null
           preferred_vessel_id?: string | null
           updated_at?: string
@@ -2352,6 +2354,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_external?: boolean
+          must_change_password?: boolean
           organization_id?: string | null
           preferred_vessel_id?: string | null
           updated_at?: string

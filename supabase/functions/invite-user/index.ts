@@ -66,7 +66,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { email, fullName, organizationId, role } = await req.json();
+    const { email, fullName, organizationId, role, initialPassword } = await req.json();
 
     if (!email || !fullName || !organizationId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -119,12 +119,14 @@ serve(async (req) => {
       }
     } else {
       isNewUser = true;
-      // Create new user with a temporary password
-      const tempPassword = crypto.randomUUID();
+      
+      // Use admin-provided password or generate temporary one
+      const useInitialPassword = initialPassword && initialPassword.length >= 6;
+      const passwordToUse = useInitialPassword ? initialPassword : crypto.randomUUID();
       
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password: tempPassword,
+        password: passwordToUse,
         email_confirm: true,
         user_metadata: { full_name: fullName },
       });
@@ -139,6 +141,7 @@ serve(async (req) => {
       userId = newUser.user.id;
 
       // Upsert profile for new user (required)
+      // If admin set password, flag must_change_password
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .upsert(
@@ -148,6 +151,7 @@ serve(async (req) => {
             email: email,
             is_external: false,
             organization_id: organizationId,
+            must_change_password: useInitialPassword,
           },
           { onConflict: 'user_id' }
         );
@@ -172,7 +176,10 @@ serve(async (req) => {
         },
       });
 
-      if (linkError) {
+      // Skip email if admin set a password - user will login directly
+      if (useInitialPassword) {
+        console.log("Admin set password, skipping welcome email");
+      } else if (linkError) {
         console.error("Failed to generate reset link:", linkError);
         return new Response(JSON.stringify({
           error: "Failed to generate password setup link",

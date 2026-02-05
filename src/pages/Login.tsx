@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import sealoggLogo from '@/assets/sealog-logo.png';
+import ForcePasswordChangeDialog from '@/components/ForcePasswordChangeDialog';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,13 +19,21 @@ export default function Login() {
   const [resetEmail, setResetEmail] = useState('');
   const [isResetLoading, setIsResetLoading] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const { signIn } = useAuth();
+  const [showForcePasswordChange, setShowForcePasswordChange] = useState(false);
+  const { signIn, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   // Get the redirect URL from state (set by ProtectedRoute)
   const from = (location.state as { from?: string })?.from || '/portal';
+
+  // Check if user needs to change password after profile loads
+  useEffect(() => {
+    if ((profile as any)?.must_change_password) {
+      setShowForcePasswordChange(true);
+    }
+  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,12 +47,35 @@ export default function Login() {
         title: 'Inloggning misslyckades',
         description: 'Kontrollera e-post och lösenord.',
       });
-    } else {
-      // Navigate to the original destination after login
-      navigate(from, { replace: true });
+      setIsLoading(false);
+      return;
     }
 
+    // Check if user needs to change password
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('must_change_password')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (userProfile?.must_change_password) {
+        setShowForcePasswordChange(true);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Navigate to the original destination after login
+    navigate(from, { replace: true });
     setIsLoading(false);
+  };
+
+  const handlePasswordChanged = async () => {
+    setShowForcePasswordChange(false);
+    await refreshProfile();
+    navigate(from, { replace: true });
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -161,6 +193,11 @@ export default function Login() {
           </CardFooter>
         </form>
       </Card>
+      
+      <ForcePasswordChangeDialog 
+        open={showForcePasswordChange} 
+        onPasswordChanged={handlePasswordChanged}
+      />
     </div>
   );
 }

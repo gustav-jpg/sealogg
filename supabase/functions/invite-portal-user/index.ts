@@ -55,7 +55,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { email, fullName, role, organizationId } = await req.json();
+    const { email, fullName, role, organizationId, initialPassword } = await req.json();
 
     if (!email || !fullName || !role || !organizationId) {
       return new Response(JSON.stringify({ error: "Missing required fields: email, fullName, role, organizationId" }), {
@@ -98,12 +98,13 @@ serve(async (req) => {
         });
       }
     } else {
-      // Create new user with a temporary password
-      const tempPassword = crypto.randomUUID();
+      // Create new user - use admin-provided password or generate temporary one
+      const useInitialPassword = initialPassword && initialPassword.length >= 6;
+      const passwordToUse = useInitialPassword ? initialPassword : crypto.randomUUID();
       
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password: tempPassword,
+        password: passwordToUse,
         email_confirm: true,
         user_metadata: { full_name: fullName },
       });
@@ -120,7 +121,7 @@ serve(async (req) => {
       console.log("New user created with ID:", userId);
 
       // Ensure the user's profile exists immediately so UI never shows "Okänd".
-      // We treat profile creation as REQUIRED for a successful invite.
+      // If admin set password, flag must_change_password
       const { error: initialProfileError } = await supabaseAdmin
         .from('profiles')
         .upsert(
@@ -130,6 +131,7 @@ serve(async (req) => {
             email: email,
             is_external: false,
             organization_id: organizationId,
+            must_change_password: useInitialPassword,
           },
           { onConflict: 'user_id' }
         );
@@ -145,38 +147,42 @@ serve(async (req) => {
         });
       }
 
-      // Generate password reset link
-      console.log("Generating password reset link for:", email);
-      let resetLink: string | null = null;
-      
-      const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email,
-        options: {
-          redirectTo: 'https://sealogg.se/portal/reset-password',
-        },
-      });
-
-      if (resetError) {
-        console.error("Failed to generate reset link:", resetError);
-      } else if (linkData?.properties?.action_link) {
-        resetLink = linkData.properties.action_link;
-        console.log("Reset link generated successfully");
-      }
-      
-      console.log("RESEND_API_KEY available:", !!RESEND_API_KEY);
-      
-      // ALWAYS send welcome email for new users
-      if (RESEND_API_KEY) {
-        const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : 'läsare';
+      // Skip email if admin set a password - user will login directly
+      if (useInitialPassword) {
+        console.log("Admin set password, skipping welcome email");
+      } else {
+        // Generate password reset link
+        console.log("Generating password reset link for:", email);
+        let resetLink: string | null = null;
         
-        // Build email HTML - include reset button only if link was generated
-        const resetButtonHtml = resetLink 
-          ? `<p style="text-align: center; margin: 30px 0;">
-               <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
-             </p>
-             <p><small>Länken är giltig i 24 timmar.</small></p>`
-          : `<p>Kontakta din administratör för att få ett lösenord.</p>`;
+        const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'recovery',
+          email,
+          options: {
+            redirectTo: 'https://sealogg.se/portal/reset-password',
+          },
+        });
+
+        if (resetError) {
+          console.error("Failed to generate reset link:", resetError);
+        } else if (linkData?.properties?.action_link) {
+          resetLink = linkData.properties.action_link;
+          console.log("Reset link generated successfully");
+        }
+        
+        console.log("RESEND_API_KEY available:", !!RESEND_API_KEY);
+        
+        // ALWAYS send welcome email for new users
+        if (RESEND_API_KEY) {
+          const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : 'läsare';
+          
+          // Build email HTML - include reset button only if link was generated
+          const resetButtonHtml = resetLink 
+            ? `<p style="text-align: center; margin: 30px 0;">
+                 <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
+               </p>
+               <p><small>Länken är giltig i 24 timmar.</small></p>`
+            : `<p>Kontakta din administratör för att få ett lösenord.</p>`;
         
         console.log("Sending welcome email to:", email);
         
@@ -252,12 +258,13 @@ serve(async (req) => {
              headers: { ...corsHeaders, "Content-Type": "application/json" },
            });
         }
-      } else {
-        console.error("RESEND_API_KEY is not configured - cannot send welcome email");
-        return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        } else {
+          console.error("RESEND_API_KEY is not configured - cannot send welcome email");
+          return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 

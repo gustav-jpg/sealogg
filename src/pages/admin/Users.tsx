@@ -152,10 +152,10 @@ export default function AdminUsers() {
   });
 
   const invitePortalUserMutation = useMutation({
-    mutationFn: async ({ email, fullName, role }: { email: string; fullName: string; role: AppRole }) => {
+    mutationFn: async ({ email, fullName, role, initialPassword }: { email: string; fullName: string; role: AppRole; initialPassword?: string }) => {
       if (!selectedOrgId) throw new Error('Ingen organisation vald');
       const response = await supabase.functions.invoke('invite-portal-user', {
-        body: { email, fullName, role, organizationId: selectedOrgId },
+        body: { email, fullName, role, organizationId: selectedOrgId, initialPassword },
       });
 
       if (response.error) throw response.error;
@@ -1173,21 +1173,30 @@ function InviteUserDialog({
   onInvite, 
   isLoading 
 }: { 
-  onInvite: (data: { email: string; fullName: string; role: AppRole }) => void;
+  onInvite: (data: { email: string; fullName: string; role: AppRole; initialPassword?: string }) => void;
   isLoading: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<AppRole>('skeppare');
+  const [setPassword, setSetPassword] = useState(false);
+  const [initialPassword, setInitialPassword] = useState('');
 
   const handleInvite = () => {
     if (email.trim() && fullName.trim()) {
-      onInvite({ email: email.trim(), fullName: fullName.trim(), role });
+      onInvite({ 
+        email: email.trim(), 
+        fullName: fullName.trim(), 
+        role,
+        initialPassword: setPassword && initialPassword.length >= 6 ? initialPassword : undefined
+      });
       setOpen(false);
       setEmail('');
       setFullName('');
       setRole('skeppare');
+      setSetPassword(false);
+      setInitialPassword('');
     }
   };
 
@@ -1233,10 +1242,43 @@ function InviteUserDialog({
               </SelectContent>
             </Select>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Användaren får ett e-postmeddelande för att sätta lösenord och kan sedan logga in.
-          </p>
-          <Button onClick={handleInvite} disabled={!email.trim() || !fullName.trim() || isLoading} className="w-full">
+          
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center gap-2">
+              <input 
+                type="checkbox" 
+                id="set-password" 
+                checked={setPassword} 
+                onChange={(e) => setSetPassword(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="set-password" className="cursor-pointer">Ange lösenord själv</Label>
+            </div>
+            {setPassword && (
+              <div className="space-y-2">
+                <Input 
+                  type="password"
+                  value={initialPassword} 
+                  onChange={e => setInitialPassword(e.target.value)} 
+                  placeholder="Minst 6 tecken"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Användaren uppmanas byta lösenord vid första inloggningen.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {!setPassword && (
+            <p className="text-sm text-muted-foreground">
+              Användaren får ett e-postmeddelande för att sätta lösenord och kan sedan logga in.
+            </p>
+          )}
+          <Button 
+            onClick={handleInvite} 
+            disabled={!email.trim() || !fullName.trim() || isLoading || (setPassword && initialPassword.length < 6)} 
+            className="w-full"
+          >
             {isLoading ? 'Bjuder in...' : 'Bjud in'}
           </Button>
         </div>
