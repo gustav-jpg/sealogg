@@ -28,7 +28,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ChecklistQRCode } from '@/components/ChecklistQRCode';
-import { Plus, Edit, Trash2, ClipboardList, Calendar, List, GripVertical, ChevronDown, ChevronUp, QrCode } from 'lucide-react';
+import { Plus, Edit, Trash2, ClipboardList, Calendar, List, GripVertical, ChevronDown, ChevronUp, QrCode, Image, X } from 'lucide-react';
+import { sanitizeStorageFileName } from '@/lib/storage';
 
 interface ChecklistStep {
   id?: string;
@@ -39,6 +40,9 @@ interface ChecklistStep {
   confirmation_type: 'checkbox' | 'yes_no';
   requires_comment: boolean;
   requires_photo: boolean;
+  reference_image_url?: string | null;
+  reference_image_file?: File | null;
+  reference_image_preview?: string | null;
 }
 
 export default function ChecklistTemplates() {
@@ -169,17 +173,38 @@ export default function ChecklistTemplates() {
         await supabase.from('checklist_template_vessels').insert(associations);
       }
 
-      // Add steps
+      // Add steps with reference images
       if (steps.length > 0) {
-        const stepsToInsert = steps.map((step, index) => ({
-          checklist_template_id: template.id,
-          step_order: index + 1,
-          title: step.title,
-          instruction: step.instruction,
-          help_text: step.help_text || null,
-          confirmation_type: step.confirmation_type,
-          requires_comment: step.requires_comment,
-          requires_photo: step.requires_photo,
+        const stepsToInsert = await Promise.all(steps.map(async (step, index) => {
+          let referenceImageUrl = step.reference_image_url || null;
+          
+          // Upload reference image if provided
+          if (step.reference_image_file) {
+            const fileName = sanitizeStorageFileName(step.reference_image_file.name);
+            const filePath = `reference-images/${template.id}/${index + 1}-${Date.now()}-${fileName}`;
+            const { error: uploadError } = await supabase.storage
+              .from('checklist-photos')
+              .upload(filePath, step.reference_image_file);
+            
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage
+                .from('checklist-photos')
+                .getPublicUrl(filePath);
+              referenceImageUrl = urlData.publicUrl;
+            }
+          }
+          
+          return {
+            checklist_template_id: template.id,
+            step_order: index + 1,
+            title: step.title,
+            instruction: step.instruction,
+            help_text: step.help_text || null,
+            confirmation_type: step.confirmation_type,
+            requires_comment: step.requires_comment,
+            requires_photo: step.requires_photo,
+            reference_image_url: referenceImageUrl,
+          };
         }));
         await supabase.from('checklist_steps').insert(stepsToInsert);
       }
@@ -237,15 +262,36 @@ export default function ChecklistTemplates() {
         .eq('checklist_template_id', editingTemplate.id);
 
       if (steps.length > 0) {
-        const stepsToInsert = steps.map((step, index) => ({
-          checklist_template_id: editingTemplate.id,
-          step_order: index + 1,
-          title: step.title,
-          instruction: step.instruction,
-          help_text: step.help_text || null,
-          confirmation_type: step.confirmation_type,
-          requires_comment: step.requires_comment,
-          requires_photo: step.requires_photo,
+        const stepsToInsert = await Promise.all(steps.map(async (step, index) => {
+          let referenceImageUrl = step.reference_image_url || null;
+          
+          // Upload reference image if new file provided
+          if (step.reference_image_file) {
+            const fileName = sanitizeStorageFileName(step.reference_image_file.name);
+            const filePath = `reference-images/${editingTemplate.id}/${index + 1}-${Date.now()}-${fileName}`;
+            const { error: uploadError } = await supabase.storage
+              .from('checklist-photos')
+              .upload(filePath, step.reference_image_file);
+            
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage
+                .from('checklist-photos')
+                .getPublicUrl(filePath);
+              referenceImageUrl = urlData.publicUrl;
+            }
+          }
+          
+          return {
+            checklist_template_id: editingTemplate.id,
+            step_order: index + 1,
+            title: step.title,
+            instruction: step.instruction,
+            help_text: step.help_text || null,
+            confirmation_type: step.confirmation_type,
+            requires_comment: step.requires_comment,
+            requires_photo: step.requires_photo,
+            reference_image_url: referenceImageUrl,
+          };
         }));
         await supabase.from('checklist_steps').insert(stepsToInsert);
       }
@@ -309,6 +355,9 @@ export default function ChecklistTemplates() {
       confirmation_type: s.confirmation_type as 'checkbox' | 'yes_no',
       requires_comment: s.requires_comment,
       requires_photo: s.requires_photo,
+      reference_image_url: s.reference_image_url || null,
+      reference_image_file: null,
+      reference_image_preview: s.reference_image_url || null,
     })));
   };
 
@@ -329,6 +378,9 @@ export default function ChecklistTemplates() {
       confirmation_type: 'checkbox',
       requires_comment: false,
       requires_photo: false,
+      reference_image_url: null,
+      reference_image_file: null,
+      reference_image_preview: null,
     }]);
   };
 
@@ -496,6 +548,66 @@ export default function ChecklistTemplates() {
                           />
                           <span className="text-sm">Foto krävs</span>
                         </label>
+                      </div>
+                      
+                      {/* Reference image upload */}
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Image className="h-3.5 w-3.5" />
+                          Referensbild (valfritt)
+                        </Label>
+                        {step.reference_image_preview ? (
+                          <div className="relative">
+                            <img 
+                              src={step.reference_image_preview} 
+                              alt="Referensbild" 
+                              className="w-full max-h-32 object-cover rounded-lg border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 right-2 h-6 w-6"
+                              onClick={() => updateStep(index, { 
+                                reference_image_url: null, 
+                                reference_image_file: null, 
+                                reference_image_preview: null 
+                              })}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id={`ref-image-${index}`}
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  updateStep(index, { 
+                                    reference_image_file: file,
+                                    reference_image_preview: URL.createObjectURL(file)
+                                  });
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => document.getElementById(`ref-image-${index}`)?.click()}
+                            >
+                              <Image className="h-4 w-4 mr-1" />
+                              Lägg till referensbild
+                            </Button>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Visar hur kontrollen ska se ut vid utförandet
+                        </p>
                       </div>
                     </div>
                     <Button type="button" variant="ghost" size="icon" onClick={() => removeStep(index)}>
