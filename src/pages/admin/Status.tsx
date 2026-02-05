@@ -61,39 +61,77 @@ export default function AdminStatus() {
     enabled: vesselIds.length > 0,
   });
 
+  // Fetch current engine hours for all vessels
+  const { data: engineHours } = useQuery({
+    queryKey: ['status-engine-hours', vesselIds],
+    queryFn: async () => {
+      if (vesselIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('vessel_engine_hours')
+        .select('*')
+        .in('vessel_id', vesselIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: vesselIds.length > 0,
+  });
+
   // Fetch control point states - scoped to org vessels
-  // Calculate status dynamically based on next_due_date
+  // Calculate status dynamically based on next_due_date or engine hours
   const { data: controlStates } = useQuery({
-    queryKey: ['status-control-states', vesselIds],
+    queryKey: ['status-control-states', vesselIds, engineHours],
     queryFn: async () => {
       if (vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('vessel_control_point_state')
         .select(`*, control_point:control_points(name, type), vessel:vessels(name)`)
         .in('vessel_id', vesselIds)
-        .not('next_due_date', 'is', null)
-        .lte('next_due_date', cutoffDate.toISOString().split('T')[0])
-        .order('next_due_date', { ascending: true });
+        .order('next_due_date', { ascending: true, nullsFirst: false });
       if (error) throw error;
       
-      // Calculate dynamic status based on dates
+      // Calculate dynamic status based on dates or engine hours
       return data?.map(s => {
-        const dueDate = new Date(s.next_due_date);
-        const daysUntil = differenceInDays(dueDate, today);
-        let dynamicStatus: string;
+        let dynamicStatus: string = 'ok';
+        let daysOrHoursInfo: string | null = null;
         
-        if (daysUntil < 0) {
-          dynamicStatus = 'forfallen';
-        } else if (daysUntil <= 30) {
-          dynamicStatus = 'kommande';
-        } else {
-          dynamicStatus = 'ok';
+        if (s.next_due_date) {
+          // Calendar-based control
+          const dueDate = new Date(s.next_due_date);
+          const daysUntil = differenceInDays(dueDate, today);
+          
+          if (daysUntil < 0) {
+            dynamicStatus = 'forfallen';
+            daysOrHoursInfo = `${Math.abs(daysUntil)} dagar sedan`;
+          } else if (daysUntil <= 30) {
+            dynamicStatus = 'kommande';
+            daysOrHoursInfo = daysUntil === 0 ? 'Idag' : daysUntil === 1 ? 'Imorgon' : `${daysUntil} dagar`;
+          } else if (daysUntil <= 60) {
+            dynamicStatus = 'kommande';
+            daysOrHoursInfo = `${daysUntil} dagar`;
+          }
+        } else if (s.next_due_at_engine_hours && s.engine_id) {
+          // Engine hours-based control
+          const currentEngine = engineHours?.find(e => e.id === s.engine_id);
+          if (currentEngine?.current_hours) {
+            const hoursRemaining = s.next_due_at_engine_hours - currentEngine.current_hours;
+            
+            if (hoursRemaining < 0) {
+              dynamicStatus = 'forfallen';
+              daysOrHoursInfo = `${Math.abs(hoursRemaining)} h sedan`;
+            } else if (hoursRemaining <= 50) {
+              dynamicStatus = 'kommande';
+              daysOrHoursInfo = `${hoursRemaining} h kvar`;
+            } else if (hoursRemaining <= 100) {
+              dynamicStatus = 'kommande';
+              daysOrHoursInfo = `${hoursRemaining} h kvar`;
+            }
+          }
         }
         
-        return { ...s, dynamicStatus };
+        return { ...s, dynamicStatus, daysOrHoursInfo };
       }).filter(s => s.dynamicStatus !== 'ok');
     },
-    enabled: vesselIds.length > 0,
+    enabled: vesselIds.length > 0 && engineHours !== undefined,
   });
 
   // Fetch vessel certificates - scoped to org vessels (including expired)
@@ -307,15 +345,18 @@ export default function AdminStatus() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{(cs as any).control_point?.name}</p>
-                        <p className="text-sm text-muted-foreground">{(cs as any).vessel?.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(cs as any).vessel?.name}
+                          {(cs as any).control_point?.type === 'engine_hours' && ' • Maskintimmar'}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={(cs as any).dynamicStatus === 'forfallen' ? 'destructive' : 'default'}>
                           {CONTROL_STATUS_LABELS[(cs as any).dynamicStatus] || (cs as any).dynamicStatus}
                         </Badge>
-                        {cs.next_due_date && (cs as any).dynamicStatus !== 'forfallen' && (
-                          <Badge variant={getUrgencyBadge(cs.next_due_date)}>
-                            {getDaysUntil(cs.next_due_date)}
+                        {(cs as any).daysOrHoursInfo && (
+                          <Badge variant={(cs as any).dynamicStatus === 'forfallen' ? 'destructive' : 'secondary'}>
+                            {(cs as any).daysOrHoursInfo}
                           </Badge>
                         )}
                       </div>
