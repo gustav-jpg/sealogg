@@ -33,7 +33,7 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Wrench, Plus, Filter, Archive, Printer, Pencil, X, ImageIcon } from 'lucide-react';
+import { Wrench, Plus, Filter, Archive, Printer, Pencil, X, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrint } from '@/hooks/usePrint';
@@ -52,6 +52,8 @@ export default function FaultCases() {
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 25;
 
   // Form state
   const [vesselId, setVesselId] = useState('');
@@ -90,6 +92,7 @@ export default function FaultCases() {
       filterPriority,
       searchText,
       activeTab,
+      page,
     ],
     enabled: !!selectedOrgId,
     queryFn: async () => {
@@ -102,7 +105,8 @@ export default function FaultCases() {
         .from('fault_cases')
         .select(`*, vessel:vessels(*)`)
         .in('vessel_id', vesselIds)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
       // Filter by active/archive tab
       if (activeTab === 'active') {
@@ -121,6 +125,55 @@ export default function FaultCases() {
       return data;
     },
   });
+
+  // Get total count for pagination
+  const { data: totalCount } = useQuery({
+    queryKey: [
+      'fault-cases-count',
+      selectedOrgId,
+      vesselIds,
+      filterVessel,
+      filterStatus,
+      filterPriority,
+      searchText,
+      activeTab,
+    ],
+    enabled: !!selectedOrgId && vesselIds.length > 0,
+    queryFn: async () => {
+      let query = supabase
+        .from('fault_cases')
+        .select('id', { count: 'exact', head: true })
+        .in('vessel_id', vesselIds);
+
+      if (activeTab === 'active') {
+        query = query.neq('status', 'avslutad');
+      } else {
+        query = query.eq('status', 'avslutad');
+      }
+
+      if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);
+      if (filterStatus !== 'all') query = query.eq('status', filterStatus as FaultStatus);
+      if (filterPriority !== 'all') query = query.eq('priority', filterPriority as FaultPriority);
+      if (searchText) query = query.or(`title.ilike.%${searchText}%,description.ilike.%${searchText}%`);
+
+      const { count, error } = await query;
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const totalPages = Math.ceil((totalCount || 0) / PAGE_SIZE);
+
+  // Reset page when filters change
+  const handleTabChange = (v: string) => {
+    setActiveTab(v as 'active' | 'archive');
+    setPage(0);
+  };
+
+  const handleFilterChange = (setter: (v: string) => void) => (v: string) => {
+    setter(v);
+    setPage(0);
+  };
 
   const createFaultCase = useMutation({
     mutationFn: async () => {
@@ -463,7 +516,7 @@ export default function FaultCases() {
         </div>
 
         {/* Tabs for active/archive */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'archive')}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList>
             <TabsTrigger value="active" className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
@@ -486,7 +539,7 @@ export default function FaultCases() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-4">
-              <Select value={filterVessel} onValueChange={setFilterVessel}>
+              <Select value={filterVessel} onValueChange={handleFilterChange(setFilterVessel)}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Alla fartyg" />
                 </SelectTrigger>
@@ -499,7 +552,7 @@ export default function FaultCases() {
               </Select>
 
               {activeTab === 'active' && (
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <Select value={filterStatus} onValueChange={handleFilterChange(setFilterStatus)}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Alla statusar" />
                   </SelectTrigger>
@@ -514,7 +567,7 @@ export default function FaultCases() {
                 </Select>
               )}
 
-              <Select value={filterPriority} onValueChange={setFilterPriority}>
+              <Select value={filterPriority} onValueChange={handleFilterChange(setFilterPriority)}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Alla prioriteter" />
                 </SelectTrigger>
@@ -529,7 +582,7 @@ export default function FaultCases() {
               <Input
                 placeholder="Sök..."
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+                onChange={(e) => { setSearchText(e.target.value); setPage(0); }}
                 className="h-9"
               />
             </div>
@@ -620,6 +673,35 @@ export default function FaultCases() {
                   ))}
                 </tbody>
               </table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Visar {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount || 0)} av {totalCount} ärenden
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Föregående</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => p + 1)}
+                      disabled={page >= totalPages - 1}
+                    >
+                      <span className="hidden sm:inline">Nästa</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
