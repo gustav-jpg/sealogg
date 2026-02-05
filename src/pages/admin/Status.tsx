@@ -272,7 +272,7 @@ export default function AdminStatus() {
                         <Badge variant={cs.status === 'forfallen' ? 'destructive' : 'default'}>
                           {CONTROL_STATUS_LABELS[cs.status]}
                         </Badge>
-                        {cs.next_due_date && (
+                        {cs.next_due_date && cs.status !== 'forfallen' && (
                           <Badge variant={getUrgencyBadge(cs.next_due_date)}>
                             {getDaysUntil(cs.next_due_date)}
                           </Badge>
