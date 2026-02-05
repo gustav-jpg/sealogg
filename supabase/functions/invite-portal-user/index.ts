@@ -65,7 +65,7 @@ serve(async (req) => {
     }
 
     // Validate role
-    const validRoles = ['admin', 'skeppare', 'readonly'];
+    const validRoles = ['admin', 'skeppare', 'deckhand', 'readonly'];
     if (!validRoles.includes(role)) {
       return new Response(JSON.stringify({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` }), {
         status: 400,
@@ -174,7 +174,7 @@ serve(async (req) => {
         
         // ALWAYS send welcome email for new users
         if (RESEND_API_KEY) {
-          const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : 'läsare';
+          const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : role === 'deckhand' ? 'däcksman' : 'läsare';
           
           // Build email HTML - include reset button only if link was generated
           const resetButtonHtml = resetLink 
@@ -283,13 +283,16 @@ serve(async (req) => {
       });
     }
 
-    // Add user to the specific organization
+    // Add user to the specific organization with appropriate org role
+    // Map app_role to org_role: admin->org_admin, skeppare->org_user, deckhand->deckhand, readonly->org_user
+    const orgRole = role === 'admin' ? 'org_admin' : role === 'deckhand' ? 'deckhand' : 'org_user';
+    
     const { error: orgError } = await supabaseAdmin
       .from('organization_members')
       .insert({
         organization_id: organizationId,
         user_id: userId,
-        role: 'org_user',
+        role: orgRole,
       });
     
     if (orgError && !orgError.message.includes('duplicate')) {

@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   isSkeppare: boolean;
+  isDeckhand: boolean;
   canEdit: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -126,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isAdmin = roles.includes('admin');
   const isSkeppare = roles.includes('skeppare');
+  const isDeckhand = roles.includes('deckhand');
   const canEdit = isAdmin || isSkeppare;
 
   return (
@@ -138,6 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAdmin,
         isSkeppare,
+        isDeckhand,
         canEdit,
         signIn,
         signUp,

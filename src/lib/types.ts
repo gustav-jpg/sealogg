@@ -1,5 +1,5 @@
 // Enums matching database
-export type AppRole = 'admin' | 'skeppare' | 'readonly';
+export type AppRole = 'admin' | 'skeppare' | 'deckhand' | 'readonly';
 export type CrewRole = 'befalhavare' | 'styrman' | 'matros' | 'jungman' | 'restaurangpersonal';
 export type LogbookStatus = 'oppen' | 'stangd';
 export type DeviationType = 'incident' | 'tillbud' | 'avvikelse' | 'ovrigt';
@@ -22,6 +22,7 @@ export const CREW_ROLE_LABELS: Record<CrewRole, string> = {
 export const APP_ROLE_LABELS: Record<AppRole, string> = {
   admin: 'Administratör',
   skeppare: 'Skeppare',
+  deckhand: 'Däcksman',
   readonly: 'Läsbehörighet',
 };
 
