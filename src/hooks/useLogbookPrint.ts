@@ -283,13 +283,72 @@ export function useLogbookPrint() {
       `;
     }
 
-    // Notes section
+    // Parse quick entries (bunkring, färskvatten, septik) from notes
+    let quickEntriesHtml = '';
+    let remainingNotes = logbook.general_notes || '';
+    
+    const quickEntryPatterns = [
+      { pattern: /^(\d{2}:\d{2})\s*-\s*Bunkrat\s+(\d+)\s*liter\s+vid\s+(\d+)\s*h\s*\(([^)]+)\)$/gm, type: 'bunkring', icon: '⛽' },
+      { pattern: /^(\d{2}:\d{2})\s*-\s*Färskvatten:\s*(.+)$/gm, type: 'farskvatten', icon: '💧' },
+      { pattern: /^(\d{2}:\d{2})\s*-\s*Septik:\s*(.+)$/gm, type: 'septik', icon: '🚽' },
+    ];
+    
+    const parsedEntries: { type: string; icon: string; time: string; text: string }[] = [];
+    
+    for (const { pattern, type, icon } of quickEntryPatterns) {
+      let match;
+      const regex = new RegExp(pattern.source, 'gm');
+      while ((match = regex.exec(logbook.general_notes || '')) !== null) {
+        const time = match[1];
+        let text = '';
+        if (type === 'bunkring') {
+          text = `${match[2]} liter vid ${match[3]} h (${match[4]})`;
+        } else {
+          text = match[2];
+        }
+        parsedEntries.push({ type, icon, time, text });
+        remainingNotes = remainingNotes.replace(match[0], '').trim();
+      }
+    }
+    
+    // Clean up extra newlines from remaining notes
+    remainingNotes = remainingNotes.replace(/\n{3,}/g, '\n\n').trim();
+    
+    if (parsedEntries.length > 0) {
+      const entryRows = parsedEntries.map((e, i) => `
+        <tr class="${i % 2 === 0 ? 'even-row' : ''}">
+          <td class="cell-time">${e.time}</td>
+          <td>
+            <span class="quick-entry-badge ${e.type}">${e.icon} ${e.type === 'bunkring' ? 'Bunkring' : e.type === 'farskvatten' ? 'Färskvatten' : 'Septik'}</span>
+          </td>
+          <td>${e.text}</td>
+        </tr>
+      `).join('');
+      
+      quickEntriesHtml = `
+        <div class="section">
+          <div class="section-title">Bunkring & tankning</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="w-time">Tid</th>
+                <th class="w-type">Typ</th>
+                <th>Detaljer</th>
+              </tr>
+            </thead>
+            <tbody>${entryRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // Notes section (with quick entries removed)
     let notesHtml = '';
-    if (logbook.general_notes) {
+    if (remainingNotes) {
       notesHtml = `
         <div class="section">
           <div class="section-title">Anteckningar</div>
-          <div class="notes-content">${logbook.general_notes}</div>
+          <div class="notes-content">${remainingNotes}</div>
         </div>
       `;
     }
@@ -487,6 +546,18 @@ export function useLogbookPrint() {
             .w-pax { width: 60px; text-align: center; }
             .w-role { width: 120px; }
             .w-hours { width: 70px; text-align: right; }
+            .w-type { width: 100px; }
+            
+            .quick-entry-badge {
+              display: inline-block;
+              padding: 3px 8px;
+              border-radius: 12px;
+              font-size: 10px;
+              font-weight: 600;
+            }
+            .quick-entry-badge.bunkring { background: #fef3c7; color: #92400e; }
+            .quick-entry-badge.farskvatten { background: #dbeafe; color: #1e40af; }
+            .quick-entry-badge.septik { background: #f3e8ff; color: #7c3aed; }
             
             .cell-num { text-align: center; color: #64748b; }
             .cell-time { font-family: monospace; font-size: 11px; }
@@ -622,6 +693,7 @@ export function useLogbookPrint() {
           ${stopsHtml}
           ${crewHtml}
           ${engineHtml}
+          ${quickEntriesHtml}
           ${exercisesHtml}
           ${notesHtml}
           ${signatureHtml}
