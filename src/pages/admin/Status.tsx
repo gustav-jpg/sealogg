@@ -161,44 +161,72 @@ export default function AdminStatus() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-display font-bold">Statusöversikt</h1>
-          <p className="text-muted-foreground mt-1">
-            Kommande ärenden inom 60 dagar • {totalIssues} ärenden kräver uppmärksamhet
-          </p>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-display font-bold">Statusöversikt</h1>
+            <p className="text-muted-foreground mt-1">
+              Kommande ärenden inom 60 dagar • {totalIssues} ärenden kräver uppmärksamhet
+            </p>
+          </div>
         </div>
 
-        {/* Compact Summary Row */}
-        <div className="flex flex-wrap gap-3 items-center p-4 bg-muted/30 rounded-lg border">
-          <div className="flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-destructive" />
-            <span className="font-semibold">{faultCases?.length || 0}</span>
-            <span className="text-sm text-muted-foreground">felärenden</span>
-          </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-orange-500" />
-            <span className="font-semibold">{controlStates?.length || 0}</span>
-            <span className="text-sm text-muted-foreground">egenkontroller</span>
-          </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-2">
-            <Ship className="h-4 w-4 text-primary" />
-            <span className="font-semibold">{vesselCertificates?.length || 0}</span>
-            <span className="text-sm text-muted-foreground">fartygscert.</span>
-          </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-2">
-            <Award className="h-4 w-4 text-blue-500" />
-            <span className="font-semibold">{userCertificates?.length || 0}</span>
-            <span className="text-sm text-muted-foreground">personliga cert.</span>
-          </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-            <span className="font-semibold">{deviations?.length || 0}</span>
-            <span className="text-sm text-muted-foreground">avvikelser</span>
-          </div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <Wrench className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{faultCases?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Felärenden</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <CheckCircle className="h-5 w-5 text-orange-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{controlStates?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Egenkontroller</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Ship className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{vesselCertificates?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Fartygscert.</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Award className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{userCertificates?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Personliga cert.</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-500/10">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{deviations?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Avvikelser</p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
