@@ -1191,7 +1191,7 @@ export default function LogbookDetail() {
                     <Users className="h-5 w-5" />
                     Besättning
                   </span>
-                  {canEditThis && (
+                  {canEditThis && crewMembers && crewMembers.length > 0 && (
                     <Button variant="outline" size="sm" onClick={openCrewDialog}>
                       <Pencil className="h-4 w-4 mr-1" />
                       Redigera
@@ -1230,6 +1230,12 @@ export default function LogbookDetail() {
                     <Gauge className="h-5 w-5" />
                     Maskintimmar
                   </span>
+                  {canEditThis && editableEngineHours.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={initializeEngineHoursFromVessel}>
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Redigera
+                    </Button>
+                  )}
                   {canEditThis && editableEngineHours.length === 0 && vesselEngineHours && vesselEngineHours.length > 0 && (
                     <Button variant="outline" size="sm" onClick={initializeEngineHoursFromVessel}>
                       <Plus className="h-4 w-4 mr-1" />
