@@ -599,25 +599,25 @@ export default function SelfControl() {
                                         {cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining < 0 && (
                                           <Badge variant="destructive" className="gap-1 text-xs">
                                             <AlertTriangle className="h-3 w-3" />
-                                            -{Math.abs(cp.daysRemaining)}d
+                                            <span className="hidden sm:inline">Försenad </span>{Math.abs(cp.daysRemaining)}<span className="hidden sm:inline"> dagar</span><span className="sm:hidden">d</span>
                                           </Badge>
                                         )}
                                         {cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining < 0 && (
                                           <Badge variant="destructive" className="gap-1 text-xs">
                                             <AlertTriangle className="h-3 w-3" />
-                                            -{Math.abs(cp.hoursRemaining)}h
+                                            <span className="hidden sm:inline">Försenad </span>{Math.abs(cp.hoursRemaining)}<span className="hidden sm:inline"> timmar</span><span className="sm:hidden">h</span>
                                           </Badge>
                                         )}
                                         {cp.nextDue !== 'Ej utförd' && cp.daysRemaining !== null && cp.daysRemaining >= 0 && (
                                           <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30 text-xs">
                                             <Clock className="h-3 w-3" />
-                                            {cp.daysRemaining}d
+                                            <span className="hidden sm:inline">Utför inom </span>{cp.daysRemaining}<span className="hidden sm:inline"> dagar</span><span className="sm:hidden">d</span>
                                           </Badge>
                                         )}
                                         {cp.nextDue !== 'Ej utförd' && cp.hoursRemaining !== null && cp.hoursRemaining >= 0 && (
                                           <Badge className="gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30 text-xs">
                                             <Clock className="h-3 w-3" />
-                                            {cp.hoursRemaining}h
+                                            <span className="hidden sm:inline">Utför inom </span>{cp.hoursRemaining}<span className="hidden sm:inline"> timmar</span><span className="sm:hidden">h</span>
                                           </Badge>
                                         )}
                                       </div>
