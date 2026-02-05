@@ -20,9 +20,11 @@ import { format } from 'date-fns';
 import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminUsers() {
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const { selectedOrgId } = useOrganization();
   const queryClient = useQueryClient();
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -518,13 +520,15 @@ export default function AdminUsers() {
               <p className="text-muted-foreground">
                 {profiles?.length || 0} personer registrerade
               </p>
-              <div className="flex gap-2">
-                <InviteUserDialog 
-                  onInvite={(data) => invitePortalUserMutation.mutate(data)} 
-                  isLoading={invitePortalUserMutation.isPending}
-                />
-                <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
-              </div>
+              {isAdmin && (
+                <div className="flex gap-2">
+                  <InviteUserDialog 
+                    onInvite={(data) => invitePortalUserMutation.mutate(data)} 
+                    isLoading={invitePortalUserMutation.isPending}
+                  />
+                  <AddExternalUserDialog onAdd={(name) => addExternalUser.mutate({ fullName: name })} />
+                </div>
+              )}
             </div>
 
             {/* Search and filters */}
@@ -675,7 +679,7 @@ export default function AdminUsers() {
                 </DialogHeader>
 
                 <div className="flex gap-2 mt-2">
-                  {isExternalUser && (
+                  {isAdmin && isExternalUser && (
                     <LinkEmailDialog 
                       profileId={selectedProfile.id}
                       profileName={selectedProfile.full_name}
@@ -683,25 +687,27 @@ export default function AdminUsers() {
                       isLoading={linkEmailMutation.isPending}
                     />
                   )}
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setDeleteConfirm({ 
-                      open: true, 
-                      type: 'user', 
-                      id: selectedProfile.id, 
-                      name: selectedProfile.full_name 
-                    })}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Ta bort
-                  </Button>
+                  {isAdmin && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeleteConfirm({ 
+                        open: true, 
+                        type: 'user', 
+                        id: selectedProfile.id, 
+                        name: selectedProfile.full_name 
+                      })}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Ta bort
+                    </Button>
+                  )}
                 </div>
 
-                <Tabs defaultValue={isExternalUser ? "certificates" : "roles"} className="mt-4">
+                <Tabs defaultValue={isExternalUser || !isAdmin ? "certificates" : "roles"} className="mt-4">
                   <TabsList className="w-full justify-start">
-                    {!isExternalUser && (
+                    {!isExternalUser && isAdmin && (
                       <TabsTrigger value="roles">
                         <Shield className="h-4 w-4 mr-1" />
                         Roller
@@ -715,13 +721,15 @@ export default function AdminUsers() {
                       <Ship className="h-4 w-4 mr-1" />
                       Inskolningar
                     </TabsTrigger>
-                    <TabsTrigger value="settings">
-                      <Settings className="h-4 w-4 mr-1" />
-                      Övrigt
-                    </TabsTrigger>
+                    {isAdmin && (
+                      <TabsTrigger value="settings">
+                        <Settings className="h-4 w-4 mr-1" />
+                        Övrigt
+                      </TabsTrigger>
+                    )}
                   </TabsList>
 
-                  {!isExternalUser && (
+                  {!isExternalUser && isAdmin && (
                     <TabsContent value="roles" className="space-y-4 mt-4">
                       <div className="flex gap-2 flex-wrap">
                         {selectedUserRoles.map(role => (
@@ -833,35 +841,37 @@ export default function AdminUsers() {
                     />
                   </TabsContent>
 
-                  <TabsContent value="settings" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="preferred-vessel">Föredragen båt för sjödagar</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Används vid rapportering till Transportstyrelsen om personen arbetat på flera båtar samma dag.
-                        </p>
-                        <Select 
-                          value={selectedProfile.preferred_vessel_id || 'none'} 
-                          onValueChange={(v) => updatePreferredVessel.mutate({ 
-                            profileId: selectedProfile.id, 
-                            vesselId: v === 'none' ? null : v 
-                          })}
-                        >
-                          <SelectTrigger className="w-64">
-                            <SelectValue placeholder="Välj båt" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Ingen föredragen båt</SelectItem>
-                            {vessels?.map(vessel => (
-                              <SelectItem key={vessel.id} value={vessel.id}>
-                                {vessel.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                  {isAdmin && (
+                    <TabsContent value="settings" className="space-y-4 mt-4">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="preferred-vessel">Föredragen båt för sjödagar</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Används vid rapportering till Transportstyrelsen om personen arbetat på flera båtar samma dag.
+                          </p>
+                          <Select 
+                            value={selectedProfile.preferred_vessel_id || 'none'} 
+                            onValueChange={(v) => updatePreferredVessel.mutate({ 
+                              profileId: selectedProfile.id, 
+                              vesselId: v === 'none' ? null : v 
+                            })}
+                          >
+                            <SelectTrigger className="w-64">
+                              <SelectValue placeholder="Välj båt" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Ingen föredragen båt</SelectItem>
+                              {vessels?.map(vessel => (
+                                <SelectItem key={vessel.id} value={vessel.id}>
+                                  {vessel.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                    </div>
-                  </TabsContent>
+                    </TabsContent>
+                  )}
                 </Tabs>
               </>
             )}
