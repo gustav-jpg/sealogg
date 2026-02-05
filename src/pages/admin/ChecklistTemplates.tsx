@@ -171,44 +171,56 @@ export default function ChecklistTemplates() {
           checklist_template_id: template.id,
           vessel_id: vesselId,
         }));
-        await supabase.from('checklist_template_vessels').insert(associations);
+        const { error: assocError } = await supabase
+          .from('checklist_template_vessels')
+          .insert(associations);
+        if (assocError) throw assocError;
       }
 
       // Add steps with reference images
       if (steps.length > 0) {
-        const stepsToInsert = await Promise.all(steps.map(async (step, index) => {
-          let referenceImageUrl = step.reference_image_url || null;
-          
-          // Upload reference image if provided
-          if (step.reference_image_file) {
-            const fileName = sanitizeStorageFileName(step.reference_image_file.name);
-            const filePath = `reference-images/${template.id}/${index + 1}-${Date.now()}-${fileName}`;
-            const { error: uploadError } = await supabase.storage
-              .from('checklist-photos')
-              .upload(filePath, step.reference_image_file);
-            
-            if (!uploadError) {
+        const stepsToInsert = await Promise.all(
+          steps.map(async (step, index) => {
+            let referenceImageUrl = step.reference_image_url || null;
+
+            // Upload reference image if provided
+            if (step.reference_image_file) {
+              const fileName = sanitizeStorageFileName(step.reference_image_file.name);
+              const filePath = `reference-images/${template.id}/${index + 1}-${Date.now()}-${fileName}`;
+              const { error: uploadError } = await supabase.storage
+                .from('checklist-photos')
+                .upload(filePath, step.reference_image_file);
+
+              if (uploadError) throw uploadError;
+
               const { data: urlData } = supabase.storage
                 .from('checklist-photos')
                 .getPublicUrl(filePath);
               referenceImageUrl = urlData.publicUrl;
             }
-          }
-          
-          return {
-            checklist_template_id: template.id,
-            step_order: index + 1,
-            title: step.title,
-            instruction: step.instruction,
-            help_text: step.help_text || null,
-            confirmation_type: step.confirmation_type,
-            requires_comment: step.requires_comment,
-            requires_photo: step.requires_photo,
-            reference_image_url: referenceImageUrl,
-            checklist_items: step.confirmation_type === 'checklist' && step.checklist_items?.length ? step.checklist_items : null,
-          };
-        }));
-        await supabase.from('checklist_steps').insert(stepsToInsert);
+
+            return {
+              checklist_template_id: template.id,
+              step_order: index + 1,
+              title: step.title,
+              instruction: step.instruction,
+              help_text: step.help_text || null,
+              confirmation_type: step.confirmation_type,
+              requires_comment: step.requires_comment,
+              requires_photo: step.requires_photo,
+              reference_image_url: referenceImageUrl,
+              checklist_items:
+                step.confirmation_type === 'checklist' && step.checklist_items?.length
+                  ? step.checklist_items
+                  : null,
+            };
+          })
+        );
+
+        const { error: stepsError } = await supabase
+          .from('checklist_steps')
+          .insert(stepsToInsert);
+        if (stepsError) throw stepsError;
       }
 
       return template;
@@ -244,59 +256,77 @@ export default function ChecklistTemplates() {
       if (error) throw error;
 
       // Update vessel associations
-      await supabase
-        .from('checklist_template_vessels')
-        .delete()
-        .eq('checklist_template_id', editingTemplate.id);
+      {
+        const { error: delAssocError } = await supabase
+          .from('checklist_template_vessels')
+          .delete()
+          .eq('checklist_template_id', editingTemplate.id);
+        if (delAssocError) throw delAssocError;
+      }
 
       if (!appliesToAll && selectedVessels.length > 0) {
         const associations = selectedVessels.map((vesselId) => ({
           checklist_template_id: editingTemplate.id,
           vessel_id: vesselId,
         }));
-        await supabase.from('checklist_template_vessels').insert(associations);
+        const { error: assocError } = await supabase
+          .from('checklist_template_vessels')
+          .insert(associations);
+        if (assocError) throw assocError;
       }
 
       // Update steps - delete old and insert new
-      await supabase
-        .from('checklist_steps')
-        .delete()
-        .eq('checklist_template_id', editingTemplate.id);
+      {
+        const { error: delStepsError } = await supabase
+          .from('checklist_steps')
+          .delete()
+          .eq('checklist_template_id', editingTemplate.id);
+        if (delStepsError) throw delStepsError;
+      }
 
       if (steps.length > 0) {
-        const stepsToInsert = await Promise.all(steps.map(async (step, index) => {
-          let referenceImageUrl = step.reference_image_url || null;
-          
-          // Upload reference image if new file provided
-          if (step.reference_image_file) {
-            const fileName = sanitizeStorageFileName(step.reference_image_file.name);
-            const filePath = `reference-images/${editingTemplate.id}/${index + 1}-${Date.now()}-${fileName}`;
-            const { error: uploadError } = await supabase.storage
-              .from('checklist-photos')
-              .upload(filePath, step.reference_image_file);
-            
-            if (!uploadError) {
+        const stepsToInsert = await Promise.all(
+          steps.map(async (step, index) => {
+            let referenceImageUrl = step.reference_image_url || null;
+
+            // Upload reference image if new file provided
+            if (step.reference_image_file) {
+              const fileName = sanitizeStorageFileName(step.reference_image_file.name);
+              const filePath = `reference-images/${editingTemplate.id}/${index + 1}-${Date.now()}-${fileName}`;
+              const { error: uploadError } = await supabase.storage
+                .from('checklist-photos')
+                .upload(filePath, step.reference_image_file);
+
+              if (uploadError) throw uploadError;
+
               const { data: urlData } = supabase.storage
                 .from('checklist-photos')
                 .getPublicUrl(filePath);
               referenceImageUrl = urlData.publicUrl;
             }
-          }
-          
-          return {
-            checklist_template_id: editingTemplate.id,
-            step_order: index + 1,
-            title: step.title,
-            instruction: step.instruction,
-            help_text: step.help_text || null,
-            confirmation_type: step.confirmation_type,
-            requires_comment: step.requires_comment,
-            requires_photo: step.requires_photo,
-            reference_image_url: referenceImageUrl,
-            checklist_items: step.confirmation_type === 'checklist' && step.checklist_items?.length ? step.checklist_items : null,
-          };
-        }));
-        await supabase.from('checklist_steps').insert(stepsToInsert);
+
+            return {
+              checklist_template_id: editingTemplate.id,
+              step_order: index + 1,
+              title: step.title,
+              instruction: step.instruction,
+              help_text: step.help_text || null,
+              confirmation_type: step.confirmation_type,
+              requires_comment: step.requires_comment,
+              requires_photo: step.requires_photo,
+              reference_image_url: referenceImageUrl,
+              checklist_items:
+                step.confirmation_type === 'checklist' && step.checklist_items?.length
+                  ? step.checklist_items
+                  : null,
+            };
+          })
+        );
+
+        const { error: insStepsError } = await supabase
+          .from('checklist_steps')
+          .insert(stepsToInsert);
+        if (insStepsError) throw insStepsError;
       }
     },
     onSuccess: () => {
