@@ -81,7 +81,7 @@ export default function AdminStatus() {
     enabled: vesselIds.length > 0,
   });
 
-  // Fetch vessel certificates - scoped to org vessels
+  // Fetch vessel certificates - scoped to org vessels (including expired)
   const { data: vesselCertificates } = useQuery({
     queryKey: ['status-vessel-certificates', vesselIds],
     queryFn: async () => {
@@ -91,7 +91,6 @@ export default function AdminStatus() {
         .select(`*, vessel:vessels(name)`)
         .in('vessel_id', vesselIds)
         .lte('expiry_date', cutoffDate.toISOString().split('T')[0])
-        .gte('expiry_date', today.toISOString().split('T')[0])
         .order('expiry_date', { ascending: true });
       if (error) throw error;
       return data;
@@ -99,7 +98,7 @@ export default function AdminStatus() {
     enabled: vesselIds.length > 0,
   });
 
-  // Fetch user certificates - scoped to org profiles
+  // Fetch user certificates - scoped to org profiles (including expired)
   const { data: userCertificates } = useQuery({
     queryKey: ['status-user-certificates', profileIds],
     queryFn: async () => {
@@ -109,7 +108,6 @@ export default function AdminStatus() {
         .select(`*, profile:profiles(full_name), certificate_type:certificate_types(name)`)
         .in('profile_id', profileIds)
         .lte('expiry_date', cutoffDate.toISOString().split('T')[0])
-        .gte('expiry_date', today.toISOString().split('T')[0])
         .order('expiry_date', { ascending: true });
       if (error) throw error;
       return data;
@@ -275,12 +273,12 @@ export default function AdminStatus() {
 
           {/* Control Points */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                Kommande egenkontroller
-              </CardTitle>
-            </CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Kommande / förfallna egenkontroller
+            </CardTitle>
+          </CardHeader>
             <CardContent>
               {controlStates?.length === 0 ? (
                 <p className="text-muted-foreground text-sm">Inga kommande egenkontroller</p>
@@ -320,12 +318,12 @@ export default function AdminStatus() {
 
           {/* Vessel Certificates */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ship className="h-5 w-5" />
-                Fartygscertifikat som löper ut
-              </CardTitle>
-            </CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ship className="h-5 w-5" />
+              Fartygscertifikat som löper ut / har löpt ut
+            </CardTitle>
+          </CardHeader>
             <CardContent>
               {vesselCertificates?.length === 0 ? (
                 <p className="text-muted-foreground text-sm">Inga certifikat löper ut inom 60 dagar</p>
@@ -355,12 +353,12 @@ export default function AdminStatus() {
 
           {/* User Certificates */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Personliga certifikat som löper ut
-              </CardTitle>
-            </CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              Personliga certifikat som löper ut / har löpt ut
+            </CardTitle>
+          </CardHeader>
             <CardContent>
               {userCertificates?.length === 0 ? (
                 <p className="text-muted-foreground text-sm">Inga certifikat löper ut inom 60 dagar</p>
