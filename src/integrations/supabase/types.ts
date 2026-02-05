@@ -2714,6 +2714,7 @@ export type Database = {
           main_engine_count: number
           name: string
           organization_id: string
+          primary_engine_id: string | null
           updated_at: string
         }
         Insert: {
@@ -2724,6 +2725,7 @@ export type Database = {
           main_engine_count?: number
           name: string
           organization_id: string
+          primary_engine_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -2734,6 +2736,7 @@ export type Database = {
           main_engine_count?: number
           name?: string
           organization_id?: string
+          primary_engine_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2742,6 +2745,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vessels_primary_engine_id_fkey"
+            columns: ["primary_engine_id"]
+            isOneToOne: false
+            referencedRelation: "vessel_engine_hours"
             referencedColumns: ["id"]
           },
         ]

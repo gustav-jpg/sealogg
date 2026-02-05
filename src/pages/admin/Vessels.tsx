@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -27,12 +28,13 @@ export default function AdminVessels() {
   const [engineDialogOpen, setEngineDialogOpen] = useState(false);
   const [certDialogOpen, setCertDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedVessel, setSelectedVessel] = useState<{ id: string; name: string; description: string | null; main_engine_count: number; auxiliary_engine_count: number } | null>(null);
+  const [selectedVessel, setSelectedVessel] = useState<{ id: string; name: string; description: string | null; main_engine_count: number; auxiliary_engine_count: number; primary_engine_id?: string | null } | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [mainEngineCount, setMainEngineCount] = useState(1);
   const [auxiliaryEngineCount, setAuxiliaryEngineCount] = useState(0);
-  const [engineHoursInputs, setEngineHoursInputs] = useState<{ engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
+  const [engineHoursInputs, setEngineHoursInputs] = useState<{ id?: string; engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
+  const [selectedPrimaryEngineId, setSelectedPrimaryEngineId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -178,9 +180,19 @@ export default function AdminVessels() {
           }, { onConflict: 'vessel_id,engine_type,engine_number' });
         if (error) throw error;
       }
+      
+      // Update primary engine if changed
+      if (selectedPrimaryEngineId !== selectedVessel.primary_engine_id) {
+        const { error: updateError } = await supabase
+          .from('vessels')
+          .update({ primary_engine_id: selectedPrimaryEngineId })
+          .eq('id', selectedVessel.id);
+        if (updateError) throw updateError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
+      queryClient.invalidateQueries({ queryKey: ['vessels'] });
       toast({ title: 'Sparat', description: 'Maskintimmar uppdaterade.' });
       setEngineDialogOpen(false);
     },
@@ -189,14 +201,15 @@ export default function AdminVessels() {
     },
   });
 
-  const openEngineDialog = (vessel: { id: string; name: string; main_engine_count: number; auxiliary_engine_count: number }) => {
+  const openEngineDialog = (vessel: { id: string; name: string; main_engine_count: number; auxiliary_engine_count: number; primary_engine_id?: string | null }) => {
     setSelectedVessel({ ...vessel, description: null });
     const existingHours = vesselEngineHours?.filter(h => h.vessel_id === vessel.id) || [];
-    const inputs: { engine_type: string; engine_number: number; current_hours: number; name: string }[] = [];
+    const inputs: { id?: string; engine_type: string; engine_number: number; current_hours: number; name: string }[] = [];
     
     for (let i = 1; i <= vessel.main_engine_count; i++) {
       const existing = existingHours.find(h => h.engine_type === 'main' && h.engine_number === i);
       inputs.push({ 
+        id: existing?.id,
         engine_type: 'main', 
         engine_number: i, 
         current_hours: existing?.current_hours || 0,
@@ -206,6 +219,7 @@ export default function AdminVessels() {
     for (let i = 1; i <= vessel.auxiliary_engine_count; i++) {
       const existing = existingHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
       inputs.push({ 
+        id: existing?.id,
         engine_type: 'auxiliary', 
         engine_number: i, 
         current_hours: existing?.current_hours || 0,
@@ -214,6 +228,7 @@ export default function AdminVessels() {
     }
     
     setEngineHoursInputs(inputs);
+    setSelectedPrimaryEngineId(vessel.primary_engine_id || null);
     setEngineDialogOpen(true);
   };
 
@@ -549,6 +564,32 @@ export default function AdminVessels() {
                   ))}
                 </div>
               )}
+              
+              {/* Primary engine selection */}
+              {engineHoursInputs.filter(e => e.engine_type === 'main').length > 0 && (
+                <div className="pt-3 border-t space-y-2">
+                  <Label className="text-sm font-medium">Primär maskin för bunkring</Label>
+                  <p className="text-xs text-muted-foreground">Denna maskin används som standard vid registrering av bunkring i dagsrapporten.</p>
+                  <Select 
+                    value={selectedPrimaryEngineId || ''} 
+                    onValueChange={(val) => setSelectedPrimaryEngineId(val || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Välj primär maskin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {engineHoursInputs
+                        .filter(e => e.engine_type === 'main' && e.id)
+                        .map(e => (
+                          <SelectItem key={e.id} value={e.id!}>
+                            {e.name || `Huvudmaskin ${e.engine_number}`}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
               <Button onClick={() => updateEngineHours.mutate()} disabled={updateEngineHours.isPending || engineHoursInputs.length === 0} className="w-full">
                 {updateEngineHours.isPending ? 'Sparar...' : 'Spara maskintimmar'}
               </Button>

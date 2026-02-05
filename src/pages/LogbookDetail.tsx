@@ -1769,20 +1769,38 @@ export default function LogbookDetail() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bunker-hours">Timställning huvudmaskin</Label>
-              <Input
-                id="bunker-hours"
-                type="number"
-                value={bunkerDialogEngineHours}
-                onChange={(e) => setBunkerDialogEngineHours(e.target.value)}
-                placeholder="T.ex. 1234"
-                min="0"
-              />
-              {editableEngineHours.find(e => e.engineType === 'main' && e.engineNumber === 1) && (
-                <p className="text-xs text-muted-foreground">
-                  Nuvarande: {editableEngineHours.find(e => e.engineType === 'main' && e.engineNumber === 1)?.stopHours ?? editableEngineHours.find(e => e.engineType === 'main' && e.engineNumber === 1)?.startHours ?? '-'} h
-                </p>
-              )}
+              {(() => {
+                const vessel = logbook?.vessel as any;
+                const primaryEngineId = vessel?.primary_engine_id;
+                const primaryEngine = vesselEngineHours?.find(e => e.id === primaryEngineId);
+                const primaryEngineEntry = editableEngineHours.find(e => {
+                  if (primaryEngine) {
+                    return e.engineType === primaryEngine.engine_type && e.engineNumber === primaryEngine.engine_number;
+                  }
+                  return e.engineType === 'main' && e.engineNumber === 1;
+                });
+                const engineName = primaryEngine?.name || primaryEngineEntry?.engineLabel || 'Huvudmaskin';
+                const currentHours = primaryEngineEntry?.stopHours ?? primaryEngineEntry?.startHours ?? primaryEngine?.current_hours;
+                
+                return (
+                  <>
+                    <Label htmlFor="bunker-hours">Timställning {engineName}</Label>
+                    <Input
+                      id="bunker-hours"
+                      type="number"
+                      value={bunkerDialogEngineHours}
+                      onChange={(e) => setBunkerDialogEngineHours(e.target.value)}
+                      placeholder="T.ex. 1234"
+                      min="0"
+                    />
+                    {currentHours !== undefined && currentHours !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        Nuvarande: {currentHours} h
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setShowBunkerDialog(false)}>
@@ -1790,10 +1808,15 @@ export default function LogbookDetail() {
               </Button>
               <Button
                 onClick={() => {
+                  const vessel = logbook?.vessel as any;
+                  const primaryEngineId = vessel?.primary_engine_id;
+                  const primaryEngine = vesselEngineHours?.find(e => e.id === primaryEngineId);
+                  const engineName = primaryEngine?.name || 'Huvudmaskin';
+                  
                   const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
                   let bunkerText = `${timestamp} - Bunkrat ${bunkerDialogLiters || '?'} liter`;
                   if (bunkerDialogEngineHours) {
-                    bunkerText += ` vid ${bunkerDialogEngineHours} h`;
+                    bunkerText += ` vid ${bunkerDialogEngineHours} h (${engineName})`;
                   }
                   const newNote = generalNotes ? `${generalNotes}\n${bunkerText}` : bunkerText;
                   setGeneralNotes(newNote);
