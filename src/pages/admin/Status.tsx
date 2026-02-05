@@ -340,7 +340,7 @@ export default function AdminStatus() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
-              Kommande / förfallna egenkontroller
+              Kommande / förfallet underhåll
             </CardTitle>
           </CardHeader>
             <CardContent>
