@@ -197,6 +197,13 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
 
   const deleteRecordMutation = useMutation({
     mutationFn: async (recordId: string) => {
+      // Find the record being deleted to know which control point it belongs to
+      const deletedRecord = controlRecords?.find((r: any) => r.id === recordId);
+      if (!deletedRecord) throw new Error('Post hittades inte');
+
+      const controlPointId = deletedRecord.control_point_id;
+      const controlPoint = deletedRecord.control_point;
+
       // Delete attachments first, then the record
       const { error: attachError } = await supabase
         .from('control_point_attachments')
@@ -209,10 +216,58 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
         .delete()
         .eq('id', recordId);
       if (error) throw error;
+
+      // Find the previous record for this control point (the one before the deleted one)
+      const { data: previousRecords } = await supabase
+        .from('control_point_records')
+        .select('*, engine:vessel_engine_hours(*)')
+        .eq('vessel_id', selectedVessel)
+        .eq('control_point_id', controlPointId)
+        .neq('id', recordId)
+        .order('performed_at', { ascending: false })
+        .limit(1);
+
+      const previousRecord = previousRecords?.[0];
+
+      if (previousRecord) {
+        // Recalculate state from the previous record
+        const nextDueDate = controlPoint?.type === 'calendar' && controlPoint?.interval_months
+          ? (() => {
+              const d = new Date(previousRecord.performed_at);
+              d.setMonth(d.getMonth() + controlPoint.interval_months);
+              return d.toISOString().split('T')[0];
+            })()
+          : null;
+
+        const nextDueEngineHours = controlPoint?.type === 'engine_hours' && controlPoint?.interval_engine_hours && previousRecord.engine_hours_at_perform
+          ? previousRecord.engine_hours_at_perform + controlPoint.interval_engine_hours
+          : null;
+
+        await supabase
+          .from('vessel_control_point_state')
+          .update({
+            last_done_date: new Date(previousRecord.performed_at).toISOString().split('T')[0],
+            last_done_at_engine_hours: previousRecord.engine_hours_at_perform,
+            next_due_date: nextDueDate,
+            next_due_at_engine_hours: nextDueEngineHours,
+            engine_id: previousRecord.engine_id,
+            status: 'ok',
+          })
+          .eq('vessel_id', selectedVessel)
+          .eq('control_point_id', controlPointId);
+      } else {
+        // No previous records exist — remove the state entry
+        await supabase
+          .from('vessel_control_point_state')
+          .delete()
+          .eq('vessel_id', selectedVessel)
+          .eq('control_point_id', controlPointId);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['control-point-records-with-attachments', selectedVessel] });
-      queryClient.invalidateQueries({ queryKey: ['vessel-control-point-state'] });
+      queryClient.invalidateQueries({ queryKey: ['vessel-control-states', selectedVessel] });
+      queryClient.invalidateQueries({ queryKey: ['control-point-records'] });
       toast.success('Posten har raderats');
       setDeleteRecordId(null);
     },
