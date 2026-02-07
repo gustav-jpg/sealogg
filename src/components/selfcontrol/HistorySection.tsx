@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -33,7 +33,10 @@ import {
   X,
   Calendar,
   User,
+  Trash2,
 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { toast } from 'sonner';
 
 interface HistorySectionProps {
   selectedVessel: string;
@@ -48,6 +51,8 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
   const [filterDateTo, setFilterDateTo] = useState('');
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
+  const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Fetch control point records with attachments
   const { data: controlRecords, isLoading } = useQuery({
@@ -189,6 +194,32 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
     setSelectedRecord(record);
     setAttachmentsDialogOpen(true);
   };
+
+  const deleteRecordMutation = useMutation({
+    mutationFn: async (recordId: string) => {
+      // Delete attachments first, then the record
+      const { error: attachError } = await supabase
+        .from('control_point_attachments')
+        .delete()
+        .eq('record_id', recordId);
+      if (attachError) throw attachError;
+
+      const { error } = await supabase
+        .from('control_point_records')
+        .delete()
+        .eq('id', recordId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['control-point-records-with-attachments', selectedVessel] });
+      queryClient.invalidateQueries({ queryKey: ['vessel-control-point-state'] });
+      toast.success('Posten har raderats');
+      setDeleteRecordId(null);
+    },
+    onError: () => {
+      toast.error('Kunde inte radera posten');
+    },
+  });
 
   const isImageFile = (fileName: string) => {
     const ext = fileName.toLowerCase().split('.').pop();
@@ -351,21 +382,30 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
                     )}
                   </div>
 
-                  {/* Attachments indicator */}
-                  {record.attachments && record.attachments.length > 0 && (
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {record.attachments && record.attachments.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openAttachments(record)}
+                      >
+                        <Paperclip className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Bilagor</span>
+                        <Badge variant="secondary" className="ml-1">
+                          {record.attachments.length}
+                        </Badge>
+                      </Button>
+                    )}
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openAttachments(record)}
-                      className="shrink-0"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeleteRecordId(record.id)}
                     >
-                      <Paperclip className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Bilagor</span>
-                      <Badge variant="secondary" className="ml-1">
-                        {record.attachments.length}
-                      </Badge>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -431,6 +471,15 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteRecordId}
+        onOpenChange={(open) => !open && setDeleteRecordId(null)}
+        title="Radera underhållspost"
+        description="Är du säker på att du vill radera denna post? Eventuella bilagor raderas också. Detta går inte att ångra."
+        confirmLabel="Radera"
+        onConfirm={() => deleteRecordId && deleteRecordMutation.mutate(deleteRecordId)}
+      />
     </div>
   );
 }
