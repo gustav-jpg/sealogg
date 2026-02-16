@@ -268,22 +268,8 @@ serve(async (req) => {
       }
     }
 
-    // Add role to user
-    const { error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .insert({
-        user_id: userId,
-        role: role,
-      });
-
-    if (roleError) {
-      return new Response(JSON.stringify({ error: roleError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Add user to the specific organization with appropriate org role
+    // Add user to the specific organization with appropriate org role FIRST
+    // The sync_org_role_to_user_role trigger will automatically set user_roles
     // Map app_role to org_role: admin->org_admin, skeppare->org_user, deckhand->deckhand, readonly->org_user
     const orgRole = role === 'admin' ? 'org_admin' : role === 'deckhand' ? 'deckhand' : 'org_user';
     
@@ -295,8 +281,31 @@ serve(async (req) => {
         role: orgRole,
       });
     
-    if (orgError && !orgError.message.includes('duplicate')) {
-      console.error("Failed to add to organization:", orgError);
+    if (orgError) {
+      if (!orgError.message.includes('duplicate')) {
+        console.error("Failed to add to organization:", orgError);
+        return new Response(JSON.stringify({ error: "Kunde inte lägga till användaren i organisationen", details: orgError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Duplicate is OK — user already belongs to this org
+    }
+
+    // The trigger maps: org_admin->admin, org_user->skeppare, deckhand->deckhand
+    // If the requested role differs (e.g. 'readonly'), override the trigger-set role
+    const triggerMappedRole = orgRole === 'org_admin' ? 'admin' : orgRole === 'deckhand' ? 'deckhand' : 'skeppare';
+    
+    if (role !== triggerMappedRole) {
+      // Override the trigger-set role with the requested role
+      const { error: roleUpdateError } = await supabaseAdmin
+        .from('user_roles')
+        .update({ role })
+        .eq('user_id', userId);
+      
+      if (roleUpdateError) {
+        console.error("Failed to update role to requested value:", roleUpdateError);
+      }
     }
 
     // Keep a final upsert as a safety net (should already exist for new users)
