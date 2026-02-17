@@ -19,21 +19,44 @@ export default function ResetPassword() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Listen for auth state changes – the PASSWORD_RECOVERY event fires
+    // when the Supabase client processes the recovery token from the URL hash.
+    // This avoids a race condition where getSession() runs before the hash is parsed.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        if (session) {
+          setIsValidSession(true);
+          setIsCheckingSession(false);
+        }
+      }
+    });
+
+    // Also check if session already exists (e.g. page refresh)
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setIsValidSession(true);
+        setIsCheckingSession(false);
       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Ogiltig eller utgången länk',
-          description: 'Begär en ny återställningslänk.',
-        });
+        // Give some extra time for the hash to be processed before showing error
+        setTimeout(() => {
+          setIsCheckingSession(prev => {
+            if (prev) {
+              toast({
+                variant: 'destructive',
+                title: 'Ogiltig eller utgången länk',
+                description: 'Begär en ny återställningslänk.',
+              });
+            }
+            return false;
+          });
+        }, 3000);
       }
-      setIsCheckingSession(false);
     };
 
     checkSession();
+
+    return () => subscription.unsubscribe();
   }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
