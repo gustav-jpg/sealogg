@@ -97,6 +97,85 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // Send "added to organization" email to existing user
+      if (RESEND_API_KEY) {
+        // Get organization name
+        const { data: orgData } = await supabaseAdmin
+          .from('organizations')
+          .select('name')
+          .eq('id', organizationId)
+          .single();
+        const organizationName = orgData?.name || 'din organisation';
+
+        const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : role === 'deckhand' ? 'däcksman' : 'läsare';
+        try {
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "SeaLogg <noreply@sealogg.se>",
+              to: [email],
+              subject: `Du har lagts till i ${organizationName} - SeaLogg`,
+              html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <meta charset="utf-8">
+                  <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #0077b6; }
+                    .content { padding: 30px 0; }
+                    .button { display: inline-block; padding: 14px 28px; background-color: #0077b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+                    .info-box { background-color: #f0f9ff; border-left: 4px solid #0077b6; padding: 15px; margin: 20px 0; }
+                    .footer { padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="header">
+                      <img src="https://sealogg.se/sealog-logo.png" alt="SeaLogg" style="height: 50px; width: auto;" />
+                    </div>
+                    <div class="content">
+                      <h2>Hej ${fullName}!</h2>
+                      <p>Du har lagts till som <strong>${roleText}</strong> i <strong>${organizationName}</strong> på SeaLogg.</p>
+                      
+                      <div class="info-box">
+                        <strong>Ditt konto:</strong><br>
+                        Organisation: ${organizationName}<br>
+                        Roll: ${roleText}
+                      </div>
+                      
+                      <p>Du kan logga in med ditt befintliga konto:</p>
+                      
+                      <p style="text-align: center; margin: 30px 0;">
+                        <a href="https://sealogg.se/portal/login" class="button" style="color: white;">Logga in</a>
+                      </p>
+                    </div>
+                    <div class="footer">
+                      <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
+                    </div>
+                  </div>
+                </body>
+                </html>
+              `,
+            }),
+          });
+
+          if (!res.ok) {
+            const err = await res.text();
+            console.error("Failed to send org-added email:", err);
+          } else {
+            console.log("Org-added email sent to existing user:", email);
+          }
+        } catch (emailErr) {
+          console.error("Exception sending org-added email:", emailErr);
+        }
+      }
     } else {
       // Create new user - use admin-provided password or generate temporary one
       const useInitialPassword = initialPassword && initialPassword.length >= 6;
