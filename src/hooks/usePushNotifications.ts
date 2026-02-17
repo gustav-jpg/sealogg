@@ -3,6 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Extend ServiceWorkerRegistration to include pushManager (Web Push API)
+declare global {
+  interface ServiceWorkerRegistration {
+    pushManager: PushManager;
+  }
+}
+
 interface PushSubscriptionState {
   isSupported: boolean;
   isSubscribed: boolean;
