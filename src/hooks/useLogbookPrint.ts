@@ -422,11 +422,9 @@ export function useLogbookPrint() {
               text-align: right;
             }
             
-            .header-right .logo {
-              font-family: 'Playfair Display', serif;
-              font-size: 18px;
-              font-weight: 600;
-              color: #1e3a5f;
+            .header-right .logo-img {
+              height: 32px;
+              width: auto;
             }
             
             .header-right .print-date {
@@ -666,7 +664,7 @@ export function useLogbookPrint() {
               </div>
             </div>
             <div class="header-right">
-              <div class="logo">⚓ SeaLog</div>
+              <img src="${window.location.origin}/sealog-logo.png" alt="SeaLogg" class="logo-img" />
               <div class="print-date">Utskriven ${format(new Date(), "d MMM yyyy HH:mm", { locale: sv })}</div>
             </div>
           </div>
@@ -699,7 +697,7 @@ export function useLogbookPrint() {
           ${signatureHtml}
           
           <div class="footer">
-            <span>Genererad från SeaLog</span>
+            <span>Genererad från SeaLogg</span>
             <span>Loggbok ID: ${logbook.id.slice(0, 8)}</span>
           </div>
         </body>
