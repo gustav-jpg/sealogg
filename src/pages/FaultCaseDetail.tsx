@@ -454,7 +454,7 @@ export default function FaultCaseDetail() {
           </div>
 
           <div className="space-y-6">
-            {(canEdit || isAdmin) && isOpen && (
+            {isOpen && (
               <Card>
                 <CardHeader>
                   <CardTitle>Ändra status</CardTitle>
@@ -465,7 +465,9 @@ export default function FaultCaseDetail() {
                       <SelectValue placeholder="Välj ny status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(FAULT_STATUS_LABELS).map(([key, label]) => (
+                      {Object.entries(FAULT_STATUS_LABELS)
+                        .filter(([key]) => key !== 'avslutad' || isAdmin)
+                        .map(([key, label]) => (
                         <SelectItem key={key} value={key}>{label}</SelectItem>
                       ))}
                     </SelectContent>
