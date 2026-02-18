@@ -155,10 +155,10 @@ export default function Startsida() {
           body: { limit: 20, chartNumbers: ufsChartNumbers.join(',') },
         });
         if (error) throw error;
-        return data?.data as UFSWarning[] || [];
+        return (data?.data as UFSWarning[]) || [];
       } catch (error) {
         console.error('UFS fetch error:', error);
-        return [];
+        return null;
       }
     },
     staleTime: 1000 * 60 * 60,
@@ -391,11 +391,11 @@ export default function Startsida() {
                       href={warning.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                      className="block p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2">
-                          <Badge variant="default" className="text-xs font-mono">
+                          <Badge variant="secondary" className="text-xs font-mono">
                             {warning.noticeNumber}
                           </Badge>
                           {warning.isTemporary && (
@@ -425,6 +425,10 @@ export default function Startsida() {
                     </a>
                   ))}
                 </div>
+              ) : ufsWarnings ? (
+                <p className="text-muted-foreground text-center py-4">
+                  Inga aktiva UFS-varningar för valda sjökort
+                </p>
               ) : (
                 <p className="text-muted-foreground text-center py-4">
                   Kunde inte hämta UFS-varningar
