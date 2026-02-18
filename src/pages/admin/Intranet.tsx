@@ -528,9 +528,9 @@ export default function IntranetAdmin() {
                                         checked={isSelected}
                                         onCheckedChange={(checked) => {
                                           if (checked) {
-                                            setChartNumbers([...chartNumbers, chart.value]);
+                                            setChartNumbers(prev => [...prev, chart.value]);
                                           } else {
-                                            removeChart(chart.value);
+                                            setChartNumbers(prev => prev.filter(c => c !== chart.value));
                                           }
                                         }}
                                       />
