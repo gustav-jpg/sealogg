@@ -31,7 +31,7 @@ import {
   Route,
   Bell,
   Map,
-  Package,
+  
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo-white.png';
 import {
@@ -130,11 +130,7 @@ export function AppSidebar() {
 
   const vesselNavItems = activeVesselModules.map(m => MODULE_NAV_MAP[m]);
   
-  // Add Reservdelsindex after Underhåll if self_control module is active
-  const selfControlIndex = vesselNavItems.findIndex(item => item.href === '/portal/self-control');
-  if (selfControlIndex >= 0 && (!isDeckhand || isAdmin)) {
-    vesselNavItems.splice(selfControlIndex + 1, 0, { href: '/portal/spare-parts', label: 'Reservdelar', icon: Package });
-  }
+  // Spare parts is now a tab within Self Control, no separate nav item needed
 
   const bookingNavItems = activeBookingModules.map(m => MODULE_NAV_MAP[m]);
 

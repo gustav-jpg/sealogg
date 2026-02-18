@@ -33,8 +33,9 @@ import {
 } from '@/lib/types';
 import { format, addMonths, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ClipboardCheck, AlertTriangle, CheckCircle, Clock, Calendar, Gauge, Eye, Check, History, Printer, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { ClipboardCheck, AlertTriangle, CheckCircle, Clock, Calendar, Gauge, Eye, Check, History, Printer, FolderOpen, ChevronDown, ChevronRight, Package } from 'lucide-react';
 import { HistorySection } from '@/components/selfcontrol/HistorySection';
+import { SparePartsTab } from '@/components/spare-parts/SparePartsTab';
 import {
   Accordion,
   AccordionContent,
@@ -52,6 +53,7 @@ export default function SelfControl() {
   const queryClient = useQueryClient();
   const { selectedVessel, setSelectedVessel } = useSharedVessel();
   const [activeTab, setActiveTab] = useState('all');
+  const [mainTab, setMainTab] = useState('kontroller');
   const [performDialogOpen, setPerformDialogOpen] = useState(false);
   const [selectedControlPoint, setSelectedControlPoint] = useState<any>(null);
   const [performDate, setPerformDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -473,7 +475,19 @@ export default function SelfControl() {
             </CardContent>
           </Card>
         ) : (
-          <>
+          <Tabs value={mainTab} onValueChange={setMainTab}>
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="kontroller" className="text-xs sm:text-sm">
+                <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                Kontroller
+              </TabsTrigger>
+              <TabsTrigger value="reservdelar" className="text-xs sm:text-sm">
+                <Package className="h-4 w-4 mr-1.5" />
+                Reservdelar
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="kontroller" className="mt-4 space-y-4 md:space-y-6">
             {/* Warnings */}
             {(overdueCount > 0 || upcomingCount > 0) && (
               <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
@@ -769,7 +783,12 @@ export default function SelfControl() {
               </TabsContent>
             </Tabs>
             </div>
-          </>
+            </TabsContent>
+
+            <TabsContent value="reservdelar" className="mt-4">
+              <SparePartsTab selectedVessel={selectedVessel} />
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* Perform dialog */}
