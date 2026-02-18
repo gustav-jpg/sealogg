@@ -16,7 +16,10 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Home, Plus, Trash2, CalendarIcon, FileText, Download, X, Wind, AlertTriangle, Save, Settings } from 'lucide-react';
+import { WEATHER_STATIONS, UFS_CHARTS, getUFSChartsByRegion } from '@/lib/maritime-data';
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isPast } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -58,7 +61,7 @@ export default function IntranetAdmin() {
   const [smhiLon, setSmhiLon] = useState('18.0686');
   const [smhiLat, setSmhiLat] = useState('59.3293');
   const [chartNumbers, setChartNumbers] = useState<string[]>(['99']);
-  const [newChart, setNewChart] = useState('');
+  
 
   // View state - show current week by default
   const [viewDate, setViewDate] = useState(new Date());
@@ -328,14 +331,6 @@ export default function IntranetAdmin() {
     }
   };
 
-  const addChart = () => {
-    const trimmed = newChart.trim();
-    if (trimmed && !chartNumbers.includes(trimmed)) {
-      setChartNumbers([...chartNumbers, trimmed]);
-      setNewChart('');
-    }
-  };
-
   const removeChart = (chart: string) => {
     setChartNumbers(chartNumbers.filter(c => c !== chart));
   };
@@ -456,33 +451,37 @@ export default function IntranetAdmin() {
                       Väderstation
                     </CardTitle>
                     <CardDescription>
-                      Ange vilken väderstation som ska användas för vinddata.
-                      Stations-ID:t hittar du på{' '}
-                      <a href="https://viva.sjofartsverket.se/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                        Sjöfartsverket ViVa
-                      </a>.
+                      Välj vilken väderstation som ska användas för vinddata och väderprognos på startsidan.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="stationId">ViVa Station-ID</Label>
-                        <Input id="stationId" value={weatherStationId} onChange={e => setWeatherStationId(e.target.value)} placeholder="t.ex. 141" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="source">Källa</Label>
-                        <Input id="source" value={weatherSource} onChange={e => setWeatherSource(e.target.value)} placeholder="viva" disabled />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="lon">SMHI Prognos Longitud</Label>
-                        <Input id="lon" type="number" step="0.0001" value={smhiLon} onChange={e => setSmhiLon(e.target.value)} placeholder="18.0686" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lat">SMHI Prognos Latitud</Label>
-                        <Input id="lat" type="number" step="0.0001" value={smhiLat} onChange={e => setSmhiLat(e.target.value)} placeholder="59.3293" />
-                      </div>
+                    <div className="space-y-2">
+                      <Label>Station</Label>
+                      <Select
+                        value={weatherStationId}
+                        onValueChange={(val) => {
+                          setWeatherStationId(val);
+                          const station = WEATHER_STATIONS.find(s => s.id === val);
+                          if (station) {
+                            setSmhiLon(String(station.lon));
+                            setSmhiLat(String(station.lat));
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj väderstation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {WEATHER_STATIONS.map(station => (
+                            <SelectItem key={station.id} value={station.id}>
+                              {station.name} (ID: {station.id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        SMHI-koordinater uppdateras automatiskt vid stationsbyte. Nuvarande: {smhiLat}, {smhiLon}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -494,32 +493,59 @@ export default function IntranetAdmin() {
                       UFS Sjökort
                     </CardTitle>
                     <CardDescription>
-                      Ange vilka sjökortsnummer som ska visas för UFS-varningar. Sjökort 99 visar alla vatten.
+                      Välj vilka sjökortsnummer som ska visas för UFS-varningar på startsidan. Sjökort 99 visar alla vatten.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      {chartNumbers.map(chart => (
-                        <Badge key={chart} variant="secondary" className="text-sm py-1 px-3 gap-1">
-                          {chart}
-                          <button onClick={() => removeChart(chart)} className="ml-1 hover:text-destructive">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
+                    <div className="flex flex-wrap gap-2 min-h-[32px]">
+                      {chartNumbers.length === 0 && (
+                        <p className="text-sm text-muted-foreground">Inga sjökort valda</p>
+                      )}
+                      {chartNumbers.map(chart => {
+                        const chartData = UFS_CHARTS.find(c => c.value === chart);
+                        return (
+                          <Badge key={chart} variant="secondary" className="text-sm py-1 px-3 gap-1">
+                            {chartData ? chartData.label : chart}
+                            <button onClick={() => removeChart(chart)} className="ml-1 hover:text-destructive">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
                     </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={newChart}
-                        onChange={e => setNewChart(e.target.value)}
-                        placeholder="Sjökortsnummer, t.ex. 612"
-                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChart())}
-                      />
-                      <Button variant="outline" size="sm" onClick={addChart} disabled={!newChart.trim()}>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Lägg till
-                      </Button>
-                    </div>
+                    
+                    {(() => {
+                      const grouped = getUFSChartsByRegion();
+                      return (
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto border rounded-md p-3">
+                          {Object.entries(grouped).map(([region, charts]) => (
+                            <div key={region}>
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">{region}</p>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                {charts.map(chart => {
+                                  const isSelected = chartNumbers.includes(chart.value);
+                                  return (
+                                    <label key={chart.value} className="flex items-center gap-1.5 cursor-pointer text-sm">
+                                      <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setChartNumbers([...chartNumbers, chart.value]);
+                                          } else {
+                                            removeChart(chart.value);
+                                          }
+                                        }}
+                                      />
+                                      {chart.label}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
 
