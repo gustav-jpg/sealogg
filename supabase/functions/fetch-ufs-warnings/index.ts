@@ -53,8 +53,11 @@ Deno.serve(async (req) => {
     
     console.log(`Fetching UFS warnings for charts: ${chartNumStr}, limit: ${limit}`);
     
+    // Sjöfartsverket expects separate query params for each chart number (multi-select)
+    const chartParams = chartNumStr.split(',').map(c => `SearchFormModel.ChartNumbers=${encodeURIComponent(c.trim())}`).join('&');
+    
     const response = await fetch(
-      `https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=${encodeURIComponent(chartNumStr)}&SearchFormModel.SearchTimePeriod=0`,
+      `https://ufs.sjofartsverket.se/Notice/Search/?${chartParams}&SearchFormModel.SearchTimePeriod=0`,
       {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
