@@ -10,26 +10,22 @@ export interface WeatherStation {
 }
 
 export const WEATHER_STATIONS: WeatherStation[] = [
-  // SMHI meteorological observation stations
-  { id: '98040', name: 'Svenska Högarna', lon: 19.5013, lat: 59.4428 },
-  { id: '98230', name: 'Landsort', lon: 17.8588, lat: 58.7428 },
-  { id: '97400', name: 'Gotska Sandön', lon: 19.1994, lat: 58.3947 },
-  { id: '99280', name: 'Hoburg', lon: 18.1492, lat: 56.9208 },
-  { id: '71420', name: 'Vinga', lon: 11.6058, lat: 57.6328 },
-  { id: '72420', name: 'Nidingen', lon: 11.9017, lat: 57.3022 },
-  { id: '77210', name: 'Ringhals', lon: 12.1122, lat: 57.2500 },
-  { id: '78550', name: 'Helsingborg A', lon: 12.6872, lat: 56.0447 },
-  { id: '89230', name: 'Falsterbo', lon: 12.8167, lat: 55.3833 },
-  { id: '62180', name: 'Ölands södra udde', lon: 16.3964, lat: 56.1961 },
-  { id: '52350', name: 'Eggegrund', lon: 17.5342, lat: 60.7300 },
-  { id: '64540', name: 'Brämön', lon: 17.1500, lat: 62.3333 },
-  { id: '107440', name: 'Holmön', lon: 20.8625, lat: 63.7939 },
-  { id: '140480', name: 'Ratan', lon: 20.8953, lat: 64.0000 },
-  { id: '132160', name: 'Luleå flygplats', lon: 22.1269, lat: 65.5436 },
+  // Verified active SMHI Metobs stations with wind data (parameter 4)
+  { id: '99450', name: 'Söderarm A', lon: 19.2058, lat: 59.7547 },
+  { id: '98040', name: 'Berga', lon: 18.0842, lat: 59.3308 },
+  { id: '87440', name: 'Landsort A', lon: 17.8658, lat: 58.7408 },
+  { id: '97400', name: 'Gotska Sandön A', lon: 19.1994, lat: 58.3947 },
+  { id: '99280', name: 'Hoburg A', lon: 18.1492, lat: 56.9208 },
+  { id: '77210', name: 'Ölands norra udde A', lon: 17.0972, lat: 57.3667 },
+  { id: '65090', name: 'Karlskrona-Söderstjerna', lon: 15.5861, lat: 56.1050 },
+  { id: '89230', name: 'Falsterbo A', lon: 12.8167, lat: 55.3833 },
   { id: '86340', name: 'Malmö A', lon: 13.0672, lat: 55.5714 },
-  { id: '96000', name: 'Visby flygplats', lon: 18.3461, lat: 57.6628 },
-  { id: '52240', name: 'Söderhamn', lon: 17.0967, lat: 61.2611 },
-  { id: '68560', name: 'Sundsvall-Härnösand', lon: 17.4444, lat: 62.5281 },
+  { id: '78400', name: 'Visby Flygplats', lon: 18.3461, lat: 57.6628 },
+  { id: '71380', name: 'Vinga A', lon: 11.6058, lat: 57.6328 },
+  { id: '76420', name: 'Gladhammar A', lon: 16.3964, lat: 57.3611 },
+  { id: '107440', name: 'Eggegrund A', lon: 17.5342, lat: 60.7300 },
+  { id: '140460', name: 'Holmön A', lon: 20.8625, lat: 63.7939 },
+  { id: '140480', name: 'Umeå Flygplats', lon: 20.2353, lat: 63.7917 },
 ];
 
 /**
