@@ -348,6 +348,7 @@ export default function SelfControl() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vessel-control-states', selectedVessel] });
       queryClient.invalidateQueries({ queryKey: ['control-point-records'] });
+      queryClient.invalidateQueries({ queryKey: ['control-point-records-with-attachments', selectedVessel] });
       toast({ title: 'Utförd', description: 'Kontrollen har markerats som utförd.' });
       setPerformDialogOpen(false);
       resetPerformForm();
