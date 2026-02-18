@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/accordion";
 import { usePrint } from '@/hooks/usePrint';
 import { useSharedVessel } from '@/hooks/useSharedVessel';
+import { sanitizeStorageFileName } from '@/lib/storage';
 
 export default function SelfControl() {
   const { user, isAdmin } = useAuth();
@@ -275,24 +276,32 @@ export default function SelfControl() {
 
       // Upload files
       for (const file of performFiles) {
-        const filePath = `control-points/${record.id}/${Date.now()}-${file.name}`;
+        const safeName = sanitizeStorageFileName(file.name);
+        const filePath = `control-points/${record.id}/${Date.now()}-${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('attachments')
           .upload(filePath, file);
 
-        if (!uploadError) {
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          continue;
+        }
+
           const { data: urlData } = supabase.storage
             .from('attachments')
             .getPublicUrl(filePath);
 
           // organization_id is auto-set by trigger from record_id -> vessel
-          await supabase.from('control_point_attachments').insert({
+          const { error: attachInsertError } = await supabase.from('control_point_attachments').insert({
             record_id: record.id,
             file_url: urlData.publicUrl,
             file_name: file.name,
             uploaded_by: user?.id,
           } as any);
-        }
+          
+          if (attachInsertError) {
+            console.error('Attachment insert error:', attachInsertError);
+          }
       }
 
       // Update or create state
