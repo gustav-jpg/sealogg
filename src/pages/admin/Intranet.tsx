@@ -56,10 +56,9 @@ export default function IntranetAdmin() {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Settings state
-  const [weatherStationId, setWeatherStationId] = useState('141');
-  const [weatherSource, setWeatherSource] = useState('viva');
-  const [smhiLon, setSmhiLon] = useState('18.0686');
-  const [smhiLat, setSmhiLat] = useState('59.3293');
+  const [weatherStationId, setWeatherStationId] = useState('98040');
+  const [smhiLon, setSmhiLon] = useState('19.5013');
+  const [smhiLat, setSmhiLat] = useState('59.4428');
   const [chartNumbers, setChartNumbers] = useState<string[]>(['99']);
   
 
@@ -105,10 +104,9 @@ export default function IntranetAdmin() {
 
   useEffect(() => {
     if (orgSettings) {
-      setWeatherStationId(orgSettings.weather_station_id || '141');
-      setWeatherSource(orgSettings.weather_station_source || 'viva');
-      setSmhiLon(String(orgSettings.smhi_forecast_lon ?? '18.0686'));
-      setSmhiLat(String(orgSettings.smhi_forecast_lat ?? '59.3293'));
+      setWeatherStationId(orgSettings.weather_station_id || '98040');
+      setSmhiLon(String(orgSettings.smhi_forecast_lon ?? '19.5013'));
+      setSmhiLat(String(orgSettings.smhi_forecast_lat ?? '59.4428'));
       setChartNumbers(orgSettings.ufs_chart_numbers || ['99']);
     }
   }, [orgSettings]);
@@ -281,7 +279,7 @@ export default function IntranetAdmin() {
       const payload = {
         organization_id: selectedOrgId,
         weather_station_id: weatherStationId,
-        weather_station_source: weatherSource,
+        weather_station_source: 'smhi',
         smhi_forecast_lon: parseFloat(smhiLon),
         smhi_forecast_lat: parseFloat(smhiLat),
         ufs_chart_numbers: chartNumbers,

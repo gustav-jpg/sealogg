@@ -13,10 +13,10 @@ export interface OrgSettings {
 }
 
 const DEFAULT_SETTINGS: Omit<OrgSettings, 'id' | 'organization_id'> = {
-  weather_station_id: '141',
-  weather_station_source: 'viva',
-  smhi_forecast_lon: 18.0686,
-  smhi_forecast_lat: 59.3293,
+  weather_station_id: '98040',
+  weather_station_source: 'smhi',
+  smhi_forecast_lon: 19.5013,
+  smhi_forecast_lat: 59.4428,
   ufs_chart_numbers: ['99'],
 };
 
