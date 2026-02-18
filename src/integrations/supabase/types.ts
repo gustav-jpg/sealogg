@@ -2451,6 +2451,69 @@ export type Database = {
         }
         Relationships: []
       }
+      spare_parts: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          id: string
+          location: string | null
+          min_quantity: number | null
+          name: string
+          notes: string | null
+          organization_id: string
+          part_number: string | null
+          quantity: number | null
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by: string
+          id?: string
+          location?: string | null
+          min_quantity?: number | null
+          name: string
+          notes?: string | null
+          organization_id: string
+          part_number?: string | null
+          quantity?: number | null
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          location?: string | null
+          min_quantity?: number | null
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          part_number?: string | null
+          quantity?: number | null
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spare_parts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spare_parts_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       superadmins: {
         Row: {
           created_at: string

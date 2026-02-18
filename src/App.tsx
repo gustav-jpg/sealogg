@@ -53,6 +53,7 @@ import NotificationSettingsPage from "./pages/admin/NotificationSettings";
 import Changelog from "./pages/Changelog";
 import BackofficeChangelog from "./pages/backoffice/Changelog";
 import Kartvisaren from "./pages/Kartvisaren";
+import SparePartsIndex from "./pages/SparePartsIndex";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
@@ -128,6 +129,7 @@ function AppRoutes() {
         <Route path="/portal/fault-cases" element={<ProtectedRoute><FaultCases /></ProtectedRoute>} />
         <Route path="/portal/fault-cases/:id" element={<ProtectedRoute><FaultCaseDetail /></ProtectedRoute>} />
           <Route path="/portal/self-control" element={<ProtectedRoute><SelfControl /></ProtectedRoute>} />
+          <Route path="/portal/spare-parts" element={<ProtectedRoute><SparePartsIndex /></ProtectedRoute>} />
           <Route path="/portal/qualifications" element={<ProtectedRoute><Qualifications /></ProtectedRoute>} />
           <Route path="/portal/checklists" element={<ProtectedRoute><Checklists /></ProtectedRoute>} />
           <Route path="/portal/kartvisaren" element={<ProtectedRoute><Kartvisaren /></ProtectedRoute>} />
