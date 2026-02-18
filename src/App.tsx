@@ -50,7 +50,6 @@ import PassengerRegistration from "./pages/PassengerRegistration";
 import PassengerSession from "./pages/PassengerSession";
 import PassengerAdmin from "./pages/admin/PassengerAdmin";
 import NotificationSettingsPage from "./pages/admin/NotificationSettings";
-import StartPageSettings from "./pages/admin/StartPageSettings";
 import Changelog from "./pages/Changelog";
 import BackofficeChangelog from "./pages/backoffice/Changelog";
 const queryClient = new QueryClient();
@@ -142,9 +141,9 @@ function AppRoutes() {
         
         <Route path="/portal/admin/exercises" element={<ProtectedRoute adminOnly><ExercisesAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/intranet" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/startsida" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/notifications" element={<ProtectedRoute adminOnly><NotificationSettingsPage /></ProtectedRoute>} />
-        <Route path="/portal/admin/startsida" element={<ProtectedRoute adminOnly><StartPageSettings /></ProtectedRoute>} />
         
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
