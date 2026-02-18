@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, Trash2, Edit2, Package } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2, Package, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function SparePartsIndex() {
@@ -153,8 +153,28 @@ export default function SparePartsIndex() {
     );
   });
 
-  // Get unique categories for badges
+  // Group by category
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
   const categories = [...new Set(spareParts?.map(p => p.category) || [])].sort();
+
+  const groupedParts = (filteredParts || []).reduce<Record<string, typeof filteredParts>>((acc, part) => {
+    const cat = part.category || 'Övrigt';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat]!.push(part);
+    return acc;
+  }, {});
+  const sortedCategories = Object.keys(groupedParts).sort();
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      return next;
+    });
+  };
+  const expandAll = () => setExpandedCategories(new Set(sortedCategories));
+  const collapseAll = () => setExpandedCategories(new Set());
 
   return (
     <MainLayout>
@@ -257,89 +277,112 @@ export default function SparePartsIndex() {
           </CardContent>
         </Card>
 
-        {/* Categories overview */}
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {categories.map(cat => (
-              <Badge
-                key={cat}
-                variant={searchTerm === cat ? 'default' : 'secondary'}
-                className="cursor-pointer"
-                onClick={() => setSearchTerm(searchTerm === cat ? '' : cat)}
-              >
-                {cat} ({spareParts?.filter(p => p.category === cat).length})
-              </Badge>
-            ))}
+        {/* Grouped by category */}
+        {isLoading ? (
+          <div className="p-8 text-center text-muted-foreground">Laddar...</div>
+        ) : !filteredParts?.length ? (
+          <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+            <Package className="h-8 w-8" />
+            <p>Inga reservdelar hittades</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={expandAll} className="text-xs">Expandera alla</Button>
+                <Button variant="outline" size="sm" onClick={collapseAll} className="text-xs">Minimera</Button>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {sortedCategories.length} kategorier, {filteredParts.length} delar
+              </span>
+            </div>
+
+            {sortedCategories.map((category) => {
+              const parts = groupedParts[category] || [];
+              const isExpanded = expandedCategories.has(category);
+              const lowStock = parts.filter(p => p.quantity <= p.min_quantity && p.min_quantity > 0).length;
+
+              return (
+                <Card key={category} className="overflow-hidden">
+                  <div
+                    className="flex items-center justify-between p-3 md:p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => toggleCategory(category)}
+                  >
+                    <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <FolderOpen className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+                      <span className="font-medium text-sm md:text-base">{category}</span>
+                      <Badge variant="secondary" className="text-xs">{parts.length}</Badge>
+                      {lowStock > 0 && (
+                        <Badge variant="destructive" className="text-xs">{lowStock} lågt lager</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="border-t">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Namn</TableHead>
+                            <TableHead>Artikelnr</TableHead>
+                            <TableHead>Fartyg</TableHead>
+                            <TableHead>Plats</TableHead>
+                            <TableHead className="text-right">Antal</TableHead>
+                            {canManage && <TableHead className="w-20" />}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {parts.map(part => (
+                            <TableRow key={part.id}>
+                              <TableCell className="font-medium">{part.name}</TableCell>
+                              <TableCell className="font-mono text-sm">{part.part_number || '–'}</TableCell>
+                              <TableCell>{(part.vessels as any)?.name}</TableCell>
+                              <TableCell>{part.location || '–'}</TableCell>
+                              <TableCell className="text-right">
+                                <span className={part.quantity <= part.min_quantity && part.min_quantity > 0 ? 'text-destructive font-semibold' : ''}>
+                                  {part.quantity}
+                                </span>
+                                {part.min_quantity > 0 && (
+                                  <span className="text-muted-foreground text-xs ml-1">/ min {part.min_quantity}</span>
+                                )}
+                              </TableCell>
+                              {canManage && (
+                                <TableCell>
+                                  <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(part)}>
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive"
+                                      onClick={() => {
+                                        if (confirm('Ta bort denna reservdel?')) {
+                                          deleteMutation.mutate(part.id);
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         )}
-
-        {/* Table */}
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-8 text-center text-muted-foreground">Laddar...</div>
-            ) : !filteredParts?.length ? (
-              <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
-                <Package className="h-8 w-8" />
-                <p>Inga reservdelar hittades</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Namn</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>Artikelnr</TableHead>
-                    <TableHead>Fartyg</TableHead>
-                    <TableHead>Plats</TableHead>
-                    <TableHead className="text-right">Antal</TableHead>
-                    {canManage && <TableHead className="w-20" />}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredParts.map(part => (
-                    <TableRow key={part.id}>
-                      <TableCell className="font-medium">{part.name}</TableCell>
-                      <TableCell>{part.category}</TableCell>
-                      <TableCell className="font-mono text-sm">{part.part_number || '–'}</TableCell>
-                      <TableCell>{(part.vessels as any)?.name}</TableCell>
-                      <TableCell>{part.location || '–'}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={part.quantity <= part.min_quantity && part.min_quantity > 0 ? 'text-destructive font-semibold' : ''}>
-                          {part.quantity}
-                        </span>
-                        {part.min_quantity > 0 && (
-                          <span className="text-muted-foreground text-xs ml-1">/ min {part.min_quantity}</span>
-                        )}
-                      </TableCell>
-                      {canManage && (
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(part)}>
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive"
-                              onClick={() => {
-                                if (confirm('Ta bort denna reservdel?')) {
-                                  deleteMutation.mutate(part.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </MainLayout>
   );
