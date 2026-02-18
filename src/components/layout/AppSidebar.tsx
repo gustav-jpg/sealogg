@@ -156,7 +156,8 @@ export function AppSidebar() {
     if (!isDeckhand || isAdmin) {
       vesselNavItems.push({ href: '/portal/qualifications', label: 'Certifikat', icon: Award });
     }
-    vesselNavItems.push({ href: '/portal/kartvisaren', label: 'Kartvisaren', icon: Map });
+    // Kartvisaren dold tills vidare – inväntar svar från Sjöfartsverket
+    // vesselNavItems.push({ href: '/portal/kartvisaren', label: 'Kartvisaren', icon: Map });
   }
 
   // Base admin items always shown (only for admin)
