@@ -176,8 +176,7 @@ export function AppSidebar() {
     { module: 'self_control', href: '/portal/admin/control-points', label: 'Kontrollpunkter', icon: ClipboardCheck },
     { module: 'checklists', href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
     { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
-    { module: 'logbook', href: '/portal/admin/intranet', label: 'Intranät', icon: Home },
-    { module: 'logbook', href: '/portal/admin/startsida', label: 'Startsida-inställningar', icon: Settings },
+    { module: 'logbook', href: '/portal/admin/startsida', label: 'Startsida', icon: Home },
     { module: 'logbook', href: '/portal/admin/passagerare', label: 'Passagerarrutter', icon: Route },
   ];
 

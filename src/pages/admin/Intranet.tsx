@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,11 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Home, Plus, Trash2, CalendarIcon, FileText, Download, X } from 'lucide-react';
+import { Home, Plus, Trash2, CalendarIcon, FileText, Download, X, Wind, AlertTriangle, Save, Settings } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isPast } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,14 @@ export default function IntranetAdmin() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; message: { id: string; title: string } | null }>({ open: false, message: null });
   const [calendarOpen, setCalendarOpen] = useState(false);
 
+  // Settings state
+  const [weatherStationId, setWeatherStationId] = useState('141');
+  const [weatherSource, setWeatherSource] = useState('viva');
+  const [smhiLon, setSmhiLon] = useState('18.0686');
+  const [smhiLat, setSmhiLat] = useState('59.3293');
+  const [chartNumbers, setChartNumbers] = useState<string[]>(['99']);
+  const [newChart, setNewChart] = useState('');
+
   // View state - show current week by default
   const [viewDate, setViewDate] = useState(new Date());
   const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 });
@@ -75,6 +84,32 @@ export default function IntranetAdmin() {
     enabled: !!selectedOrgId,
   });
 
+  // Fetch org settings
+  const { data: orgSettings, isLoading: settingsLoading } = useQuery({
+    queryKey: ['org-settings', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return null;
+      const { data, error } = await supabase
+        .from('organization_settings')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrgId,
+  });
+
+  useEffect(() => {
+    if (orgSettings) {
+      setWeatherStationId(orgSettings.weather_station_id || '141');
+      setWeatherSource(orgSettings.weather_station_source || 'viva');
+      setSmhiLon(String(orgSettings.smhi_forecast_lon ?? '18.0686'));
+      setSmhiLat(String(orgSettings.smhi_forecast_lat ?? '59.3293'));
+      setChartNumbers(orgSettings.ufs_chart_numbers || ['99']);
+    }
+  }, [orgSettings]);
+
   const resetForm = () => {
     setEditingId(null);
     setSelectedDate(new Date());
@@ -93,7 +128,6 @@ export default function IntranetAdmin() {
       setTitle(message.title);
       setContent(message.content || '');
       
-      // Fetch existing documents for this message
       const { data: docs } = await supabase
         .from('intranet_documents')
         .select('id, display_name, file_name, file_url')
@@ -117,7 +151,7 @@ export default function IntranetAdmin() {
     const newDocs: DocumentToUpload[] = Array.from(files).map(file => ({
       id: crypto.randomUUID(),
       file,
-      displayName: file.name.replace(/\.[^/.]+$/, ''), // Remove extension for display name
+      displayName: file.name.replace(/\.[^/.]+$/, ''),
     }));
     
     setDocumentsToUpload(prev => [...prev, ...newDocs]);
@@ -151,7 +185,6 @@ export default function IntranetAdmin() {
         title,
         content: content || null,
         created_by: user.id,
-        // Keep old fields null for backwards compatibility
         document_url: null,
         document_name: null,
       };
@@ -174,7 +207,6 @@ export default function IntranetAdmin() {
       
       if (!messageId) throw new Error('Kunde inte spara meddelande');
       
-      // Delete marked documents
       if (documentsToDelete.length > 0) {
         const { error: deleteError } = await supabase
           .from('intranet_documents')
@@ -183,7 +215,6 @@ export default function IntranetAdmin() {
         if (deleteError) throw deleteError;
       }
       
-      // Upload new documents
       for (const doc of documentsToUpload) {
         const fileExt = doc.file.name.split('.').pop();
         const fileName = `${selectedOrgId}/${messageId}/${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
@@ -225,7 +256,6 @@ export default function IntranetAdmin() {
 
   const deleteMessage = useMutation({
     mutationFn: async (messageId: string) => {
-      // Documents will be cascade deleted due to FK constraint
       const { error } = await supabase
         .from('intranet_messages')
         .delete()
@@ -242,24 +272,44 @@ export default function IntranetAdmin() {
     },
   });
 
+  const saveSettings = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrgId) throw new Error('Ingen organisation vald');
+      const payload = {
+        organization_id: selectedOrgId,
+        weather_station_id: weatherStationId,
+        weather_station_source: weatherSource,
+        smhi_forecast_lon: parseFloat(smhiLon),
+        smhi_forecast_lat: parseFloat(smhiLat),
+        ufs_chart_numbers: chartNumbers,
+      };
+      const { error } = await supabase
+        .from('organization_settings')
+        .upsert(payload, { onConflict: 'organization_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-settings'] });
+      toast({ title: 'Inställningar sparade' });
+    },
+    onError: (error) => {
+      toast({ title: 'Kunde inte spara', description: String(error), variant: 'destructive' });
+    },
+  });
+
   const getMessageForDate = (date: Date) => {
     return messages?.find(m => m.message_date === format(date, 'yyyy-MM-dd'));
   };
 
   const downloadDocument = async (doc: ExistingDocument) => {
     try {
-      // Extract the file path from the URL (after /object/public/ or /object/sign/)
       const urlParts = doc.file_url.split('/intranet-documents/');
-      if (urlParts.length < 2) {
-        throw new Error('Invalid file URL');
-      }
+      if (urlParts.length < 2) throw new Error('Invalid file URL');
       const filePath = urlParts[1];
       
-      // Use signed URL for private bucket
       const { data, error } = await supabase.storage
         .from('intranet-documents')
         .createSignedUrl(filePath, 60);
-      
       if (error) throw error;
       
       const response = await fetch(data.signedUrl);
@@ -278,122 +328,215 @@ export default function IntranetAdmin() {
     }
   };
 
+  const addChart = () => {
+    const trimmed = newChart.trim();
+    if (trimmed && !chartNumbers.includes(trimmed)) {
+      setChartNumbers([...chartNumbers, trimmed]);
+      setNewChart('');
+    }
+  };
+
+  const removeChart = (chart: string) => {
+    setChartNumbers(chartNumbers.filter(c => c !== chart));
+  };
+
   const totalDocuments = existingDocuments.length + documentsToUpload.length;
 
   return (
     <MainLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-              <Home className="h-8 w-8" />
-              Intranät
-            </h1>
-            <p className="text-muted-foreground mt-1">Hantera dagliga meddelanden för startsidan</p>
-          </div>
-          <Button onClick={() => openDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nytt meddelande
-          </Button>
+        <div>
+          <h1 className="text-xl md:text-2xl font-display font-bold flex items-center gap-2">
+            <Home className="h-6 w-6" />
+            Startsida
+          </h1>
+          <p className="text-muted-foreground text-sm">Hantera meddelanden, väder och UFS-inställningar</p>
         </div>
 
-        {/* Week Navigation */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Veckoöversikt</CardTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewDate(addDays(viewDate, -7))}
-                >
-                  ← Föregående
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewDate(new Date())}
-                >
-                  Idag
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewDate(addDays(viewDate, 7))}
-                >
-                  Nästa →
-                </Button>
-              </div>
+        <Tabs defaultValue="messages">
+          <TabsList>
+            <TabsTrigger value="messages">
+              <FileText className="h-4 w-4 mr-1.5" />
+              Meddelanden
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-1.5" />
+              Inställningar
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Messages Tab */}
+          <TabsContent value="messages" className="space-y-4 mt-4">
+            <div className="flex justify-end">
+              <Button onClick={() => openDialog()} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Nytt meddelande
+              </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2">
-              {weekDays.map((day) => {
-                const message = getMessageForDate(day);
-                const dayIsToday = isToday(day);
-                const dayIsPast = isPast(day) && !dayIsToday;
-                
-                return (
-                  <div
-                    key={day.toISOString()}
-                    className={cn(
-                      "p-3 rounded-lg border min-h-[120px] flex flex-col cursor-pointer transition-colors hover:bg-muted/50",
-                      dayIsToday && "border-primary bg-primary/5",
-                      dayIsPast && "opacity-60"
-                    )}
-                    onClick={() => openDialog(day, message)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={cn(
-                        "text-xs font-medium",
-                        dayIsToday && "text-primary"
-                      )}>
-                        {format(day, 'EEE', { locale: sv })}
-                      </span>
-                      <span className={cn(
-                        "text-lg font-bold",
-                        dayIsToday && "text-primary"
-                      )}>
-                        {format(day, 'd')}
-                      </span>
-                    </div>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Veckoöversikt</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setViewDate(addDays(viewDate, -7))}>
+                      ← Föregående
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setViewDate(new Date())}>
+                      Idag
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setViewDate(addDays(viewDate, 7))}>
+                      Nästa →
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-7 gap-2">
+                  {weekDays.map((day) => {
+                    const message = getMessageForDate(day);
+                    const dayIsToday = isToday(day);
+                    const dayIsPast = isPast(day) && !dayIsToday;
                     
-                    {message ? (
-                      <div className="flex-1 space-y-1">
-                        <p className="text-xs font-medium line-clamp-2">{message.title}</p>
-                        {(message.document_name) && (
-                          <Badge variant="secondary" className="text-[10px] py-0">
-                            <FileText className="h-2.5 w-2.5 mr-1" />
-                            Dokument
-                          </Badge>
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        className={cn(
+                          "p-3 rounded-lg border min-h-[120px] flex flex-col cursor-pointer transition-colors hover:bg-muted/50",
+                          dayIsToday && "border-primary bg-primary/5",
+                          dayIsPast && "opacity-60"
+                        )}
+                        onClick={() => openDialog(day, message)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={cn("text-xs font-medium", dayIsToday && "text-primary")}>
+                            {format(day, 'EEE', { locale: sv })}
+                          </span>
+                          <span className={cn("text-lg font-bold", dayIsToday && "text-primary")}>
+                            {format(day, 'd')}
+                          </span>
+                        </div>
+                        
+                        {message ? (
+                          <div className="flex-1 space-y-1">
+                            <p className="text-xs font-medium line-clamp-2">{message.title}</p>
+                            {(message.document_name) && (
+                              <Badge variant="secondary" className="text-[10px] py-0">
+                                <FileText className="h-2.5 w-2.5 mr-1" />
+                                Dokument
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex items-center justify-center">
+                            <Plus className="h-4 w-4 text-muted-foreground/50" />
+                          </div>
                         )}
                       </div>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center">
-                        <Plus className="h-4 w-4 text-muted-foreground/50" />
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 text-center">
+                  Klicka på en dag för att lägga till eller redigera meddelande
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-4 mt-4">
+            {settingsLoading ? (
+              <div className="h-40 bg-muted animate-pulse rounded-lg" />
+            ) : (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Wind className="h-5 w-5" />
+                      Väderstation
+                    </CardTitle>
+                    <CardDescription>
+                      Ange vilken väderstation som ska användas för vinddata.
+                      Stations-ID:t hittar du på{' '}
+                      <a href="https://viva.sjofartsverket.se/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                        Sjöfartsverket ViVa
+                      </a>.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="stationId">ViVa Station-ID</Label>
+                        <Input id="stationId" value={weatherStationId} onChange={e => setWeatherStationId(e.target.value)} placeholder="t.ex. 141" />
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground mt-3 text-center">
-              Klicka på en dag för att lägga till eller redigera meddelande
-            </p>
-          </CardContent>
-        </Card>
+                      <div className="space-y-2">
+                        <Label htmlFor="source">Källa</Label>
+                        <Input id="source" value={weatherSource} onChange={e => setWeatherSource(e.target.value)} placeholder="viva" disabled />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="lon">SMHI Prognos Longitud</Label>
+                        <Input id="lon" type="number" step="0.0001" value={smhiLon} onChange={e => setSmhiLon(e.target.value)} placeholder="18.0686" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lat">SMHI Prognos Latitud</Label>
+                        <Input id="lat" type="number" step="0.0001" value={smhiLat} onChange={e => setSmhiLat(e.target.value)} placeholder="59.3293" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertTriangle className="h-5 w-5" />
+                      UFS Sjökort
+                    </CardTitle>
+                    <CardDescription>
+                      Ange vilka sjökortsnummer som ska visas för UFS-varningar. Sjökort 99 visar alla vatten.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {chartNumbers.map(chart => (
+                        <Badge key={chart} variant="secondary" className="text-sm py-1 px-3 gap-1">
+                          {chart}
+                          <button onClick={() => removeChart(chart)} className="ml-1 hover:text-destructive">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newChart}
+                        onChange={e => setNewChart(e.target.value)}
+                        placeholder="Sjökortsnummer, t.ex. 612"
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addChart())}
+                      />
+                      <Button variant="outline" size="sm" onClick={addChart} disabled={!newChart.trim()}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Lägg till
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending} className="w-full">
+                  <Save className="h-4 w-4 mr-2" />
+                  {saveSettings.isPending ? 'Sparar...' : 'Spara inställningar'}
+                </Button>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Message Dialog */}
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                {editingId ? 'Redigera meddelande' : 'Nytt meddelande'}
-              </DialogTitle>
+              <DialogTitle>{editingId ? 'Redigera meddelande' : 'Nytt meddelande'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -409,12 +552,7 @@ export default function IntranetAdmin() {
                     <Calendar
                       mode="single"
                       selected={selectedDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          setSelectedDate(date);
-                          setCalendarOpen(false);
-                        }
-                      }}
+                      onSelect={(date) => { if (date) { setSelectedDate(date); setCalendarOpen(false); } }}
                       locale={sv}
                     />
                   </PopoverContent>
@@ -423,47 +561,24 @@ export default function IntranetAdmin() {
               
               <div className="space-y-2">
                 <Label htmlFor="title">Titel *</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="T.ex. Dagens rutt"
-                />
+                <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="T.ex. Dagens rutt" />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="content">Meddelande</Label>
-                <Textarea
-                  id="content"
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="Skriv ditt meddelande här..."
-                  rows={4}
-                />
+                <Textarea id="content" value={content} onChange={e => setContent(e.target.value)} placeholder="Skriv ditt meddelande här..." rows={4} />
               </div>
               
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Dokument ({totalDocuments})</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                     <Plus className="h-4 w-4 mr-1" />
                     Lägg till fil
                   </Button>
-                  <Input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
+                  <Input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" />
                 </div>
                 
-                {/* Existing documents */}
                 {existingDocuments.map((doc) => (
                   <div key={doc.id} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
                     <FileText className="h-4 w-4 shrink-0" />
@@ -471,58 +586,31 @@ export default function IntranetAdmin() {
                       <p className="text-sm font-medium truncate">{doc.display_name}</p>
                       <p className="text-xs text-muted-foreground truncate">{doc.file_name}</p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
-                      onClick={() => downloadDocument(doc)}
-                      title="Ladda ner"
-                    >
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => downloadDocument(doc)} title="Ladda ner">
                       <Download className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => markExistingDocForDeletion(doc.id)}
-                      title="Ta bort"
-                    >
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" onClick={() => markExistingDocForDeletion(doc.id)} title="Ta bort">
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 ))}
                 
-                {/* New documents to upload */}
                 {documentsToUpload.map((doc) => (
                   <div key={doc.id} className="space-y-2 p-2 bg-primary/5 rounded-lg border border-primary/20">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 shrink-0 text-primary" />
-                      <span className="text-xs text-muted-foreground truncate flex-1">
-                        {doc.file.name}
-                      </span>
+                      <span className="text-xs text-muted-foreground truncate flex-1">{doc.file.name}</span>
                       <Badge variant="outline" className="text-[10px]">Ny</Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 shrink-0 text-destructive hover:text-destructive"
-                        onClick={() => removeDocumentToUpload(doc.id)}
-                      >
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-destructive hover:text-destructive" onClick={() => removeDocumentToUpload(doc.id)}>
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
-                    <Input
-                      value={doc.displayName}
-                      onChange={(e) => updateDocumentDisplayName(doc.id, e.target.value)}
-                      placeholder="Titel för dokumentet"
-                      className="h-8 text-sm"
-                    />
+                    <Input value={doc.displayName} onChange={(e) => updateDocumentDisplayName(doc.id, e.target.value)} placeholder="Titel för dokumentet" className="h-8 text-sm" />
                   </div>
                 ))}
                 
                 {totalDocuments === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-2">
-                    Inga dokument tillagda
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center py-2">Inga dokument tillagda</p>
                 )}
               </div>
               
@@ -532,20 +620,14 @@ export default function IntranetAdmin() {
                     variant="destructive"
                     onClick={() => {
                       const message = messages?.find(m => m.id === editingId);
-                      if (message) {
-                        setDeleteConfirm({ open: true, message: { id: message.id, title: message.title } });
-                      }
+                      if (message) setDeleteConfirm({ open: true, message: { id: message.id, title: message.title } });
                     }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Radera
                   </Button>
                 )}
-                <Button
-                  className="flex-1"
-                  onClick={() => saveMessage.mutate()}
-                  disabled={!title || saveMessage.isPending}
-                >
+                <Button className="flex-1" onClick={() => saveMessage.mutate()} disabled={!title || saveMessage.isPending}>
                   {saveMessage.isPending ? 'Sparar...' : 'Spara'}
                 </Button>
               </div>
