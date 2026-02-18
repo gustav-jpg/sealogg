@@ -2876,6 +2876,7 @@ export type Database = {
           description: string | null
           id: string
           main_engine_count: number
+          max_passengers: number | null
           name: string
           organization_id: string
           primary_engine_id: string | null
@@ -2887,6 +2888,7 @@ export type Database = {
           description?: string | null
           id?: string
           main_engine_count?: number
+          max_passengers?: number | null
           name: string
           organization_id: string
           primary_engine_id?: string | null
@@ -2898,6 +2900,7 @@ export type Database = {
           description?: string | null
           id?: string
           main_engine_count?: number
+          max_passengers?: number | null
           name?: string
           organization_id?: string
           primary_engine_id?: string | null

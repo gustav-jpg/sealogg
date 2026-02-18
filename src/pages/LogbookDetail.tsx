@@ -1166,6 +1166,7 @@ export default function LogbookDetail() {
                     stops={stops} 
                     onStopsChange={setStops} 
                     disabled={!canEditThis}
+                    maxPassengers={(logbook as any)?.vessel?.max_passengers}
                     passengerSession={passengerSession}
                     passengerSummary={passengerSummary}
                     onActivatePassengerRegistration={() => activatePassengerRegistration.mutate()}

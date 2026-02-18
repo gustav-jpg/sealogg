@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus, Pencil } from "lucide-react";
+import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus, Pencil, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { toast } from "sonner";
@@ -134,7 +134,7 @@ export default function PassengerSession() {
           current_stop_index,
           is_active,
           started_at,
-          vessel:vessels(id, name),
+          vessel:vessels(id, name, max_passengers),
           logbook:logbooks(id, date)
         `)
         .eq('id', sessionId)
@@ -470,8 +470,14 @@ export default function PassengerSession() {
           </div>
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
             <div className="text-right">
-              <div className="text-2xl md:text-3xl font-bold text-primary">{currentOnboard}</div>
+              <div className={`text-2xl md:text-3xl font-bold ${(session as any).vessel?.max_passengers && currentOnboard > (session as any).vessel.max_passengers ? 'text-destructive' : 'text-primary'}`}>{currentOnboard}</div>
               <div className="text-xs md:text-sm text-muted-foreground">ombord</div>
+              {(session as any).vessel?.max_passengers && currentOnboard > (session as any).vessel.max_passengers && (
+                <div className="flex items-center gap-1 text-destructive text-xs mt-0.5 justify-end">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>Max {(session as any).vessel.max_passengers}!</span>
+                </div>
+              )}
             </div>
             {!session.is_active && (
               <Badge variant="secondary" className="gap-1 text-xs">
