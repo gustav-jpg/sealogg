@@ -341,7 +341,7 @@ export default function IntranetAdmin() {
         <div>
           <h1 className="text-xl md:text-2xl font-display font-bold flex items-center gap-2">
             <Home className="h-6 w-6" />
-            Startsida
+            Intranät
           </h1>
           <p className="text-muted-foreground text-sm">Hantera meddelanden, väder och UFS-inställningar</p>
         </div>
