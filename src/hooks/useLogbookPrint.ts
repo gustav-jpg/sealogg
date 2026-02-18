@@ -688,8 +688,8 @@ export function useLogbookPrint() {
             </div>
           </div>
           
-          ${stopsHtml}
           ${notesHtml}
+          ${stopsHtml}
           ${crewHtml}
           ${engineHtml}
           ${quickEntriesHtml}
