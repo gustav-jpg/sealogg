@@ -59,7 +59,7 @@ export default function IntranetAdmin() {
   const [weatherStationId, setWeatherStationId] = useState('98040');
   const [smhiLon, setSmhiLon] = useState('19.5013');
   const [smhiLat, setSmhiLat] = useState('59.4428');
-  const [chartNumbers, setChartNumbers] = useState<string[]>(['99']);
+  const [chartNumbers, setChartNumbers] = useState<string[]>([]);
   
 
   // View state - show current week by default
@@ -107,7 +107,7 @@ export default function IntranetAdmin() {
       setWeatherStationId(orgSettings.weather_station_id || '98040');
       setSmhiLon(String(orgSettings.smhi_forecast_lon ?? '19.5013'));
       setSmhiLat(String(orgSettings.smhi_forecast_lat ?? '59.4428'));
-      setChartNumbers(orgSettings.ufs_chart_numbers || ['99']);
+      setChartNumbers(orgSettings.ufs_chart_numbers || []);
     }
   }, [orgSettings]);
 
@@ -491,7 +491,7 @@ export default function IntranetAdmin() {
                       UFS Sjökort
                     </CardTitle>
                     <CardDescription>
-                      Välj vilka sjökortsnummer som ska visas för UFS-varningar på startsidan. Sjökort 99 visar alla vatten.
+                      Välj vilka sjökortsnummer som ska visas för UFS-varningar på startsidan.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
