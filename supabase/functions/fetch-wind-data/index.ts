@@ -58,15 +58,12 @@ Deno.serve(async (req) => {
 
 async function fetchFromViVa(stationId: string): Promise<WindData | null> {
   try {
-    // Try the internal ViVa endpoint
-    const url = `https://viva.sjofartsverket.se/VisualiseraV7/Service/Station.ashx?id=${stationId}`;
+    const url = `https://services.viva.sjofartsverket.se:8080/output/vivaoutputservice.svc/vivastation/${stationId}`;
     console.log('Trying ViVa URL:', url);
     
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Referer': 'https://viva.sjofartsverket.se/',
+        'Accept': 'application/json',
       },
     });
 
@@ -85,34 +82,49 @@ async function fetchFromViVa(stationId: string): Promise<WindData | null> {
     }
 
     const data = JSON.parse(text);
+    const stationData = data.GetSingleStationResult || data;
     
     let avgSpeed = 'Ej tillgänglig';
     let gustSpeed = 'Ej tillgänglig';
     let direction = 'Ej tillgänglig';
     let timestamp = new Date().toLocaleTimeString('sv-SE');
-    const stationName = data.Name || data.name || `ViVa Station ${stationId}`;
+    const stationName = stationData.Name || `ViVa Station ${stationId}`;
 
     // Parse samples
-    const samples = data.Samples || data.samples || [];
+    const samples = stationData.Samples || [];
     for (const sample of samples) {
-      const name = (sample.Name || sample.name || '').toLowerCase();
-      const value = sample.Value ?? sample.value;
-      const unit = sample.Unit || sample.unit || 'm/s';
+      const name = (sample.Name || '').toLowerCase();
+      const value = sample.Value;
 
-      if (name.includes('medelvind') || name.includes('vindhastighet')) {
-        if (value !== undefined && value !== null) {
-          avgSpeed = `${value} ${unit}`;
+      if (name === 'medelvind') {
+        if (value) {
+          // Value format: "NV 3.2 m/s" or similar
+          const parts = value.split(' ');
+          if (parts.length >= 2) {
+            const numPart = parts.find((p: string) => !isNaN(parseFloat(p)));
+            avgSpeed = numPart ? `${numPart} m/s` : value;
+            // Extract direction from value string
+            const dirPart = parts[0];
+            if (isNaN(parseFloat(dirPart))) {
+              const heading = sample.Heading;
+              direction = heading !== undefined ? `${dirPart} ${Math.round(heading)}°` : dirPart;
+            }
+          } else {
+            avgSpeed = value;
+          }
         }
       }
 
-      if (name.includes('byvind') || name.includes('vindby')) {
-        if (value !== undefined && value !== null) {
-          gustSpeed = `${value} ${unit}`;
+      if (name === 'byvind') {
+        if (value) {
+          const parts = value.split(' ');
+          const numPart = parts.find((p: string) => !isNaN(parseFloat(p)));
+          gustSpeed = numPart ? `${numPart} m/s` : value;
         }
       }
 
-      if (name.includes('vindriktning') || name.includes('riktning')) {
-        if (value !== undefined && value !== null) {
+      if (name === 'vindriktning' || name === 'riktning') {
+        if (value) {
           const degrees = parseFloat(value);
           if (!isNaN(degrees)) {
             const compassDir = degreesToCompass(degrees);
@@ -121,8 +133,8 @@ async function fetchFromViVa(stationId: string): Promise<WindData | null> {
         }
       }
 
-      if (sample.Updated || sample.updated || sample.Time) {
-        const updated = new Date(sample.Updated || sample.updated || sample.Time);
+      if (sample.Updated || sample.Time) {
+        const updated = new Date(sample.Updated || sample.Time);
         if (!isNaN(updated.getTime())) {
           timestamp = updated.toLocaleTimeString('sv-SE');
         }
