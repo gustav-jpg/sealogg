@@ -689,11 +689,11 @@ export function useLogbookPrint() {
           </div>
           
           ${stopsHtml}
+          ${notesHtml}
           ${crewHtml}
           ${engineHtml}
           ${quickEntriesHtml}
           ${exercisesHtml}
-          ${notesHtml}
           ${signatureHtml}
           
           <div class="footer">
