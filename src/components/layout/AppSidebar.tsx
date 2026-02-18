@@ -30,6 +30,7 @@ import {
   UserCheck,
   Route,
   Bell,
+  Map,
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo-white.png';
 import {
@@ -155,6 +156,7 @@ export function AppSidebar() {
     if (!isDeckhand || isAdmin) {
       vesselNavItems.push({ href: '/portal/qualifications', label: 'Certifikat', icon: Award });
     }
+    vesselNavItems.push({ href: '/portal/kartvisaren', label: 'Kartvisaren', icon: Map });
   }
 
   // Base admin items always shown (only for admin)
