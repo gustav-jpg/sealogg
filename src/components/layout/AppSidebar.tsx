@@ -177,6 +177,7 @@ export function AppSidebar() {
     { module: 'checklists', href: '/portal/admin/checklists', label: 'Checklistor', icon: ClipboardList },
     { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
     { module: 'logbook', href: '/portal/admin/intranet', label: 'Intranät', icon: Home },
+    { module: 'logbook', href: '/portal/admin/startsida', label: 'Startsida-inställningar', icon: Settings },
     { module: 'logbook', href: '/portal/admin/passagerare', label: 'Passagerarrutter', icon: Route },
   ];
 
