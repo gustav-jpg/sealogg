@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS: Omit<OrgSettings, 'id' | 'organization_id'> = {
   weather_station_source: 'smhi',
   smhi_forecast_lon: 19.5013,
   smhi_forecast_lat: 59.4428,
-  ufs_chart_numbers: ['99'],
+  ufs_chart_numbers: [],
 };
 
 export function useOrgSettings() {
