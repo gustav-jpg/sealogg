@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgSettings } from '@/hooks/useOrgSettings';
 import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink, Navigation, Gauge } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -43,6 +44,7 @@ type DateSelection = 'today' | 'tomorrow';
 
 export default function Startsida() {
   const { selectedOrgId } = useOrganization();
+  const { data: orgSettings } = useOrgSettings();
   const [dateSelection, setDateSelection] = useState<DateSelection>('today');
   
   const selectedDate = dateSelection === 'today' 
@@ -75,13 +77,16 @@ export default function Startsida() {
     enabled: !!selectedOrgId,
   });
 
-  // Fetch weather from SMHI (Stockholm coordinates as default)
+  const smhiLon = orgSettings?.smhi_forecast_lon ?? 18.0686;
+  const smhiLat = orgSettings?.smhi_forecast_lat ?? 59.3293;
+
+  // Fetch weather from SMHI
   const { data: weatherData, isLoading: weatherLoading } = useQuery({
-    queryKey: ['smhi-weather'],
+    queryKey: ['smhi-weather', smhiLon, smhiLat],
     queryFn: async () => {
       try {
         const response = await fetch(
-          'https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/18.0686/lat/59.3293/data.json'
+          `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${smhiLon}/lat/${smhiLat}/data.json`
         );
         if (!response.ok) throw new Error('Failed to fetch weather');
         const data = await response.json();
@@ -118,13 +123,16 @@ export default function Startsida() {
     staleTime: 1000 * 60 * 30,
   });
 
+  const windStationId = orgSettings?.weather_station_id ?? '141';
+  const windSource = orgSettings?.weather_station_source ?? 'viva';
+
   // Fetch wind data from Sjöfartsverket/SMHI
   const { data: windData, isLoading: windLoading } = useQuery({
-    queryKey: ['wind-data'],
+    queryKey: ['wind-data', windStationId, windSource],
     queryFn: async () => {
       try {
         const { data, error } = await supabase.functions.invoke('fetch-wind-data', {
-          body: { stationId: '141', source: 'viva' },
+          body: { stationId: windStationId, source: windSource },
         });
         if (error) throw error;
         return data?.data as WindData || null;
@@ -133,16 +141,18 @@ export default function Startsida() {
         return null;
       }
     },
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 10,
   });
+
+  const ufsChartNumbers = orgSettings?.ufs_chart_numbers ?? ['99'];
 
   // Fetch UFS warnings
   const { data: ufsWarnings, isLoading: ufsLoading } = useQuery({
-    queryKey: ['ufs-warnings'],
+    queryKey: ['ufs-warnings', ufsChartNumbers],
     queryFn: async () => {
       try {
         const { data, error } = await supabase.functions.invoke('fetch-ufs-warnings', {
-          body: { limit: 20 },
+          body: { limit: 20, chartNumbers: ufsChartNumbers.join(',') },
         });
         if (error) throw error;
         return data?.data as UFSWarning[] || [];
@@ -151,7 +161,7 @@ export default function Startsida() {
         return [];
       }
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60,
   });
 
   const getWeatherIcon = (symbol: number) => {
@@ -334,7 +344,7 @@ export default function Startsida() {
                     <div className="pt-3 border-t">
                       <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                         <Cloud className="h-3 w-3" />
-                        Prognos kommande timmar (Stockholm)
+                        Prognos kommande timmar
                       </p>
                       <div className="grid grid-cols-4 gap-2">
                         {weatherData.slice(0, 4).map((hour: WeatherData, index: number) => (
@@ -424,7 +434,7 @@ export default function Startsida() {
               {ufsWarnings && ufsWarnings.length > 0 && (
                 <div className="mt-3 pt-3 border-t">
                   <a
-                    href="https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=99&SearchFormModel.SearchTimePeriod=0"
+                    href={`https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=${encodeURIComponent(ufsChartNumbers.join(','))}&SearchFormModel.SearchTimePeriod=0`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline flex items-center gap-1.5"

@@ -2025,6 +2025,50 @@ export type Database = {
           },
         ]
       }
+      organization_settings: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          smhi_forecast_lat: number | null
+          smhi_forecast_lon: number | null
+          ufs_chart_numbers: string[] | null
+          updated_at: string
+          weather_station_id: string | null
+          weather_station_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          smhi_forecast_lat?: number | null
+          smhi_forecast_lon?: number | null
+          ufs_chart_numbers?: string[] | null
+          updated_at?: string
+          weather_station_id?: string | null
+          weather_station_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          smhi_forecast_lat?: number | null
+          smhi_forecast_lon?: number | null
+          ufs_chart_numbers?: string[] | null
+          updated_at?: string
+          weather_station_id?: string | null
+          weather_station_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           contact_email: string | null

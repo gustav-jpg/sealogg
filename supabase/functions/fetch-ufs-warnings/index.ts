@@ -46,10 +46,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { limit = 10 } = await req.json().catch(() => ({ limit: 10 }));
+    const { limit = 10, chartNumbers = '99' } = await req.json().catch(() => ({ limit: 10, chartNumbers: '99' }));
+    
+    // chartNumbers can be comma-separated string like "99,612,6" or array
+    const chartNumStr = Array.isArray(chartNumbers) ? chartNumbers.join(',') : chartNumbers;
+    
+    console.log(`Fetching UFS warnings for charts: ${chartNumStr}, limit: ${limit}`);
     
     const response = await fetch(
-      'https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=99&SearchFormModel.SearchTimePeriod=0',
+      `https://ufs.sjofartsverket.se/Notice/Search/?SearchFormModel.ChartNumbers=${encodeURIComponent(chartNumStr)}&SearchFormModel.SearchTimePeriod=0`,
       {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -80,14 +85,12 @@ Deno.serve(async (req) => {
     while ((rowMatch = rowRegex.exec(tbodyMatch[1])) !== null && warnings.length < limit) {
       const rowHtml = rowMatch[1];
       
-      // Extract the link from <th> which contains the notice ID and URL
       const thMatch = rowHtml.match(/<th[^>]*>[\s\S]*?<a\s+href=["']([^"']+)["'][^>]*>(\d+)<\/a>[\s\S]*?<\/th>/i);
       if (!thMatch) continue;
       
       const url = `https://ufs.sjofartsverket.se${thMatch[1]}`;
       const notisNr = thMatch[2];
       
-      // Extract all <td> cells
       const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
       const cells: string[] = [];
       let tdMatch;
@@ -95,36 +98,30 @@ Deno.serve(async (req) => {
         cells.push(cleanText(tdMatch[1]));
       }
       
-      // Structure: cells[0]=Sjökort + Bsp info, cells[1]=Datum, cells[2]=Rubrik, cells[3]=Checkbox (ignorera)
       if (cells.length >= 3) {
         const chartInfo = cells[0] || '';
         const publishedDate = cells[1] || '';
         const headline = cells[2] || '';
         
-        // Extract chart number (e.g., "612" from "612 Bsp Stockholm N 2024/s39")
         const chartNumberMatch = chartInfo.match(/^(\d+)/);
         const chartNumber = chartNumberMatch ? chartNumberMatch[1] : chartInfo;
         
-        // Check for temporary (T) or preliminary (P) markers in the chart info
         const isTemporary = chartInfo.includes('(T)');
         const isPreliminary = chartInfo.includes('(P)');
         
         warnings.push({
           noticeNumber: notisNr,
-          chartNumber: chartNumber,
-          publishedDate: publishedDate,
-          headline: headline,
-          isTemporary: isTemporary,
-          isPreliminary: isPreliminary,
-          url: url,
+          chartNumber,
+          publishedDate,
+          headline,
+          isTemporary,
+          isPreliminary,
+          url,
         });
       }
     }
 
     console.log('Total warnings found:', warnings.length);
-    if (warnings.length > 0) {
-      console.log('First warning:', JSON.stringify(warnings[0]));
-    }
 
     return new Response(JSON.stringify({ success: true, data: warnings }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' } });
