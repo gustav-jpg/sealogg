@@ -1,0 +1,1 @@
+ALTER TABLE public.vessels ADD COLUMN max_passengers integer NULL;

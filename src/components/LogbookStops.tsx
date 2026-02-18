@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, Lock, Unlock, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, Lock, Unlock, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,7 @@ interface LogbookStopsProps {
   stops: StopEntry[];
   onStopsChange: (stops: StopEntry[]) => void;
   disabled?: boolean;
+  maxPassengers?: number | null;
   passengerSession?: { id: string; is_active: boolean } | null;
   passengerSummary?: PassengerSummary | null;
   onActivatePassengerRegistration?: () => void;
@@ -71,6 +72,7 @@ export function LogbookStops({
   stops, 
   onStopsChange, 
   disabled = false,
+  maxPassengers,
   passengerSession,
   passengerSummary,
   onActivatePassengerRegistration,
@@ -379,11 +381,17 @@ export function LogbookStops({
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge 
-                      variant={onboard > 0 ? "default" : "secondary"}
+                      variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"}
                       className="font-mono min-w-10 justify-center"
                     >
                       {onboard}
                     </Badge>
+                    {maxPassengers && onboard > maxPassengers && (
+                      <div className="flex items-center gap-1 text-destructive text-xs mt-0.5 justify-center">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span>Max {maxPassengers}</span>
+                      </div>
+                    )}
                   </TableCell>
                   {!disabled && (
                     <TableCell>

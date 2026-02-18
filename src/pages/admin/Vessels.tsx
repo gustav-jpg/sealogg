@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Search, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Search, X, AlertTriangle, CheckCircle, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -474,6 +474,35 @@ export default function AdminVessels() {
                       </Select>
                     </div>
                   )}
+                </div>
+
+                {/* Max passagerare */}
+                <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Max passagerare</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Varning visas i loggbok och passagerarregistrering när antalet överskrids.</p>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="Ej satt"
+                    value={(selectedVessel as any).max_passengers ?? ''}
+                    onChange={async (e) => {
+                      const val = e.target.value ? parseInt(e.target.value) : null;
+                      const { error } = await supabase
+                        .from('vessels')
+                        .update({ max_passengers: val } as any)
+                        .eq('id', selectedVessel.id);
+                      if (error) {
+                        toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+                      } else {
+                        setSelectedVessel({ ...selectedVessel, max_passengers: val } as any);
+                        queryClient.invalidateQueries({ queryKey: ['vessels'] });
+                      }
+                    }}
+                    className="w-32"
+                  />
                 </div>
 
                 {/* Certifikat */}
