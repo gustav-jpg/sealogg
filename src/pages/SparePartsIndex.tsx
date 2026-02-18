@@ -3,10 +3,11 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
+import { useSharedVessel } from '@/hooks/useSharedVessel';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,16 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Search, Trash2, Edit2, Package, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2, Package, FolderOpen, ChevronDown, ChevronRight, Ship } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function SparePartsIndex() {
   const { user, isAdmin, isSkeppare } = useAuth();
   const { selectedOrgId } = useOrganization();
   const { data: vessels } = useOrgVessels(selectedOrgId ?? null);
+  const { selectedVessel, setSelectedVessel } = useSharedVessel();
   const queryClient = useQueryClient();
 
-  const [selectedVesselId, setSelectedVesselId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPart, setEditingPart] = useState<any>(null);
@@ -37,37 +38,33 @@ export default function SparePartsIndex() {
     quantity: 0,
     min_quantity: 0,
     notes: '',
-    vessel_id: '',
   });
 
   const canManage = isAdmin || isSkeppare;
 
   const { data: spareParts, isLoading } = useQuery({
-    queryKey: ['spare-parts', selectedOrgId, selectedVesselId],
+    queryKey: ['spare-parts', selectedOrgId, selectedVessel],
     queryFn: async () => {
-      if (!selectedOrgId) return [];
-      let query = supabase
+      if (!selectedOrgId || !selectedVessel) return [];
+      const { data, error } = await supabase
         .from('spare_parts')
         .select('*, vessels(name)')
         .eq('organization_id', selectedOrgId)
+        .eq('vessel_id', selectedVessel)
         .order('category')
         .order('name');
 
-      if (selectedVesselId && selectedVesselId !== 'all') {
-        query = query.eq('vessel_id', selectedVesselId);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
-    enabled: !!selectedOrgId,
+    enabled: !!selectedOrgId && !!selectedVessel,
   });
 
   const createMutation = useMutation({
     mutationFn: async (partData: typeof form) => {
       const { error } = await supabase.from('spare_parts').insert({
         ...partData,
+        vessel_id: selectedVessel,
         quantity: partData.quantity || 0,
         min_quantity: partData.min_quantity || 0,
         organization_id: selectedOrgId!,
@@ -112,7 +109,7 @@ export default function SparePartsIndex() {
   });
 
   const resetForm = () => {
-    setForm({ name: '', category: '', part_number: '', location: '', quantity: 0, min_quantity: 0, notes: '', vessel_id: '' });
+    setForm({ name: '', category: '', part_number: '', location: '', quantity: 0, min_quantity: 0, notes: '' });
   };
 
   const handleEdit = (part: any) => {
@@ -125,14 +122,13 @@ export default function SparePartsIndex() {
       quantity: part.quantity || 0,
       min_quantity: part.min_quantity || 0,
       notes: part.notes || '',
-      vessel_id: part.vessel_id,
     });
     setDialogOpen(true);
   };
 
   const handleSubmit = () => {
-    if (!form.name.trim() || !form.category.trim() || !form.vessel_id) {
-      toast.error('Fyll i namn, kategori och fartyg');
+    if (!form.name.trim() || !form.category.trim()) {
+      toast.error('Fyll i namn och kategori');
       return;
     }
     if (editingPart) {
@@ -155,8 +151,6 @@ export default function SparePartsIndex() {
 
   // Group by category
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-
-  const categories = [...new Set(spareParts?.map(p => p.category) || [])].sort();
 
   const groupedParts = (filteredParts || []).reduce<Record<string, typeof filteredParts>>((acc, part) => {
     const cat = part.category || 'Övrigt';
@@ -184,7 +178,7 @@ export default function SparePartsIndex() {
             <h1 className="text-2xl font-semibold">Reservdelsindex</h1>
             <p className="text-muted-foreground text-sm">Hantera reservdelar per fartyg</p>
           </div>
-          {canManage && (
+          {canManage && selectedVessel && (
             <Dialog open={dialogOpen} onOpenChange={(open) => {
               setDialogOpen(open);
               if (!open) { resetForm(); setEditingPart(null); }
@@ -197,17 +191,6 @@ export default function SparePartsIndex() {
                   <DialogTitle>{editingPart ? 'Redigera reservdel' : 'Ny reservdel'}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div>
-                    <Label>Fartyg *</Label>
-                    <Select value={form.vessel_id} onValueChange={v => setForm(f => ({ ...f, vessel_id: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Välj fartyg" /></SelectTrigger>
-                      <SelectContent>
-                        {vessels?.map(v => (
-                          <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div>
                     <Label>Namn *</Label>
                     <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="t.ex. Impeller" />
@@ -247,38 +230,46 @@ export default function SparePartsIndex() {
           )}
         </div>
 
-        {/* Filters */}
+        {/* Vessel selector */}
         <Card>
           <CardContent className="pt-4">
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Sök namn, kategori, artikelnummer..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+              <div className="flex items-center gap-2">
+                <Ship className="h-4 w-4 text-muted-foreground" />
+                <Select value={selectedVessel} onValueChange={setSelectedVessel}>
+                  <SelectTrigger className="w-full sm:w-[250px]">
+                    <SelectValue placeholder="Välj fartyg..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vessels?.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={selectedVesselId} onValueChange={setSelectedVesselId}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Alla fartyg" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alla fartyg</SelectItem>
-                  {vessels?.map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {selectedVessel && (
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Sök namn, kategori, artikelnummer..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Grouped by category */}
-        {isLoading ? (
+        {!selectedVessel ? (
+          <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+            <Ship className="h-8 w-8" />
+            <p>Välj ett fartyg för att se reservdelar</p>
+          </div>
+        ) : isLoading ? (
           <div className="p-8 text-center text-muted-foreground">Laddar...</div>
         ) : !filteredParts?.length ? (
           <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
@@ -330,7 +321,6 @@ export default function SparePartsIndex() {
                           <TableRow>
                             <TableHead>Namn</TableHead>
                             <TableHead>Artikelnr</TableHead>
-                            <TableHead>Fartyg</TableHead>
                             <TableHead>Plats</TableHead>
                             <TableHead className="text-right">Antal</TableHead>
                             {canManage && <TableHead className="w-20" />}
@@ -341,7 +331,6 @@ export default function SparePartsIndex() {
                             <TableRow key={part.id}>
                               <TableCell className="font-medium">{part.name}</TableCell>
                               <TableCell className="font-mono text-sm">{part.part_number || '–'}</TableCell>
-                              <TableCell>{(part.vessels as any)?.name}</TableCell>
                               <TableCell>{part.location || '–'}</TableCell>
                               <TableCell className="text-right">
                                 <span className={part.quantity <= part.min_quantity && part.min_quantity > 0 ? 'text-destructive font-semibold' : ''}>
