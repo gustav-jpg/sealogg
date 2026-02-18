@@ -1,6 +1,6 @@
 /**
- * Predefined weather stations from Sjöfartsverket ViVa
- * Each entry has id, name, and SMHI forecast coordinates
+ * Predefined SMHI weather stations for wind data
+ * Each entry has SMHI station id, name, and forecast coordinates
  */
 export interface WeatherStation {
   id: string;
@@ -10,21 +10,26 @@ export interface WeatherStation {
 }
 
 export const WEATHER_STATIONS: WeatherStation[] = [
-  // Verified ViVa station IDs from services.viva.sjofartsverket.se API
-  { id: '141', name: 'Blockhusudden (Stockholm)', lon: 18.0686, lat: 59.3293 },
-  { id: '140', name: 'Frihamnen (Stockholm)', lon: 18.0951, lat: 59.3410 },
-  { id: '114', name: 'Vinga (Göteborg)', lon: 11.6050, lat: 57.6320 },
-  { id: '143', name: 'Stenungsund', lon: 11.8220, lat: 58.0700 },
-  { id: '45', name: 'Helsingborg', lon: 12.6940, lat: 56.0440 },
-  { id: '76', name: 'Ringhals', lon: 12.1100, lat: 57.2500 },
-  { id: '33', name: 'Bönan (Gävle)', lon: 17.1480, lat: 60.6560 },
-  { id: '35', name: 'Eggegrund', lon: 17.5550, lat: 60.7300 },
-  { id: '40', name: 'Gåsören', lon: 18.3300, lat: 62.3300 },
-  { id: '153', name: 'Gubben (Sundsvall)', lon: 17.4640, lat: 62.2020 },
-  { id: '110', name: 'Skagsudde', lon: 18.5320, lat: 63.1900 },
-  { id: '14', name: 'Uddevalla', lon: 11.9360, lat: 58.3510 },
-  { id: '15', name: 'Arkö', lon: 16.8500, lat: 58.4900 },
-  { id: '100', name: 'Måvholmsbådan', lon: 12.2880, lat: 58.2840 },
+  // SMHI meteorological observation stations
+  { id: '98040', name: 'Svenska Högarna', lon: 19.5013, lat: 59.4428 },
+  { id: '98230', name: 'Landsort', lon: 17.8588, lat: 58.7428 },
+  { id: '97400', name: 'Gotska Sandön', lon: 19.1994, lat: 58.3947 },
+  { id: '99280', name: 'Hoburg', lon: 18.1492, lat: 56.9208 },
+  { id: '71420', name: 'Vinga', lon: 11.6058, lat: 57.6328 },
+  { id: '72420', name: 'Nidingen', lon: 11.9017, lat: 57.3022 },
+  { id: '77210', name: 'Ringhals', lon: 12.1122, lat: 57.2500 },
+  { id: '78550', name: 'Helsingborg A', lon: 12.6872, lat: 56.0447 },
+  { id: '89230', name: 'Falsterbo', lon: 12.8167, lat: 55.3833 },
+  { id: '62180', name: 'Ölands södra udde', lon: 16.3964, lat: 56.1961 },
+  { id: '52350', name: 'Eggegrund', lon: 17.5342, lat: 60.7300 },
+  { id: '64540', name: 'Brämön', lon: 17.1500, lat: 62.3333 },
+  { id: '107440', name: 'Holmön', lon: 20.8625, lat: 63.7939 },
+  { id: '140480', name: 'Ratan', lon: 20.8953, lat: 64.0000 },
+  { id: '132160', name: 'Luleå flygplats', lon: 22.1269, lat: 65.5436 },
+  { id: '86340', name: 'Malmö A', lon: 13.0672, lat: 55.5714 },
+  { id: '96000', name: 'Visby flygplats', lon: 18.3461, lat: 57.6628 },
+  { id: '52240', name: 'Söderhamn', lon: 17.0967, lat: 61.2611 },
+  { id: '68560', name: 'Sundsvall-Härnösand', lon: 17.4444, lat: 62.5281 },
 ];
 
 /**

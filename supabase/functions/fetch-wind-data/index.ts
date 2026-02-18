@@ -12,8 +12,7 @@ interface WindData {
   source: string;
 }
 
-// Default station - Blockhusudden
-const DEFAULT_VIVA_STATION = '141';
+const DEFAULT_SMHI_STATION = '98040';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,26 +20,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { stationId = DEFAULT_VIVA_STATION, source = 'viva' } = await req.json().catch(() => ({}));
+    const { stationId = DEFAULT_SMHI_STATION } = await req.json().catch(() => ({}));
     
-    console.log(`Fetching wind data from ${source} for station: ${stationId}`);
+    console.log(`Fetching wind data from SMHI for station: ${stationId}`);
 
-    // Try ViVa first
-    if (source === 'viva') {
-      const vivaResult = await fetchFromViVa(stationId);
-      if (vivaResult) {
-        return new Response(
-          JSON.stringify({ success: true, data: vivaResult }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      console.log('ViVa failed, falling back to SMHI...');
-    }
-
-    // Fallback to SMHI
-    const smhiResult = await fetchFromSMHI(stationId === DEFAULT_VIVA_STATION ? '98040' : stationId);
+    const result = await fetchFromSMHI(stationId);
     return new Response(
-      JSON.stringify({ success: true, data: smhiResult }),
+      JSON.stringify({ success: true, data: result }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -55,105 +41,6 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-async function fetchFromViVa(stationId: string): Promise<WindData | null> {
-  try {
-    const url = `https://services.viva.sjofartsverket.se:8080/output/vivaoutputservice.svc/vivastation/${stationId}`;
-    console.log('Trying ViVa URL:', url);
-    
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.log(`ViVa response not OK: ${response.status}`);
-      return null;
-    }
-
-    const text = await response.text();
-    console.log('ViVa response (first 500 chars):', text.substring(0, 500));
-
-    // Check if it's HTML (error page)
-    if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
-      console.log('ViVa returned HTML, not JSON');
-      return null;
-    }
-
-    const data = JSON.parse(text);
-    const stationData = data.GetSingleStationResult || data;
-    
-    let avgSpeed = 'Ej tillgänglig';
-    let gustSpeed = 'Ej tillgänglig';
-    let direction = 'Ej tillgänglig';
-    let timestamp = new Date().toLocaleTimeString('sv-SE');
-    const stationName = stationData.Name || `ViVa Station ${stationId}`;
-
-    // Parse samples
-    const samples = stationData.Samples || [];
-    for (const sample of samples) {
-      const name = (sample.Name || '').toLowerCase();
-      const value = sample.Value;
-
-      if (name === 'medelvind') {
-        if (value) {
-          // Value format: "NV 3.2 m/s" or similar
-          const parts = value.split(' ');
-          if (parts.length >= 2) {
-            const numPart = parts.find((p: string) => !isNaN(parseFloat(p)));
-            avgSpeed = numPart ? `${numPart} m/s` : value;
-            // Extract direction from value string
-            const dirPart = parts[0];
-            if (isNaN(parseFloat(dirPart))) {
-              const heading = sample.Heading;
-              direction = heading !== undefined ? `${dirPart} ${Math.round(heading)}°` : dirPart;
-            }
-          } else {
-            avgSpeed = value;
-          }
-        }
-      }
-
-      if (name === 'byvind') {
-        if (value) {
-          const parts = value.split(' ');
-          const numPart = parts.find((p: string) => !isNaN(parseFloat(p)));
-          gustSpeed = numPart ? `${numPart} m/s` : value;
-        }
-      }
-
-      if (name === 'vindriktning' || name === 'riktning') {
-        if (value) {
-          const degrees = parseFloat(value);
-          if (!isNaN(degrees)) {
-            const compassDir = degreesToCompass(degrees);
-            direction = `${compassDir} ${Math.round(degrees)}°`;
-          }
-        }
-      }
-
-      if (sample.Updated || sample.Time) {
-        const updated = new Date(sample.Updated || sample.Time);
-        if (!isNaN(updated.getTime())) {
-          timestamp = updated.toLocaleTimeString('sv-SE');
-        }
-      }
-    }
-
-    return {
-      stationName,
-      gustSpeed,
-      averageSpeed: avgSpeed,
-      direction,
-      timestamp,
-      source: 'Sjöfartsverket ViVa',
-    };
-  } catch (error) {
-    console.error('ViVa fetch error:', error);
-    return null;
-  }
-}
 
 async function fetchFromSMHI(stationId: string): Promise<WindData> {
   const PARAM_WIND_SPEED = 4;
