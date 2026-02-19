@@ -26,7 +26,7 @@ export const WEATHER_STATIONS: WeatherStation[] = [
   { id: '107440', name: 'Eggegrund A', lon: 17.5342, lat: 60.7300 },
   { id: '140460', name: 'Holmön A', lon: 20.8625, lat: 63.7939 },
   { id: '140480', name: 'Umeå Flygplats', lon: 20.2353, lat: 63.7917 },
-  { id: '83440', name: 'Mariestad', lon: 13.8236, lat: 58.7094 },
+  { id: '83420', name: 'Naven A (Vänern)', lon: 13.1084, lat: 58.6994 },
 ];
 
 /**
