@@ -93,30 +93,8 @@ serve(async (req) => {
     if (existingUser) {
       userId = existingUser.id;
 
-      // Always upsert profile for existing user to avoid "Okänd" in UI
-      const { error: existingProfileUpsertError } = await supabaseAdmin
-        .from('profiles')
-        .upsert(
-          {
-            user_id: userId,
-            full_name: fullName,
-            email: email,
-            is_external: false,
-            organization_id: organizationId,
-          },
-          { onConflict: 'user_id' }
-        );
-
-      if (existingProfileUpsertError) {
-        console.error("Failed to upsert profile for existing user:", existingProfileUpsertError);
-        return new Response(JSON.stringify({
-          error: "Failed to upsert user profile",
-          details: existingProfileUpsertError.message,
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      // Do NOT overwrite existing user's profile name/data
+      // Just proceed to add them to the organization
 
       // Send "added to organization" email to existing user
       if (RESEND_API_KEY) {

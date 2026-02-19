@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, CalendarDays, Plus, Trash2, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, CalendarDays, Plus, Trash2, Send, Loader2, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -32,9 +32,11 @@ const ALL_MODULES: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFullName, setInviteFullName] = useState('');
+  const [lookupDone, setLookupDone] = useState(false);
+  const [existingUserName, setExistingUserName] = useState<string | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [addModuleOpen, setAddModuleOpen] = useState<AppModule | null>(null);
   const [moduleStartDate, setModuleStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [moduleEndDate, setModuleEndDate] = useState('');
@@ -193,9 +195,10 @@ export default function OrganizationDetail() {
         ? 'Användare skapad! De får ett e-postmeddelande för att sätta lösenord.' 
         : 'Befintlig användare tillagd i organisationen.');
       setIsInviteOpen(false);
-      setIsAddUserOpen(false);
       setInviteEmail('');
       setInviteFullName('');
+      setLookupDone(false);
+      setExistingUserName(null);
     },
     onError: (error) => {
       toast.error('Kunde inte lägga till användare: ' + error.message);
@@ -238,13 +241,38 @@ export default function OrganizationDetail() {
     },
   });
 
-  const handleInvite = (e: React.FormEvent, role: 'org_admin' | 'org_user') => {
+  const handleEmailLookup = async () => {
+    if (!inviteEmail) return;
+    setIsLookingUp(true);
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('email', inviteEmail)
+        .maybeSingle();
+      if (data) {
+        setExistingUserName(data.full_name);
+        setInviteFullName(data.full_name);
+      } else {
+        setExistingUserName(null);
+        setInviteFullName('');
+      }
+      setLookupDone(true);
+    } catch {
+      setLookupDone(true);
+      setExistingUserName(null);
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail || !inviteFullName) {
       toast.error('Fyll i både namn och e-post');
       return;
     }
-    inviteUserMutation.mutate({ email: inviteEmail, fullName: inviteFullName, role });
+    inviteUserMutation.mutate({ email: inviteEmail, fullName: inviteFullName, role: 'org_admin' });
   };
 
   const handleAddModule = (module: AppModule) => {
@@ -483,56 +511,89 @@ export default function OrganizationDetail() {
                 <CardTitle>Användare</CardTitle>
                 <CardDescription>Alla användare som tillhör denna organisation</CardDescription>
               </div>
-              <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+              <Dialog open={isInviteOpen} onOpenChange={(open) => {
+                setIsInviteOpen(open);
+                if (!open) {
+                  setInviteEmail('');
+                  setInviteFullName('');
+                  setLookupDone(false);
+                  setExistingUserName(null);
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
-                    Lägg till användare
+                    Lägg till admin
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <form onSubmit={(e) => handleInvite(e, 'org_user')}>
+                  <form onSubmit={handleInvite}>
                     <DialogHeader>
-                      <DialogTitle>Lägg till användare</DialogTitle>
+                      <DialogTitle>Lägg till administratör</DialogTitle>
                       <DialogDescription>
-                        Lägg till en ny användare i organisationen
+                        Ange e-postadress för att söka efter befintlig användare eller skapa ny
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="fullName">Namn *</Label>
-                        <Input
-                          id="fullName"
-                          value={inviteFullName}
-                          onChange={(e) => setInviteFullName(e.target.value)}
-                          placeholder="Anna Andersson"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
                         <Label htmlFor="email">E-post *</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={inviteEmail}
-                          onChange={(e) => setInviteEmail(e.target.value)}
-                          placeholder="anna@example.com"
-                          required
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            id="email"
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => {
+                              setInviteEmail(e.target.value);
+                              setLookupDone(false);
+                              setExistingUserName(null);
+                            }}
+                            placeholder="anna@example.com"
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleEmailLookup}
+                            disabled={!inviteEmail || isLookingUp}
+                          >
+                            {isLookingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                          </Button>
+                        </div>
                       </div>
+
+                      {lookupDone && existingUserName && (
+                        <div className="p-3 rounded-lg bg-muted/50 border">
+                          <p className="text-sm text-muted-foreground">Befintlig användare hittad:</p>
+                          <p className="font-medium">{existingUserName}</p>
+                        </div>
+                      )}
+
+                      {lookupDone && !existingUserName && (
+                        <div className="space-y-2">
+                          <Label htmlFor="fullName">Namn (ny användare) *</Label>
+                          <Input
+                            id="fullName"
+                            value={inviteFullName}
+                            onChange={(e) => setInviteFullName(e.target.value)}
+                            placeholder="Anna Andersson"
+                            required
+                          />
+                        </div>
+                      )}
                     </div>
-                    <DialogFooter className="gap-2">
-                      <Button type="submit" variant="outline" disabled={inviteUserMutation.isPending}>
-                        Lägg till som användare
-                      </Button>
-                      <Button 
-                        type="button" 
-                        disabled={inviteUserMutation.isPending}
-                        onClick={(e) => handleInvite(e as any, 'org_admin')}
-                      >
-                        Lägg till som admin
-                      </Button>
-                    </DialogFooter>
+                    {lookupDone && (
+                      <DialogFooter>
+                        <Button type="submit" disabled={inviteUserMutation.isPending || !inviteFullName}>
+                          {inviteUserMutation.isPending ? (
+                            <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Lägger till...</>
+                          ) : existingUserName ? (
+                            'Lägg till som admin'
+                          ) : (
+                            'Skapa & lägg till som admin'
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    )}
                   </form>
                 </DialogContent>
               </Dialog>
