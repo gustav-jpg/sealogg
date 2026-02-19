@@ -37,6 +37,7 @@ export default function AdminVessels() {
   const [selectedPrimaryEngineId, setSelectedPrimaryEngineId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; vessel: { id: string; name: string } | null }>({ open: false, vessel: null });
   const [searchQuery, setSearchQuery] = useState('');
+  const [maxPassengers, setMaxPassengers] = useState<string>('');
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -128,7 +129,8 @@ export default function AdminVessels() {
           description: description || null,
           main_engine_count: mainEngineCount,
           auxiliary_engine_count: auxiliaryEngineCount,
-          organization_id: selectedOrgId
+          organization_id: selectedOrgId,
+          max_passengers: maxPassengers ? parseInt(maxPassengers) : null,
         })
         .select()
         .single();
@@ -157,6 +159,7 @@ export default function AdminVessels() {
       setDescription('');
       setMainEngineCount(1);
       setAuxiliaryEngineCount(0);
+      setMaxPassengers('');
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -283,6 +286,10 @@ export default function AdminVessels() {
                     <Label htmlFor="auxEngines">Antal hjälpmaskiner</Label>
                     <Input id="auxEngines" type="number" min={0} value={auxiliaryEngineCount} onChange={e => setAuxiliaryEngineCount(parseInt(e.target.value) || 0)} />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maxPax">Max passagerare</Label>
+                  <Input id="maxPax" type="number" min={0} value={maxPassengers} onChange={e => setMaxPassengers(e.target.value)} placeholder="T.ex. 75" />
                 </div>
                 <Button onClick={() => createVessel.mutate()} disabled={!name || createVessel.isPending} className="w-full">
                   {createVessel.isPending ? 'Skapar...' : 'Skapa fartyg'}
