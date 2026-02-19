@@ -714,7 +714,7 @@ export default function PassengerSession() {
                             <span className="text-destructive font-semibold">-{entry.pax_off}</span>
                           )}
                         </div>
-                        <div className="bg-muted px-2 py-1 rounded text-sm font-bold min-w-[40px] text-center">
+                        <div className={`px-2 py-1 rounded text-sm font-bold min-w-[40px] text-center ${(session as any).vessel?.max_passengers && runningTotal > (session as any).vessel.max_passengers ? 'bg-destructive/10 text-destructive' : 'bg-muted'}`}>
                           {runningTotal}
                         </div>
                         {session.is_active && (
@@ -779,7 +779,7 @@ export default function PassengerSession() {
                           <TableCell className="text-center font-semibold text-destructive">
                             {entry.pax_off > 0 ? `-${entry.pax_off}` : '-'}
                           </TableCell>
-                          <TableCell className="text-center font-bold">{runningTotal}</TableCell>
+                          <TableCell className={`text-center font-bold ${(session as any).vessel?.max_passengers && runningTotal > (session as any).vessel.max_passengers ? 'text-destructive' : ''}`}>{runningTotal}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {entry.registered_by_profile?.full_name || '-'}
                           </TableCell>
