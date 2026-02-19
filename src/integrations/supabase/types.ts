@@ -2928,6 +2928,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_page_view_stats: { Args: never; Returns: Json }
       get_profile_name_by_user_id: {
         Args: { _user_id: string }
         Returns: string

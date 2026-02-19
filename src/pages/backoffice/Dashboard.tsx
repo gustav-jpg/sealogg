@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Building2, Users, Ship, FileText, Eye, TrendingUp, Clock, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useMemo } from 'react';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export default function BackofficeDashboard() {
@@ -40,85 +39,30 @@ export default function BackofficeDashboard() {
     },
   });
 
-  // Fetch page views for the last 30 days
-  const { data: pageViews } = useQuery({
-    queryKey: ['page-views-stats'],
+  // Fetch aggregated page view stats via RPC (no 1000-row limit)
+  const { data: analytics } = useQuery({
+    queryKey: ['page-view-stats-rpc'],
     queryFn: async () => {
-      const thirtyDaysAgo = subDays(new Date(), 30).toISOString();
-      const { data, error } = await supabase
-        .from('page_views')
-        .select('id, created_at, path, session_id, user_id')
-        .gte('created_at', thirtyDaysAgo)
-        .order('created_at', { ascending: false });
-      
+      const { data, error } = await supabase.rpc('get_page_view_stats');
       if (error) throw error;
-      return data || [];
+      const stats = data as any;
+      return {
+        totalViews: stats?.total_views || 0,
+        todayViews: stats?.today_views || 0,
+        weekViews: stats?.week_views || 0,
+        todaySessions: stats?.today_sessions || 0,
+        weekSessions: stats?.week_sessions || 0,
+        todayUsers: stats?.today_users || 0,
+        weekUsers: stats?.week_users || 0,
+        topPages: (stats?.top_pages || []).map((p: any) => [p.path, p.count] as [string, number]),
+        dailyData: (stats?.daily || []).map((d: any) => ({
+          date: format(new Date(d.day), 'EEE', { locale: sv }),
+          views: d.views,
+          sessions: d.sessions,
+        })),
+      };
     },
   });
-
-  // Calculate analytics from page views
-  const analytics = useMemo(() => {
-    if (!pageViews) return null;
-
-    const today = new Date();
-    const todayStart = startOfDay(today).toISOString();
-    const yesterdayStart = startOfDay(subDays(today, 1)).toISOString();
-    const yesterdayEnd = endOfDay(subDays(today, 1)).toISOString();
-    const weekAgo = subDays(today, 7).toISOString();
-
-    // Today's views
-    const todayViews = pageViews.filter(v => v.created_at >= todayStart);
-    
-    // Yesterday's views
-    const yesterdayViews = pageViews.filter(v => v.created_at >= yesterdayStart && v.created_at < todayStart);
-    
-    // Last 7 days views
-    const weekViews = pageViews.filter(v => v.created_at >= weekAgo);
-
-    // Unique sessions
-    const todaySessions = new Set(todayViews.map(v => v.session_id)).size;
-    const weekSessions = new Set(weekViews.map(v => v.session_id)).size;
-
-    // Unique logged-in users
-    const todayUsers = new Set(todayViews.filter(v => v.user_id).map(v => v.user_id)).size;
-    const weekUsers = new Set(weekViews.filter(v => v.user_id).map(v => v.user_id)).size;
-
-    // Top pages
-    const pageCounts: Record<string, number> = {};
-    weekViews.forEach(v => {
-      pageCounts[v.path] = (pageCounts[v.path] || 0) + 1;
-    });
-    const topPages = Object.entries(pageCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    // Daily breakdown for chart (last 7 days)
-    const dailyData: { date: string; views: number; sessions: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(today, i);
-      const dayStart = startOfDay(date).toISOString();
-      const dayEnd = endOfDay(date).toISOString();
-      const dayViews = pageViews.filter(v => v.created_at >= dayStart && v.created_at <= dayEnd);
-      dailyData.push({
-        date: format(date, 'EEE', { locale: sv }),
-        views: dayViews.length,
-        sessions: new Set(dayViews.map(v => v.session_id)).size,
-      });
-    }
-
-    return {
-      totalViews: pageViews.length,
-      todayViews: todayViews.length,
-      yesterdayViews: yesterdayViews.length,
-      weekViews: weekViews.length,
-      todaySessions,
-      weekSessions,
-      todayUsers,
-      weekUsers,
-      topPages,
-      dailyData,
-    };
-  }, [pageViews]);
 
   return (
     <div className="space-y-6">
