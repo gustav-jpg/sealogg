@@ -157,25 +157,27 @@ export const UFS_CHARTS: UFSChart[] = [
   { value: '4050', label: '937', region: 'Kattegatt / Skagerrak' },
 
   // Vänern
-  { value: '4735', label: '10', region: 'Vänern' },
-  { value: '3', label: '111', region: 'Vänern' },
-  { value: '4', label: '112', region: 'Vänern' },
-  { value: '5', label: '113', region: 'Vänern' },
-  { value: '6', label: '1131', region: 'Vänern' },
-  { value: '3839', label: '1133', region: 'Vänern' },
-  { value: '23', label: '114', region: 'Vänern' },
+  { value: '40', label: '13', region: 'Vänern' },
+  { value: '41', label: '131', region: 'Vänern' },
+  { value: '42', label: '132', region: 'Vänern' },
+  { value: '43', label: '133', region: 'Vänern' },
+  { value: '44', label: '1331', region: 'Vänern' },
+  { value: '45', label: '134', region: 'Vänern' },
+  { value: '46', label: '135', region: 'Vänern' },
+
+  // Mälaren / Hjälmaren
+  { value: '4735', label: '10', region: 'Mälaren' },
+  { value: '3', label: '111', region: 'Mälaren' },
+  { value: '4', label: '112', region: 'Mälaren' },
+  { value: '5', label: '113', region: 'Mälaren' },
+  { value: '6', label: '1131', region: 'Mälaren' },
+  { value: '3839', label: '1133', region: 'Mälaren' },
+  { value: '23', label: '114', region: 'Mälaren' },
 
   // Övriga
-  { value: '24', label: '121', region: 'Trollhätte kanal' },
-  { value: '40', label: '13', region: 'Göta kanal' },
-  { value: '41', label: '131', region: 'Göta kanal' },
-  { value: '42', label: '132', region: 'Göta kanal' },
-  { value: '43', label: '133', region: 'Göta kanal' },
-  { value: '44', label: '1331', region: 'Göta kanal' },
-  { value: '45', label: '134', region: 'Göta kanal' },
-  { value: '46', label: '135', region: 'Göta kanal' },
-  { value: '3781', label: '1352', region: 'Göta kanal' },
-  { value: '3782', label: '1353', region: 'Göta kanal' },
+  { value: '24', label: '121', region: 'Vättern' },
+  { value: '3781', label: '1352', region: 'Trollhätte kanal' },
+  { value: '3782', label: '1353', region: 'Trollhätte kanal' },
 
   // Övriga generella
   { value: '3649', label: '2', region: 'Generellt' },
