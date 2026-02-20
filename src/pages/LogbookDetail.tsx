@@ -529,6 +529,7 @@ export default function LogbookDetail() {
           wind: wind || null,
           general_notes: combinedNotes || null,
           bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
+          bunkered: quickEntries.some(e => e.type === 'bunkring') || !!(logbook as any)?.bunkered,
           water_filled: quickEntries.some(e => e.type === 'farskvatten') || !!(logbook as any)?.water_filled,
           septic_emptied: quickEntries.some(e => e.type === 'septik') || !!(logbook as any)?.septic_emptied,
         })
@@ -707,6 +708,7 @@ export default function LogbookDetail() {
           wind: wind || null,
           general_notes: generalNotes || null,
           bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
+          bunkered: quickEntries.some(e => e.type === 'bunkring') || !!(logbook as any)?.bunkered,
           water_filled: quickEntries.some(e => e.type === 'farskvatten') || !!(logbook as any)?.water_filled,
           septic_emptied: quickEntries.some(e => e.type === 'septik') || !!(logbook as any)?.septic_emptied,
           status: 'stangd',

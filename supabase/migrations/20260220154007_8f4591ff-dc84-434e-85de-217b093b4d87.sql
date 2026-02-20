@@ -1,0 +1,1 @@
+ALTER TABLE public.logbooks ADD COLUMN bunkered boolean NOT NULL DEFAULT false;
