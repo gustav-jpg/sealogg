@@ -269,7 +269,7 @@ export default function Dashboard() {
                             <Ship className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="font-medium truncate">{(logbook as any).vessel?.name || 'Okänt fartyg'}</span>
                             <div className="flex items-center gap-1 ml-1">
-                              {logbook.bunker_liters && logbook.bunker_liters > 0 && (
+                              {(logbook as any).bunkered && (
                                 <Fuel className="h-3.5 w-3.5 text-amber-500" />
                               )}
                               {(logbook as any).water_filled && (
@@ -355,7 +355,7 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="py-2">
                           <div className="flex items-center justify-center gap-1.5">
-                            {logbook.bunker_liters && logbook.bunker_liters > 0 && (
+                            {(logbook as any).bunkered && (
                               <TooltipProvider delayDuration={200}>
                                 <Tooltip>
                                   <TooltipTrigger><Fuel className="h-3.5 w-3.5 text-amber-500" /></TooltipTrigger>
