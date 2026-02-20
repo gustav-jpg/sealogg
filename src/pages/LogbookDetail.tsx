@@ -1048,7 +1048,7 @@ export default function LogbookDetail() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bunker">Bunker (liter)</Label>
+                  <Label htmlFor="bunker">Nuvarande bunkernivå (liter)</Label>
                   <Input
                     id="bunker"
                     type="number"
