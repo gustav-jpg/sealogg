@@ -625,7 +625,7 @@ export default function LogbookDetail() {
       if (!weather?.trim()) missingFields.push('Väder');
       if (!wind?.trim()) missingFields.push('Vind');
       if (!bunkerLiters?.trim()) missingFields.push('Bunker');
-      if (!crewMembers || crewMembers.length === 0) missingFields.push('Besättning');
+      if (!overrideValidation && (!crewMembers || crewMembers.length === 0)) missingFields.push('Besättning');
       
       // Check engine hours - at least one engine must have stop_hours filled (use editable state)
       const hasEngineHours = editableEngineHours.length > 0 && 
