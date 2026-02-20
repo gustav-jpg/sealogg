@@ -64,8 +64,6 @@ export default function LogbookDetail() {
   const [wind, setWind] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
   const [bunkerLiters, setBunkerLiters] = useState('');
-  const [waterFilled, setWaterFilled] = useState(false);
-  const [septicEmptied, setSepticEmptied] = useState(false);
   const [stops, setStops] = useState<StopEntry[]>([]);
   const [stopsInitialized, setStopsInitialized] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -317,8 +315,6 @@ export default function LogbookDetail() {
       setWind(logbook.wind || '');
       setGeneralNotes(logbook.general_notes || '');
       setBunkerLiters(logbook.bunker_liters?.toString() || '');
-      setWaterFilled((logbook as any).water_filled || false);
-      setSepticEmptied((logbook as any).septic_emptied || false);
       setInitialized(true);
     }
   }, [logbook, initialized]);
@@ -533,8 +529,8 @@ export default function LogbookDetail() {
           wind: wind || null,
           general_notes: combinedNotes || null,
           bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
-          water_filled: waterFilled,
-          septic_emptied: septicEmptied,
+          water_filled: quickEntries.some(e => e.type === 'farskvatten') || !!(logbook as any)?.water_filled,
+          septic_emptied: quickEntries.some(e => e.type === 'septik') || !!(logbook as any)?.septic_emptied,
         })
         .eq('id', id);
       if (error) throw error;
@@ -711,8 +707,8 @@ export default function LogbookDetail() {
           wind: wind || null,
           general_notes: generalNotes || null,
           bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
-          water_filled: waterFilled,
-          septic_emptied: septicEmptied,
+          water_filled: quickEntries.some(e => e.type === 'farskvatten') || !!(logbook as any)?.water_filled,
+          septic_emptied: quickEntries.some(e => e.type === 'septik') || !!(logbook as any)?.septic_emptied,
           status: 'stangd',
           closed_at: new Date().toISOString(),
           closed_by: user?.id,
@@ -1061,30 +1057,6 @@ export default function LogbookDetail() {
                     disabled={!canEditThis}
                     placeholder="T.ex. 500"
                   />
-                </div>
-                <div className="flex gap-6 items-center pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={waterFilled}
-                      onChange={e => setWaterFilled(e.target.checked)}
-                      disabled={!canEditThis}
-                      className="h-4 w-4 rounded border-input accent-primary"
-                    />
-                    <Droplets className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm">Fyllt vatten</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={septicEmptied}
-                      onChange={e => setSepticEmptied(e.target.checked)}
-                      disabled={!canEditThis}
-                      className="h-4 w-4 rounded border-input accent-primary"
-                    />
-                    <Trash className="h-4 w-4 text-green-600" />
-                    <span className="text-sm">Tömt septic</span>
-                  </label>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Allmänna anteckningar</Label>
