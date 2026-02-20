@@ -333,13 +333,7 @@ export default function Dashboard() {
                           <SortIcon field="commander" />
                         </div>
                       </TableHead>
-                      <TableHead className="h-9 text-center w-[80px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <span className="text-xs">B</span>
-                          <span className="text-xs">V</span>
-                          <span className="text-xs">S</span>
-                        </div>
-                      </TableHead>
+                      <TableHead className="h-9 w-[80px]"></TableHead>
                       <TableHead className="h-9">Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -360,28 +354,32 @@ export default function Dashboard() {
                           {(logbook as any).commander_names || <span className="text-muted-foreground italic">Ingen befälhavare</span>}
                         </TableCell>
                         <TableCell className="py-2">
-                          <TooltipProvider delayDuration={200}>
-                            <div className="flex items-center justify-center gap-1.5">
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Fuel className={`h-3.5 w-3.5 ${logbook.bunker_liters && logbook.bunker_liters > 0 ? 'text-amber-500' : 'text-muted-foreground/20'}`} />
-                                </TooltipTrigger>
-                                <TooltipContent side="top"><p>Bunker</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Droplets className={`h-3.5 w-3.5 ${(logbook as any).water_filled ? 'text-blue-500' : 'text-muted-foreground/20'}`} />
-                                </TooltipTrigger>
-                                <TooltipContent side="top"><p>Vatten</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Trash2 className={`h-3.5 w-3.5 ${(logbook as any).septic_emptied ? 'text-green-600' : 'text-muted-foreground/20'}`} />
-                                </TooltipTrigger>
-                                <TooltipContent side="top"><p>Septic</p></TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </TooltipProvider>
+                          <div className="flex items-center justify-center gap-1.5">
+                            {logbook.bunker_liters && logbook.bunker_liters > 0 && (
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger><Fuel className="h-3.5 w-3.5 text-amber-500" /></TooltipTrigger>
+                                  <TooltipContent side="top"><p>Bunkrat</p></TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            {(logbook as any).water_filled && (
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger><Droplets className="h-3.5 w-3.5 text-blue-500" /></TooltipTrigger>
+                                  <TooltipContent side="top"><p>Fyllt vatten</p></TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            {(logbook as any).septic_emptied && (
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger><Trash2 className="h-3.5 w-3.5 text-green-600" /></TooltipTrigger>
+                                  <TooltipContent side="top"><p>Tömt septic</p></TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="py-2">
                           <Badge 
