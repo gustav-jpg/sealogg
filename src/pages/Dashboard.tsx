@@ -8,7 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Ship, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Plus, Ship, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Calendar, Fuel, Droplets, Trash2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { LOGBOOK_STATUS_LABELS } from '@/lib/types';
@@ -267,6 +268,17 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2 mb-1">
                             <Ship className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="font-medium truncate">{(logbook as any).vessel?.name || 'Okänt fartyg'}</span>
+                            <div className="flex items-center gap-1 ml-1">
+                              {logbook.bunker_liters && logbook.bunker_liters > 0 && (
+                                <Fuel className="h-3.5 w-3.5 text-amber-500" />
+                              )}
+                              {(logbook as any).water_filled && (
+                                <Droplets className="h-3.5 w-3.5 text-blue-500" />
+                              )}
+                              {(logbook as any).septic_emptied && (
+                                <Trash2 className="h-3.5 w-3.5 text-green-600" />
+                              )}
+                            </div>
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {format(new Date(logbook.date), 'd MMM yyyy', { locale: sv })}
@@ -321,6 +333,13 @@ export default function Dashboard() {
                           <SortIcon field="commander" />
                         </div>
                       </TableHead>
+                      <TableHead className="h-9 text-center w-[80px]">
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-xs">B</span>
+                          <span className="text-xs">V</span>
+                          <span className="text-xs">S</span>
+                        </div>
+                      </TableHead>
                       <TableHead className="h-9">Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -339,6 +358,30 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="py-2 text-sm">
                           {(logbook as any).commander_names || <span className="text-muted-foreground italic">Ingen befälhavare</span>}
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <TooltipProvider delayDuration={200}>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Fuel className={`h-3.5 w-3.5 ${logbook.bunker_liters && logbook.bunker_liters > 0 ? 'text-amber-500' : 'text-muted-foreground/20'}`} />
+                                </TooltipTrigger>
+                                <TooltipContent side="top"><p>Bunker</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Droplets className={`h-3.5 w-3.5 ${(logbook as any).water_filled ? 'text-blue-500' : 'text-muted-foreground/20'}`} />
+                                </TooltipTrigger>
+                                <TooltipContent side="top"><p>Vatten</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Trash2 className={`h-3.5 w-3.5 ${(logbook as any).septic_emptied ? 'text-green-600' : 'text-muted-foreground/20'}`} />
+                                </TooltipTrigger>
+                                <TooltipContent side="top"><p>Septic</p></TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
                         </TableCell>
                         <TableCell className="py-2">
                           <Badge 
