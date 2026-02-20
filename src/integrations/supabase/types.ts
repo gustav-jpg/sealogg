@@ -1724,10 +1724,12 @@ export type Database = {
           general_notes: string | null
           id: string
           passenger_count: number | null
+          septic_emptied: boolean
           status: Database["public"]["Enums"]["logbook_status"]
           to_location: string | null
           updated_at: string
           vessel_id: string
+          water_filled: boolean
           weather: string | null
           wind: string | null
         }
@@ -1744,10 +1746,12 @@ export type Database = {
           general_notes?: string | null
           id?: string
           passenger_count?: number | null
+          septic_emptied?: boolean
           status?: Database["public"]["Enums"]["logbook_status"]
           to_location?: string | null
           updated_at?: string
           vessel_id: string
+          water_filled?: boolean
           weather?: string | null
           wind?: string | null
         }
@@ -1764,10 +1768,12 @@ export type Database = {
           general_notes?: string | null
           id?: string
           passenger_count?: number | null
+          septic_emptied?: boolean
           status?: Database["public"]["Enums"]["logbook_status"]
           to_location?: string | null
           updated_at?: string
           vessel_id?: string
+          water_filled?: boolean
           weather?: string | null
           wind?: string | null
         }
