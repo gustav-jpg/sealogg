@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { sanitizeStorageFileName } from '@/lib/storage';
 import {
   FolderOpen,
@@ -56,9 +56,15 @@ interface DocFile {
 interface FolderAccess {
   id: string;
   folder_id: string;
-  profile_id: string;
+  role: string;
   granted_by: string;
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  skeppare: 'Skeppare',
+  deckhand: 'Däcksman',
+  readonly: 'Läsbehörighet',
+};
 
 export default function Documents() {
   const { toast } = useToast();
@@ -121,28 +127,7 @@ export default function Documents() {
     enabled: !!currentFolderId,
   });
 
-  // Fetch org profiles for access management
-  const { data: orgProfiles = [] } = useQuery({
-    queryKey: ['org-profiles-for-docs', selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return [];
-      const { data: members, error: mErr } = await supabase
-        .from('organization_members')
-        .select('user_id')
-        .eq('organization_id', selectedOrgId);
-      if (mErr) throw mErr;
-      if (!members?.length) return [];
-      const userIds = members.map(m => m.user_id);
-      const { data: profiles, error: pErr } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, user_id')
-        .in('user_id', userIds)
-        .order('full_name');
-      if (pErr) throw pErr;
-      return profiles || [];
-    },
-    enabled: !!selectedOrgId && accessDialogOpen,
-  });
+  // Available roles for access (admin always has access, no need to list)
 
   // Fetch folder access for selected folder
   const { data: folderAccessList = [] } = useQuery({
@@ -343,21 +328,21 @@ export default function Documents() {
     }
   };
 
-  // Toggle folder access
+  // Toggle folder access by role
   const toggleAccess = useMutation({
-    mutationFn: async ({ profileId, hasAccess }: { profileId: string; hasAccess: boolean }) => {
+    mutationFn: async ({ role, hasAccess }: { role: string; hasAccess: boolean }) => {
       if (!accessFolder || !user) throw new Error('Ingen mapp vald');
       if (hasAccess) {
         const { error } = await supabase.from('document_folder_access').delete()
           .eq('folder_id', accessFolder.id)
-          .eq('profile_id', profileId);
+          .eq('role', role as any);
         if (error) throw error;
       } else {
         const { error } = await supabase.from('document_folder_access').insert({
           folder_id: accessFolder.id,
-          profile_id: profileId,
+          role: role as any,
           granted_by: user.id,
-        });
+        } as any);
         if (error) throw error;
       }
     },
@@ -603,37 +588,27 @@ export default function Documents() {
               <DialogTitle>Åtkomst – {accessFolder?.name}</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground">
-              Välj vilka användare som ska ha tillgång till denna mapp och dess undermappar. Administratörer har alltid åtkomst.
+              Välj vilka roller som ska ha tillgång till denna mapp och dess undermappar. Administratörer har alltid åtkomst.
             </p>
-            <ScrollArea className="max-h-[300px]">
-              <div className="space-y-2 py-2">
-                {orgProfiles.map((profile) => {
-                  const hasAccess = folderAccessList.some(a => a.profile_id === profile.id);
-                  return (
-                    <label
-                      key={profile.id}
-                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={hasAccess}
-                        onCheckedChange={() =>
-                          toggleAccess.mutate({ profileId: profile.id, hasAccess })
-                        }
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{profile.full_name}</p>
-                        {profile.email && (
-                          <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
-                        )}
-                      </div>
-                    </label>
-                  );
-                })}
-                {orgProfiles.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">Inga användare hittades</p>
-                )}
-              </div>
-            </ScrollArea>
+            <div className="space-y-2 py-2">
+              {Object.entries(ROLE_LABELS).map(([role, label]) => {
+                const hasAccess = folderAccessList.some(a => a.role === role);
+                return (
+                  <label
+                    key={role}
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={hasAccess}
+                      onCheckedChange={() =>
+                        toggleAccess.mutate({ role, hasAccess })
+                      }
+                    />
+                    <span className="text-sm font-medium">{label}</span>
+                  </label>
+                );
+              })}
+            </div>
             <DialogFooter>
               <Button onClick={() => setAccessDialogOpen(false)}>Stäng</Button>
             </DialogFooter>
