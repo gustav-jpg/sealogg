@@ -1137,6 +1137,144 @@ export type Database = {
           },
         ]
       }
+      document_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size_bytes: number
+          file_url: string
+          folder_id: string
+          id: string
+          mime_type: string | null
+          organization_id: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size_bytes?: number
+          file_url: string
+          folder_id: string
+          id?: string
+          mime_type?: string | null
+          organization_id: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size_bytes?: number
+          file_url?: string
+          folder_id?: string
+          id?: string
+          mime_type?: string | null
+          organization_id?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_files_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_folder_access: {
+        Row: {
+          created_at: string
+          folder_id: string
+          granted_by: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          granted_by: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          granted_by?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_folder_access_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_folder_access_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_folders: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          organization_id: string
+          parent_folder_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          organization_id: string
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_folders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drink_extras: {
         Row: {
           created_at: string
@@ -2037,10 +2175,12 @@ export type Database = {
       organization_settings: {
         Row: {
           created_at: string
+          documents_enabled: boolean
           id: string
           organization_id: string
           smhi_forecast_lat: number | null
           smhi_forecast_lon: number | null
+          storage_quota_mb: number
           ufs_chart_numbers: string[] | null
           updated_at: string
           weather_station_id: string | null
@@ -2048,10 +2188,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          documents_enabled?: boolean
           id?: string
           organization_id: string
           smhi_forecast_lat?: number | null
           smhi_forecast_lon?: number | null
+          storage_quota_mb?: number
           ufs_chart_numbers?: string[] | null
           updated_at?: string
           weather_station_id?: string | null
@@ -2059,10 +2201,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          documents_enabled?: boolean
           id?: string
           organization_id?: string
           smhi_forecast_lat?: number | null
           smhi_forecast_lon?: number | null
+          storage_quota_mb?: number
           ufs_chart_numbers?: string[] | null
           updated_at?: string
           weather_station_id?: string | null
@@ -2947,6 +3091,10 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_module"][]
       }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
+      has_folder_access: {
+        Args: { _folder_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3022,6 +3170,7 @@ export type Database = {
         | "self_control"
         | "checklists"
         | "bookings"
+        | "documents"
       app_role: "admin" | "skeppare" | "readonly" | "deckhand"
       blocking_reason:
         | "service"
@@ -3211,6 +3360,7 @@ export const Constants = {
         "self_control",
         "checklists",
         "bookings",
+        "documents",
       ],
       app_role: ["admin", "skeppare", "readonly", "deckhand"],
       blocking_reason: [

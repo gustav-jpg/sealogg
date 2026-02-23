@@ -53,6 +53,7 @@ import NotificationSettingsPage from "./pages/admin/NotificationSettings";
 import Changelog from "./pages/Changelog";
 import BackofficeChangelog from "./pages/backoffice/Changelog";
 import Kartvisaren from "./pages/Kartvisaren";
+import Documents from "./pages/Documents";
 // SparePartsIndex is now embedded as a tab in SelfControl
 const queryClient = new QueryClient();
 
@@ -133,6 +134,7 @@ function AppRoutes() {
           <Route path="/portal/qualifications" element={<ProtectedRoute><Qualifications /></ProtectedRoute>} />
           <Route path="/portal/checklists" element={<ProtectedRoute><Checklists /></ProtectedRoute>} />
           <Route path="/portal/kartvisaren" element={<ProtectedRoute><Kartvisaren /></ProtectedRoute>} />
+          <Route path="/portal/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
           <Route path="/portal/checklists/execute" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
           <Route path="/portal/checklists/execute/:executionId" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
           <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />

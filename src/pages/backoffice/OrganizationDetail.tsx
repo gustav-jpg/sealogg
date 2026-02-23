@@ -12,11 +12,11 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, CalendarDays, Plus, Trash2, Send, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, CalendarDays, Plus, Trash2, Send, Loader2, Search, FileText, HardDrive } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
-type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'bookings';
+type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'bookings' | 'documents';
 
 const MODULE_INFO: Record<AppModule, { label: string; icon: any; description: string }> = {
   logbook: { label: 'Loggbok', icon: BookOpen, description: 'Digital skeppsloggbok' },
@@ -25,9 +25,10 @@ const MODULE_INFO: Record<AppModule, { label: string; icon: any; description: st
   self_control: { label: 'Egenkontroll', icon: ClipboardCheck, description: 'Kontrollpunkter och underhåll' },
   checklists: { label: 'Checklistor', icon: ClipboardList, description: 'Återkommande checklistor' },
   bookings: { label: 'Bokningar', icon: CalendarDays, description: 'Bokningssystem för charter' },
+  documents: { label: 'Dokument', icon: FileText, description: 'Dokumentportal med mappar och filer' },
 };
 
-const ALL_MODULES: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists', 'bookings'];
+const ALL_MODULES: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists', 'bookings', 'documents'];
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,7 @@ export default function OrganizationDetail() {
   const [addModuleOpen, setAddModuleOpen] = useState<AppModule | null>(null);
   const [moduleStartDate, setModuleStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [moduleEndDate, setModuleEndDate] = useState('');
+  const [storageQuota, setStorageQuota] = useState('500');
   const queryClient = useQueryClient();
 
   const { data: organization } = useQuery({
@@ -109,6 +111,51 @@ export default function OrganizationDetail() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch org settings for storage quota
+  const { data: orgSettings } = useQuery({
+    queryKey: ['org-settings-backoffice', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organization_settings')
+        .select('storage_quota_mb, documents_enabled')
+        .eq('organization_id', id!)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) setStorageQuota(String((data as any).storage_quota_mb || 500));
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: storageUsedBytes } = useQuery({
+    queryKey: ['doc-storage-used', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('document_files')
+        .select('file_size_bytes')
+        .eq('organization_id', id!);
+      if (error) throw error;
+      return (data || []).reduce((sum, f) => sum + (f.file_size_bytes || 0), 0);
+    },
+    enabled: !!id,
+  });
+
+  const saveStorageQuota = useMutation({
+    mutationFn: async () => {
+      const quota = parseInt(storageQuota);
+      if (isNaN(quota) || quota < 1) throw new Error('Ogiltig kvot');
+      const { error } = await supabase
+        .from('organization_settings')
+        .upsert({ organization_id: id, storage_quota_mb: quota } as any, { onConflict: 'organization_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-settings-backoffice', id] });
+      toast.success('Lagringskvot sparad');
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   const addFeatureMutation = useMutation({
@@ -731,6 +778,34 @@ export default function OrganizationDetail() {
                     Inga fartyg registrerade
                   </p>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HardDrive className="h-5 w-5" />
+                  Dokumentlagring
+                </CardTitle>
+                <CardDescription>Sätt lagringskvot för dokumentmodulen</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  Använt: {((storageUsedBytes || 0) / (1024 * 1024)).toFixed(1)} MB
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="quota">Kvot (MB)</Label>
+                  <Input
+                    id="quota"
+                    type="number"
+                    className="w-28"
+                    value={storageQuota}
+                    onChange={(e) => setStorageQuota(e.target.value)}
+                  />
+                  <Button size="sm" onClick={() => saveStorageQuota.mutate()} disabled={saveStorageQuota.isPending}>
+                    Spara
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
