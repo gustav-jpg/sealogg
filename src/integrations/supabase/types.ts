@@ -1197,21 +1197,21 @@ export type Database = {
           folder_id: string
           granted_by: string
           id: string
-          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
           created_at?: string
           folder_id: string
           granted_by: string
           id?: string
-          profile_id: string
+          role: Database["public"]["Enums"]["app_role"]
         }
         Update: {
           created_at?: string
           folder_id?: string
           granted_by?: string
           id?: string
-          profile_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: [
           {
@@ -1219,13 +1219,6 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "document_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_folder_access_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
