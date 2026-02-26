@@ -690,12 +690,20 @@ export default function ChecklistExecute() {
               
               {/* Comment field */}
               {(showCommentField || currentStep.requires_comment) && (
-                <Textarea
-                  value={currentComment}
-                  onChange={(e) => setCurrentComment(e.target.value)}
-                  placeholder="Lägg till kommentar..."
-                  rows={2}
-                />
+                <div className="space-y-1">
+                  {currentStep.requires_comment && (
+                    <Label className="text-sm font-medium">
+                      Kommentar <span className="text-destructive">*</span>
+                    </Label>
+                  )}
+                  <Textarea
+                    value={currentComment}
+                    onChange={(e) => setCurrentComment(e.target.value)}
+                    placeholder={currentStep.requires_comment ? "Kommentar krävs..." : "Lägg till kommentar..."}
+                    rows={2}
+                    className={currentStep.requires_comment && !currentComment.trim() ? 'border-destructive' : ''}
+                  />
+                </div>
               )}
               
               {/* Checklist items - for 'checklist' confirmation type */}
@@ -807,7 +815,8 @@ export default function ChecklistExecute() {
                       saveStepResult.isPending || 
                       (currentStep.confirmation_type === 'checklist' && 
                        currentStep.checklist_items && 
-                       checkedItems.size < currentStep.checklist_items.length)
+                       checkedItems.size < currentStep.checklist_items.length) ||
+                      (currentStep.requires_comment && !currentComment.trim())
                     }
                     className="h-16 bg-green-600 hover:bg-green-700 text-white font-semibold text-base disabled:opacity-50"
                   >
