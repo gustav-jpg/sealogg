@@ -60,21 +60,7 @@ export default function ControlPoints() {
   const [isActive, setIsActive] = useState(true);
   const [category, setCategory] = useState('');
 
-  // Get user's organization
-  const { data: userOrg } = useQuery({
-    queryKey: ['user-organization', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
+  // Use selectedOrgId from OrganizationContext (supports multi-org users)
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -143,7 +129,7 @@ export default function ControlPoints() {
 
   const createControlPoint = useMutation({
     mutationFn: async () => {
-      if (!userOrg?.organization_id) throw new Error('No organization found');
+      if (!selectedOrgId) throw new Error('Ingen organisation vald');
       if (!selectedVessel) throw new Error('Välj ett fartyg');
       
       const { data: cp, error } = await supabase
@@ -158,7 +144,7 @@ export default function ControlPoints() {
           is_active: isActive,
           machine_name: machineName || null,
           category: category || null,
-          organization_id: userOrg.organization_id,
+          organization_id: selectedOrgId,
         })
         .select()
         .single();
