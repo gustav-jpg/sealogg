@@ -695,8 +695,8 @@ export default function Checklists() {
                               {result && (
                                 <div className="mt-3 space-y-2">
                                   <div className="flex items-center gap-4 text-sm">
-                                    <Badge variant={result.value === 'yes' || result.value === 'checked' ? 'secondary' : 'destructive'}>
-                                      {result.value === 'yes' ? 'Ja' : result.value === 'no' ? 'Nej' : 'Bekräftad'}
+                                    <Badge variant={result.value === 'no' ? 'destructive' : 'default'} className={result.value !== 'no' ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-100' : ''}>
+                                      {result.value === 'yes' ? 'Ja' : result.value === 'no' ? 'Nej' : 'Godkänt'}
                                     </Badge>
                                     <span className="text-muted-foreground">
                                       {format(new Date(result.confirmed_at), 'd MMM yyyy HH:mm', { locale: sv })}
