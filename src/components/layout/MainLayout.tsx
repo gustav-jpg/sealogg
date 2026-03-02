@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import sealoggLogo from '@/assets/sealog-logo.png';
@@ -8,8 +8,10 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const [defaultOpen, setDefaultOpen] = useState(() => window.innerWidth >= 1024);
+
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultOpen}>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         
@@ -25,7 +27,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
 
           {/* Main content */}
-          <main className="flex-1 container py-6 animate-fade-in">
+          <main className="flex-1 container py-6 px-3 md:px-4 lg:px-8 animate-fade-in">
             {children}
           </main>
 

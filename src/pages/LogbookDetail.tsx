@@ -726,7 +726,7 @@ export default function LogbookDetail() {
 
   return (
     <MainLayout>
-      <div className="max-w-6xl mx-auto space-y-4">
+      <div className="max-w-6xl mx-auto space-y-4 px-0 md:px-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/portal/logbooks')}>
             <ArrowLeft className="h-5 w-5" />
@@ -744,7 +744,7 @@ export default function LogbookDetail() {
           </div>
         </div>
 
-        <div id="logbook-print-content" className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <div id="logbook-print-content" className="grid gap-3 md:grid-cols-[1fr_200px] lg:grid-cols-[1fr_260px]">
           <div className="space-y-4">
             <LogbookBasicInfo
               weather={weather}
