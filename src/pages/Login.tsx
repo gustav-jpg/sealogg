@@ -91,27 +91,23 @@ export default function Login() {
 
     setIsResetLoading(true);
 
-    const { error } = await supabase.functions.invoke('public-password-reset', {
-      body: { email: resetEmail },
-    });
-
-    // Av säkerhetsskäl: visa samma svar oavsett om e-posten finns eller ej
-    if (error) {
-      console.error('Password reset error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Något gick fel',
-        description: 'Kunde inte skicka återställningslänk. Försök igen.',
+    try {
+      await supabase.functions.invoke('public-password-reset', {
+        body: { email: resetEmail },
       });
-    } else {
-      toast({
-        title: 'Återställningslänk skickad',
-        description: 'Kontrollera din e-post för att återställa lösenordet.',
-      });
-      setResetDialogOpen(false);
-      setResetEmail('');
+    } catch (err) {
+      // Ignore client-side errors — the edge function always returns 200
+      // and we never want to reveal if the email exists or not
+      console.error('Password reset invoke error (ignored):', err);
     }
 
+    // Av säkerhetsskäl: visa alltid samma framgångsmeddelande
+    toast({
+      title: 'Återställningslänk skickad',
+      description: 'Om kontot finns skickas en länk till din e-post. Kolla även skräppost.',
+    });
+    setResetDialogOpen(false);
+    setResetEmail('');
     setIsResetLoading(false);
   };
 
