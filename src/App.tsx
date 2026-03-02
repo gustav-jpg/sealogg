@@ -31,6 +31,7 @@ const AdminVessels = lazy(() => import("./pages/admin/Vessels"));
 const AdminVesselDetail = lazy(() => import("./pages/admin/VesselDetail"));
 const AdminUsers = lazy(() => import("./pages/admin/Users"));
 const RoleRules = lazy(() => import("./pages/admin/RoleRules"));
+const SettingsAdmin = lazy(() => import("./pages/admin/Settings"));
 const ControlPoints = lazy(() => import("./pages/admin/ControlPoints"));
 const ChecklistTemplates = lazy(() => import("./pages/admin/ChecklistTemplates"));
 const AdminStatus = lazy(() => import("./pages/admin/Status"));
@@ -152,6 +153,7 @@ function AppRoutes() {
         <Route path="/portal/admin/vessels/:id" element={<ProtectedRoute adminOnly><AdminVesselDetail /></ProtectedRoute>} />
         <Route path="/portal/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
         <Route path="/portal/admin/rules" element={<ProtectedRoute adminOnly><RoleRules /></ProtectedRoute>} />
+        <Route path="/portal/admin/settings" element={<ProtectedRoute adminOnly><SettingsAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
         <Route path="/portal/admin/checklists" element={<ProtectedRoute adminOnly><ChecklistTemplates /></ProtectedRoute>} />
         <Route path="/portal/admin/status" element={<ProtectedRoute adminOnly><AdminStatus /></ProtectedRoute>} />

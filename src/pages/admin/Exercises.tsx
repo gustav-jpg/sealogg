@@ -243,10 +243,6 @@ export default function ExercisesAdmin() {
               <BarChart3 className="h-4 w-4" />
               Statistik
             </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4" />
-              Kategorier
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="statistics" className="space-y-4">
@@ -405,81 +401,6 @@ export default function ExercisesAdmin() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="categories" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Övningskategorier</span>
-                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Lägg till
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Ny övningskategori</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Namn *</Label>
-                          <Input
-                            id="name"
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            placeholder="T.ex. MOB-övning"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="description">Beskrivning</Label>
-                          <Textarea
-                            id="description"
-                            value={description}
-                            onChange={e => setDescription(e.target.value)}
-                            placeholder="Valfri beskrivning av övningen"
-                            rows={3}
-                          />
-                        </div>
-                        <Button
-                          className="w-full"
-                          onClick={() => createCategory.mutate()}
-                          disabled={createCategory.isPending || !name.trim()}
-                        >
-                          {createCategory.isPending ? 'Skapar...' : 'Skapa kategori'}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {categories && categories.length > 0 ? (
-                  <div className="space-y-2">
-                    {categories.map(category => (
-                      <div key={category.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                        <div>
-                          <p className="font-medium">{category.name}</p>
-                          {category.description && (
-                            <p className="text-sm text-muted-foreground">{category.description}</p>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteConfirm({ open: true, category })}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Inga övningskategorier skapade</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
 
