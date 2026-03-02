@@ -194,12 +194,12 @@ export default function ExercisesAdmin() {
                       </span>
                       <span className="flex items-center gap-2">
                         {categoryDetails.some(c => c.count === 0) && (
-                          <Badge variant="destructive" className="text-xs font-normal gap-1">
+                          <Badge variant="destructive" className="text-xs gap-1">
                             <AlertTriangle className="h-3 w-3" />
                             {categoryDetails.filter(c => c.count === 0).length} saknas
                           </Badge>
                         )}
-                        <Badge variant="secondary" className="text-xs font-normal">
+                        <Badge variant="secondary" className="text-xs">
                           {totalExercises} övningar
                         </Badge>
                         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
