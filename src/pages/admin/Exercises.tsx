@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { GraduationCap, Ship, Calendar, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { GraduationCap, Ship, Calendar, CheckCircle2, AlertTriangle, ChevronDown } from 'lucide-react';
 import { format, differenceInMonths } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -182,80 +183,95 @@ export default function ExercisesAdmin() {
         {/* Overview matrix: one card per vessel */}
         {vesselCategoryMatrix.length > 0 ? (
           vesselCategoryMatrix.map(({ vessel, categoryDetails, totalExercises }) => (
-            <Card key={vessel.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-base">
-                    <Ship className="h-4 w-4" />
-                    {vessel.name}
-                  </span>
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    {totalExercises} övningar totalt
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="text-xs">
-                        <TableHead className="w-[200px]">Övning</TableHead>
-                        <TableHead className="w-[60px] text-center">Antal</TableHead>
-                        <TableHead className="w-[130px]">Senast genomförd</TableHead>
-                        <TableHead className="w-[130px]">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {categoryDetails.map(cat => (
-                        <TableRow key={cat.key} className="text-sm">
-                          <TableCell className="font-medium py-2.5">{cat.label}</TableCell>
-                          <TableCell className="text-center py-2.5">
-                            {cat.count > 0 ? (
-                              <span className="font-semibold">{cat.count}</span>
-                            ) : (
-                              <span className="text-muted-foreground">0</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-2.5">
-                            {cat.lastDate ? (
-                              <span className="flex items-center gap-1.5 text-xs">
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                {format(new Date(cat.lastDate), 'd MMM yyyy', { locale: sv })}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">Aldrig</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-2.5">
-                            {cat.count === 0 ? (
-                              <Badge variant="destructive" className="text-xs gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Ej genomförd
-                              </Badge>
-                            ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 12 ? (
-                              <Badge variant="destructive" className="text-xs gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                {'>'} 12 mån sedan
-                              </Badge>
-                            ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 6 ? (
-                              <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-700">
-                                <AlertTriangle className="h-3 w-3" />
-                                {cat.monthsSinceLast} mån sedan
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs gap-1 text-green-700">
-                                <CheckCircle2 className="h-3 w-3" />
-                                OK
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+            <Collapsible key={vessel.id} defaultOpen={selectedVessel !== 'all'}>
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-base">
+                        <Ship className="h-4 w-4" />
+                        {vessel.name}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        {categoryDetails.some(c => c.count === 0) && (
+                          <Badge variant="destructive" className="text-xs font-normal gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {categoryDetails.filter(c => c.count === 0).length} saknas
+                          </Badge>
+                        )}
+                        <Badge variant="secondary" className="text-xs font-normal">
+                          {totalExercises} övningar
+                        </Badge>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="text-xs">
+                            <TableHead className="w-[200px]">Övning</TableHead>
+                            <TableHead className="w-[60px] text-center">Antal</TableHead>
+                            <TableHead className="w-[130px]">Senast genomförd</TableHead>
+                            <TableHead className="w-[130px]">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {categoryDetails.map(cat => (
+                            <TableRow key={cat.key} className="text-sm">
+                              <TableCell className="font-medium py-2.5">{cat.label}</TableCell>
+                              <TableCell className="text-center py-2.5">
+                                {cat.count > 0 ? (
+                                  <span className="font-semibold">{cat.count}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">0</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="py-2.5">
+                                {cat.lastDate ? (
+                                  <span className="flex items-center gap-1.5 text-xs">
+                                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                                    {format(new Date(cat.lastDate), 'd MMM yyyy', { locale: sv })}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">Aldrig</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="py-2.5">
+                                {cat.count === 0 ? (
+                                  <Badge variant="destructive" className="text-xs gap-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    Ej genomförd
+                                  </Badge>
+                                ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 12 ? (
+                                  <Badge variant="destructive" className="text-xs gap-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {'>'} 12 mån sedan
+                                  </Badge>
+                                ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 6 ? (
+                                  <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-700">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    {cat.monthsSinceLast} mån sedan
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs gap-1 text-green-700">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    OK
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           ))
         ) : (
           <Card>
