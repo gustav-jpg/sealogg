@@ -28,6 +28,7 @@ const ChecklistExecute = lazy(() => import("./pages/ChecklistExecute"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const AdminVessels = lazy(() => import("./pages/admin/Vessels"));
+const AdminVesselDetail = lazy(() => import("./pages/admin/VesselDetail"));
 const AdminUsers = lazy(() => import("./pages/admin/Users"));
 const RoleRules = lazy(() => import("./pages/admin/RoleRules"));
 const ControlPoints = lazy(() => import("./pages/admin/ControlPoints"));
@@ -147,7 +148,8 @@ function AppRoutes() {
           <Route path="/portal/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
           <Route path="/portal/checklists/execute" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
           <Route path="/portal/checklists/execute/:executionId" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
-          <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
+        <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
+        <Route path="/portal/admin/vessels/:id" element={<ProtectedRoute adminOnly><AdminVesselDetail /></ProtectedRoute>} />
         <Route path="/portal/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
         <Route path="/portal/admin/rules" element={<ProtectedRoute adminOnly><RoleRules /></ProtectedRoute>} />
         <Route path="/portal/admin/control-points" element={<ProtectedRoute adminOnly><ControlPoints /></ProtectedRoute>} />
