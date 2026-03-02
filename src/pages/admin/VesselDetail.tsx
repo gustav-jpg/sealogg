@@ -4,18 +4,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
-import { Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Plus, ArrowLeft, Users, AlertTriangle, CheckCircle, Anchor } from 'lucide-react';
+import { Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Plus, ArrowLeft, Users, AlertTriangle, CheckCircle, Anchor, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgCertificateTypes } from '@/hooks/useOrgCertificateTypes';
+import { CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
 
 export default function VesselDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +31,20 @@ export default function VesselDetail() {
   const [engineHoursInputs, setEngineHoursInputs] = useState<{ id?: string; engine_type: string; engine_number: number; current_hours: number; name: string }[]>([]);
   const [selectedPrimaryEngineId, setSelectedPrimaryEngineId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  // Crew requirements state
+  const [crewDialogOpen, setCrewDialogOpen] = useState(false);
+  const [crewRole, setCrewRole] = useState<CrewRole>('befalhavare');
+  const [minCount, setMinCount] = useState('1');
+  const [reqGroup, setReqGroup] = useState('');
+
+  // Certificate requirements state
+  const [certDialogOpen, setCertDialogOpen] = useState(false);
+  const [certRole, setCertRole] = useState<CrewRole>('befalhavare');
+  const [certTypeId, setCertTypeId] = useState('');
+  const [groupName, setGroupName] = useState('');
+
+  const { data: certificateTypes } = useOrgCertificateTypes(selectedOrgId);
 
   const { data: vessel, isLoading } = useQuery({
     queryKey: ['vessel-detail', id],
@@ -72,16 +88,45 @@ export default function VesselDetail() {
     },
   });
 
+  // Crew requirements
+  const { data: crewRequirements } = useQuery({
+    queryKey: ['crew-requirements', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vessel_crew_requirements')
+        .select('*')
+        .eq('vessel_id', id!)
+        .order('role');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Certificate requirements (per role)
+  const { data: vesselRoleCerts } = useQuery({
+    queryKey: ['vessel-role-certificates', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('vessel_role_certificates')
+        .select('*, certificate_type:certificate_types(*)')
+        .eq('vessel_id', id!)
+        .order('role');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
   const today = new Date().toISOString().split('T')[0];
   const warningDate = new Date();
   warningDate.setMonth(warningDate.getMonth() + 2);
   const warningDateStr = warningDate.toISOString().split('T')[0];
 
+  // Engine mutations
   const updateEngineHours = useMutation({
     mutationFn: async () => {
       if (!vessel) throw new Error('Inget fartyg valt');
-
-      // Delete engines that were removed
       const existingIds = (vesselEngineHours || []).map(e => e.id);
       const keptIds = engineHoursInputs.filter(e => e.id).map(e => e.id!);
       const toDelete = existingIds.filter(id => !keptIds.includes(id));
@@ -89,8 +134,6 @@ export default function VesselDetail() {
         const { error } = await supabase.from('vessel_engine_hours').delete().eq('id', delId);
         if (error) throw error;
       }
-
-      // Upsert remaining + new
       for (const input of engineHoursInputs) {
         if (input.id) {
           const { error } = await supabase.from('vessel_engine_hours')
@@ -103,8 +146,6 @@ export default function VesselDetail() {
           if (error) throw error;
         }
       }
-
-      // Update vessel engine counts
       const mainCount = engineHoursInputs.filter(e => e.engine_type === 'main').length;
       const auxCount = engineHoursInputs.filter(e => e.engine_type === 'auxiliary').length;
       const { error: vesselError } = await supabase.from('vessels')
@@ -123,7 +164,75 @@ export default function VesselDetail() {
     },
   });
 
-  const handleSaveEngines = () => updateEngineHours.mutate();
+  // Crew requirements mutations
+  const createCrewReq = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error('Inget fartyg');
+      const { error } = await supabase.from('vessel_crew_requirements').insert({
+        vessel_id: id,
+        role: crewRole,
+        minimum_count: parseInt(minCount),
+        requirement_group: reqGroup || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crew-requirements', id] });
+      toast({ title: 'Bemanningskrav tillagt' });
+      setCrewDialogOpen(false);
+      setMinCount('1');
+      setReqGroup('');
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteCrewReq = useMutation({
+    mutationFn: async (reqId: string) => {
+      const { error } = await supabase.from('vessel_crew_requirements').delete().eq('id', reqId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crew-requirements', id] });
+      toast({ title: 'Bemanningskrav borttaget' });
+    },
+  });
+
+  // Certificate requirements mutations
+  const createCertRule = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error('Inget fartyg');
+      const { error } = await supabase.from('vessel_role_certificates').insert({
+        vessel_id: id,
+        role: certRole,
+        certificate_type_id: certTypeId,
+        group_name: groupName || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vessel-role-certificates', id] });
+      toast({ title: 'Certifikatkrav tillagt' });
+      setCertDialogOpen(false);
+      setCertTypeId('');
+      setGroupName('');
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const deleteCertRule = useMutation({
+    mutationFn: async (ruleId: string) => {
+      const { error } = await supabase.from('vessel_role_certificates').delete().eq('id', ruleId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vessel-role-certificates', id] });
+      toast({ title: 'Certifikatkrav borttaget' });
+    },
+  });
 
   const deleteVessel = useMutation({
     mutationFn: async () => {
@@ -140,6 +249,8 @@ export default function VesselDetail() {
     },
   });
 
+  const handleSaveEngines = () => updateEngineHours.mutate();
+
   const openEngineDialog = () => {
     if (!vessel) return;
     const existing = vesselEngineHours || [];
@@ -154,6 +265,16 @@ export default function VesselDetail() {
     setSelectedPrimaryEngineId(vessel.primary_engine_id || null);
     setEngineDialogOpen(true);
   };
+
+  const groupedCertRules = vesselRoleCerts?.reduce(
+    (acc, rule) => {
+      const key = rule.role as CrewRole;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(rule);
+      return acc;
+    },
+    {} as Record<CrewRole, typeof vesselRoleCerts>
+  );
 
   if (isLoading) {
     return (
@@ -356,6 +477,170 @@ export default function VesselDetail() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Bemanningskrav */}
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Bemanningskrav</span>
+              </div>
+              <Dialog open={crewDialogOpen} onOpenChange={setCrewDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Lägg till
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Lägg till bemanningskrav</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Roll *</Label>
+                      <Select value={crewRole} onValueChange={(v) => setCrewRole(v as CrewRole)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Minsta antal *</Label>
+                      <Input type="number" min="1" value={minCount} onChange={(e) => setMinCount(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Gruppnamn (för OR-logik)</Label>
+                      <Input value={reqGroup} onChange={(e) => setReqGroup(e.target.value)} placeholder="T.ex. 'däckspersonal'" />
+                      <p className="text-xs text-muted-foreground">Krav med samma gruppnamn: minst ett måste uppfyllas.</p>
+                    </div>
+                    <Button onClick={() => createCrewReq.mutate()} disabled={createCrewReq.isPending} className="w-full">
+                      {createCrewReq.isPending ? 'Lägger till...' : 'Lägg till krav'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {crewRequirements && crewRequirements.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {crewRequirements.map((req) => (
+                  <div key={req.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div>
+                      <p className="font-medium text-sm">{CREW_ROLE_LABELS[req.role as CrewRole]}</p>
+                      <p className="text-xs text-muted-foreground">Minst {req.minimum_count} st</p>
+                      {req.requirement_group && (
+                        <Badge variant="secondary" className="mt-1 text-xs">OR: {req.requirement_group}</Badge>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteCrewReq.mutate(req.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Inga bemanningskrav definierade</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Certifikatkrav per roll */}
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Certifikatkrav per roll</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Alla besättningsmedlemmar kräver inskolning på fartyget</p>
+              </div>
+              <Dialog open={certDialogOpen} onOpenChange={setCertDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Lägg till
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Lägg till certifikatkrav</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Roll *</Label>
+                      <Select value={certRole} onValueChange={(v) => setCertRole(v as CrewRole)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(CREW_ROLE_LABELS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Certifikattyp *</Label>
+                      <Select value={certTypeId} onValueChange={setCertTypeId}>
+                        <SelectTrigger><SelectValue placeholder="Välj certifikattyp" /></SelectTrigger>
+                        <SelectContent>
+                          {certificateTypes?.map((ct) => (
+                            <SelectItem key={ct.id} value={ct.id}>{ct.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Gruppnamn (för OR-logik)</Label>
+                      <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="T.ex. 'befälsbehörighet'" />
+                      <p className="text-xs text-muted-foreground">Certifikat med samma gruppnamn: minst ett måste uppfyllas.</p>
+                    </div>
+                    <Button onClick={() => createCertRule.mutate()} disabled={!certTypeId || createCertRule.isPending} className="w-full">
+                      {createCertRule.isPending ? 'Lägger till...' : 'Lägg till krav'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {Object.entries(CREW_ROLE_LABELS).map(([roleKey, roleLabel]) => {
+                const roleRules = groupedCertRules?.[roleKey as CrewRole] || [];
+                if (roleRules.length === 0) return null;
+                return (
+                  <div key={roleKey} className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <p className="font-medium text-sm flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5" />
+                      {roleLabel}
+                    </p>
+                    <div className="space-y-1.5">
+                      {roleRules.map((rule) => (
+                        <div key={rule.id} className="flex items-center justify-between p-2 rounded bg-background text-sm">
+                          <div>
+                            <span>{(rule as any).certificate_type?.name}</span>
+                            {rule.group_name && (
+                              <Badge variant="secondary" className="text-xs ml-2">OR: {rule.group_name}</Badge>
+                            )}
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCertRule.mutate(rule.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {(!vesselRoleCerts || vesselRoleCerts.length === 0) && (
+                <p className="text-sm text-muted-foreground italic col-span-2">Inga certifikatkrav definierade – endast inskolning krävs</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Certifikat */}
         <Card>
@@ -664,7 +949,7 @@ function VesselCertificatesSection({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Award className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium">Certifikat</span>
+          <span className="font-medium">Fartygscertifikat</span>
         </div>
       </div>
 
