@@ -170,7 +170,7 @@ export function AppSidebar() {
     { href: '/portal/admin/status', label: 'Statusöversikt', icon: Activity },
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Besättning', icon: Users },
-    { href: '/portal/admin/rules', label: 'Rollregler', icon: Settings },
+    { href: '/portal/admin/rules', label: 'Certifikatstyper', icon: Award },
     { href: '/portal/admin/notifications', label: 'Notifikationer', icon: Bell },
   ];
 
