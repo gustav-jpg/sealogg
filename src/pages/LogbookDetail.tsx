@@ -199,6 +199,19 @@ export default function LogbookDetail() {
   const { data: signatures } = useLogbookSignatures(id);
   const signLogbook = useSignLogbook();
 
+  const { data: linkedDeviations } = useQuery({
+    queryKey: ['logbook-deviations', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('deviations')
+        .select('id, title, type, severity, status')
+        .eq('logbook_id', id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
   const { data: auditHistory } = useQuery({
     queryKey: ['logbook-audit-history', id],
     queryFn: async () => {
@@ -881,6 +894,7 @@ export default function LogbookDetail() {
             isDeleting={deleteLogbook.isPending}
             signatures={signatures}
             closedAt={logbook.closed_at}
+            deviations={linkedDeviations}
           />
         </div>
       </div>

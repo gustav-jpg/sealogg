@@ -1,10 +1,21 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ValidationPanel } from '@/components/ValidationPanel';
-import { Save, Trash2, ShieldCheck, FileDown, History, Lock, CheckCircle2 } from 'lucide-react';
+import { Save, Trash2, ShieldCheck, FileDown, History, Lock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { DEVIATION_STATUS_LABELS, DEVIATION_SEVERITY_LABELS, DeviationStatus, DeviationSeverity } from '@/lib/types';
+
+interface LinkedDeviation {
+  id: string;
+  title: string;
+  type: string;
+  severity: string;
+  status: string;
+}
 
 interface LogbookSidebarProps {
   validation: any;
@@ -22,13 +33,25 @@ interface LogbookSidebarProps {
   isDeleting: boolean;
   signatures: any[] | undefined;
   closedAt: string | null;
+  deviations?: LinkedDeviation[] | null;
 }
 
 export function LogbookSidebar({
   validation, canEditThis, isOpen, overrideValidation, onOverrideChange,
   onSave, onSignAndClose, onDelete, onExport, onShowHistory,
-  isSaving, isClosing, isDeleting, signatures, closedAt,
+  isSaving, isClosing, isDeleting, signatures, closedAt, deviations,
 }: LogbookSidebarProps) {
+  const navigate = useNavigate();
+
+  const getSeverityVariant = (sev: string) => {
+    switch (sev) {
+      case 'hog': return 'destructive';
+      case 'medel': return 'warning';
+      case 'lag': return 'secondary';
+      default: return 'secondary';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ValidationPanel validation={validation} />
@@ -74,6 +97,44 @@ export function LogbookSidebar({
           <History className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Linked deviations */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <AlertTriangle className="h-4 w-4" />
+            Avvikelser
+            {deviations && deviations.length > 0 && (
+              <Badge variant="secondary" className="ml-auto">{deviations.length}</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {deviations && deviations.length > 0 ? (
+            <div className="space-y-2">
+              {deviations.map(dev => (
+                <button
+                  key={dev.id}
+                  onClick={() => navigate(`/portal/deviations/${dev.id}`)}
+                  className="w-full text-left p-2 rounded border hover:bg-muted transition-colors"
+                >
+                  <p className="text-sm font-medium truncate">{dev.title}</p>
+                  <div className="flex gap-1.5 mt-1">
+                    <Badge variant={getSeverityVariant(dev.severity)} className="text-[10px] px-1.5 py-0">
+                      {DEVIATION_SEVERITY_LABELS[dev.severity as DeviationSeverity]}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {DEVIATION_STATUS_LABELS[dev.status as DeviationStatus]}
+                    </Badge>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-2">Inga kopplade avvikelser</p>
+          )}
+        </CardContent>
+      </Card>
 
       {!isOpen && (
         <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
