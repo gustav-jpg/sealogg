@@ -319,11 +319,14 @@ export default function Deviations() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none__">Ingen loggbok</SelectItem>
-                        {logbooks.map((lb) => (
-                          <SelectItem key={lb.id} value={lb.id}>
-                            {format(new Date(lb.date), 'yyyy-MM-dd')} - {lb.from_location || 'Okänd'} → {lb.to_location || 'Okänd'}
-                          </SelectItem>
-                        ))}
+                        {logbooks.map((lb) => {
+                          const vesselName = vessels?.find(v => v.id === vesselId)?.name || '';
+                          return (
+                            <SelectItem key={lb.id} value={lb.id}>
+                              {format(new Date(lb.date), 'yyyy-MM-dd')} – {vesselName}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
