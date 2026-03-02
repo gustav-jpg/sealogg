@@ -208,79 +208,88 @@ export default function SettingsAdmin() {
 
           {/* Certificate Types Tab */}
           <TabsContent value="certificate-types" className="space-y-4">
-            <div className="flex justify-end">
-              <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ny certifikattyp
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Skapa certifikattyp</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cert-name">Namn *</Label>
-                      <Input
-                        id="cert-name"
-                        value={typeName}
-                        onChange={(e) => setTypeName(e.target.value)}
-                        placeholder="T.ex. Befäls Behörighet klass 6"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cert-desc">Beskrivning</Label>
-                      <Textarea
-                        id="cert-desc"
-                        value={typeDescription}
-                        onChange={(e) => setTypeDescription(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      onClick={() => createCertType.mutate()}
-                      disabled={!typeName || createCertType.isPending}
-                      className="w-full"
-                    >
-                      {createCertType.isPending ? 'Skapar...' : 'Skapa'}
-                    </Button>
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Certifikatstyper</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Definiera vilka typer av certifikat besättningsmedlemmar kan ha, t.ex. behörigheter och utbildningar.
+                    </p>
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {certificateTypes?.map((ct) => (
-                <Card key={ct.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between text-lg">
-                      <span className="flex items-center gap-2">
-                        <Award className="h-5 w-5" />
-                        {ct.name}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteConfirm({ open: true, item: { id: ct.id, name: ct.name, type: 'cert' } })}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                  <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        Lägg till
                       </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  {ct.description && (
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">{ct.description}</p>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
-              {(!certificateTypes || certificateTypes.length === 0) && (
-                <p className="text-muted-foreground col-span-full text-center py-8">
-                  Inga certifikattyper skapade ännu
-                </p>
-              )}
-            </div>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Skapa certifikattyp</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="cert-name">Namn *</Label>
+                          <Input
+                            id="cert-name"
+                            value={typeName}
+                            onChange={(e) => setTypeName(e.target.value)}
+                            placeholder="T.ex. Befäls Behörighet klass 6"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cert-desc">Beskrivning</Label>
+                          <Textarea
+                            id="cert-desc"
+                            value={typeDescription}
+                            onChange={(e) => setTypeDescription(e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          onClick={() => createCertType.mutate()}
+                          disabled={!typeName || createCertType.isPending}
+                          className="w-full"
+                        >
+                          {createCertType.isPending ? 'Skapar...' : 'Skapa'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {certificateTypes && certificateTypes.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {certificateTypes.map((ct) => (
+                      <div key={ct.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <Award className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="font-medium text-sm">{ct.name}</p>
+                            {ct.description && (
+                              <p className="text-xs text-muted-foreground">{ct.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setDeleteConfirm({ open: true, item: { id: ct.id, name: ct.name, type: 'cert' } })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-6 text-sm">
+                    Inga certifikattyper skapade ännu
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Exercise Categories Tab */}
