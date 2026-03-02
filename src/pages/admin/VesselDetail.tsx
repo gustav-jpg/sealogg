@@ -888,6 +888,8 @@ function VesselCertificatesSection({
     }
   };
 
+  const [removeExistingFile, setRemoveExistingFile] = useState(false);
+
   const handleUpdate = async (certId: string) => {
     if (!editName) return;
     setIsUpdating(true);
@@ -902,6 +904,9 @@ function VesselCertificatesSection({
           await supabase.storage.from('vessel-certificates').remove([editExistingFileUrl]);
         }
         fileUrl = fileName;
+      } else if (removeExistingFile && editExistingFileUrl) {
+        await supabase.storage.from('vessel-certificates').remove([editExistingFileUrl]);
+        fileUrl = null;
       }
       const updateData: any = {
         name: editName,
@@ -914,7 +919,7 @@ function VesselCertificatesSection({
       const { error } = await supabase.from('vessel_certificates').update(updateData).eq('id', certId);
       if (error) throw error;
       toast({ title: 'Certifikat uppdaterat' });
-      setEditingCert(null); setEditFile(undefined); setEditExistingFileUrl(null);
+      setEditingCert(null); setEditFile(undefined); setEditExistingFileUrl(null); setRemoveExistingFile(false);
       onSuccess();
     } catch (error: any) {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
@@ -1015,14 +1020,25 @@ function VesselCertificatesSection({
                         {editFile ? 'Byt fil' : editExistingFileUrl ? 'Ersätt dokument' : 'Ladda upp'}
                       </Button>
                       {editFile && <span className="text-xs text-muted-foreground truncate max-w-[150px]">{editFile.name}</span>}
-                      {!editFile && editExistingFileUrl && (
-                        <span className="text-xs text-green-600 flex items-center gap-1"><FileText className="h-3 w-3" />Dokument finns</span>
+                      {!editFile && editExistingFileUrl && !removeExistingFile && (
+                        <>
+                          <span className="text-xs text-green-600 flex items-center gap-1"><FileText className="h-3 w-3" />Dokument finns</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveExistingFile(true)} className="text-destructive hover:text-destructive h-7 px-2 text-xs">
+                            Ta bort dokument
+                          </Button>
+                        </>
+                      )}
+                      {removeExistingFile && !editFile && (
+                        <span className="text-xs text-destructive flex items-center gap-1">
+                          Dokumentet tas bort vid sparning
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveExistingFile(false)} className="h-6 px-1 text-xs">Ångra</Button>
+                        </span>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleUpdate(cert.id)} disabled={!editName || isUpdating}>{isUpdating ? 'Sparar...' : 'Spara'}</Button>
-                    <Button size="sm" variant="outline" onClick={() => { setEditingCert(null); setEditFile(undefined); setEditExistingFileUrl(null); }}>Avbryt</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setEditingCert(null); setEditFile(undefined); setEditExistingFileUrl(null); setRemoveExistingFile(false); }}>Avbryt</Button>
                   </div>
                 </div>
               );
