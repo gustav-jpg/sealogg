@@ -315,6 +315,22 @@ export default function LogbookDetail() {
       setWind(logbook.wind || '');
       setGeneralNotes(logbook.general_notes || '');
       setBunkerLiters(logbook.bunker_liters?.toString() || '');
+      
+      // Initialize quick entries from DB flags
+      const entries: typeof quickEntries = [];
+      if ((logbook as any)?.bunkered) {
+        entries.push({ id: crypto.randomUUID(), type: 'bunkring', text: `Bunkrat${logbook.bunker_liters ? ` ${logbook.bunker_liters}L` : ''}`, timestamp: '' });
+      }
+      if ((logbook as any)?.water_filled) {
+        entries.push({ id: crypto.randomUUID(), type: 'farskvatten', text: 'Fyllt färskvatten', timestamp: '' });
+      }
+      if ((logbook as any)?.septic_emptied) {
+        entries.push({ id: crypto.randomUUID(), type: 'septik', text: 'Tömt septik', timestamp: '' });
+      }
+      if (entries.length > 0) {
+        setQuickEntries(entries);
+      }
+      
       setInitialized(true);
     }
   }, [logbook, initialized]);
@@ -514,24 +530,17 @@ export default function LogbookDetail() {
 
   const updateLogbook = useMutation({
     mutationFn: async () => {
-      // Combine general notes with quick entries
-      let combinedNotes = generalNotes || '';
-      if (quickEntries.length > 0) {
-        const entriesText = quickEntries.map(e => `${e.timestamp} - ${e.text}`).join('\n');
-        combinedNotes = combinedNotes ? `${combinedNotes}\n${entriesText}` : entriesText;
-      }
-      
-      // Update main logbook data
+      // Update main logbook data — flags are determined solely by quickEntries
       const { error } = await supabase
         .from('logbooks')
         .update({
           weather: weather || null,
           wind: wind || null,
-          general_notes: combinedNotes || null,
+          general_notes: generalNotes || null,
           bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
-          bunkered: quickEntries.some(e => e.type === 'bunkring') || !!(logbook as any)?.bunkered,
-          water_filled: quickEntries.some(e => e.type === 'farskvatten') || !!(logbook as any)?.water_filled,
-          septic_emptied: quickEntries.some(e => e.type === 'septik') || !!(logbook as any)?.septic_emptied,
+          bunkered: quickEntries.some(e => e.type === 'bunkring'),
+          water_filled: quickEntries.some(e => e.type === 'farskvatten'),
+          septic_emptied: quickEntries.some(e => e.type === 'septik'),
         })
         .eq('id', id);
       if (error) throw error;
@@ -602,13 +611,6 @@ export default function LogbookDetail() {
       }
     },
     onSuccess: () => {
-      // After saving, update generalNotes state to include quick entries and clear them
-      if (quickEntries.length > 0) {
-        const entriesText = quickEntries.map(e => `${e.timestamp} - ${e.text}`).join('\n');
-        const combined = generalNotes ? `${generalNotes}\n${entriesText}` : entriesText;
-        setGeneralNotes(combined);
-        setQuickEntries([]);
-      }
       queryClient.invalidateQueries({ queryKey: ['logbook', id] });
       queryClient.invalidateQueries({ queryKey: ['logbooks'] });
       queryClient.invalidateQueries({ queryKey: ['logbook-engine-hours', id] });
@@ -708,9 +710,9 @@ export default function LogbookDetail() {
           wind: wind || null,
           general_notes: generalNotes || null,
           bunker_liters: bunkerLiters ? parseInt(bunkerLiters) : null,
-          bunkered: quickEntries.some(e => e.type === 'bunkring') || !!(logbook as any)?.bunkered,
-          water_filled: quickEntries.some(e => e.type === 'farskvatten') || !!(logbook as any)?.water_filled,
-          septic_emptied: quickEntries.some(e => e.type === 'septik') || !!(logbook as any)?.septic_emptied,
+          bunkered: quickEntries.some(e => e.type === 'bunkring'),
+          water_filled: quickEntries.some(e => e.type === 'farskvatten'),
+          septic_emptied: quickEntries.some(e => e.type === 'septik'),
           status: 'stangd',
           closed_at: new Date().toISOString(),
           closed_by: user?.id,
