@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -37,6 +37,7 @@ import {
   ControlType,
 } from '@/lib/types';
 import { Plus, Edit, Trash2, Calendar, Gauge, ClipboardCheck, ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
+import { useSharedVessel } from '@/hooks/useSharedVessel';
 
 export default function ControlPoints() {
   const { user } = useAuth();
@@ -46,8 +47,7 @@ export default function ControlPoints() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingControlPoint, setEditingControlPoint] = useState<any>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [selectedVesselFilter, setSelectedVesselFilter] = useState<string>('');
-  const [vesselFilterInitialized, setVesselFilterInitialized] = useState(false);
+  const { selectedVessel: selectedVesselFilter, setSelectedVessel: setSelectedVesselFilter } = useSharedVessel();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Form state
@@ -362,13 +362,8 @@ export default function ControlPoints() {
     </div>
   );
 
-  // Auto-select first vessel when vessels load
-  useEffect(() => {
-    if (vessels && vessels.length > 0 && !vesselFilterInitialized) {
-      setSelectedVesselFilter(vessels[0].id);
-      setVesselFilterInitialized(true);
-    }
-  }, [vessels, vesselFilterInitialized]);
+
+
 
   // Filter control points by selected vessel
   const filteredControlPoints = controlPoints?.filter((cp) => {
