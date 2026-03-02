@@ -34,6 +34,7 @@ import {
   FileText,
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo-white.png';
+import sealoggIcon from '@/assets/sealog-icon.png';
 import {
   Sidebar,
   SidebarContent,
@@ -225,11 +226,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       {/* Header with Logo */}
       <SidebarHeader className="border-b border-sidebar-border bg-primary">
-        <Link to="/portal" className="flex items-center px-2 py-1">
+        <Link to="/portal" className="flex items-center justify-center px-2 py-1">
           <img 
-            src={sealoggLogo} 
+            src={isCollapsed ? sealoggIcon : sealoggLogo} 
             alt="SeaLogg" 
-            className={isCollapsed ? "h-6" : "h-7"} 
+            className={isCollapsed ? "h-7 w-7" : "h-7"} 
           />
         </Link>
       </SidebarHeader>
