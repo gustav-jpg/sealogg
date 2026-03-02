@@ -219,14 +219,13 @@ export default function AdminVessels() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Fartyg</TableHead>
-                    <TableHead className="w-[120px]">Maskiner</TableHead>
                     <TableHead className="w-[150px]">Certifikat</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredVessels.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
                         {searchQuery ? 'Inga fartyg matchar sökningen' : 'Inga fartyg ännu'}
                       </TableCell>
                     </TableRow>
@@ -246,12 +245,6 @@ export default function AdminVessels() {
                                 <p className="text-xs text-muted-foreground truncate max-w-[250px]">{vessel.description}</p>
                               )}
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <Gauge className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{vessel.totalEngines}</span>
                           </div>
                         </TableCell>
                         <TableCell>
