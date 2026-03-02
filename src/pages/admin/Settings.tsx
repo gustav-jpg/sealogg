@@ -162,7 +162,7 @@ export default function SettingsAdmin() {
           <TabsList>
             <TabsTrigger value="organization" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              Organisation
+              Information
             </TabsTrigger>
             <TabsTrigger value="certificate-types" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
@@ -178,9 +178,9 @@ export default function SettingsAdmin() {
           <TabsContent value="organization" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
-                  Rederiinformation
+                  Rederi
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
