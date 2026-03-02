@@ -230,7 +230,7 @@ export function AppSidebar() {
           <img 
             src={isCollapsed ? sealoggIcon : sealoggLogo} 
             alt="SeaLogg" 
-            className={isCollapsed ? "h-7 w-7" : "h-7"} 
+            className={isCollapsed ? "h-7 w-auto object-contain" : "h-7"} 
           />
         </Link>
       </SidebarHeader>
