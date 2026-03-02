@@ -167,10 +167,10 @@ export function AppSidebar() {
 
   // Base admin items always shown (only for admin)
   const baseVesselAdminItems = [
+    { href: '/portal/admin/settings', label: 'Inställningar', icon: Settings },
     { href: '/portal/admin/status', label: 'Statusöversikt', icon: Activity },
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Besättning', icon: Users },
-    { href: '/portal/admin/settings', label: 'Inställningar', icon: Settings },
     { href: '/portal/admin/notifications', label: 'Notifikationer', icon: Bell },
   ];
 
