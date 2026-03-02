@@ -334,7 +334,12 @@ export default function DeviationDetail() {
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-display font-bold">{deviation.title}</h1>
+              <h1 className="text-2xl font-display font-bold">
+                {(deviation as any).deviation_number && (
+                  <span className="text-muted-foreground font-mono text-lg mr-2">#{(deviation as any).deviation_number}</span>
+                )}
+                {deviation.title}
+              </h1>
               <Badge variant={getSeverityColor(deviation.severity as DeviationSeverity)}>
                 {DEVIATION_SEVERITY_LABELS[deviation.severity as DeviationSeverity]}
               </Badge>

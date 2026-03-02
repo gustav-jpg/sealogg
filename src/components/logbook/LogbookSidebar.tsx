@@ -15,6 +15,7 @@ interface LinkedDeviation {
   type: string;
   severity: string;
   status: string;
+  deviation_number?: number | null;
 }
 
 interface LogbookSidebarProps {
@@ -118,7 +119,10 @@ export function LogbookSidebar({
                   onClick={() => navigate(`/portal/deviations/${dev.id}`)}
                   className="w-full text-left p-2 rounded border hover:bg-muted transition-colors"
                 >
-                  <p className="text-sm font-medium truncate">{dev.title}</p>
+                  <p className="text-sm font-medium truncate">
+                    {dev.deviation_number && <span className="text-muted-foreground font-mono text-xs mr-1">#{dev.deviation_number}</span>}
+                    {dev.title}
+                  </p>
                   <div className="flex gap-1.5 mt-1">
                     <Badge variant={getSeverityVariant(dev.severity)} className="text-[10px] px-1.5 py-0">
                       {DEVIATION_SEVERITY_LABELS[dev.severity as DeviationSeverity]}

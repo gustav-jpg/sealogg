@@ -1074,6 +1074,7 @@ export type Database = {
           created_by: string
           date: string
           description: string
+          deviation_number: number | null
           id: string
           logbook_id: string | null
           severity: Database["public"]["Enums"]["deviation_severity"]
@@ -1089,6 +1090,7 @@ export type Database = {
           created_by: string
           date: string
           description: string
+          deviation_number?: number | null
           id?: string
           logbook_id?: string | null
           severity: Database["public"]["Enums"]["deviation_severity"]
@@ -1104,6 +1106,7 @@ export type Database = {
           created_by?: string
           date?: string
           description?: string
+          deviation_number?: number | null
           id?: string
           logbook_id?: string | null
           severity?: Database["public"]["Enums"]["deviation_severity"]

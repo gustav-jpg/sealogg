@@ -471,7 +471,12 @@ export default function Deviations() {
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="font-medium text-sm line-clamp-1">{deviation.title}</span>
+                        <span className="font-medium text-sm line-clamp-1">
+                          {(deviation as any).deviation_number && (
+                            <span className="text-muted-foreground font-mono text-xs mr-1">#{(deviation as any).deviation_number}</span>
+                          )}
+                          {deviation.title}
+                        </span>
                         <Badge variant={getSeverityColor(deviation.severity as DeviationSeverity)} className="text-xs flex-shrink-0">
                           {DEVIATION_SEVERITY_LABELS[deviation.severity as DeviationSeverity]}
                         </Badge>
@@ -510,7 +515,12 @@ export default function Deviations() {
                       className="hover:bg-muted/50 cursor-pointer"
                       onClick={() => navigate(`/portal/deviations/${deviation.id}`)}
                     >
-                      <td className="p-2 border-b font-medium">{deviation.title}</td>
+                      <td className="p-2 border-b font-medium">
+                        {(deviation as any).deviation_number && (
+                          <span className="text-muted-foreground font-mono text-xs mr-2">#{(deviation as any).deviation_number}</span>
+                        )}
+                        {deviation.title}
+                      </td>
                       <td className="p-2 border-b">{(deviation as any).vessel?.name}</td>
                       <td className="p-2 border-b">
                         <Badge variant="outline">{DEVIATION_TYPE_LABELS[deviation.type as DeviationType]}</Badge>
