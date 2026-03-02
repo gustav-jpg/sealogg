@@ -204,7 +204,7 @@ export default function LogbookDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('deviations')
-        .select('id, title, type, severity, status')
+        .select('id, title, type, severity, status, deviation_number')
         .eq('logbook_id', id);
       if (error) throw error;
       return data;
@@ -887,6 +887,7 @@ export default function LogbookDetail() {
               exercises: exercises || [],
               passengerSummary: passengerSummary,
               signatures: signatures,
+              deviations: linkedDeviations,
             })}
             onShowHistory={() => setShowHistoryDialog(true)}
             isSaving={updateLogbook.isPending}

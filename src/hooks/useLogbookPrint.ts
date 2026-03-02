@@ -70,6 +70,15 @@ interface LogbookData {
   created_by_profile?: { full_name: string };
 }
 
+interface LinkedDeviation {
+  id: string;
+  title: string;
+  type: string;
+  severity: string;
+  status: string;
+  deviation_number?: number | null;
+}
+
 interface PrintLogbookOptions {
   logbook: LogbookData;
   stops: Stop[];
@@ -78,11 +87,12 @@ interface PrintLogbookOptions {
   exercises: Exercise[];
   passengerSummary?: PassengerSummary | null;
   signatures?: { signer_profile?: { full_name: string }; signed_at: string }[];
+  deviations?: LinkedDeviation[] | null;
 }
 
 export function useLogbookPrint() {
   const printLogbook = useCallback((options: PrintLogbookOptions) => {
-    const { logbook, stops, crewMembers, engineHours, exercises, passengerSummary, signatures } = options;
+    const { logbook, stops, crewMembers, engineHours, exercises, passengerSummary, signatures, deviations } = options;
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -410,7 +420,40 @@ export function useLogbookPrint() {
       `;
     }
 
-    // Signature section
+    // Deviations section
+    let deviationsHtml = '';
+    if (deviations && deviations.length > 0) {
+      const devRows = deviations.map((d, i) => {
+        const severityLabel = d.severity === 'hog' ? 'Hög' : d.severity === 'medel' ? 'Medel' : 'Låg';
+        const statusLabel = d.status === 'oppen' ? 'Öppen' : d.status === 'under_utredning' ? 'Under utredning' : d.status === 'aterrapporterad' ? 'Återrapporterad' : 'Stängd';
+        return `
+          <tr class="${i % 2 === 0 ? 'even-row' : ''}">
+            <td class="cell-num">${d.deviation_number ? '#' + d.deviation_number : '-'}</td>
+            <td>${d.title}</td>
+            <td class="cell-num">${severityLabel}</td>
+            <td class="cell-num">${statusLabel}</td>
+          </tr>
+        `;
+      }).join('');
+      
+      deviationsHtml = `
+        <div class="section">
+          <div class="section-title">Kopplade avvikelser</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="w-num">Nr</th>
+                <th>Rubrik</th>
+                <th class="w-role">Allvarlighet</th>
+                <th class="w-role">Status</th>
+              </tr>
+            </thead>
+            <tbody>${devRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
     let signatureHtml = '';
     if (signatures && signatures.length > 0) {
       const sig = signatures[0];
@@ -751,6 +794,7 @@ export function useLogbookPrint() {
           ${engineHtml}
           ${quickEntriesHtml}
           ${exercisesHtml}
+          ${deviationsHtml}
           ${signatureHtml}
           
           <div class="footer">
