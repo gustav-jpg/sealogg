@@ -49,17 +49,17 @@ export function LogbookSidebar({
       )}
 
       {canEditThis && (
-        <div className="space-y-3">
-          <Button className="w-full" onClick={onSave} disabled={isSaving}>
-            <Save className="h-4 w-4 mr-2" />
+        <div className="space-y-2">
+          <Button className="w-full text-xs h-9" onClick={onSave} disabled={isSaving}>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
             {isSaving ? 'Sparar...' : 'Spara ändringar'}
           </Button>
-          <Button className="w-full" variant="secondary" onClick={onSignAndClose} disabled={isClosing || (!validation.isValid && !overrideValidation)}>
-            <ShieldCheck className="h-4 w-4 mr-2" />
+          <Button className="w-full text-xs h-9" variant="secondary" onClick={onSignAndClose} disabled={isClosing || (!validation.isValid && !overrideValidation)}>
+            <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
             Signera & Stäng
           </Button>
-          <Button className="w-full" variant="destructive" onClick={onDelete} disabled={isDeleting}>
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button className="w-full text-xs h-9" variant="destructive" onClick={onDelete} disabled={isDeleting}>
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
             {isDeleting ? 'Raderar...' : 'Radera loggbok'}
           </Button>
         </div>
