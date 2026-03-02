@@ -350,23 +350,23 @@ export function LogbookStops({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-x-auto">
+    <div className="space-y-5">
+      <div className="overflow-x-auto -mx-2">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead className="min-w-20">Tid</TableHead>
-              <TableHead className="min-w-28">Position</TableHead>
-              {showPax && <TableHead className="w-16 text-center">Pax på</TableHead>}
-              {showPax && <TableHead className="w-16 text-center">Pax av</TableHead>}
-              {showPax && <TableHead className="w-20 text-center">Ombord</TableHead>}
-              {showVehicles && <TableHead className="w-16 text-center">Fordon på</TableHead>}
-              {showVehicles && <TableHead className="w-16 text-center">Fordon av</TableHead>}
-              {showVehicles && <TableHead className="w-20 text-center">Fordon ombord</TableHead>}
-              {showCargo && <TableHead className="w-20 text-center">Gods på (kg)</TableHead>}
-              {showCargo && <TableHead className="w-20 text-center">Gods av (kg)</TableHead>}
-              {showCargo && <TableHead className="w-20 text-center">Gods ombord</TableHead>}
+              <TableHead className="w-12 pl-4">#</TableHead>
+              <TableHead className="min-w-24">Tid</TableHead>
+              <TableHead className="min-w-32">Position</TableHead>
+              {showPax && <TableHead className="w-18 text-center">Pax på</TableHead>}
+              {showPax && <TableHead className="w-18 text-center">Pax av</TableHead>}
+              {showPax && <TableHead className="w-22 text-center">Ombord</TableHead>}
+              {showVehicles && <TableHead className="w-18 text-center">Fordon på</TableHead>}
+              {showVehicles && <TableHead className="w-18 text-center">Fordon av</TableHead>}
+              {showVehicles && <TableHead className="w-22 text-center">Fordon ombord</TableHead>}
+              {showCargo && <TableHead className="w-24 text-center">Gods på (kg)</TableHead>}
+              {showCargo && <TableHead className="w-24 text-center">Gods av (kg)</TableHead>}
+              {showCargo && <TableHead className="w-24 text-center">Gods ombord</TableHead>}
               {!disabled && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
@@ -377,19 +377,19 @@ export function LogbookStops({
               const cargoOnboard = showCargo ? calculateCargoOnboard(sortedStops, index) : 0;
               return (
                 <TableRow key={stop.tempId}>
-                  <TableCell className="font-medium text-muted-foreground">
+                  <TableCell className="font-medium text-muted-foreground pl-4">
                     {stop.stopOrder}
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="py-2 px-2">
                     <Input
                       type="time"
                       value={stop.departureTime}
                       onChange={e => updateStop(stop.tempId, 'departureTime', e.target.value)}
                       disabled={disabled}
-                      className="h-8 w-20 text-sm px-2"
+                      className="h-9 w-24 text-sm px-2.5"
                     />
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="py-2 px-2">
                     <Input
                       value={stop.departureLocation || stop.arrivalLocation}
                       onChange={e => {
@@ -398,11 +398,11 @@ export function LogbookStops({
                       }}
                       disabled={disabled}
                       placeholder="Hamn/plats"
-                      className="h-8 text-sm px-2"
+                      className="h-9 text-sm px-2.5"
                     />
                   </TableCell>
                   {showPax && (
-                    <TableCell className="p-1">
+                    <TableCell className="py-2 px-2">
                       <Input
                         type="number"
                         min={0}
@@ -410,12 +410,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'paxOn', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-8 w-14 text-sm px-2 text-center"
+                        className="h-9 w-16 text-sm px-2 text-center"
                       />
                     </TableCell>
                   )}
                   {showPax && (
-                    <TableCell className="p-1">
+                    <TableCell className="py-2 px-2">
                       <Input
                         type="number"
                         min={0}
@@ -423,12 +423,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'paxOff', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-8 w-14 text-sm px-2 text-center"
+                        className="h-9 w-16 text-sm px-2 text-center"
                       />
                     </TableCell>
                   )}
                   {showPax && (
-                    <TableCell className="text-center">
+                    <TableCell className="text-center py-2">
                       <Badge 
                         variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"}
                         className="font-mono min-w-10 justify-center"
@@ -436,7 +436,7 @@ export function LogbookStops({
                         {onboard}
                       </Badge>
                       {maxPassengers && onboard > maxPassengers && (
-                        <div className="flex items-center gap-1 text-destructive text-xs mt-0.5 justify-center">
+                        <div className="flex items-center gap-1 text-destructive text-xs mt-1 justify-center">
                           <AlertTriangle className="h-3 w-3" />
                           <span>Max {maxPassengers}</span>
                         </div>
@@ -444,7 +444,7 @@ export function LogbookStops({
                     </TableCell>
                   )}
                   {showVehicles && (
-                    <TableCell className="p-1">
+                    <TableCell className="py-2 px-2">
                       <Input
                         type="number"
                         min={0}
@@ -452,12 +452,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'vehiclesOn', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-8 w-14 text-sm px-2 text-center"
+                        className="h-9 w-16 text-sm px-2 text-center"
                       />
                     </TableCell>
                   )}
                   {showVehicles && (
-                    <TableCell className="p-1">
+                    <TableCell className="py-2 px-2">
                       <Input
                         type="number"
                         min={0}
@@ -465,12 +465,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'vehiclesOff', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-8 w-14 text-sm px-2 text-center"
+                        className="h-9 w-16 text-sm px-2 text-center"
                       />
                     </TableCell>
                   )}
                   {showVehicles && (
-                    <TableCell className="text-center">
+                    <TableCell className="text-center py-2">
                       <Badge 
                         variant={vehiclesOnboard > 0 ? "default" : "secondary"}
                         className="font-mono min-w-10 justify-center"
@@ -480,7 +480,7 @@ export function LogbookStops({
                     </TableCell>
                   )}
                   {showCargo && (
-                    <TableCell className="p-1">
+                    <TableCell className="py-2 px-2">
                       <Input
                         type="number"
                         min={0}
@@ -489,12 +489,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'cargoOnKg', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-8 w-20 text-sm px-2 text-center"
+                        className="h-9 w-22 text-sm px-2 text-center"
                       />
                     </TableCell>
                   )}
                   {showCargo && (
-                    <TableCell className="p-1">
+                    <TableCell className="py-2 px-2">
                       <Input
                         type="number"
                         min={0}
@@ -503,12 +503,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'cargoOffKg', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-8 w-20 text-sm px-2 text-center"
+                        className="h-9 w-22 text-sm px-2 text-center"
                       />
                     </TableCell>
                   )}
                   {showCargo && (
-                    <TableCell className="text-center">
+                    <TableCell className="text-center py-2">
                       <Badge 
                         variant={cargoOnboard > 0 ? "default" : "secondary"}
                         className="font-mono min-w-10 justify-center"
@@ -518,7 +518,7 @@ export function LogbookStops({
                     </TableCell>
                   )}
                   {!disabled && (
-                    <TableCell>
+                    <TableCell className="py-2">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -536,14 +536,14 @@ export function LogbookStops({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-2">
         {!disabled && (
           <Button variant="outline" size="sm" onClick={addStop}>
             <Plus className="h-4 w-4 mr-2" />
             Lägg till stopp
           </Button>
         )}
-        <div className="flex items-center gap-4 text-sm ml-auto flex-wrap">
+        <div className="flex items-center gap-5 text-sm ml-auto flex-wrap">
           {showPax && (
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />

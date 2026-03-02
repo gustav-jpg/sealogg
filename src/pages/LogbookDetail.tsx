@@ -778,13 +778,13 @@ export default function LogbookDetail() {
 
             {/* Travel info card */}
             <div className="rounded-lg border bg-card">
-              <div className="p-6 pb-0">
+              <div className="px-6 pt-6 pb-2">
                 <h3 className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight font-display">
                   <MapPin className="h-5 w-5" />
                   Reseinformation
                 </h3>
               </div>
-              <div className="p-6 pt-4">
+              <div className="px-4 pb-6 pt-2">
                 {isOpen ? (
                   <LogbookStops
                     stops={stops}
