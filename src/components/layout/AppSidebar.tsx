@@ -226,7 +226,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       {/* Header with Logo */}
       <SidebarHeader className="border-b border-sidebar-border bg-primary">
-        <Link to="/portal" className="flex items-center justify-center px-2 py-1">
+        <Link to="/portal" className={cn("flex items-center px-2 py-1", isCollapsed && "justify-center")}>
           <img 
             src={isCollapsed ? sealoggIcon : sealoggLogo} 
             alt="SeaLogg" 
