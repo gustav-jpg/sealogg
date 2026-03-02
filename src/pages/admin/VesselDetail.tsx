@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
-import { Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Plus, ArrowLeft, Users, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Ship, Trash2, Settings, Gauge, Pencil, Award, Upload, FileText, Plus, ArrowLeft, Users, AlertTriangle, CheckCircle, Anchor } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -178,6 +178,68 @@ export default function VesselDetail() {
             </div>
           </div>
         </div>
+
+        {/* Fartygsinformation */}
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Anchor className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">Fartygsinformation</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-sm">Fartygstyp</Label>
+                <Select
+                  value={(vessel as any).vessel_type || ''}
+                  onValueChange={async (val) => {
+                    const { error } = await supabase
+                      .from('vessels')
+                      .update({ vessel_type: val || null } as any)
+                      .eq('id', vessel.id);
+                    if (error) {
+                      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+                    } else {
+                      queryClient.invalidateQueries({ queryKey: ['vessel-detail', id] });
+                      toast({ title: 'Sparat' });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Välj fartygstyp" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="passagerarfartyg">Passagerarfartyg</SelectItem>
+                    <SelectItem value="lastfartyg">Lastfartyg</SelectItem>
+                    <SelectItem value="bogserbat">Bogserfartyg</SelectItem>
+                    <SelectItem value="arbetsfartyg">Arbetsfartyg</SelectItem>
+                    <SelectItem value="fritidsbat">Fritidsbåt</SelectItem>
+                    <SelectItem value="ovrigt">Övrigt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm">Signalbokstäver</Label>
+                <Input
+                  placeholder="T.ex. SLHA"
+                  value={(vessel as any).call_sign ?? ''}
+                  onChange={async (e) => {
+                    const val = e.target.value.toUpperCase();
+                    const { error } = await supabase
+                      .from('vessels')
+                      .update({ call_sign: val || null } as any)
+                      .eq('id', vessel.id);
+                    if (error) {
+                      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+                    } else {
+                      queryClient.invalidateQueries({ queryKey: ['vessel-detail', id] });
+                    }
+                  }}
+                  className="uppercase"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Maskiner */}

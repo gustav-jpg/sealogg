@@ -3018,6 +3018,7 @@ export type Database = {
       vessels: {
         Row: {
           auxiliary_engine_count: number
+          call_sign: string | null
           created_at: string
           description: string | null
           id: string
@@ -3027,9 +3028,11 @@ export type Database = {
           organization_id: string
           primary_engine_id: string | null
           updated_at: string
+          vessel_type: string | null
         }
         Insert: {
           auxiliary_engine_count?: number
+          call_sign?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -3039,9 +3042,11 @@ export type Database = {
           organization_id: string
           primary_engine_id?: string | null
           updated_at?: string
+          vessel_type?: string | null
         }
         Update: {
           auxiliary_engine_count?: number
+          call_sign?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -3051,6 +3056,7 @@ export type Database = {
           organization_id?: string
           primary_engine_id?: string | null
           updated_at?: string
+          vessel_type?: string | null
         }
         Relationships: [
           {
