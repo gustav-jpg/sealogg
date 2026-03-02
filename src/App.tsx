@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -7,55 +8,64 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { usePageTracking } from "@/hooks/usePageTracking";
-import Home from "./pages/Home";
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ResetPassword from "./pages/ResetPassword";
-import NewLogbook from "./pages/NewLogbook";
-import LogbookDetail from "./pages/LogbookDetail";
-import Deviations from "./pages/Deviations";
-import DeviationDetail from "./pages/DeviationDetail";
-import FaultCases from "./pages/FaultCases";
-import FaultCaseDetail from "./pages/FaultCaseDetail";
-import SelfControl from "./pages/SelfControl";
-import Qualifications from "./pages/Qualifications";
-import Checklists from "./pages/Checklists";
-import ChecklistExecute from "./pages/ChecklistExecute";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import AdminVessels from "./pages/admin/Vessels";
-import AdminUsers from "./pages/admin/Users";
-import RoleRules from "./pages/admin/RoleRules";
-import ControlPoints from "./pages/admin/ControlPoints";
-import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
-import AdminStatus from "./pages/admin/Status";
-import BunkerStats from "./pages/admin/BunkerStats";
 
-import ExercisesAdmin from "./pages/admin/Exercises";
-import IntranetAdmin from "./pages/admin/Intranet";
-import Startsida from "./pages/Startsida";
-import NotFound from "./pages/NotFound";
-import BackofficeLayout from "./components/layout/BackofficeLayout";
-import BackofficeDashboard from "./pages/backoffice/Dashboard";
-import Organizations from "./pages/backoffice/Organizations";
-import OrganizationDetail from "./pages/backoffice/OrganizationDetail";
-import AuditLogs from "./pages/backoffice/AuditLogs";
-import BookingCalendar from "./pages/bookings/BookingCalendar";
-import NewBooking from "./pages/bookings/NewBooking";
-import BookingDetail from "./pages/bookings/BookingDetail";
-import MenusAdmin from "./pages/bookings/admin/MenusAdmin";
-import DrinksAdmin from "./pages/bookings/admin/DrinksAdmin";
-import PassengerRegistration from "./pages/PassengerRegistration";
-import PassengerSession from "./pages/PassengerSession";
-import PassengerAdmin from "./pages/admin/PassengerAdmin";
-import NotificationSettingsPage from "./pages/admin/NotificationSettings";
-import Changelog from "./pages/Changelog";
-import BackofficeChangelog from "./pages/backoffice/Changelog";
-import Kartvisaren from "./pages/Kartvisaren";
-import Documents from "./pages/Documents";
-// SparePartsIndex is now embedded as a tab in SelfControl
+// Lazy-loaded pages for better initial load performance
+const Home = lazy(() => import("./pages/Home"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const NewLogbook = lazy(() => import("./pages/NewLogbook"));
+const LogbookDetail = lazy(() => import("./pages/LogbookDetail"));
+const Deviations = lazy(() => import("./pages/Deviations"));
+const DeviationDetail = lazy(() => import("./pages/DeviationDetail"));
+const FaultCases = lazy(() => import("./pages/FaultCases"));
+const FaultCaseDetail = lazy(() => import("./pages/FaultCaseDetail"));
+const SelfControl = lazy(() => import("./pages/SelfControl"));
+const Qualifications = lazy(() => import("./pages/Qualifications"));
+const Checklists = lazy(() => import("./pages/Checklists"));
+const ChecklistExecute = lazy(() => import("./pages/ChecklistExecute"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const AdminVessels = lazy(() => import("./pages/admin/Vessels"));
+const AdminUsers = lazy(() => import("./pages/admin/Users"));
+const RoleRules = lazy(() => import("./pages/admin/RoleRules"));
+const ControlPoints = lazy(() => import("./pages/admin/ControlPoints"));
+const ChecklistTemplates = lazy(() => import("./pages/admin/ChecklistTemplates"));
+const AdminStatus = lazy(() => import("./pages/admin/Status"));
+const BunkerStats = lazy(() => import("./pages/admin/BunkerStats"));
+const ExercisesAdmin = lazy(() => import("./pages/admin/Exercises"));
+const IntranetAdmin = lazy(() => import("./pages/admin/Intranet"));
+const Startsida = lazy(() => import("./pages/Startsida"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const BackofficeLayout = lazy(() => import("./components/layout/BackofficeLayout"));
+const BackofficeDashboard = lazy(() => import("./pages/backoffice/Dashboard"));
+const Organizations = lazy(() => import("./pages/backoffice/Organizations"));
+const OrganizationDetail = lazy(() => import("./pages/backoffice/OrganizationDetail"));
+const AuditLogs = lazy(() => import("./pages/backoffice/AuditLogs"));
+const BookingCalendar = lazy(() => import("./pages/bookings/BookingCalendar"));
+const NewBooking = lazy(() => import("./pages/bookings/NewBooking"));
+const BookingDetail = lazy(() => import("./pages/bookings/BookingDetail"));
+const MenusAdmin = lazy(() => import("./pages/bookings/admin/MenusAdmin"));
+const DrinksAdmin = lazy(() => import("./pages/bookings/admin/DrinksAdmin"));
+const PassengerRegistration = lazy(() => import("./pages/PassengerRegistration"));
+const PassengerSession = lazy(() => import("./pages/PassengerSession"));
+const PassengerAdmin = lazy(() => import("./pages/admin/PassengerAdmin"));
+const NotificationSettingsPage = lazy(() => import("./pages/admin/NotificationSettings"));
+const Changelog = lazy(() => import("./pages/Changelog"));
+const BackofficeChangelog = lazy(() => import("./pages/backoffice/Changelog"));
+const Kartvisaren = lazy(() => import("./pages/Kartvisaren"));
+const Documents = lazy(() => import("./pages/Documents"));
+
 const queryClient = new QueryClient();
+
+function LazyFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, isLoading, isAdmin } = useAuth();
@@ -107,7 +117,7 @@ function PageTracker() {
 
 function AppRoutes() {
   return (
-    <>
+    <Suspense fallback={<LazyFallback />}>
       <PageTracker />
       <Routes>
         {/* Public pages */}
@@ -175,7 +185,7 @@ function AppRoutes() {
         
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </Suspense>
   );
 }
 

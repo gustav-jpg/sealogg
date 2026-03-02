@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -23,6 +23,7 @@ type SortDirection = 'asc' | 'desc';
 export default function Dashboard() {
   const { canEdit } = useAuth();
   const { selectedOrgId } = useOrganization();
+  const navigate = useNavigate();
   
   
   const [sortField, setSortField] = useState<SortField>('date');
@@ -260,7 +261,7 @@ export default function Dashboard() {
                   <Card 
                     key={logbook.id} 
                     className="cursor-pointer active:bg-accent/50 transition-colors"
-                    onClick={() => window.location.href = `/portal/logbook/${logbook.id}`}
+                    onClick={() => navigate(`/portal/logbook/${logbook.id}`)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-3">
@@ -347,7 +348,7 @@ export default function Dashboard() {
                       <TableRow 
                         key={logbook.id} 
                         className="cursor-pointer"
-                        onClick={() => window.location.href = `/portal/logbook/${logbook.id}`}
+                        onClick={() => navigate(`/portal/logbook/${logbook.id}`)}
                       >
                         <TableCell className="py-2 text-muted-foreground text-sm">
                           {format(new Date(logbook.date), 'd MMM yyyy', { locale: sv })}
