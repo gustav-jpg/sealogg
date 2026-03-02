@@ -1792,6 +1792,8 @@ export type Database = {
         Row: {
           arrival_location: string | null
           arrival_time: string | null
+          cargo_off_kg: number | null
+          cargo_on_kg: number | null
           created_at: string
           departure_location: string | null
           departure_time: string | null
@@ -1802,10 +1804,14 @@ export type Database = {
           pax_off: number | null
           pax_on: number | null
           stop_order: number
+          vehicles_off: number | null
+          vehicles_on: number | null
         }
         Insert: {
           arrival_location?: string | null
           arrival_time?: string | null
+          cargo_off_kg?: number | null
+          cargo_on_kg?: number | null
           created_at?: string
           departure_location?: string | null
           departure_time?: string | null
@@ -1816,10 +1822,14 @@ export type Database = {
           pax_off?: number | null
           pax_on?: number | null
           stop_order: number
+          vehicles_off?: number | null
+          vehicles_on?: number | null
         }
         Update: {
           arrival_location?: string | null
           arrival_time?: string | null
+          cargo_off_kg?: number | null
+          cargo_on_kg?: number | null
           created_at?: string
           departure_location?: string | null
           departure_time?: string | null
@@ -1830,6 +1840,8 @@ export type Database = {
           pax_off?: number | null
           pax_on?: number | null
           stop_order?: number
+          vehicles_off?: number | null
+          vehicles_on?: number | null
         }
         Relationships: [
           {
