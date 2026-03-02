@@ -270,7 +270,12 @@ export default function Dashboard() {
                             <span className="font-medium truncate">{(logbook as any).vessel?.name || 'Okänt fartyg'}</span>
                             <div className="flex items-center gap-1 ml-1">
                               {(logbook as any).bunkered && (
-                                <Fuel className="h-3.5 w-3.5 text-amber-500" />
+                                <span className="flex items-center gap-0.5">
+                                  <Fuel className="h-3.5 w-3.5 text-amber-500" />
+                                  {(logbook as any).bunker_liters && (
+                                    <span className="text-xs text-amber-600 font-medium">{(logbook as any).bunker_liters}L</span>
+                                  )}
+                                </span>
                               )}
                               {(logbook as any).water_filled && (
                                 <Droplets className="h-3.5 w-3.5 text-blue-500" />
@@ -359,7 +364,7 @@ export default function Dashboard() {
                               <TooltipProvider delayDuration={200}>
                                 <Tooltip>
                                   <TooltipTrigger><Fuel className="h-3.5 w-3.5 text-amber-500" /></TooltipTrigger>
-                                  <TooltipContent side="top"><p>Bunkrat</p></TooltipContent>
+                                  <TooltipContent side="top"><p>Bunkrat{(logbook as any).bunker_liters ? ` ${(logbook as any).bunker_liters}L` : ''}</p></TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
                             )}
