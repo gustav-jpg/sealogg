@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import sealoggLogo from '@/assets/sealog-logo.png';
@@ -15,13 +15,14 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  // For the "request new link" form on expired page
+  const [resendEmail, setResendEmail] = useState('');
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Listen for auth state changes – the PASSWORD_RECOVERY event fires
-    // when the Supabase client processes the recovery token from the URL hash.
-    // This avoids a race condition where getSession() runs before the hash is parsed.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         if (session) {
@@ -31,22 +32,16 @@ export default function ResetPassword() {
       }
     });
 
-    // Also check if session already exists (e.g. page refresh)
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setIsValidSession(true);
         setIsCheckingSession(false);
       } else {
-        // Give some extra time for the hash to be processed before showing error
         setTimeout(() => {
           setIsCheckingSession(prev => {
             if (prev) {
-              toast({
-                variant: 'destructive',
-                title: 'Ogiltig eller utgången länk',
-                description: 'Begär en ny återställningslänk.',
-              });
+              // Don't show toast — the expired UI itself is informative enough
             }
             return false;
           });
@@ -57,7 +52,7 @@ export default function ResetPassword() {
     checkSession();
 
     return () => subscription.unsubscribe();
-  }, [toast]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +97,44 @@ export default function ResetPassword() {
     setIsLoading(false);
   };
 
+  const handleResendLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resendEmail.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'E-post krävs',
+        description: 'Ange din e-postadress för att få en ny länk.',
+      });
+      return;
+    }
+
+    setIsResending(true);
+
+    try {
+      const { error } = await supabase.functions.invoke('public-password-reset', {
+        body: { email: resendEmail },
+      });
+
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Något gick fel',
+          description: 'Kunde inte skicka ny länk. Försök igen.',
+        });
+      } else {
+        setResendSuccess(true);
+      }
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Något gick fel',
+        description: 'Kunde inte skicka ny länk. Försök igen.',
+      });
+    }
+
+    setIsResending(false);
+  };
+
   if (isCheckingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background maritime-gradient-subtle">
@@ -115,16 +148,58 @@ export default function ResetPassword() {
       <div className="min-h-screen flex items-center justify-center bg-background maritime-gradient-subtle">
         <Card className="w-full max-w-md mx-4">
           <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img src={sealoggLogo} alt="SeaLogg" className="h-10" />
+            </div>
             <CardTitle>Länken har utgått</CardTitle>
             <CardDescription>
-              Återställningslänken är ogiltig eller har utgått.
+              Återställningslänken är ogiltig eller har utgått. Ange din e-postadress nedan så skickar vi en ny länk direkt.
             </CardDescription>
           </CardHeader>
-          <CardFooter>
-            <Button onClick={() => navigate('/portal/login')} className="w-full">
-              Tillbaka till inloggning
-            </Button>
-          </CardFooter>
+
+          {resendSuccess ? (
+            <CardContent className="text-center space-y-4 pb-6">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+              <div>
+                <p className="font-medium">Ny länk skickad!</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Kolla din e-post (även skräppost) efter ett mail från SeaLogg med en ny länk.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => navigate('/portal/login')} className="w-full mt-4">
+                Tillbaka till inloggning
+              </Button>
+            </CardContent>
+          ) : (
+            <form onSubmit={handleResendLink}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="resend-email">E-postadress</Label>
+                  <Input
+                    id="resend-email"
+                    type="email"
+                    placeholder="din@email.se"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-3">
+                <Button type="submit" className="w-full" disabled={isResending}>
+                  {isResending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="mr-2 h-4 w-4" />
+                  )}
+                  Skicka ny länk
+                </Button>
+                <Button variant="ghost" onClick={() => navigate('/portal/login')} className="w-full">
+                  Tillbaka till inloggning
+                </Button>
+              </CardFooter>
+            </form>
+          )}
         </Card>
       </div>
     );
