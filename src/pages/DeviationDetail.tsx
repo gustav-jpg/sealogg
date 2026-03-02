@@ -36,7 +36,7 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, Plus, FileText, MessageSquare, Image, X, Printer, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, MessageSquare, Image, X, Printer, Pencil, Trash2, BookOpen } from 'lucide-react';
 
 export default function DeviationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -493,6 +493,19 @@ export default function DeviationDetail() {
                     <p className="font-medium">{(deviation as any).creator_profile?.full_name || 'Okänd'}</p>
                   </div>
                 </div>
+                {deviation.logbook_id && (
+                  <div>
+                    <Label className="text-muted-foreground">Kopplad loggbok</Label>
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto text-sm font-medium"
+                      onClick={() => navigate(`/portal/logbook/${deviation.logbook_id}`)}
+                    >
+                      <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+                      Visa loggbok ({format(new Date(deviation.date), 'PPP', { locale: sv })})
+                    </Button>
+                  </div>
+                )}
                 <div>
                   <Label className="text-muted-foreground">Beskrivning</Label>
                   <p className="mt-1 whitespace-pre-wrap">{deviation.description}</p>
