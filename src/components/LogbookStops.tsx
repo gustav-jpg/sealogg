@@ -350,24 +350,24 @@ export function LogbookStops({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="overflow-x-auto -mx-2">
+    <div className="space-y-3">
+      <div className="overflow-x-auto -mx-1">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12 pl-4">#</TableHead>
-              <TableHead className="min-w-24">Tid</TableHead>
-              <TableHead className="min-w-32">Position</TableHead>
-              {showPax && <TableHead className="w-18 text-center">Pax på</TableHead>}
-              {showPax && <TableHead className="w-18 text-center">Pax av</TableHead>}
-              {showPax && <TableHead className="w-22 text-center">Ombord</TableHead>}
-              {showVehicles && <TableHead className="w-18 text-center">Fordon på</TableHead>}
-              {showVehicles && <TableHead className="w-18 text-center">Fordon av</TableHead>}
-              {showVehicles && <TableHead className="w-22 text-center">Fordon ombord</TableHead>}
-              {showCargo && <TableHead className="w-24 text-center">Gods på (kg)</TableHead>}
-              {showCargo && <TableHead className="w-24 text-center">Gods av (kg)</TableHead>}
-              {showCargo && <TableHead className="w-24 text-center">Gods ombord</TableHead>}
-              {!disabled && <TableHead className="w-12"></TableHead>}
+              <TableHead className="w-10 pl-3 text-xs">#</TableHead>
+              <TableHead className="min-w-20 text-xs">Tid</TableHead>
+              <TableHead className="min-w-28 text-xs">Position</TableHead>
+              {showPax && <TableHead className="w-14 text-center text-xs">Pax på</TableHead>}
+              {showPax && <TableHead className="w-14 text-center text-xs">Pax av</TableHead>}
+              {showPax && <TableHead className="w-16 text-center text-xs">Ombord</TableHead>}
+              {showVehicles && <TableHead className="w-14 text-center text-xs">Fordon på</TableHead>}
+              {showVehicles && <TableHead className="w-14 text-center text-xs">Fordon av</TableHead>}
+              {showVehicles && <TableHead className="w-16 text-center text-xs">Fordon omb.</TableHead>}
+              {showCargo && <TableHead className="w-20 text-center text-xs">Gods på</TableHead>}
+              {showCargo && <TableHead className="w-20 text-center text-xs">Gods av</TableHead>}
+              {showCargo && <TableHead className="w-20 text-center text-xs">Gods omb.</TableHead>}
+              {!disabled && <TableHead className="w-10"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -377,19 +377,19 @@ export function LogbookStops({
               const cargoOnboard = showCargo ? calculateCargoOnboard(sortedStops, index) : 0;
               return (
                 <TableRow key={stop.tempId}>
-                  <TableCell className="font-medium text-muted-foreground pl-4">
+                  <TableCell className="font-medium text-muted-foreground pl-3 py-1.5 text-xs">
                     {stop.stopOrder}
                   </TableCell>
-                  <TableCell className="py-2 px-2">
+                  <TableCell className="py-1.5 px-1.5">
                     <Input
                       type="time"
                       value={stop.departureTime}
                       onChange={e => updateStop(stop.tempId, 'departureTime', e.target.value)}
                       disabled={disabled}
-                      className="h-9 w-24 text-sm px-2.5"
+                      className="h-8 w-22 text-xs px-2"
                     />
                   </TableCell>
-                  <TableCell className="py-2 px-2">
+                  <TableCell className="py-1.5 px-1.5">
                     <Input
                       value={stop.departureLocation || stop.arrivalLocation}
                       onChange={e => {
@@ -398,11 +398,11 @@ export function LogbookStops({
                       }}
                       disabled={disabled}
                       placeholder="Hamn/plats"
-                      className="h-9 text-sm px-2.5"
+                      className="h-8 text-xs px-2"
                     />
                   </TableCell>
                   {showPax && (
-                    <TableCell className="py-2 px-2">
+                    <TableCell className="py-1.5 px-1.5">
                       <Input
                         type="number"
                         min={0}
@@ -410,12 +410,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'paxOn', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-9 w-16 text-sm px-2 text-center"
+                        className="h-8 w-14 text-xs px-1.5 text-center"
                       />
                     </TableCell>
                   )}
                   {showPax && (
-                    <TableCell className="py-2 px-2">
+                    <TableCell className="py-1.5 px-1.5">
                       <Input
                         type="number"
                         min={0}
@@ -423,12 +423,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'paxOff', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-9 w-16 text-sm px-2 text-center"
+                        className="h-8 w-14 text-xs px-1.5 text-center"
                       />
                     </TableCell>
                   )}
                   {showPax && (
-                    <TableCell className="text-center py-2">
+                    <TableCell className="text-center py-1.5">
                       <Badge 
                         variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"}
                         className="font-mono min-w-10 justify-center"
@@ -444,7 +444,7 @@ export function LogbookStops({
                     </TableCell>
                   )}
                   {showVehicles && (
-                    <TableCell className="py-2 px-2">
+                    <TableCell className="py-1.5 px-1.5">
                       <Input
                         type="number"
                         min={0}
@@ -452,12 +452,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'vehiclesOn', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-9 w-16 text-sm px-2 text-center"
+                        className="h-8 w-14 text-xs px-1.5 text-center"
                       />
                     </TableCell>
                   )}
                   {showVehicles && (
-                    <TableCell className="py-2 px-2">
+                    <TableCell className="py-1.5 px-1.5">
                       <Input
                         type="number"
                         min={0}
@@ -465,12 +465,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'vehiclesOff', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-9 w-16 text-sm px-2 text-center"
+                        className="h-8 w-14 text-xs px-1.5 text-center"
                       />
                     </TableCell>
                   )}
                   {showVehicles && (
-                    <TableCell className="text-center py-2">
+                    <TableCell className="text-center py-1.5">
                       <Badge 
                         variant={vehiclesOnboard > 0 ? "default" : "secondary"}
                         className="font-mono min-w-10 justify-center"
@@ -480,7 +480,7 @@ export function LogbookStops({
                     </TableCell>
                   )}
                   {showCargo && (
-                    <TableCell className="py-2 px-2">
+                    <TableCell className="py-1.5 px-1.5">
                       <Input
                         type="number"
                         min={0}
@@ -489,12 +489,12 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'cargoOnKg', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-9 w-22 text-sm px-2 text-center"
+                        className="h-8 w-18 text-xs px-1.5 text-center"
                       />
                     </TableCell>
                   )}
                   {showCargo && (
-                    <TableCell className="py-2 px-2">
+                    <TableCell className="py-1.5 px-1.5">
                       <Input
                         type="number"
                         min={0}
@@ -503,29 +503,29 @@ export function LogbookStops({
                         onChange={e => updateStop(stop.tempId, 'cargoOffKg', e.target.value)}
                         disabled={disabled}
                         placeholder="0"
-                        className="h-9 w-22 text-sm px-2 text-center"
+                        className="h-8 w-18 text-xs px-1.5 text-center"
                       />
                     </TableCell>
                   )}
                   {showCargo && (
-                    <TableCell className="text-center py-2">
+                    <TableCell className="text-center py-1.5">
                       <Badge 
                         variant={cargoOnboard > 0 ? "default" : "secondary"}
-                        className="font-mono min-w-10 justify-center"
+                        className="font-mono min-w-10 justify-center text-xs"
                       >
                         {cargoOnboard.toFixed(0)} kg
                       </Badge>
                     </TableCell>
                   )}
                   {!disabled && (
-                    <TableCell className="py-2">
+                    <TableCell className="py-1.5">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => removeStop(stop.tempId)}
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
                   )}
