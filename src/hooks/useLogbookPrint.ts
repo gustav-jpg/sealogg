@@ -7,6 +7,7 @@ interface Vessel {
   name: string;
   call_sign?: string;
   registration_number?: string;
+  vessel_type?: string;
 }
 
 interface Stop {
@@ -18,6 +19,10 @@ interface Stop {
   pax_on?: number | null;
   pax_off?: number | null;
   passenger_count?: number | null;
+  vehicles_on?: number | null;
+  vehicles_off?: number | null;
+  cargo_on_kg?: number | null;
+  cargo_off_kg?: number | null;
 }
 
 interface CrewMember {
@@ -161,42 +166,94 @@ export function useLogbookPrint() {
       `;
     } else if (sortedStops.length > 0) {
       const usesNewFormat = sortedStops.some(s => s.pax_on !== null || s.pax_off !== null);
+      const vesselType = logbook.vessel.vessel_type || 'passagerarfartyg';
+      const showPax = vesselType !== 'lastfartyg';
+      const showVehicles = vesselType === 'bilfarja';
+      const showCargo = vesselType === 'lastfartyg';
+
+      // Running totals for vehicles/cargo
+      const calcVehiclesOnboard = (idx: number) => {
+        let t = 0;
+        for (let i = 0; i <= idx; i++) { t += (sortedStops[i].vehicles_on || 0) - (sortedStops[i].vehicles_off || 0); }
+        return Math.max(0, t);
+      };
+      const calcCargoOnboard = (idx: number) => {
+        let t = 0;
+        for (let i = 0; i <= idx; i++) { t += (sortedStops[i].cargo_on_kg || 0) - (sortedStops[i].cargo_off_kg || 0); }
+        return Math.max(0, t);
+      };
       
       const stopRows = sortedStops.map((stop, i) => {
         const onboard = calculateOnboard(i);
         const position = stop.departure_location || stop.arrival_location || '-';
         
-        if (usesNewFormat) {
-          return `
-            <tr class="${i % 2 === 0 ? 'even-row' : ''}">
-              <td class="cell-num">${stop.stop_order}</td>
-              <td class="cell-time">${stop.departure_time || '-'}</td>
-              <td class="cell-location">${position}</td>
+        let paxCells = '';
+        if (showPax) {
+          if (usesNewFormat) {
+            paxCells = `
               <td class="cell-pax-on">${stop.pax_on && stop.pax_on > 0 ? `+${stop.pax_on}` : '-'}</td>
               <td class="cell-pax-off">${stop.pax_off && stop.pax_off > 0 ? `-${stop.pax_off}` : '-'}</td>
               <td class="cell-onboard">${onboard}</td>
-            </tr>
-          `;
-        } else {
-          return `
-            <tr class="${i % 2 === 0 ? 'even-row' : ''}">
-              <td class="cell-num">${stop.stop_order}</td>
-              <td class="cell-time">${stop.departure_time || '-'}</td>
-              <td class="cell-location">${position}</td>
+            `;
+          } else {
+            paxCells = `
               <td class="cell-pax">${stop.passenger_count ?? '-'}</td>
               <td class="cell-onboard">${onboard}</td>
-            </tr>
+            `;
+          }
+        }
+
+        let vehicleCells = '';
+        if (showVehicles) {
+          const vOnboard = calcVehiclesOnboard(i);
+          vehicleCells = `
+            <td class="cell-pax-on">${stop.vehicles_on && stop.vehicles_on > 0 ? `+${stop.vehicles_on}` : '-'}</td>
+            <td class="cell-pax-off">${stop.vehicles_off && stop.vehicles_off > 0 ? `-${stop.vehicles_off}` : '-'}</td>
+            <td class="cell-onboard">${vOnboard}</td>
           `;
         }
+
+        let cargoCells = '';
+        if (showCargo) {
+          const cOnboard = calcCargoOnboard(i);
+          cargoCells = `
+            <td class="cell-pax-on">${stop.cargo_on_kg && stop.cargo_on_kg > 0 ? `+${stop.cargo_on_kg}` : '-'}</td>
+            <td class="cell-pax-off">${stop.cargo_off_kg && stop.cargo_off_kg > 0 ? `-${stop.cargo_off_kg}` : '-'}</td>
+            <td class="cell-onboard">${cOnboard.toFixed(0)} kg</td>
+          `;
+        }
+
+        return `
+          <tr class="${i % 2 === 0 ? 'even-row' : ''}">
+            <td class="cell-num">${stop.stop_order}</td>
+            <td class="cell-time">${stop.departure_time || '-'}</td>
+            <td class="cell-location">${position}</td>
+            ${paxCells}
+            ${vehicleCells}
+            ${cargoCells}
+          </tr>
+        `;
       }).join('');
-      
-      const headers = usesNewFormat 
-        ? `<th class="w-num">#</th><th class="w-time">Tid</th><th>Plats</th><th class="w-pax">Pax på</th><th class="w-pax">Pax av</th><th class="w-pax">Ombord</th>`
-        : `<th class="w-num">#</th><th class="w-time">Tid</th><th>Plats</th><th class="w-pax">Pax</th><th class="w-pax">Ombord</th>`;
+
+      // Build headers
+      let headers = `<th class="w-num">#</th><th class="w-time">Tid</th><th>Plats</th>`;
+      if (showPax && usesNewFormat) {
+        headers += `<th class="w-pax">Pax på</th><th class="w-pax">Pax av</th><th class="w-pax">Ombord</th>`;
+      } else if (showPax) {
+        headers += `<th class="w-pax">Pax</th><th class="w-pax">Ombord</th>`;
+      }
+      if (showVehicles) {
+        headers += `<th class="w-pax">Fordon på</th><th class="w-pax">Fordon av</th><th class="w-pax">Fordon ombord</th>`;
+      }
+      if (showCargo) {
+        headers += `<th class="w-pax">Gods på (kg)</th><th class="w-pax">Gods av (kg)</th><th class="w-pax">Gods ombord</th>`;
+      }
+
+      const sectionTitle = showCargo ? 'Stopp & gods' : showVehicles ? 'Stopp, passagerare & fordon' : 'Stopp & passagerare';
       
       stopsHtml = `
         <div class="section">
-          <div class="section-title">Stopp & passagerare</div>
+          <div class="section-title">${sectionTitle}</div>
           <table class="data-table">
             <thead><tr>${headers}</tr></thead>
             <tbody>${stopRows}</tbody>
