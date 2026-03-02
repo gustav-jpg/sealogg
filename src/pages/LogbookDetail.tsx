@@ -319,7 +319,32 @@ export default function LogbookDetail() {
       // Initialize quick entries from DB flags
       const entries: typeof quickEntries = [];
       if ((logbook as any)?.bunkered) {
-        entries.push({ id: crypto.randomUUID(), type: 'bunkring', text: `Bunkrat${logbook.bunker_liters ? ` ${logbook.bunker_liters}L` : ''}`, timestamp: '' });
+        // Fetch bunker_events to reconstruct full text
+        supabase
+          .from('bunker_events')
+          .select('liters, engine_hours, engine_name')
+          .eq('logbook_id', id!)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .then(({ data: bunkerEvents }) => {
+            const be = bunkerEvents?.[0];
+            let bunkerText = 'Bunkrat';
+            if (be) {
+              bunkerText = `Bunkrat ${be.liters} liter`;
+              if (be.engine_hours) {
+                bunkerText += ` vid ${be.engine_hours} h (${be.engine_name || 'HM'})`;
+              }
+            } else if (logbook.bunker_liters) {
+              bunkerText = `Bunkrat ${logbook.bunker_liters}L`;
+            }
+            setQuickEntries(prev => {
+              // Replace any existing bunkring entry with the full-text version
+              const withoutBunkring = prev.filter(e => e.type !== 'bunkring');
+              return [{ id: crypto.randomUUID(), type: 'bunkring' as const, text: bunkerText, timestamp: '' }, ...withoutBunkring];
+            });
+          });
+        // Add placeholder immediately so order is preserved
+        entries.push({ id: crypto.randomUUID(), type: 'bunkring', text: 'Bunkrat', timestamp: '' });
       }
       if ((logbook as any)?.water_filled) {
         entries.push({ id: crypto.randomUUID(), type: 'farskvatten', text: 'Fyllt färskvatten', timestamp: '' });
