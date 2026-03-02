@@ -251,7 +251,7 @@ export default function ExercisesAdmin() {
                                     <AlertTriangle className="h-3 w-3" />
                                     {'>'} 12 mån sedan
                                   </Badge>
-                                ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 6 ? (
+                                ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 2 ? (
                                   <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-700">
                                     <AlertTriangle className="h-3 w-3" />
                                     {cat.monthsSinceLast} mån sedan
