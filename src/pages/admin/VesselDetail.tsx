@@ -326,6 +326,10 @@ export default function VesselDetail() {
               <Ship className="h-4 w-4 mr-1.5" />
               Fartyg
             </TabsTrigger>
+            <TabsTrigger value="certifikat">
+              <Award className="h-4 w-4 mr-1.5" />
+              Certifikat
+            </TabsTrigger>
             <TabsTrigger value="bemanningskrav">
               <Users className="h-4 w-4 mr-1.5" />
               Bemanningskrav
@@ -492,7 +496,16 @@ export default function VesselDetail() {
               </Card>
             </div>
 
-            {/* Certifikat */}
+            {/* Ta bort */}
+            <div className="flex justify-end pt-4">
+              <Button variant="destructive" size="sm" onClick={() => setDeleteConfirm(true)}>
+                <Trash2 className="h-4 w-4 mr-1.5" />
+                Ta bort fartyg
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="certifikat" className="space-y-6">
             <Card>
               <CardContent className="p-5">
                 <VesselCertificatesSection
@@ -506,14 +519,6 @@ export default function VesselDetail() {
                 />
               </CardContent>
             </Card>
-
-            {/* Ta bort */}
-            <div className="flex justify-end pt-4">
-              <Button variant="destructive" size="sm" onClick={() => setDeleteConfirm(true)}>
-                <Trash2 className="h-4 w-4 mr-1.5" />
-                Ta bort fartyg
-              </Button>
-            </div>
           </TabsContent>
 
           <TabsContent value="bemanningskrav" className="space-y-6">
