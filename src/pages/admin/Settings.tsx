@@ -294,73 +294,88 @@ export default function SettingsAdmin() {
 
           {/* Exercise Categories Tab */}
           <TabsContent value="exercise-categories" className="space-y-4">
-            <div className="flex justify-end">
-              <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ny kategori
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Ny övningskategori</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cat-name">Namn *</Label>
-                      <Input
-                        id="cat-name"
-                        value={catName}
-                        onChange={e => setCatName(e.target.value)}
-                        placeholder="T.ex. MOB-övning"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cat-desc">Beskrivning</Label>
-                      <Textarea
-                        id="cat-desc"
-                        value={catDescription}
-                        onChange={e => setCatDescription(e.target.value)}
-                        placeholder="Valfri beskrivning av övningen"
-                        rows={3}
-                      />
-                    </div>
-                    <Button
-                      className="w-full"
-                      onClick={() => createCategory.mutate()}
-                      disabled={createCategory.isPending || !catName.trim()}
-                    >
-                      {createCategory.isPending ? 'Skapar...' : 'Skapa kategori'}
-                    </Button>
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Övningskategorier</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Hantera kategorier för säkerhetsövningar som kan loggas i loggboken, t.ex. MOB-övning eller brandövning.
+                    </p>
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="space-y-2">
-              {exerciseCategories && exerciseCategories.length > 0 ? (
-                exerciseCategories.map(category => (
-                  <div key={category.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                    <div>
-                      <p className="font-medium">{category.name}</p>
-                      {category.description && (
-                        <p className="text-sm text-muted-foreground">{category.description}</p>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteConfirm({ open: true, item: { id: category.id, name: category.name, type: 'exercise' } })}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                  <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        Lägg till
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ny övningskategori</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="cat-name">Namn *</Label>
+                          <Input
+                            id="cat-name"
+                            value={catName}
+                            onChange={e => setCatName(e.target.value)}
+                            placeholder="T.ex. MOB-övning"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cat-desc">Beskrivning</Label>
+                          <Textarea
+                            id="cat-desc"
+                            value={catDescription}
+                            onChange={e => setCatDescription(e.target.value)}
+                            placeholder="Valfri beskrivning av övningen"
+                            rows={3}
+                          />
+                        </div>
+                        <Button
+                          className="w-full"
+                          onClick={() => createCategory.mutate()}
+                          disabled={createCategory.isPending || !catName.trim()}
+                        >
+                          {createCategory.isPending ? 'Skapar...' : 'Skapa kategori'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {exerciseCategories && exerciseCategories.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {exerciseCategories.map(category => (
+                      <div key={category.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <GraduationCap className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="font-medium text-sm">{category.name}</p>
+                            {category.description && (
+                              <p className="text-xs text-muted-foreground">{category.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setDeleteConfirm({ open: true, item: { id: category.id, name: category.name, type: 'exercise' } })}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-center py-8">Inga övningskategorier skapade</p>
-              )}
-            </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-6 text-sm">Inga övningskategorier skapade</p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
