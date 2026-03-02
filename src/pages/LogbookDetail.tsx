@@ -1144,7 +1144,19 @@ export default function LogbookDetail() {
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              onClick={() => setQuickEntries(prev => prev.filter(e => e.id !== entry.id))}
+                              onClick={async () => {
+                                if (entry.type === 'bunkring') {
+                                  // Also delete bunker_events for this logbook
+                                  await supabase
+                                    .from('bunker_events')
+                                    .delete()
+                                    .eq('logbook_id', id);
+                                  setBunkerLiters('');
+                                  queryClient.invalidateQueries({ queryKey: ['bunker-events'] });
+                                  queryClient.invalidateQueries({ queryKey: ['bunker-stats'] });
+                                }
+                                setQuickEntries(prev => prev.filter(e => e.id !== entry.id));
+                              }}
                             >
                               <X className="h-4 w-4" />
                             </Button>
