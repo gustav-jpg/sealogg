@@ -367,6 +367,7 @@ export default function VesselDetail() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="passagerarfartyg">Passagerarfartyg</SelectItem>
+                        <SelectItem value="bilfarja">Bilfärja</SelectItem>
                         <SelectItem value="lastfartyg">Lastfartyg</SelectItem>
                         <SelectItem value="bogserbat">Bogserfartyg</SelectItem>
                         <SelectItem value="arbetsfartyg">Arbetsfartyg</SelectItem>
