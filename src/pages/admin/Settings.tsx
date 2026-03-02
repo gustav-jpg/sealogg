@@ -14,7 +14,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgCertificateTypes } from '@/hooks/useOrgCertificateTypes';
 import { useQuery } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { Plus, Trash2, Award, GraduationCap, Settings } from 'lucide-react';
+import { Plus, Trash2, Award, GraduationCap, Settings, Building2 } from 'lucide-react';
 
 export default function SettingsAdmin() {
   const { toast } = useToast();
@@ -33,6 +33,21 @@ export default function SettingsAdmin() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; item: { id: string; name: string; type: 'cert' | 'exercise' } | null }>({ open: false, item: null });
 
   const { data: certificateTypes } = useOrgCertificateTypes(selectedOrgId);
+
+  const { data: organization } = useQuery({
+    queryKey: ['organization-detail', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return null;
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', selectedOrgId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrgId,
+  });
 
   const { data: exerciseCategories } = useQuery({
     queryKey: ['exercise-categories', selectedOrgId],
@@ -143,8 +158,12 @@ export default function SettingsAdmin() {
           <p className="text-muted-foreground mt-1">Hantera certifikatstyper och övningskategorier</p>
         </div>
 
-        <Tabs defaultValue="certificate-types" className="space-y-4">
+        <Tabs defaultValue="organization" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="organization" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Organisation
+            </TabsTrigger>
             <TabsTrigger value="certificate-types" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
               Certifikatstyper
@@ -154,6 +173,38 @@ export default function SettingsAdmin() {
               Övningskategorier
             </TabsTrigger>
           </TabsList>
+
+          {/* Organization Info Tab */}
+          <TabsContent value="organization" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Rederiinformation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wide">Namn</Label>
+                    <p className="font-medium">{organization?.name || '–'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wide">Org.nummer</Label>
+                    <p className="font-medium">{organization?.org_number || '–'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wide">Kontakt e-post</Label>
+                    <p className="font-medium">{organization?.contact_email || '–'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs uppercase tracking-wide">Kontakt telefon</Label>
+                    <p className="font-medium">{organization?.contact_phone || '–'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Certificate Types Tab */}
           <TabsContent value="certificate-types" className="space-y-4">
