@@ -38,8 +38,6 @@ export default function AdminStatus() {
 
   const vesselIds = vessels?.map(v => v.id) || [];
   const profileIds = profiles?.map(p => p.id) || [];
-  const today = new Date();
-  const cutoffDate = addDays(today, parseInt(period));
 
   // Fetch open fault cases
   const { data: faultCases } = useQuery({
@@ -84,6 +82,7 @@ export default function AdminStatus() {
       if (error) throw error;
       
       const periodDays = parseInt(period);
+      const now = new Date();
       return data?.map(s => {
         let dynamicStatus: string = 'ok';
         let daysOrHoursInfo: string | null = null;
@@ -92,7 +91,7 @@ export default function AdminStatus() {
           dynamicStatus = 'ej_utford';
           daysOrHoursInfo = 'Ej utförd';
         } else if (s.next_due_date) {
-          const daysUntil = differenceInDays(new Date(s.next_due_date), today);
+          const daysUntil = differenceInDays(new Date(s.next_due_date), now);
           if (daysUntil < 0) {
             dynamicStatus = 'forfallen';
             daysOrHoursInfo = `${Math.abs(daysUntil)} dagar sedan`;
@@ -125,11 +124,12 @@ export default function AdminStatus() {
     queryKey: ['status-vessel-certificates', vesselIds, period],
     queryFn: async () => {
       if (vesselIds.length === 0) return [];
+      const cutoff = addDays(new Date(), parseInt(period));
       const { data, error } = await supabase
         .from('vessel_certificates')
         .select(`*, vessel:vessels(name)`)
         .in('vessel_id', vesselIds)
-        .lte('expiry_date', cutoffDate.toISOString().split('T')[0])
+        .lte('expiry_date', cutoff.toISOString().split('T')[0])
         .order('expiry_date', { ascending: true });
       if (error) throw error;
       return data;
@@ -142,11 +142,12 @@ export default function AdminStatus() {
     queryKey: ['status-user-certificates', profileIds, period],
     queryFn: async () => {
       if (profileIds.length === 0) return [];
+      const cutoff = addDays(new Date(), parseInt(period));
       const { data, error } = await supabase
         .from('user_certificates')
         .select(`*, profile:profiles(full_name), certificate_type:certificate_types(name)`)
         .in('profile_id', profileIds)
-        .lte('expiry_date', cutoffDate.toISOString().split('T')[0])
+        .lte('expiry_date', cutoff.toISOString().split('T')[0])
         .order('expiry_date', { ascending: true });
       if (error) throw error;
       return data;
@@ -173,7 +174,8 @@ export default function AdminStatus() {
   });
 
   const getDaysUntil = (dateStr: string) => {
-    const days = differenceInDays(new Date(dateStr), today);
+    const now = new Date();
+    const days = differenceInDays(new Date(dateStr), now);
     if (days < 0) return `Utgånget ${Math.abs(days)}d sedan`;
     if (days === 0) return 'Idag';
     if (days === 1) return 'Imorgon';
@@ -181,7 +183,8 @@ export default function AdminStatus() {
   };
 
   const getUrgencyVariant = (dateStr: string): 'destructive' | 'default' | 'secondary' => {
-    const days = differenceInDays(new Date(dateStr), today);
+    const now = new Date();
+    const days = differenceInDays(new Date(dateStr), now);
     if (days <= 7) return 'destructive';
     if (days <= 30) return 'default';
     return 'secondary';
@@ -300,7 +303,7 @@ export default function AdminStatus() {
             title="Fartygscertifikat"
             icon={<Ship className="h-4 w-4" />}
             count={counts.vesselCerts}
-            alertCount={vesselCertificates?.filter(vc => differenceInDays(new Date(vc.expiry_date), today) < 0).length || 0}
+            alertCount={vesselCertificates?.filter(vc => differenceInDays(new Date(vc.expiry_date), new Date()) < 0).length || 0}
           >
             {vesselCertificates?.length === 0 ? (
               <p className="text-muted-foreground text-sm p-4">Inga certifikat löper ut inom vald period</p>
@@ -324,7 +327,7 @@ export default function AdminStatus() {
             title="Personliga certifikat"
             icon={<Award className="h-4 w-4" />}
             count={counts.userCerts}
-            alertCount={userCertificates?.filter(uc => differenceInDays(new Date(uc.expiry_date), today) < 0).length || 0}
+            alertCount={userCertificates?.filter(uc => differenceInDays(new Date(uc.expiry_date), new Date()) < 0).length || 0}
           >
             {userCertificates?.length === 0 ? (
               <p className="text-muted-foreground text-sm p-4">Inga certifikat löper ut inom vald period</p>
