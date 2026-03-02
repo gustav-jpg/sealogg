@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -47,6 +47,7 @@ export default function ControlPoints() {
   const [editingControlPoint, setEditingControlPoint] = useState<any>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [selectedVesselFilter, setSelectedVesselFilter] = useState<string>('');
+  const [vesselFilterInitialized, setVesselFilterInitialized] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Form state
@@ -361,12 +362,17 @@ export default function ControlPoints() {
     </div>
   );
 
+  // Auto-select first vessel when vessels load
+  useEffect(() => {
+    if (vessels && vessels.length > 0 && !vesselFilterInitialized) {
+      setSelectedVesselFilter(vessels[0].id);
+      setVesselFilterInitialized(true);
+    }
+  }, [vessels, vesselFilterInitialized]);
+
   // Filter control points by selected vessel
   const filteredControlPoints = controlPoints?.filter((cp) => {
     if (!selectedVesselFilter) return true;
-    
-    // Check if this control point applies to the selected vessel
-    if (cp.applies_to_all_vessels) return true;
     
     const cpVessels = controlPointVessels?.filter((cpv) => cpv.control_point_id === cp.id) || [];
     return cpVessels.some((cpv) => cpv.vessel_id === selectedVesselFilter);
@@ -416,12 +422,11 @@ export default function ControlPoints() {
           <CardContent className="py-4">
             <div className="flex items-center gap-4">
               <Label className="text-sm font-medium whitespace-nowrap">Visa kontrollpunkter för:</Label>
-              <Select value={selectedVesselFilter || "__all__"} onValueChange={(v) => setSelectedVesselFilter(v === "__all__" ? "" : v)}>
+              <Select value={selectedVesselFilter} onValueChange={setSelectedVesselFilter}>
                 <SelectTrigger className="w-[280px]">
                   <SelectValue placeholder="Välj fartyg..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">Alla fartyg</SelectItem>
                   {vessels?.map((vessel) => (
                     <SelectItem key={vessel.id} value={vessel.id}>
                       {vessel.name}
@@ -429,11 +434,6 @@ export default function ControlPoints() {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedVesselFilter && (
-                <Button variant="ghost" size="sm" onClick={() => setSelectedVesselFilter('')}>
-                  Rensa filter
-                </Button>
-              )}
             </div>
           </CardContent>
         </Card>
