@@ -1,20 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgCertificateTypes } from '@/hooks/useOrgCertificateTypes';
 import { useQuery } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { Plus, Trash2, Award, GraduationCap, Settings, Building2 } from 'lucide-react';
+import { WEATHER_STATIONS, UFS_CHARTS, getUFSChartsByRegion } from '@/lib/maritime-data';
+import { Plus, Trash2, Award, GraduationCap, Settings, Building2, Wind, AlertTriangle, Save, Home, X } from 'lucide-react';
 
 export default function SettingsAdmin() {
   const { toast } = useToast();
@@ -31,6 +35,12 @@ export default function SettingsAdmin() {
   const [catName, setCatName] = useState('');
   const [catDescription, setCatDescription] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; item: { id: string; name: string; type: 'cert' | 'exercise' } | null }>({ open: false, item: null });
+
+  // Startsida settings state
+  const [weatherStationId, setWeatherStationId] = useState('98040');
+  const [smhiLon, setSmhiLon] = useState('19.5013');
+  const [smhiLat, setSmhiLat] = useState('59.4428');
+  const [chartNumbers, setChartNumbers] = useState<string[]>([]);
 
   const { data: certificateTypes } = useOrgCertificateTypes(selectedOrgId);
 
@@ -63,6 +73,31 @@ export default function SettingsAdmin() {
     },
     enabled: !!selectedOrgId,
   });
+
+  // Fetch org settings for startsida
+  const { data: orgSettings, isLoading: settingsLoading } = useQuery({
+    queryKey: ['org-settings', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return null;
+      const { data, error } = await supabase
+        .from('organization_settings')
+        .select('*')
+        .eq('organization_id', selectedOrgId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrgId,
+  });
+
+  useEffect(() => {
+    if (orgSettings) {
+      setWeatherStationId(orgSettings.weather_station_id || '98040');
+      setSmhiLon(String(orgSettings.smhi_forecast_lon ?? '19.5013'));
+      setSmhiLat(String(orgSettings.smhi_forecast_lat ?? '59.4428'));
+      setChartNumbers(orgSettings.ufs_chart_numbers || []);
+    }
+  }, [orgSettings]);
 
   // Certificate type mutations
   const createCertType = useMutation({
@@ -138,6 +173,31 @@ export default function SettingsAdmin() {
     },
   });
 
+  const saveSettings = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrgId) throw new Error('Ingen organisation vald');
+      const payload = {
+        organization_id: selectedOrgId,
+        weather_station_id: weatherStationId,
+        weather_station_source: 'smhi',
+        smhi_forecast_lon: parseFloat(smhiLon),
+        smhi_forecast_lat: parseFloat(smhiLat),
+        ufs_chart_numbers: chartNumbers,
+      };
+      const { error } = await supabase
+        .from('organization_settings')
+        .upsert(payload, { onConflict: 'organization_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['org-settings'] });
+      toast({ title: 'Inställningar sparade' });
+    },
+    onError: (error) => {
+      toast({ title: 'Kunde inte spara', description: String(error), variant: 'destructive' });
+    },
+  });
+
   const handleDeleteConfirm = () => {
     if (!deleteConfirm.item) return;
     if (deleteConfirm.item.type === 'cert') {
@@ -145,6 +205,10 @@ export default function SettingsAdmin() {
     } else {
       deleteCategory.mutate(deleteConfirm.item.id);
     }
+  };
+
+  const removeChart = (chart: string) => {
+    setChartNumbers(chartNumbers.filter(c => c !== chart));
   };
 
   return (
@@ -155,7 +219,7 @@ export default function SettingsAdmin() {
             <Settings className="h-8 w-8" />
             Inställningar
           </h1>
-          <p className="text-muted-foreground mt-1">Hantera certifikatstyper och övningskategorier</p>
+          <p className="text-muted-foreground mt-1">Hantera organisationsinställningar</p>
         </div>
 
         <Tabs defaultValue="organization" className="space-y-4">
@@ -163,6 +227,10 @@ export default function SettingsAdmin() {
             <TabsTrigger value="organization" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Information
+            </TabsTrigger>
+            <TabsTrigger value="startsida" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Startsida
             </TabsTrigger>
             <TabsTrigger value="certificate-types" className="flex items-center gap-2">
               <Award className="h-4 w-4" />
@@ -178,7 +246,7 @@ export default function SettingsAdmin() {
           <TabsContent value="organization" className="space-y-4">
             <Card>
               <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
                   Rederi
                 </CardTitle>
@@ -204,6 +272,125 @@ export default function SettingsAdmin() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Startsida Settings Tab */}
+          <TabsContent value="startsida" className="space-y-4">
+            {settingsLoading ? (
+              <div className="h-40 bg-muted animate-pulse rounded-lg" />
+            ) : (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Wind className="h-5 w-5" />
+                      Väderstation
+                    </CardTitle>
+                    <CardDescription>
+                      Välj vilken väderstation som ska användas för vinddata och väderprognos på startsidan.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Station</Label>
+                      <Select
+                        value={weatherStationId}
+                        onValueChange={(val) => {
+                          setWeatherStationId(val);
+                          const station = WEATHER_STATIONS.find(s => s.id === val);
+                          if (station) {
+                            setSmhiLon(String(station.lon));
+                            setSmhiLat(String(station.lat));
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj väderstation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {WEATHER_STATIONS.map(station => (
+                            <SelectItem key={station.id} value={station.id}>
+                              {station.name} (ID: {station.id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        SMHI-koordinater uppdateras automatiskt vid stationsbyte. Nuvarande: {smhiLat}, {smhiLon}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertTriangle className="h-5 w-5" />
+                      UFS Sjökort
+                    </CardTitle>
+                    <CardDescription>
+                      Välj vilka sjökortsnummer som ska visas för UFS-varningar på startsidan.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-2 min-h-[32px]">
+                      {chartNumbers.length === 0 && (
+                        <p className="text-sm text-muted-foreground">Inga sjökort valda</p>
+                      )}
+                      {chartNumbers.map(chart => {
+                        const chartData = UFS_CHARTS.find(c => c.value === chart);
+                        return (
+                          <Badge key={chart} variant="secondary" className="text-sm py-1 px-3 gap-1">
+                            {chartData ? chartData.label : chart}
+                            <button onClick={() => removeChart(chart)} className="ml-1 hover:text-destructive">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                    
+                    {(() => {
+                      const grouped = getUFSChartsByRegion();
+                      return (
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto border rounded-md p-3">
+                          {Object.entries(grouped).map(([region, charts]) => (
+                            <div key={region}>
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">{region}</p>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                {charts.map(chart => {
+                                  const isSelected = chartNumbers.includes(chart.value);
+                                  return (
+                                    <label key={chart.value} className="flex items-center gap-1.5 cursor-pointer text-sm">
+                                      <Checkbox
+                                        checked={isSelected}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setChartNumbers(prev => [...prev, chart.value]);
+                                          } else {
+                                            setChartNumbers(prev => prev.filter(c => c !== chart.value));
+                                          }
+                                        }}
+                                      />
+                                      {chart.label}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
+                <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending} className="w-full">
+                  <Save className="h-4 w-4 mr-2" />
+                  {saveSettings.isPending ? 'Sparar...' : 'Spara inställningar'}
+                </Button>
+              </>
+            )}
           </TabsContent>
 
           {/* Certificate Types Tab */}

@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,15 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Home, Plus, Trash2, CalendarIcon, FileText, Download, X, Wind, AlertTriangle, Save, Settings } from 'lucide-react';
-import { WEATHER_STATIONS, UFS_CHARTS, getUFSChartsByRegion } from '@/lib/maritime-data';
+import { Home, Plus, Trash2, CalendarIcon, FileText, Download, X } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isPast } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -55,12 +52,8 @@ export default function IntranetAdmin() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; message: { id: string; title: string } | null }>({ open: false, message: null });
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Settings state
-  const [weatherStationId, setWeatherStationId] = useState('98040');
-  const [smhiLon, setSmhiLon] = useState('19.5013');
-  const [smhiLat, setSmhiLat] = useState('59.4428');
-  const [chartNumbers, setChartNumbers] = useState<string[]>([]);
-  
+
+
 
   // View state - show current week by default
   const [viewDate, setViewDate] = useState(new Date());
@@ -87,29 +80,7 @@ export default function IntranetAdmin() {
   });
 
   // Fetch org settings
-  const { data: orgSettings, isLoading: settingsLoading } = useQuery({
-    queryKey: ['org-settings', selectedOrgId],
-    queryFn: async () => {
-      if (!selectedOrgId) return null;
-      const { data, error } = await supabase
-        .from('organization_settings')
-        .select('*')
-        .eq('organization_id', selectedOrgId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedOrgId,
-  });
 
-  useEffect(() => {
-    if (orgSettings) {
-      setWeatherStationId(orgSettings.weather_station_id || '98040');
-      setSmhiLon(String(orgSettings.smhi_forecast_lon ?? '19.5013'));
-      setSmhiLat(String(orgSettings.smhi_forecast_lat ?? '59.4428'));
-      setChartNumbers(orgSettings.ufs_chart_numbers || []);
-    }
-  }, [orgSettings]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -273,30 +244,7 @@ export default function IntranetAdmin() {
     },
   });
 
-  const saveSettings = useMutation({
-    mutationFn: async () => {
-      if (!selectedOrgId) throw new Error('Ingen organisation vald');
-      const payload = {
-        organization_id: selectedOrgId,
-        weather_station_id: weatherStationId,
-        weather_station_source: 'smhi',
-        smhi_forecast_lon: parseFloat(smhiLon),
-        smhi_forecast_lat: parseFloat(smhiLat),
-        ufs_chart_numbers: chartNumbers,
-      };
-      const { error } = await supabase
-        .from('organization_settings')
-        .upsert(payload, { onConflict: 'organization_id' });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['org-settings'] });
-      toast({ title: 'Inställningar sparade' });
-    },
-    onError: (error) => {
-      toast({ title: 'Kunde inte spara', description: String(error), variant: 'destructive' });
-    },
-  });
+
 
   const getMessageForDate = (date: Date) => {
     return messages?.find(m => m.message_date === format(date, 'yyyy-MM-dd'));
@@ -329,9 +277,7 @@ export default function IntranetAdmin() {
     }
   };
 
-  const removeChart = (chart: string) => {
-    setChartNumbers(chartNumbers.filter(c => c !== chart));
-  };
+
 
   const totalDocuments = existingDocuments.length + documentsToUpload.length;
 
@@ -343,23 +289,12 @@ export default function IntranetAdmin() {
             <Home className="h-6 w-6" />
             Intranät
           </h1>
-          <p className="text-muted-foreground text-sm">Hantera meddelanden, väder och UFS-inställningar</p>
+          <p className="text-muted-foreground text-sm">Hantera meddelanden på startsidan</p>
         </div>
 
-        <Tabs defaultValue="messages">
-          <TabsList>
-            <TabsTrigger value="messages">
-              <FileText className="h-4 w-4 mr-1.5" />
-              Meddelanden
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="h-4 w-4 mr-1.5" />
-              Inställningar
-            </TabsTrigger>
-          </TabsList>
 
-          {/* Messages Tab */}
-          <TabsContent value="messages" className="space-y-4 mt-4">
+
+          <div className="space-y-4 mt-4">
             <div className="flex justify-end">
               <Button onClick={() => openDialog()} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
@@ -434,127 +369,7 @@ export default function IntranetAdmin() {
                 </p>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-4 mt-4">
-            {settingsLoading ? (
-              <div className="h-40 bg-muted animate-pulse rounded-lg" />
-            ) : (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Wind className="h-5 w-5" />
-                      Väderstation
-                    </CardTitle>
-                    <CardDescription>
-                      Välj vilken väderstation som ska användas för vinddata och väderprognos på startsidan.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Station</Label>
-                      <Select
-                        value={weatherStationId}
-                        onValueChange={(val) => {
-                          setWeatherStationId(val);
-                          const station = WEATHER_STATIONS.find(s => s.id === val);
-                          if (station) {
-                            setSmhiLon(String(station.lon));
-                            setSmhiLat(String(station.lat));
-                          }
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Välj väderstation" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WEATHER_STATIONS.map(station => (
-                            <SelectItem key={station.id} value={station.id}>
-                              {station.name} (ID: {station.id})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        SMHI-koordinater uppdateras automatiskt vid stationsbyte. Nuvarande: {smhiLat}, {smhiLon}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <AlertTriangle className="h-5 w-5" />
-                      UFS Sjökort
-                    </CardTitle>
-                    <CardDescription>
-                      Välj vilka sjökortsnummer som ska visas för UFS-varningar på startsidan.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-wrap gap-2 min-h-[32px]">
-                      {chartNumbers.length === 0 && (
-                        <p className="text-sm text-muted-foreground">Inga sjökort valda</p>
-                      )}
-                      {chartNumbers.map(chart => {
-                        const chartData = UFS_CHARTS.find(c => c.value === chart);
-                        return (
-                          <Badge key={chart} variant="secondary" className="text-sm py-1 px-3 gap-1">
-                            {chartData ? chartData.label : chart}
-                            <button onClick={() => removeChart(chart)} className="ml-1 hover:text-destructive">
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                    
-                    {(() => {
-                      const grouped = getUFSChartsByRegion();
-                      return (
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto border rounded-md p-3">
-                          {Object.entries(grouped).map(([region, charts]) => (
-                            <div key={region}>
-                              <p className="text-xs font-semibold text-muted-foreground mb-1">{region}</p>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1">
-                                {charts.map(chart => {
-                                  const isSelected = chartNumbers.includes(chart.value);
-                                  return (
-                                    <label key={chart.value} className="flex items-center gap-1.5 cursor-pointer text-sm">
-                                      <Checkbox
-                                        checked={isSelected}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                            setChartNumbers(prev => [...prev, chart.value]);
-                                          } else {
-                                            setChartNumbers(prev => prev.filter(c => c !== chart.value));
-                                          }
-                                        }}
-                                      />
-                                      {chart.label}
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-
-                <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending} className="w-full">
-                  <Save className="h-4 w-4 mr-2" />
-                  {saveSettings.isPending ? 'Sparar...' : 'Spara inställningar'}
-                </Button>
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
+          </div>
 
         {/* Message Dialog */}
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
