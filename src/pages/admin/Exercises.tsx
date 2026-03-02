@@ -1,34 +1,20 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { useToast } from '@/hooks/use-toast';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { Plus, Trash2, GraduationCap, Ship, Users, BarChart3 } from 'lucide-react';
-import { format } from 'date-fns';
+import { GraduationCap, Ship, Calendar, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { format, differenceInMonths } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export default function ExercisesAdmin() {
-  const { toast } = useToast();
   const { selectedOrgId } = useOrganization();
-  const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; category: { id: string; name: string } | null }>({ open: false, category: null });
   const [selectedVessel, setSelectedVessel] = useState<string>('all');
-  const [selectedUser, setSelectedUser] = useState<string>('all');
 
   // Fetch exercise categories
   const { data: categories } = useQuery({
@@ -39,6 +25,7 @@ export default function ExercisesAdmin() {
         .from('exercise_categories')
         .select('*')
         .eq('organization_id', selectedOrgId)
+        .eq('is_active', true)
         .order('name');
       if (error) throw error;
       return data;
@@ -62,29 +49,12 @@ export default function ExercisesAdmin() {
     enabled: !!selectedOrgId,
   });
 
-  // Fetch profiles
-  const { data: profiles } = useQuery({
-    queryKey: ['profiles', selectedOrgId],
+  // Fetch all exercises with logbook info
+  const { data: exerciseData } = useQuery({
+    queryKey: ['exercise-overview', selectedOrgId, selectedVessel],
     queryFn: async () => {
       if (!selectedOrgId) return [];
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('organization_id', selectedOrgId)
-        .order('full_name');
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedOrgId,
-  });
 
-  // Fetch exercise statistics with more detailed data
-  const { data: exerciseStats } = useQuery({
-    queryKey: ['exercise-stats', selectedOrgId, selectedVessel, selectedUser],
-    queryFn: async () => {
-      if (!selectedOrgId) return { byVessel: [], byUser: [], byCategory: [], exercises: [] };
-      
-      // Get exercises with logbook and crew info
       let query = supabase
         .from('logbook_exercises')
         .select(`
@@ -106,123 +76,70 @@ export default function ExercisesAdmin() {
         query = query.eq('logbook.vessel_id', selectedVessel);
       }
 
-      const { data: exercises, error } = await query;
+      const { data, error } = await query;
       if (error) throw error;
-
-      // Get crew for filtered logbooks
-      const logbookIds = [...new Set((exercises || []).map((e: any) => e.logbook?.id).filter(Boolean))];
-      let crewData: any[] = [];
-      if (logbookIds.length > 0) {
-        const { data: crew, error: crewError } = await supabase
-          .from('logbook_crew')
-          .select(`
-            logbook_id,
-            profile:profiles!logbook_crew_profile_id_fkey(id, full_name)
-          `)
-          .in('logbook_id', logbookIds);
-        if (!crewError) crewData = crew || [];
-      }
-
-      // Calculate stats by vessel with category breakdown
-      const vesselMap = new Map<string, { name: string; categoryCount: Record<string, number>; lastDate: string }>();
-      (exercises || []).forEach((ex: any) => {
-        const vesselId = ex.logbook?.vessel_id;
-        const vesselName = ex.logbook?.vessel?.name;
-        const date = ex.logbook?.date;
-        if (vesselId && vesselName) {
-          const existing = vesselMap.get(vesselId) || { name: vesselName, categoryCount: {}, lastDate: '' };
-          existing.categoryCount[ex.exercise_type] = (existing.categoryCount[ex.exercise_type] || 0) + 1;
-          if (!existing.lastDate || date > existing.lastDate) {
-            existing.lastDate = date;
-          }
-          vesselMap.set(vesselId, existing);
-        }
-      });
-
-      // Calculate stats by user with category breakdown
-      const userMap = new Map<string, { name: string; categoryCount: Record<string, number>; lastDate: string }>();
-      (exercises || []).forEach((ex: any) => {
-        const logbookId = ex.logbook?.id;
-        const date = ex.logbook?.date;
-        const logbookCrew = crewData.filter(c => c.logbook_id === logbookId);
-        logbookCrew.forEach((crew: any) => {
-          const userId = crew.profile?.id;
-          const userName = crew.profile?.full_name;
-          if (userId && userName) {
-            if (selectedUser !== 'all' && userId !== selectedUser) return;
-            const existing = userMap.get(userId) || { name: userName, categoryCount: {}, lastDate: '' };
-            existing.categoryCount[ex.exercise_type] = (existing.categoryCount[ex.exercise_type] || 0) + 1;
-            if (!existing.lastDate || date > existing.lastDate) {
-              existing.lastDate = date;
-            }
-            userMap.set(userId, existing);
-          }
-        });
-      });
-
-      // Calculate stats by category
-      const categoryMap = new Map<string, number>();
-      (exercises || []).forEach((ex: any) => {
-        const current = categoryMap.get(ex.exercise_type) || 0;
-        categoryMap.set(ex.exercise_type, current + 1);
-      });
-
-      // Get unique categories for table headers
-      const allCategories = [...new Set((exercises || []).map((ex: any) => ex.exercise_type))];
-
-      return {
-        byVessel: Array.from(vesselMap.entries()).map(([id, data]) => ({ id, ...data })),
-        byUser: Array.from(userMap.entries()).map(([id, data]) => ({ id, ...data })),
-        byCategory: Array.from(categoryMap.entries()).map(([name, count]) => ({ name, count })),
-        allCategories,
-        total: exercises?.length || 0,
-      };
+      return data || [];
     },
     enabled: !!selectedOrgId,
-  });
-
-  const createCategory = useMutation({
-    mutationFn: async () => {
-      if (!selectedOrgId) throw new Error('Ingen organisation vald');
-      const { error } = await supabase
-        .from('exercise_categories')
-        .insert({ name, description: description || null, organization_id: selectedOrgId });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exercise-categories'] });
-      toast({ title: 'Kategori skapad', description: 'Övningskategorin har lagts till.' });
-      setDialogOpen(false);
-      setName('');
-      setDescription('');
-    },
-    onError: (error) => {
-      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const deleteCategory = useMutation({
-    mutationFn: async (categoryId: string) => {
-      const { error } = await supabase
-        .from('exercise_categories')
-        .delete()
-        .eq('id', categoryId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exercise-categories'] });
-      toast({ title: 'Raderad', description: 'Övningskategorin har tagits bort.' });
-      setDeleteConfirm({ open: false, category: null });
-    },
-    onError: (error) => {
-      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
-    },
   });
 
   const getCategoryLabel = (value: string) => {
     const category = categories?.find(c => c.name.toLowerCase().replace(/\s+/g, '_').replace(/ö/g, 'o').replace(/ä/g, 'a').replace(/å/g, 'a') === value);
     return category?.name || value;
   };
+
+  // Build vessel → category → dates matrix
+  const vesselCategoryMatrix = (() => {
+    if (!exerciseData || !vessels) return [];
+
+    const filteredVessels = selectedVessel === 'all' ? vessels : vessels.filter(v => v.id === selectedVessel);
+
+    // All unique category keys from exercises
+    const allCategoryKeys = [...new Set(exerciseData.map((ex: any) => ex.exercise_type))];
+    // Also include categories from admin settings that may not have been exercised
+    const adminCategoryKeys = (categories || []).map(c => c.name.toLowerCase().replace(/\s+/g, '_').replace(/ö/g, 'o').replace(/ä/g, 'a').replace(/å/g, 'a'));
+    const mergedKeys = [...new Set([...allCategoryKeys, ...adminCategoryKeys])];
+
+    return filteredVessels.map(vessel => {
+      const vesselExercises = exerciseData.filter((ex: any) => ex.logbook?.vessel_id === vessel.id);
+
+      const categoryDetails = mergedKeys.map(catKey => {
+        const matching = vesselExercises.filter((ex: any) => ex.exercise_type === catKey);
+        const dates = matching.map((ex: any) => ex.logbook?.date).filter(Boolean).sort().reverse();
+        const lastDate = dates[0] || null;
+        const count = matching.length;
+        const monthsSinceLast = lastDate ? differenceInMonths(new Date(), new Date(lastDate)) : null;
+
+        return {
+          key: catKey,
+          label: getCategoryLabel(catKey),
+          count,
+          lastDate,
+          monthsSinceLast,
+        };
+      });
+
+      const totalExercises = vesselExercises.length;
+
+      return {
+        vessel,
+        categoryDetails,
+        totalExercises,
+      };
+    });
+  })();
+
+  // Collect all category labels for table headers
+  const allCategoryLabels = (() => {
+    const allCategoryKeys = [...new Set([
+      ...(exerciseData || []).map((ex: any) => ex.exercise_type),
+      ...(categories || []).map(c => c.name.toLowerCase().replace(/\s+/g, '_').replace(/ö/g, 'o').replace(/ä/g, 'a').replace(/å/g, 'a')),
+    ])];
+    return allCategoryKeys.map(key => ({
+      key,
+      label: getCategoryLabel(key),
+    }));
+  })();
 
   return (
     <MainLayout>
@@ -233,185 +150,121 @@ export default function ExercisesAdmin() {
               <GraduationCap className="h-8 w-8" />
               Övningar
             </h1>
-            <p className="text-muted-foreground mt-1">Hantera övningskategorier och se statistik</p>
+            <p className="text-muted-foreground mt-1">Översikt över genomförda övningar per fartyg</p>
           </div>
         </div>
 
-        <Tabs defaultValue="statistics" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="statistics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Statistik
-            </TabsTrigger>
-          </TabsList>
+        {/* Filter */}
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="space-y-1 min-w-[180px]">
+                <Label className="text-xs">Fartyg</Label>
+                <Select value={selectedVessel} onValueChange={setSelectedVessel}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alla fartyg</SelectItem>
+                    {vessels?.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-4 text-sm text-muted-foreground ml-auto items-center">
+                <span>Totalt: <strong className="text-foreground">{exerciseData?.length || 0}</strong> övningar</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <TabsContent value="statistics" className="space-y-4">
-            {/* Filters */}
-            <Card>
-              <CardContent className="pt-4">
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div className="space-y-1 min-w-[180px]">
-                    <Label className="text-xs">Fartyg</Label>
-                    <Select value={selectedVessel} onValueChange={setSelectedVessel}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Alla fartyg</SelectItem>
-                        {vessels?.map(v => (
-                          <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1 min-w-[180px]">
-                    <Label className="text-xs">Besättningsmedlem</Label>
-                    <Select value={selectedUser} onValueChange={setSelectedUser}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Alla</SelectItem>
-                        {profiles?.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-4 text-sm text-muted-foreground ml-auto">
-                    <span>Totalt: <strong className="text-foreground">{exerciseStats?.total || 0}</strong> övningar</span>
-                  </div>
+        {/* Overview matrix: one card per vessel */}
+        {vesselCategoryMatrix.length > 0 ? (
+          vesselCategoryMatrix.map(({ vessel, categoryDetails, totalExercises }) => (
+            <Card key={vessel.id}>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-base">
+                    <Ship className="h-4 w-4" />
+                    {vessel.name}
+                  </span>
+                  <Badge variant="secondary" className="text-xs font-normal">
+                    {totalExercises} övningar totalt
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="text-xs">
+                        <TableHead className="w-[200px]">Övning</TableHead>
+                        <TableHead className="w-[60px] text-center">Antal</TableHead>
+                        <TableHead className="w-[130px]">Senast genomförd</TableHead>
+                        <TableHead className="w-[130px]">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {categoryDetails.map(cat => (
+                        <TableRow key={cat.key} className="text-sm">
+                          <TableCell className="font-medium py-2.5">{cat.label}</TableCell>
+                          <TableCell className="text-center py-2.5">
+                            {cat.count > 0 ? (
+                              <span className="font-semibold">{cat.count}</span>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2.5">
+                            {cat.lastDate ? (
+                              <span className="flex items-center gap-1.5 text-xs">
+                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                {format(new Date(cat.lastDate), 'd MMM yyyy', { locale: sv })}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">Aldrig</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2.5">
+                            {cat.count === 0 ? (
+                              <Badge variant="destructive" className="text-xs gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                Ej genomförd
+                              </Badge>
+                            ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 12 ? (
+                              <Badge variant="destructive" className="text-xs gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                {'>'} 12 mån sedan
+                              </Badge>
+                            ) : cat.monthsSinceLast !== null && cat.monthsSinceLast >= 6 ? (
+                              <Badge variant="outline" className="text-xs gap-1 border-yellow-500 text-yellow-700">
+                                <AlertTriangle className="h-3 w-3" />
+                                {cat.monthsSinceLast} mån sedan
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs gap-1 text-green-700">
+                                <CheckCircle2 className="h-3 w-3" />
+                                OK
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Summary per category - compact */}
-            <div className="flex flex-wrap gap-2">
-              {exerciseStats?.byCategory?.map((stat: any) => (
-                <Badge key={stat.name} variant="secondary" className="text-xs py-1 px-2">
-                  {getCategoryLabel(stat.name)}: {stat.count}
-                </Badge>
-              ))}
-            </div>
-
-            {/* By Vessel - compact table */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Ship className="h-4 w-4" />
-                  Per fartyg
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {exerciseStats?.byVessel && exerciseStats.byVessel.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="text-xs">
-                          <TableHead className="w-[150px]">Fartyg</TableHead>
-                          <TableHead className="w-[100px]">Senast</TableHead>
-                          {exerciseStats.allCategories?.map((cat: string) => (
-                            <TableHead key={cat} className="text-center w-[80px]">
-                              <span className="text-xs truncate block max-w-[70px]" title={getCategoryLabel(cat)}>
-                                {getCategoryLabel(cat).substring(0, 10)}
-                              </span>
-                            </TableHead>
-                          ))}
-                          <TableHead className="text-right w-[60px]">Totalt</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {exerciseStats.byVessel.map((stat: any) => {
-                          const total = Object.values(stat.categoryCount as Record<string, number>).reduce((a: number, b: number) => a + b, 0);
-                          return (
-                            <TableRow key={stat.id} className="text-sm">
-                              <TableCell className="font-medium py-2">{stat.name}</TableCell>
-                              <TableCell className="text-muted-foreground py-2 text-xs">
-                                {stat.lastDate ? format(new Date(stat.lastDate), 'd MMM yy', { locale: sv }) : '-'}
-                              </TableCell>
-                              {exerciseStats.allCategories?.map((cat: string) => (
-                                <TableCell key={cat} className="text-center py-2">
-                                  {stat.categoryCount[cat] || <span className="text-muted-foreground/50">-</span>}
-                                </TableCell>
-                              ))}
-                              <TableCell className="text-right font-semibold py-2">{total}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-6 text-sm">Inga övningar registrerade</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* By User - compact table */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Users className="h-4 w-4" />
-                  Per besättningsmedlem
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {exerciseStats?.byUser && exerciseStats.byUser.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="text-xs">
-                          <TableHead className="w-[150px]">Namn</TableHead>
-                          <TableHead className="w-[100px]">Senast</TableHead>
-                          {exerciseStats.allCategories?.map((cat: string) => (
-                            <TableHead key={cat} className="text-center w-[80px]">
-                              <span className="text-xs truncate block max-w-[70px]" title={getCategoryLabel(cat)}>
-                                {getCategoryLabel(cat).substring(0, 10)}
-                              </span>
-                            </TableHead>
-                          ))}
-                          <TableHead className="text-right w-[60px]">Totalt</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {exerciseStats.byUser.map((stat: any) => {
-                          const total = Object.values(stat.categoryCount as Record<string, number>).reduce((a: number, b: number) => a + b, 0);
-                          return (
-                            <TableRow key={stat.id} className="text-sm">
-                              <TableCell className="font-medium py-2">{stat.name}</TableCell>
-                              <TableCell className="text-muted-foreground py-2 text-xs">
-                                {stat.lastDate ? format(new Date(stat.lastDate), 'd MMM yy', { locale: sv }) : '-'}
-                              </TableCell>
-                              {exerciseStats.allCategories?.map((cat: string) => (
-                                <TableCell key={cat} className="text-center py-2">
-                                  {stat.categoryCount[cat] || <span className="text-muted-foreground/50">-</span>}
-                                </TableCell>
-                              ))}
-                              <TableCell className="text-right font-semibold py-2">{total}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-6 text-sm">Inga övningar registrerade</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-        </Tabs>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              Inga övningar registrerade ännu.
+            </CardContent>
+          </Card>
+        )}
       </div>
-
-      <ConfirmDialog
-        open={deleteConfirm.open}
-        onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
-        title="Ta bort övningskategori"
-        description={`Är du säker på att du vill ta bort "${deleteConfirm.category?.name}"? Detta påverkar inte redan registrerade övningar.`}
-        confirmLabel="Ta bort"
-        onConfirm={() => deleteConfirm.category && deleteCategory.mutate(deleteConfirm.category.id)}
-      />
     </MainLayout>
   );
 }
