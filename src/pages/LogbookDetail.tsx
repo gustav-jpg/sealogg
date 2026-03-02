@@ -308,6 +308,10 @@ export default function LogbookDetail() {
         passengerCount: s.passenger_count?.toString() || '',
         paxOn: (s as any).pax_on?.toString() || '',
         paxOff: (s as any).pax_off?.toString() || '',
+        vehiclesOn: (s as any).vehicles_on?.toString() || '',
+        vehiclesOff: (s as any).vehicles_off?.toString() || '',
+        cargoOnKg: (s as any).cargo_on_kg?.toString() || '',
+        cargoOffKg: (s as any).cargo_off_kg?.toString() || '',
         notes: s.notes || '',
       })));
       setStopsInitialized(true);
@@ -452,6 +456,10 @@ export default function LogbookDetail() {
           passenger_count: s.passengerCount ? parseInt(s.passengerCount) : null,
           pax_on: s.paxOn ? parseInt(s.paxOn) : 0,
           pax_off: s.paxOff ? parseInt(s.paxOff) : 0,
+          vehicles_on: s.vehiclesOn ? parseInt(s.vehiclesOn) : 0,
+          vehicles_off: s.vehiclesOff ? parseInt(s.vehiclesOff) : 0,
+          cargo_on_kg: s.cargoOnKg ? parseFloat(s.cargoOnKg) : 0,
+          cargo_off_kg: s.cargoOffKg ? parseFloat(s.cargoOffKg) : 0,
           notes: s.notes || null,
         }))
       );
@@ -783,6 +791,7 @@ export default function LogbookDetail() {
                     onStopsChange={setStops}
                     disabled={!canEditThis}
                     maxPassengers={(logbook as any)?.vessel?.max_passengers}
+                    vesselType={(logbook as any)?.vessel?.vessel_type || 'passagerarfartyg'}
                     passengerSession={passengerSession}
                     passengerSummary={passengerSummary}
                     onActivatePassengerRegistration={() => activatePassengerRegistration.mutate()}
@@ -796,7 +805,7 @@ export default function LogbookDetail() {
                     canLockSession={canEditThis}
                   />
                 ) : (
-                  <LogbookStopsDisplay stops={logbookStops || []} />
+                  <LogbookStopsDisplay stops={logbookStops || []} vesselType={(logbook as any)?.vessel?.vessel_type || 'passagerarfartyg'} />
                 )}
               </div>
             </div>

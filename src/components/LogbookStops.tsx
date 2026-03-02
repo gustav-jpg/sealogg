@@ -1,4 +1,4 @@
-import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, Lock, Unlock, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Users, Clock, UserPlus, UserMinus, Lock, Unlock, ExternalLink, AlertTriangle, Car, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+export type VesselType = 'passagerarfartyg' | 'bilfarja' | 'lastfartyg' | string;
+
 export interface StopEntry {
   tempId: string;
   stopOrder: number;
@@ -21,6 +23,10 @@ export interface StopEntry {
   passengerCount: string; // Legacy field, kept for compatibility
   paxOn: string;
   paxOff: string;
+  vehiclesOn: string;
+  vehiclesOff: string;
+  cargoOnKg: string;
+  cargoOffKg: string;
   notes: string;
 }
 
@@ -39,11 +45,13 @@ interface PassengerSummary {
   }[];
 }
 
+
 interface LogbookStopsProps {
   stops: StopEntry[];
   onStopsChange: (stops: StopEntry[]) => void;
   disabled?: boolean;
   maxPassengers?: number | null;
+  vesselType?: VesselType;
   passengerSession?: { id: string; is_active: boolean } | null;
   passengerSummary?: PassengerSummary | null;
   onActivatePassengerRegistration?: () => void;
@@ -72,6 +80,7 @@ export function LogbookStops({
   stops, 
   onStopsChange, 
   disabled = false,
+  vesselType,
   maxPassengers,
   passengerSession,
   passengerSummary,
@@ -104,6 +113,10 @@ export function LogbookStops({
         passengerCount: '',
         paxOn: '',
         paxOff: '',
+        vehiclesOn: '',
+        vehiclesOff: '',
+        cargoOnKg: '',
+        cargoOffKg: '',
         notes: '',
       },
     ]);
@@ -313,6 +326,29 @@ export function LogbookStops({
   // Calculate final passenger count
   const finalOnboard = calculateOnboard(sortedStops, sortedStops.length - 1);
 
+  const showPax = vesselType !== 'lastfartyg';
+  const showVehicles = vesselType === 'bilfarja';
+  const showCargo = vesselType === 'lastfartyg';
+
+  // Calculate running totals for vehicles/cargo
+  function calculateVehiclesOnboard(stops: StopEntry[], currentIndex: number): number {
+    let total = 0;
+    for (let i = 0; i <= currentIndex; i++) {
+      total += parseInt(stops[i].vehiclesOn) || 0;
+      total -= parseInt(stops[i].vehiclesOff) || 0;
+    }
+    return Math.max(0, total);
+  }
+
+  function calculateCargoOnboard(stops: StopEntry[], currentIndex: number): number {
+    let total = 0;
+    for (let i = 0; i <= currentIndex; i++) {
+      total += parseFloat(stops[i].cargoOnKg) || 0;
+      total -= parseFloat(stops[i].cargoOffKg) || 0;
+    }
+    return Math.max(0, total);
+  }
+
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
@@ -322,15 +358,23 @@ export function LogbookStops({
               <TableHead className="w-12">#</TableHead>
               <TableHead className="min-w-20">Tid</TableHead>
               <TableHead className="min-w-28">Position</TableHead>
-              <TableHead className="w-16 text-center">Pax på</TableHead>
-              <TableHead className="w-16 text-center">Pax av</TableHead>
-              <TableHead className="w-20 text-center">Ombord</TableHead>
+              {showPax && <TableHead className="w-16 text-center">Pax på</TableHead>}
+              {showPax && <TableHead className="w-16 text-center">Pax av</TableHead>}
+              {showPax && <TableHead className="w-20 text-center">Ombord</TableHead>}
+              {showVehicles && <TableHead className="w-16 text-center">Fordon på</TableHead>}
+              {showVehicles && <TableHead className="w-16 text-center">Fordon av</TableHead>}
+              {showVehicles && <TableHead className="w-20 text-center">Fordon ombord</TableHead>}
+              {showCargo && <TableHead className="w-20 text-center">Gods på (kg)</TableHead>}
+              {showCargo && <TableHead className="w-20 text-center">Gods av (kg)</TableHead>}
+              {showCargo && <TableHead className="w-20 text-center">Gods ombord</TableHead>}
               {!disabled && <TableHead className="w-12"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedStops.map((stop, index) => {
               const onboard = calculateOnboard(sortedStops, index);
+              const vehiclesOnboard = showVehicles ? calculateVehiclesOnboard(sortedStops, index) : 0;
+              const cargoOnboard = showCargo ? calculateCargoOnboard(sortedStops, index) : 0;
               return (
                 <TableRow key={stop.tempId}>
                   <TableCell className="font-medium text-muted-foreground">
@@ -357,42 +401,122 @@ export function LogbookStops({
                       className="h-8 text-sm px-2"
                     />
                   </TableCell>
-                  <TableCell className="p-1">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={stop.paxOn}
-                      onChange={e => updateStop(stop.tempId, 'paxOn', e.target.value)}
-                      disabled={disabled}
-                      placeholder="0"
-                      className="h-8 w-14 text-sm px-2 text-center"
-                    />
-                  </TableCell>
-                  <TableCell className="p-1">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={stop.paxOff}
-                      onChange={e => updateStop(stop.tempId, 'paxOff', e.target.value)}
-                      disabled={disabled}
-                      placeholder="0"
-                      className="h-8 w-14 text-sm px-2 text-center"
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge 
-                      variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"}
-                      className="font-mono min-w-10 justify-center"
-                    >
-                      {onboard}
-                    </Badge>
-                    {maxPassengers && onboard > maxPassengers && (
-                      <div className="flex items-center gap-1 text-destructive text-xs mt-0.5 justify-center">
-                        <AlertTriangle className="h-3 w-3" />
-                        <span>Max {maxPassengers}</span>
-                      </div>
-                    )}
-                  </TableCell>
+                  {showPax && (
+                    <TableCell className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={stop.paxOn}
+                        onChange={e => updateStop(stop.tempId, 'paxOn', e.target.value)}
+                        disabled={disabled}
+                        placeholder="0"
+                        className="h-8 w-14 text-sm px-2 text-center"
+                      />
+                    </TableCell>
+                  )}
+                  {showPax && (
+                    <TableCell className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={stop.paxOff}
+                        onChange={e => updateStop(stop.tempId, 'paxOff', e.target.value)}
+                        disabled={disabled}
+                        placeholder="0"
+                        className="h-8 w-14 text-sm px-2 text-center"
+                      />
+                    </TableCell>
+                  )}
+                  {showPax && (
+                    <TableCell className="text-center">
+                      <Badge 
+                        variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"}
+                        className="font-mono min-w-10 justify-center"
+                      >
+                        {onboard}
+                      </Badge>
+                      {maxPassengers && onboard > maxPassengers && (
+                        <div className="flex items-center gap-1 text-destructive text-xs mt-0.5 justify-center">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>Max {maxPassengers}</span>
+                        </div>
+                      )}
+                    </TableCell>
+                  )}
+                  {showVehicles && (
+                    <TableCell className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={stop.vehiclesOn}
+                        onChange={e => updateStop(stop.tempId, 'vehiclesOn', e.target.value)}
+                        disabled={disabled}
+                        placeholder="0"
+                        className="h-8 w-14 text-sm px-2 text-center"
+                      />
+                    </TableCell>
+                  )}
+                  {showVehicles && (
+                    <TableCell className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={stop.vehiclesOff}
+                        onChange={e => updateStop(stop.tempId, 'vehiclesOff', e.target.value)}
+                        disabled={disabled}
+                        placeholder="0"
+                        className="h-8 w-14 text-sm px-2 text-center"
+                      />
+                    </TableCell>
+                  )}
+                  {showVehicles && (
+                    <TableCell className="text-center">
+                      <Badge 
+                        variant={vehiclesOnboard > 0 ? "default" : "secondary"}
+                        className="font-mono min-w-10 justify-center"
+                      >
+                        {vehiclesOnboard}
+                      </Badge>
+                    </TableCell>
+                  )}
+                  {showCargo && (
+                    <TableCell className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        value={stop.cargoOnKg}
+                        onChange={e => updateStop(stop.tempId, 'cargoOnKg', e.target.value)}
+                        disabled={disabled}
+                        placeholder="0"
+                        className="h-8 w-20 text-sm px-2 text-center"
+                      />
+                    </TableCell>
+                  )}
+                  {showCargo && (
+                    <TableCell className="p-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        value={stop.cargoOffKg}
+                        onChange={e => updateStop(stop.tempId, 'cargoOffKg', e.target.value)}
+                        disabled={disabled}
+                        placeholder="0"
+                        className="h-8 w-20 text-sm px-2 text-center"
+                      />
+                    </TableCell>
+                  )}
+                  {showCargo && (
+                    <TableCell className="text-center">
+                      <Badge 
+                        variant={cargoOnboard > 0 ? "default" : "secondary"}
+                        className="font-mono min-w-10 justify-center"
+                      >
+                        {cargoOnboard.toFixed(0)} kg
+                      </Badge>
+                    </TableCell>
+                  )}
                   {!disabled && (
                     <TableCell>
                       <Button
@@ -419,10 +543,28 @@ export function LogbookStops({
             Lägg till stopp
           </Button>
         )}
-        <div className="flex items-center gap-2 text-sm ml-auto">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">Slutligt antal ombord:</span>
-          <Badge variant="outline" className="font-mono">{finalOnboard}</Badge>
+        <div className="flex items-center gap-4 text-sm ml-auto flex-wrap">
+          {showPax && (
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Passagerare ombord:</span>
+              <Badge variant="outline" className="font-mono">{finalOnboard}</Badge>
+            </div>
+          )}
+          {showVehicles && (
+            <div className="flex items-center gap-2">
+              <Car className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Fordon ombord:</span>
+              <Badge variant="outline" className="font-mono">{calculateVehiclesOnboard(sortedStops, sortedStops.length - 1)}</Badge>
+            </div>
+          )}
+          {showCargo && (
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Gods ombord:</span>
+              <Badge variant="outline" className="font-mono">{calculateCargoOnboard(sortedStops, sortedStops.length - 1).toFixed(0)} kg</Badge>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -441,7 +583,12 @@ interface LogbookStopsDisplayProps {
     passenger_count: number | null;
     pax_on: number | null;
     pax_off: number | null;
+    vehicles_on?: number | null;
+    vehicles_off?: number | null;
+    cargo_on_kg?: number | null;
+    cargo_off_kg?: number | null;
   }>;
+  vesselType?: VesselType;
 }
 
 function calculateOnboardFromDb(
@@ -451,7 +598,6 @@ function calculateOnboardFromDb(
   let total = 0;
   for (let i = 0; i <= currentIndex; i++) {
     const stop = stops[i];
-    // Support both new pax_on/pax_off and legacy passenger_count
     if (stop.pax_on !== null || stop.pax_off !== null) {
       total += stop.pax_on || 0;
       total -= stop.pax_off || 0;
@@ -462,16 +608,18 @@ function calculateOnboardFromDb(
   return Math.max(0, total);
 }
 
-export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
+export function LogbookStopsDisplay({ stops, vesselType }: LogbookStopsDisplayProps) {
   if (stops.length === 0) {
     return <p className="text-muted-foreground text-center py-4">Inga stopp registrerade.</p>;
   }
 
   const sortedStops = [...stops].sort((a, b) => a.stop_order - b.stop_order);
   const finalOnboard = calculateOnboardFromDb(sortedStops, sortedStops.length - 1);
-
-  // Check if using new format (pax_on/pax_off) or legacy (passenger_count)
   const usesNewFormat = sortedStops.some(s => s.pax_on !== null || s.pax_off !== null);
+
+  const showPax = vesselType !== 'lastfartyg';
+  const showVehicles = vesselType === 'bilfarja';
+  const showCargo = vesselType === 'lastfartyg';
 
   return (
     <div className="space-y-4">
@@ -482,15 +630,20 @@ export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
               <TableHead className="w-12">#</TableHead>
               <TableHead>Tid</TableHead>
               <TableHead>Position</TableHead>
-              {usesNewFormat ? (
+              {showPax && usesNewFormat && (
                 <>
                   <TableHead className="text-center">Pax på</TableHead>
                   <TableHead className="text-center">Pax av</TableHead>
                 </>
-              ) : (
+              )}
+              {showPax && !usesNewFormat && (
                 <TableHead className="text-center">Pax</TableHead>
               )}
-              <TableHead className="text-center">Ombord</TableHead>
+              {showPax && <TableHead className="text-center">Ombord</TableHead>}
+              {showVehicles && <TableHead className="text-center">Fordon på</TableHead>}
+              {showVehicles && <TableHead className="text-center">Fordon av</TableHead>}
+              {showCargo && <TableHead className="text-center">Gods på (kg)</TableHead>}
+              {showCargo && <TableHead className="text-center">Gods av (kg)</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -507,7 +660,7 @@ export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
                     {stop.departure_time || '-'}
                   </TableCell>
                   <TableCell>{position}</TableCell>
-                  {usesNewFormat ? (
+                  {showPax && usesNewFormat && (
                     <>
                       <TableCell className="text-center font-mono">
                         {stop.pax_on !== null && stop.pax_on > 0 ? `+${stop.pax_on}` : '-'}
@@ -516,19 +669,42 @@ export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
                         {stop.pax_off !== null && stop.pax_off > 0 ? `-${stop.pax_off}` : '-'}
                       </TableCell>
                     </>
-                  ) : (
+                  )}
+                  {showPax && !usesNewFormat && (
                     <TableCell className="text-center font-mono">
                       {stop.passenger_count !== null ? stop.passenger_count : '-'}
                     </TableCell>
                   )}
-                  <TableCell className="text-center">
-                    <Badge 
-                      variant={onboard > 0 ? "default" : "secondary"}
-                      className="font-mono min-w-10 justify-center"
-                    >
-                      {onboard}
-                    </Badge>
-                  </TableCell>
+                  {showPax && (
+                    <TableCell className="text-center">
+                      <Badge 
+                        variant={onboard > 0 ? "default" : "secondary"}
+                        className="font-mono min-w-10 justify-center"
+                      >
+                        {onboard}
+                      </Badge>
+                    </TableCell>
+                  )}
+                  {showVehicles && (
+                    <TableCell className="text-center font-mono">
+                      {(stop as any).vehicles_on ? `+${(stop as any).vehicles_on}` : '-'}
+                    </TableCell>
+                  )}
+                  {showVehicles && (
+                    <TableCell className="text-center font-mono">
+                      {(stop as any).vehicles_off ? `-${(stop as any).vehicles_off}` : '-'}
+                    </TableCell>
+                  )}
+                  {showCargo && (
+                    <TableCell className="text-center font-mono">
+                      {(stop as any).cargo_on_kg ? `+${(stop as any).cargo_on_kg}` : '-'}
+                    </TableCell>
+                  )}
+                  {showCargo && (
+                    <TableCell className="text-center font-mono">
+                      {(stop as any).cargo_off_kg ? `-${(stop as any).cargo_off_kg}` : '-'}
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}
@@ -536,10 +712,14 @@ export function LogbookStopsDisplay({ stops }: LogbookStopsDisplayProps) {
         </Table>
       </div>
       
-      <div className="flex items-center justify-end gap-2 text-sm">
-        <Users className="h-4 w-4 text-muted-foreground" />
-        <span className="text-muted-foreground">Slutligt antal ombord:</span>
-        <Badge variant="outline" className="font-mono">{finalOnboard}</Badge>
+      <div className="flex items-center justify-end gap-4 text-sm flex-wrap">
+        {showPax && (
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Passagerare ombord:</span>
+            <Badge variant="outline" className="font-mono">{finalOnboard}</Badge>
+          </div>
+        )}
       </div>
     </div>
   );
