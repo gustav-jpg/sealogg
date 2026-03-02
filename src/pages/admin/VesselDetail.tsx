@@ -80,29 +80,50 @@ export default function VesselDetail() {
   const updateEngineHours = useMutation({
     mutationFn: async () => {
       if (!vessel) throw new Error('Inget fartyg valt');
-      for (const input of engineHoursInputs) {
-        const { error } = await supabase
-          .from('vessel_engine_hours')
-          .upsert({
-            vessel_id: vessel.id,
-            engine_type: input.engine_type,
-            engine_number: input.engine_number,
-            current_hours: input.current_hours,
-            name: input.name || null,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'vessel_id,engine_type,engine_number' });
+
+      // Delete engines that were removed
+      const existingIds = (vesselEngineHours || []).map(e => e.id);
+      const keptIds = engineHoursInputs.filter(e => e.id).map(e => e.id!);
+      const toDelete = existingIds.filter(id => !keptIds.includes(id));
+      for (const delId of toDelete) {
+        const { error } = await supabase.from('vessel_engine_hours').delete().eq('id', delId);
         if (error) throw error;
       }
+
+      // Upsert remaining + new
+      for (const input of engineHoursInputs) {
+        if (input.id) {
+          const { error } = await supabase.from('vessel_engine_hours')
+            .update({ name: input.name || null, current_hours: input.current_hours, engine_type: input.engine_type, engine_number: input.engine_number, updated_at: new Date().toISOString() })
+            .eq('id', input.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('vessel_engine_hours')
+            .insert({ vessel_id: vessel.id, engine_type: input.engine_type, engine_number: input.engine_number, current_hours: input.current_hours, name: input.name || null });
+          if (error) throw error;
+        }
+      }
+
+      // Update vessel engine counts
+      const mainCount = engineHoursInputs.filter(e => e.engine_type === 'main').length;
+      const auxCount = engineHoursInputs.filter(e => e.engine_type === 'auxiliary').length;
+      const { error: vesselError } = await supabase.from('vessels')
+        .update({ main_engine_count: mainCount, auxiliary_engine_count: auxCount })
+        .eq('id', vessel.id);
+      if (vesselError) throw vesselError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vessel-engine-hours'] });
-      toast({ title: 'Sparat', description: 'Maskintimmar uppdaterade.' });
+      queryClient.invalidateQueries({ queryKey: ['vessel-detail', id] });
+      toast({ title: 'Sparat', description: 'Maskiner uppdaterade.' });
       setEngineDialogOpen(false);
     },
     onError: (error) => {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     },
   });
+
+  const handleSaveEngines = () => updateEngineHours.mutate();
 
   const deleteVessel = useMutation({
     mutationFn: async () => {
@@ -121,16 +142,14 @@ export default function VesselDetail() {
 
   const openEngineDialog = () => {
     if (!vessel) return;
-    const existingHours = vesselEngineHours || [];
-    const inputs: typeof engineHoursInputs = [];
-    for (let i = 1; i <= vessel.main_engine_count; i++) {
-      const existing = existingHours.find(h => h.engine_type === 'main' && h.engine_number === i);
-      inputs.push({ id: existing?.id, engine_type: 'main', engine_number: i, current_hours: existing?.current_hours || 0, name: existing?.name || `Huvudmaskin ${i}` });
-    }
-    for (let i = 1; i <= vessel.auxiliary_engine_count; i++) {
-      const existing = existingHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
-      inputs.push({ id: existing?.id, engine_type: 'auxiliary', engine_number: i, current_hours: existing?.current_hours || 0, name: existing?.name || `Hjälpmaskin ${i}` });
-    }
+    const existing = vesselEngineHours || [];
+    const inputs = existing.map(h => ({
+      id: h.id,
+      engine_type: h.engine_type,
+      engine_number: h.engine_number,
+      current_hours: h.current_hours,
+      name: h.name || `${h.engine_type === 'main' ? 'Huvudmaskin' : 'Hjälpmaskin'} ${h.engine_number}`,
+    }));
     setEngineHoursInputs(inputs);
     setSelectedPrimaryEngineId(vessel.primary_engine_id || null);
     setEngineDialogOpen(true);
@@ -364,11 +383,11 @@ export default function VesselDetail() {
 
       {/* Engine Hours Dialog */}
       <Dialog open={engineDialogOpen} onOpenChange={setEngineDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gauge className="h-5 w-5" />
-              Maskintimmar - {vessel.name}
+              Maskiner - {vessel.name}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -380,11 +399,22 @@ export default function VesselDetail() {
             ) : (
               <div className="divide-y">
                 {engineHoursInputs.map((input, index) => (
-                  <div key={`${input.engine_type}-${input.engine_number}`} className="py-3 first:pt-0 last:pb-0">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div key={`${input.engine_type}-${input.engine_number}-${index}`} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between mb-2">
                       <Badge variant={input.engine_type === 'main' ? 'default' : 'secondary'} className="text-xs">
                         {input.engine_type === 'main' ? 'Huvud' : 'Hjälp'} #{input.engine_number}
                       </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          setEngineHoursInputs(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        title="Ta bort maskin"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -419,8 +449,47 @@ export default function VesselDetail() {
                 ))}
               </div>
             )}
-            <Button onClick={() => updateEngineHours.mutate()} disabled={updateEngineHours.isPending || engineHoursInputs.length === 0} className="w-full">
-              {updateEngineHours.isPending ? 'Sparar...' : 'Spara maskintimmar'}
+
+            {/* Add engine buttons */}
+            <div className="flex gap-2 pt-2 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  const mainCount = engineHoursInputs.filter(e => e.engine_type === 'main').length;
+                  setEngineHoursInputs(prev => [...prev, {
+                    engine_type: 'main',
+                    engine_number: mainCount + 1,
+                    current_hours: 0,
+                    name: `Huvudmaskin ${mainCount + 1}`,
+                  }]);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Huvudmaskin
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  const auxCount = engineHoursInputs.filter(e => e.engine_type === 'auxiliary').length;
+                  setEngineHoursInputs(prev => [...prev, {
+                    engine_type: 'auxiliary',
+                    engine_number: auxCount + 1,
+                    current_hours: 0,
+                    name: `Hjälpmaskin ${auxCount + 1}`,
+                  }]);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Hjälpmaskin
+              </Button>
+            </div>
+
+            <Button onClick={() => handleSaveEngines()} disabled={updateEngineHours.isPending} className="w-full">
+              {updateEngineHours.isPending ? 'Sparar...' : 'Spara'}
             </Button>
           </div>
         </DialogContent>
