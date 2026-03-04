@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +33,7 @@ import { LogbookCrew } from '@/components/logbook/LogbookCrew';
 import { LogbookSidebar } from '@/components/logbook/LogbookSidebar';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, MapPin, ArrowLeft, Save, Trash2, Plus, ShieldCheck, History, Fuel, Loader2 } from 'lucide-react';
+import { Ship, MapPin, ArrowLeft, Save, Trash2, Plus, ShieldCheck, History, Fuel, Loader2, CheckCircle2, CloudOff } from 'lucide-react';
 
 export default function LogbookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -70,6 +70,9 @@ export default function LogbookDetail() {
   const [bunkerDialogEngineHours, setBunkerDialogEngineHours] = useState('');
   const [quickEntries, setQuickEntries] = useState<QuickEntry[]>([]);
   const [quickEntriesInitialized, setQuickEntriesInitialized] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitializedRef = useRef(false);
 
   // Passenger session
   const { data: passengerSession } = useQuery({
@@ -520,6 +523,48 @@ export default function LogbookDetail() {
     septic_emptied: quickEntries.some(e => e.type === 'septik'),
   });
 
+  // Auto-save function
+  const performAutoSave = useCallback(async () => {
+    if (!id || !isInitializedRef.current) return;
+    setAutoSaveStatus('saving');
+    try {
+      const { error } = await supabase.from('logbooks').update(getLogbookUpdateFields()).eq('id', id);
+      if (error) throw error;
+      await saveRelatedData();
+      queryClient.invalidateQueries({ queryKey: ['logbook', id] });
+      queryClient.invalidateQueries({ queryKey: ['logbooks'] });
+      queryClient.invalidateQueries({ queryKey: ['logbook-engine-hours', id] });
+      queryClient.invalidateQueries({ queryKey: ['logbook-exercises', id] });
+      queryClient.invalidateQueries({ queryKey: ['logbook-stops', id] });
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Auto-save error:', err);
+      setAutoSaveStatus('error');
+    }
+  }, [id, weather, wind, generalNotes, bunkerLiters, quickEntries, stops, editableEngineHours, editableExercises]);
+
+  // Debounced auto-save effect - triggers on any editable field change
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      performAutoSave();
+    }, 1500);
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [weather, wind, generalNotes, bunkerLiters, quickEntries, stops, editableEngineHours, editableExercises, performAutoSave]);
+
+  // Mark initialized after all data has been loaded into state
+  useEffect(() => {
+    if (initialized && stopsInitialized && engineHoursInitialized && exercisesInitialized) {
+      // Small delay to avoid triggering auto-save from initialization
+      const t = setTimeout(() => { isInitializedRef.current = true; }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [initialized, stopsInitialized, engineHoursInitialized, exercisesInitialized]);
+
   const updateLogbook = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('logbooks').update(getLogbookUpdateFields()).eq('id', id);
@@ -896,6 +941,7 @@ export default function LogbookDetail() {
             signatures={signatures}
             closedAt={logbook.closed_at}
             deviations={linkedDeviations}
+            autoSaveStatus={autoSaveStatus}
           />
         </div>
       </div>
