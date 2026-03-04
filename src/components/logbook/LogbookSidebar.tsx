@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { ValidationPanel } from '@/components/ValidationPanel';
-import { Save, Trash2, ShieldCheck, FileDown, History, Lock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Save, Trash2, ShieldCheck, FileDown, History, Lock, CheckCircle2, AlertTriangle, CloudOff, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
