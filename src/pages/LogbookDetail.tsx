@@ -70,6 +70,9 @@ export default function LogbookDetail() {
   const [bunkerDialogEngineHours, setBunkerDialogEngineHours] = useState('');
   const [quickEntries, setQuickEntries] = useState<QuickEntry[]>([]);
   const [quickEntriesInitialized, setQuickEntriesInitialized] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitializedRef = useRef(false);
 
   // Passenger session
   const { data: passengerSession } = useQuery({
