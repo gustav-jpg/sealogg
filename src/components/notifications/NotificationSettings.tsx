@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bell, Mail, Smartphone, Loader2 } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useNativePushNotifications } from '@/hooks/useNativePushNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,7 +50,15 @@ const defaultPreferences: NotificationPreferences = {
 export function NotificationSettings() {
   const { user } = useAuth();
   const { selectedOrgId } = useOrganization();
-  const { isSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe, permission } = usePushNotifications();
+  const webPush = usePushNotifications();
+  const nativePush = useNativePushNotifications();
+  
+  // Use native push on native platforms, web push otherwise
+  const isNative = nativePush.isNative;
+  const isSupported = isNative || webPush.isSupported;
+  const isSubscribed = isNative ? nativePush.isRegistered : webPush.isSubscribed;
+  const pushLoading = isNative ? nativePush.isLoading : webPush.isLoading;
+  const permission = isNative ? 'default' : webPush.permission;
   
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,12 +137,12 @@ export function NotificationSettings() {
   // Handle push toggle
   const handlePushToggle = async (enabled: boolean) => {
     if (enabled) {
-      const success = await subscribe();
+      const success = isNative ? await nativePush.register() : await webPush.subscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: true }));
       }
     } else {
-      const success = await unsubscribe();
+      const success = isNative ? await nativePush.unregister() : await webPush.unsubscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: false }));
       }
