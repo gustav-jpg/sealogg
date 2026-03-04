@@ -35,6 +35,7 @@ interface LogbookSidebarProps {
   signatures: any[] | undefined;
   closedAt: string | null;
   deviations?: LinkedDeviation[] | null;
+  autoSaveStatus?: 'idle' | 'saving' | 'saved' | 'error';
 }
 
 export function LogbookSidebar({
