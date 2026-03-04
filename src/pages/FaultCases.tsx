@@ -103,7 +103,7 @@ export default function FaultCases() {
       // (otherwise users with multiple org memberships will see mixed data)
       let query = supabase
         .from('fault_cases')
-        .select(`*, vessel:vessels(*)`)
+        .select(`*, vessel:vessels(*), assigned_profile:profiles!fault_cases_assigned_to_fkey(id, full_name)`)
         .in('vessel_id', vesselIds)
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -626,6 +626,12 @@ export default function FaultCases() {
                           <span>{(faultCase as any).vessel?.name}</span>
                           <span>•</span>
                           <span>{format(new Date(faultCase.created_at), 'd MMM', { locale: sv })}</span>
+                          {(faultCase as any).assigned_profile?.full_name && (
+                            <>
+                              <span>•</span>
+                              <span>{(faultCase as any).assigned_profile.full_name}</span>
+                            </>
+                          )}
                         </div>
                         <Badge variant={getStatusColor(faultCase.status as FaultStatus)} className="text-xs">
                           {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
@@ -644,33 +650,45 @@ export default function FaultCases() {
                     <th className="text-left p-2 border-b">Fartyg</th>
                     <th className="text-left p-2 border-b">Prioritet</th>
                     <th className="text-left p-2 border-b">Status</th>
+                    <th className="text-left p-2 border-b">Ansvarig</th>
+                    <th className="text-left p-2 border-b">Deadline</th>
                     <th className="text-left p-2 border-b">Datum</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {faultCases?.map((faultCase) => (
-                    <tr 
-                      key={faultCase.id} 
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => navigate(`/portal/fault-cases/${faultCase.id}`)}
-                    >
-                      <td className="p-2 border-b font-medium">{faultCase.title}</td>
-                      <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
-                      <td className="p-2 border-b">
-                        <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
-                          {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
-                        </Badge>
-                      </td>
-                      <td className="p-2 border-b">
-                        <Badge variant={getStatusColor(faultCase.status as FaultStatus)}>
-                          {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
-                        </Badge>
-                      </td>
-                      <td className="p-2 border-b text-muted-foreground text-sm">
-                        {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
-                      </td>
-                    </tr>
-                  ))}
+                  {faultCases?.map((faultCase) => {
+                    const deadline = (faultCase as any).deadline;
+                    const isOverdue = deadline && new Date(deadline + 'T00:00:00') < new Date() && faultCase.status !== 'avslutad';
+                    return (
+                      <tr 
+                        key={faultCase.id} 
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => navigate(`/portal/fault-cases/${faultCase.id}`)}
+                      >
+                        <td className="p-2 border-b font-medium">{faultCase.title}</td>
+                        <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
+                        <td className="p-2 border-b">
+                          <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
+                            {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
+                          </Badge>
+                        </td>
+                        <td className="p-2 border-b">
+                          <Badge variant={getStatusColor(faultCase.status as FaultStatus)}>
+                            {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
+                          </Badge>
+                        </td>
+                        <td className="p-2 border-b text-sm text-muted-foreground">
+                          {(faultCase as any).assigned_profile?.full_name || '–'}
+                        </td>
+                        <td className={`p-2 border-b text-sm ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                          {deadline ? format(new Date(deadline + 'T00:00:00'), 'd MMM yyyy', { locale: sv }) : '–'}
+                        </td>
+                        <td className="p-2 border-b text-muted-foreground text-sm">
+                          {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 

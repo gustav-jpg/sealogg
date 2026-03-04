@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -17,6 +19,8 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { usePrint } from '@/hooks/usePrint';
 import {
   FAULT_PRIORITY_LABELS,
@@ -26,13 +30,16 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User } from 'lucide-react';
 import { sanitizeStorageFileName } from '@/lib/storage';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { cn } from '@/lib/utils';
+
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAdmin, canEdit } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
@@ -40,6 +47,11 @@ export default function FaultCaseDetail() {
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const [newStatus, setNewStatus] = useState<FaultStatus | ''>('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const commentRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
 
   const { data: faultCase, isLoading } = useQuery({
     queryKey: ['fault-case', id],
@@ -50,15 +62,26 @@ export default function FaultCaseDetail() {
         .eq('id', id)
         .single();
       if (error) throw error;
-      
+
       // Fetch creator profile
       const { data: creatorProfile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('user_id', data.created_by)
         .maybeSingle();
-      
-      return { ...data, creator_profile: creatorProfile };
+
+      // Fetch assigned profile (assigned_to references profiles.id)
+      let assignedProfile = null;
+      if ((data as any).assigned_to) {
+        const { data: ap } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('id', (data as any).assigned_to)
+          .maybeSingle();
+        assignedProfile = ap;
+      }
+
+      return { ...data, creator_profile: creatorProfile, assigned_profile: assignedProfile };
     },
     enabled: !!id,
   });
@@ -72,14 +95,13 @@ export default function FaultCaseDetail() {
         .eq('fault_case_id', id)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      
-      // Fetch profiles for all commenters
+
       const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
         .in('user_id', userIds);
-      
+
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
       return data.map(c => ({ ...c, commenter_name: profileMap.get(c.user_id) || 'Okänd' }));
     },
@@ -114,7 +136,6 @@ export default function FaultCaseDetail() {
 
       if (error) throw error;
 
-      // Upload files for comment
       for (const file of commentFiles) {
         const safeName = sanitizeStorageFileName(file.name);
         const filePath = `fault-cases/${id}/comments/${comment.id}/${Date.now()}-${safeName}`;
@@ -176,26 +197,37 @@ export default function FaultCaseDetail() {
     },
   });
 
+  const updateAssignment = useMutation({
+    mutationFn: async (updates: Record<string, any>) => {
+      const { error } = await supabase
+        .from('fault_cases')
+        .update(updates)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fault-case', id] });
+      queryClient.invalidateQueries({ queryKey: ['fault-cases'] });
+      toast({ title: 'Uppdaterad' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const deleteFaultCase = useMutation({
     mutationFn: async () => {
-      // First delete all attachments from storage
       if (attachments && attachments.length > 0) {
         for (const att of attachments) {
-          // Extract path from URL
           const url = new URL(att.file_url);
           const pathMatch = url.pathname.match(/\/object\/public\/attachments\/(.+)/);
           if (pathMatch) {
             await supabase.storage.from('attachments').remove([pathMatch[1]]);
           }
         }
-        // Delete attachment records
         await supabase.from('fault_attachments').delete().eq('fault_case_id', id);
       }
-      
-      // Delete all comments
       await supabase.from('fault_comments').delete().eq('fault_case_id', id);
-      
-      // Delete the fault case
       const { error } = await supabase.from('fault_cases').delete().eq('id', id);
       if (error) throw error;
     },
@@ -208,6 +240,86 @@ export default function FaultCaseDetail() {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     },
   });
+
+  // @-mention logic
+  const filteredMentions = mentionSearch !== null && orgProfiles
+    ? orgProfiles.filter(p => p.full_name.toLowerCase().includes(mentionSearch.toLowerCase())).slice(0, 5)
+    : [];
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNewComment(value);
+
+    const cursorPos = e.target.selectionStart;
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const mentionMatch = textBeforeCursor.match(/@([^\s]*)$/);
+
+    if (mentionMatch) {
+      setMentionSearch(mentionMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionSearch(null);
+    }
+  };
+
+  const insertMention = (name: string) => {
+    const textarea = commentRef.current;
+    if (!textarea) return;
+
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = newComment.substring(0, cursorPos);
+    const textAfterCursor = newComment.substring(cursorPos);
+    const mentionMatch = textBeforeCursor.match(/@([^\s]*)$/);
+
+    if (mentionMatch) {
+      const beforeMention = textBeforeCursor.substring(0, mentionMatch.index);
+      const newText = `${beforeMention}@${name} ${textAfterCursor}`;
+      setNewComment(newText);
+      setMentionSearch(null);
+
+      setTimeout(() => {
+        const newPos = (beforeMention?.length || 0) + name.length + 2;
+        textarea.focus();
+        textarea.setSelectionRange(newPos, newPos);
+      }, 0);
+    }
+  };
+
+  const handleCommentKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionSearch !== null && filteredMentions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex(i => Math.min(i + 1, filteredMentions.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex(i => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(filteredMentions[mentionIndex].full_name);
+      } else if (e.key === 'Escape') {
+        setMentionSearch(null);
+      }
+    }
+  };
+
+  // Render @mentions in comment text as highlighted
+  const renderCommentText = (text: string) => {
+    if (!orgProfiles) return text;
+    const parts = text.split(/(@\S+(?:\s\S+)?)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        const name = part.substring(1);
+        const isValidMention = orgProfiles.some(p =>
+          p.full_name.toLowerCase() === name.toLowerCase() ||
+          p.full_name.toLowerCase().startsWith(name.toLowerCase())
+        );
+        if (isValidMention) {
+          return <span key={i} className="text-primary font-medium">{part}</span>;
+        }
+      }
+      return part;
+    });
+  };
 
   const getPriorityColor = (prio: FaultPriority) => {
     switch (prio) {
@@ -254,6 +366,8 @@ export default function FaultCaseDetail() {
 
   const isOpen = faultCase.status !== 'avslutad';
   const mainAttachments = attachments?.filter((a) => !a.comment_id) || [];
+  const deadlineDate = (faultCase as any).deadline ? new Date((faultCase as any).deadline + 'T00:00:00') : undefined;
+  const isOverdue = deadlineDate && deadlineDate < new Date() && isOpen;
 
   return (
     <MainLayout>
@@ -350,7 +464,7 @@ export default function FaultCaseDetail() {
               </CardContent>
             </Card>
 
-            {/* Non-image attachments (PDFs, etc.) */}
+            {/* Non-image attachments */}
             {mainAttachments.filter(a => !/\.(jpg|jpeg|png|gif|webp)$/i.test(a.file_name)).length > 0 && (
               <Card>
                 <CardHeader>
@@ -395,7 +509,7 @@ export default function FaultCaseDetail() {
                       const commentAttachments = attachments?.filter((a) => a.comment_id === comment.id) || [];
                       return (
                         <div key={comment.id} className="p-4 rounded-lg bg-muted/50 border">
-                          <p className="whitespace-pre-wrap">{comment.comment_text}</p>
+                          <p className="whitespace-pre-wrap">{renderCommentText(comment.comment_text)}</p>
                           {commentAttachments.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
                               {commentAttachments.map((att) => (
@@ -425,12 +539,37 @@ export default function FaultCaseDetail() {
 
                 {isOpen && (
                   <div className="space-y-3 pt-4 border-t">
-                    <Textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Skriv en kommentar..."
-                      rows={3}
-                    />
+                    <div className="relative">
+                      <Textarea
+                        ref={commentRef}
+                        value={newComment}
+                        onChange={handleCommentChange}
+                        onKeyDown={handleCommentKeyDown}
+                        placeholder="Skriv en kommentar... (använd @ för att tagga)"
+                        rows={3}
+                      />
+                      {mentionSearch !== null && filteredMentions.length > 0 && (
+                        <div className="absolute bottom-full left-0 mb-1 w-64 bg-popover border rounded-lg shadow-lg z-50 max-h-48 overflow-auto">
+                          {filteredMentions.map((profile, i) => (
+                            <button
+                              key={profile.id}
+                              type="button"
+                              className={cn(
+                                'w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2',
+                                i === mentionIndex && 'bg-muted'
+                              )}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                insertMention(profile.full_name);
+                              }}
+                            >
+                              <User className="h-3 w-3 text-muted-foreground" />
+                              {profile.full_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center justify-between gap-4">
                       <Input
                         type="file"
@@ -454,6 +593,85 @@ export default function FaultCaseDetail() {
           </div>
 
           <div className="space-y-6">
+            {/* Assignment & Deadline card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Tilldelning</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" />
+                    Ansvarig
+                  </label>
+                  <Select
+                    value={(faultCase as any).assigned_to || 'none'}
+                    onValueChange={(v) => updateAssignment.mutate({ assigned_to: v === 'none' ? null : v })}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Ingen tilldelad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Ingen tilldelad</SelectItem>
+                      {orgProfiles?.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5" />
+                    Deadline
+                    {isOverdue && <Badge variant="destructive" className="text-xs ml-1">Försenad</Badge>}
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={!canEdit}
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !deadlineDate && 'text-muted-foreground',
+                          isOverdue && 'border-destructive text-destructive'
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {deadlineDate ? format(deadlineDate, 'PPP', { locale: sv }) : 'Ingen deadline'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={deadlineDate}
+                        onSelect={(date) => {
+                          updateAssignment.mutate({
+                            deadline: date ? format(date, 'yyyy-MM-dd') : null,
+                          });
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                      {deadlineDate && (
+                        <div className="p-2 border-t">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-muted-foreground"
+                            onClick={() => updateAssignment.mutate({ deadline: null })}
+                          >
+                            Ta bort deadline
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </CardContent>
+            </Card>
+
             {isOpen && (
               <Card>
                 <CardHeader>
@@ -499,7 +717,7 @@ export default function FaultCaseDetail() {
           </div>
         </div>
       </div>
-      
+
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

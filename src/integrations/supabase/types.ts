@@ -1436,9 +1436,11 @@ export type Database = {
       }
       fault_cases: {
         Row: {
+          assigned_to: string | null
           closed_at: string | null
           created_at: string
           created_by: string
+          deadline: string | null
           description: string
           id: string
           priority: Database["public"]["Enums"]["fault_priority"]
@@ -1448,9 +1450,11 @@ export type Database = {
           vessel_id: string
         }
         Insert: {
+          assigned_to?: string | null
           closed_at?: string | null
           created_at?: string
           created_by: string
+          deadline?: string | null
           description: string
           id?: string
           priority?: Database["public"]["Enums"]["fault_priority"]
@@ -1460,9 +1464,11 @@ export type Database = {
           vessel_id: string
         }
         Update: {
+          assigned_to?: string | null
           closed_at?: string | null
           created_at?: string
           created_by?: string
+          deadline?: string | null
           description?: string
           id?: string
           priority?: Database["public"]["Enums"]["fault_priority"]
@@ -1472,6 +1478,13 @@ export type Database = {
           vessel_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fault_cases_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fault_cases_created_by_fkey"
             columns: ["created_by"]
