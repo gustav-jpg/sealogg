@@ -62,14 +62,20 @@ export default function FaultCaseDetail() {
         .single();
       if (error) throw error;
       
-      // Fetch creator profile
-      const { data: creatorProfile } = await supabase
+      // Fetch creator profile + assigned profile
+      const profileIds = [data.created_by, data.assigned_to].filter(Boolean);
+      const { data: profiles } = await supabase
         .from('profiles')
-        .select('full_name')
-        .eq('user_id', data.created_by)
-        .maybeSingle();
+        .select('id, user_id, full_name')
+        .in('user_id', profileIds.filter(id => id !== null));
       
-      return { ...data, creator_profile: creatorProfile };
+      // assigned_to references profiles.id, created_by references auth.users.id
+      const creatorProfile = profiles?.find(p => p.user_id === data.created_by);
+      const assignedProfile = data.assigned_to 
+        ? (await supabase.from('profiles').select('id, full_name').eq('id', data.assigned_to).maybeSingle()).data
+        : null;
+      
+      return { ...data, creator_profile: creatorProfile, assigned_profile: assignedProfile };
     },
     enabled: !!id,
   });
