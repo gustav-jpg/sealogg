@@ -38,12 +38,18 @@ export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAdmin, canEdit } = useAuth();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const { printContent } = usePrint();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const [newStatus, setNewStatus] = useState<FaultStatus | ''>('');
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const commentRef = useRef<HTMLTextAreaElement>(null);
+  
+  const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: faultCase, isLoading } = useQuery({
