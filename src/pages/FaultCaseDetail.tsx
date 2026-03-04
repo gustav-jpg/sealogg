@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -17,6 +19,8 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { usePrint } from '@/hooks/usePrint';
 import {
   FAULT_PRIORITY_LABELS,
@@ -26,9 +30,10 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User } from 'lucide-react';
 import { sanitizeStorageFileName } from '@/lib/storage';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { cn } from '@/lib/utils';
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
