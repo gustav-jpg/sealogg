@@ -75,10 +75,36 @@ export function LogbookSidebar({
 
       {canEditThis && (
         <div className="space-y-2">
-          <Button className="w-full text-xs h-9" onClick={onSave} disabled={isSaving}>
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            {isSaving ? 'Sparar...' : 'Spara ändringar'}
-          </Button>
+          {/* Auto-save status indicator */}
+          <div className="flex items-center justify-center gap-2 text-xs py-1.5 px-3 rounded-md bg-muted/50">
+            {autoSaveStatus === 'saving' && (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                <span className="text-muted-foreground">Sparar...</span>
+              </>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-primary" />
+                <span className="text-primary">Sparat</span>
+              </>
+            )}
+            {autoSaveStatus === 'error' && (
+              <>
+                <CloudOff className="h-3 w-3 text-destructive" />
+                <span className="text-destructive">Kunde inte spara</span>
+                <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={onSave}>
+                  Försök igen
+                </Button>
+              </>
+            )}
+            {autoSaveStatus === 'idle' && (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
+                <span className="text-muted-foreground">Auto-sparning aktiv</span>
+              </>
+            )}
+          </div>
           <Button className="w-full text-xs h-9" variant="secondary" onClick={onSignAndClose} disabled={isClosing || (!validation.isValid && !overrideValidation)}>
             <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
             Signera & Stäng
