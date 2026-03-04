@@ -103,7 +103,7 @@ export default function FaultCases() {
       // (otherwise users with multiple org memberships will see mixed data)
       let query = supabase
         .from('fault_cases')
-        .select(`*, vessel:vessels(*)`)
+        .select(`*, vessel:vessels(*), assigned_profile:profiles!fault_cases_assigned_to_fkey(id, full_name)`)
         .in('vessel_id', vesselIds)
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
