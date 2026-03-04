@@ -209,9 +209,39 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
 
   const handleSave = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const img = imageRef.current;
+    if (!canvas || !img || canvasSize.width === 0) return;
 
-    canvas.toBlob((blob) => {
+    // Create a full-resolution off-screen canvas for export
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = img.naturalWidth;
+    exportCanvas.height = img.naturalHeight;
+    const ctx = exportCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw original image at full resolution
+    ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+
+    // Scale factor from display canvas to original image
+    const scaleX = img.naturalWidth / canvasSize.width;
+    const scaleY = img.naturalHeight / canvasSize.height;
+
+    // Redraw all paths scaled to full resolution
+    paths.forEach((path) => {
+      if (path.points.length < 2) return;
+      ctx.beginPath();
+      ctx.strokeStyle = path.color;
+      ctx.lineWidth = path.lineWidth * Math.max(scaleX, scaleY);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.moveTo(path.points[0].x * scaleX, path.points[0].y * scaleY);
+      path.points.forEach((point) => {
+        ctx.lineTo(point.x * scaleX, point.y * scaleY);
+      });
+      ctx.stroke();
+    });
+
+    exportCanvas.toBlob((blob) => {
       if (!blob) return;
       const annotatedFile = new File([blob], file.name, { type: 'image/png' });
       onSave(annotatedFile);
