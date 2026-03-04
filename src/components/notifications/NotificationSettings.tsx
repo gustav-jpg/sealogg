@@ -137,12 +137,12 @@ export function NotificationSettings() {
   // Handle push toggle
   const handlePushToggle = async (enabled: boolean) => {
     if (enabled) {
-      const success = await subscribe();
+      const success = isNative ? await nativePush.register() : await webPush.subscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: true }));
       }
     } else {
-      const success = await unsubscribe();
+      const success = isNative ? await nativePush.unregister() : await webPush.unsubscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: false }));
       }
