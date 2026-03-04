@@ -41,7 +41,7 @@ interface LogbookSidebarProps {
 export function LogbookSidebar({
   validation, canEditThis, isOpen, overrideValidation, onOverrideChange,
   onSave, onSignAndClose, onDelete, onExport, onShowHistory,
-  isSaving, isClosing, isDeleting, signatures, closedAt, deviations,
+  isSaving, isClosing, isDeleting, signatures, closedAt, deviations, autoSaveStatus = 'idle',
 }: LogbookSidebarProps) {
   const navigate = useNavigate();
 
