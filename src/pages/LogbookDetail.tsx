@@ -941,6 +941,7 @@ export default function LogbookDetail() {
             signatures={signatures}
             closedAt={logbook.closed_at}
             deviations={linkedDeviations}
+            autoSaveStatus={autoSaveStatus}
           />
         </div>
       </div>
