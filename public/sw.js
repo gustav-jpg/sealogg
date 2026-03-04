@@ -1,16 +1,76 @@
-// Service Worker for Push Notifications
-const CACHE_NAME = 'sealogg-v1';
+// Service Worker for Push Notifications & Offline Caching
+const CACHE_NAME = 'sealogg-v2';
+const STATIC_ASSETS = [
+  '/',
+  '/favicon.png',
+  '/favicon.ico',
+];
 
-// Install event
+// Install event - precache static assets
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    })
+  );
   self.skipWaiting();
 });
 
-// Activate event
+// Activate event - clean old caches
 self.addEventListener('activate', (event) => {
   console.log('[SW] Service worker activated');
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      );
+    }).then(() => clients.claim())
+  );
+});
+
+// Fetch event - network first, fallback to cache
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
+
+  // Skip Supabase API calls and auth endpoints from caching
+  const url = new URL(request.url);
+  if (
+    url.pathname.startsWith('/auth/') ||
+    url.pathname.startsWith('/rest/') ||
+    url.pathname.startsWith('/functions/') ||
+    url.hostname.includes('supabase')
+  ) {
+    return;
+  }
+
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
+        // Clone and cache successful responses
+        if (response.ok) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Network failed - try cache
+        return caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // Return offline fallback for navigation requests
+          if (request.mode === 'navigate') {
+            return caches.match('/');
+          }
+          return new Response('Offline', { status: 503 });
+        });
+      })
+  );
 });
 
 // Push event - handle incoming push notifications
@@ -70,19 +130,16 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
-  // Get the URL to open from the notification data
   const urlToOpen = event.notification.data?.url || '/portal';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Check if there's already a window open
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.navigate(urlToOpen);
           return client.focus();
         }
       }
-      // If no window is open, open a new one
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
