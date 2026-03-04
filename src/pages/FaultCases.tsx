@@ -626,6 +626,12 @@ export default function FaultCases() {
                           <span>{(faultCase as any).vessel?.name}</span>
                           <span>•</span>
                           <span>{format(new Date(faultCase.created_at), 'd MMM', { locale: sv })}</span>
+                          {(faultCase as any).assigned_profile?.full_name && (
+                            <>
+                              <span>•</span>
+                              <span>{(faultCase as any).assigned_profile.full_name}</span>
+                            </>
+                          )}
                         </div>
                         <Badge variant={getStatusColor(faultCase.status as FaultStatus)} className="text-xs">
                           {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
