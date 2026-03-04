@@ -81,8 +81,8 @@ export function AppSidebar() {
   const { selectedOrgId, selectedOrg, userOrgs, setSelectedOrgId, isLoading: isOrgLoading } = useOrganization();
   const location = useLocation();
   const navigate = useNavigate();
-  const { state } = useSidebar();
-  const isCollapsed = state === 'collapsed';
+  const { state, isMobile } = useSidebar();
+  const isCollapsed = state === 'collapsed' && !isMobile;
   const [isSuperadmin, setIsSuperadmin] = useState(false);
 
   useEffect(() => {
