@@ -50,7 +50,15 @@ const defaultPreferences: NotificationPreferences = {
 export function NotificationSettings() {
   const { user } = useAuth();
   const { selectedOrgId } = useOrganization();
-  const { isSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe, permission } = usePushNotifications();
+  const webPush = usePushNotifications();
+  const nativePush = useNativePushNotifications();
+  
+  // Use native push on native platforms, web push otherwise
+  const isNative = nativePush.isNative;
+  const isSupported = isNative || webPush.isSupported;
+  const isSubscribed = isNative ? nativePush.isRegistered : webPush.isSubscribed;
+  const pushLoading = isNative ? nativePush.isLoading : webPush.isLoading;
+  const permission = isNative ? 'default' : webPush.permission;
   
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
