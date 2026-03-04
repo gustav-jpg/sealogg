@@ -644,33 +644,45 @@ export default function FaultCases() {
                     <th className="text-left p-2 border-b">Fartyg</th>
                     <th className="text-left p-2 border-b">Prioritet</th>
                     <th className="text-left p-2 border-b">Status</th>
+                    <th className="text-left p-2 border-b">Ansvarig</th>
+                    <th className="text-left p-2 border-b">Deadline</th>
                     <th className="text-left p-2 border-b">Datum</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {faultCases?.map((faultCase) => (
-                    <tr 
-                      key={faultCase.id} 
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => navigate(`/portal/fault-cases/${faultCase.id}`)}
-                    >
-                      <td className="p-2 border-b font-medium">{faultCase.title}</td>
-                      <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
-                      <td className="p-2 border-b">
-                        <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
-                          {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
-                        </Badge>
-                      </td>
-                      <td className="p-2 border-b">
-                        <Badge variant={getStatusColor(faultCase.status as FaultStatus)}>
-                          {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
-                        </Badge>
-                      </td>
-                      <td className="p-2 border-b text-muted-foreground text-sm">
-                        {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
-                      </td>
-                    </tr>
-                  ))}
+                  {faultCases?.map((faultCase) => {
+                    const deadline = (faultCase as any).deadline;
+                    const isOverdue = deadline && new Date(deadline + 'T00:00:00') < new Date() && faultCase.status !== 'avslutad';
+                    return (
+                      <tr 
+                        key={faultCase.id} 
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => navigate(`/portal/fault-cases/${faultCase.id}`)}
+                      >
+                        <td className="p-2 border-b font-medium">{faultCase.title}</td>
+                        <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
+                        <td className="p-2 border-b">
+                          <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
+                            {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
+                          </Badge>
+                        </td>
+                        <td className="p-2 border-b">
+                          <Badge variant={getStatusColor(faultCase.status as FaultStatus)}>
+                            {FAULT_STATUS_LABELS[faultCase.status as FaultStatus]}
+                          </Badge>
+                        </td>
+                        <td className="p-2 border-b text-sm text-muted-foreground">
+                          {(faultCase as any).assigned_profile?.full_name || '–'}
+                        </td>
+                        <td className={`p-2 border-b text-sm ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                          {deadline ? format(new Date(deadline + 'T00:00:00'), 'd MMM yyyy', { locale: sv }) : '–'}
+                        </td>
+                        <td className="p-2 border-b text-muted-foreground text-sm">
+                          {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 
