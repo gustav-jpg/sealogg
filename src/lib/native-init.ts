@@ -10,6 +10,7 @@ export async function initNativePlugins() {
   try {
     // Configure status bar
     const { StatusBar, Style } = await import('@capacitor/status-bar');
+    await StatusBar.setOverlaysWebView({ overlay: false });
     await StatusBar.setStyle({ style: Style.Dark });
     await StatusBar.setBackgroundColor({ color: '#0A1628' }); // matches app dark bg
   } catch (e) {
