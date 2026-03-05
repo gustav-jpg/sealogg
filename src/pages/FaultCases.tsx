@@ -474,9 +474,9 @@ export default function FaultCases() {
                   )}
 
                   {/* Non-image files list */}
-                  {files.filter(f => !f.file.type.startsWith('image/')).length > 0 && (
+                  {files.filter(f => !filePreviews.some(p => p.id === f.id)).length > 0 && (
                     <div className="space-y-1 mt-2">
-                      {files.filter(f => !f.file.type.startsWith('image/')).map((fileItem) => (
+                      {files.filter(f => !filePreviews.some(p => p.id === f.id)).map((fileItem) => (
                         <div key={fileItem.id} className="flex items-center justify-between text-sm bg-muted rounded px-2 py-1">
                           <span className="truncate">{fileItem.file.name}</span>
                           <Button
