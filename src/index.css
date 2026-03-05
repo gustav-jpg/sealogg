@@ -5,11 +5,10 @@
 @tailwind utilities;
 
 /* Safe area insets for native iOS (notch/Dynamic Island) */
-html, body {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+html {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Fartygsloggbok Design System - Maritime Theme */

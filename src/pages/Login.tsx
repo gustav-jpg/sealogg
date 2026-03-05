@@ -112,7 +112,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background maritime-gradient-subtle">
+    <div className="min-h-screen flex items-center justify-center bg-background maritime-gradient-subtle" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <Card className="w-full max-w-md mx-4 animate-fade-in">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
