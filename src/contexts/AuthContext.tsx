@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AppRole, Profile } from '@/lib/types';
+import { backupSession, getBackupSession, clearBackupSession } from '@/lib/capacitor-auth-persistence';
 
 interface AuthContextType {
   user: User | null;
@@ -63,6 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
+          // Backup session to native storage for persistence
+          backupSession({
+            access_token: currentSession.access_token,
+            refresh_token: currentSession.refresh_token,
+          });
           // Use setTimeout to avoid potential deadlock
           setTimeout(() => {
             fetchProfile(currentSession.user.id);
@@ -71,24 +77,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null);
           setRoles([]);
+          if (event === 'SIGNED_OUT') {
+            clearBackupSession();
+          }
         }
         
         setIsLoading(false);
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
+    // Get initial session, fall back to native backup if localStorage was cleared
+    const restoreSession = async () => {
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
       
       if (initialSession?.user) {
+        setSession(initialSession);
+        setUser(initialSession.user);
         fetchProfile(initialSession.user.id);
         fetchRoles(initialSession.user.id);
+        setIsLoading(false);
+        return;
+      }
+
+      // No session in localStorage — try native backup
+      const backup = await getBackupSession();
+      if (backup) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: backup.access_token,
+          refresh_token: backup.refresh_token,
+        });
+        if (error || !data.session) {
+          clearBackupSession();
+        }
+        // onAuthStateChange will handle the rest
       }
       
       setIsLoading(false);
-    });
+    };
+
+    restoreSession();
 
     return () => subscription.unsubscribe();
   }, []);
