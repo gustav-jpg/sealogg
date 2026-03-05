@@ -46,10 +46,15 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
       imageRef.current = img;
       setImageLoaded(true);
     };
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      console.error('Failed to load image for annotation');
+      setImageLoaded(false);
+    };
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
 
     return () => {
-      URL.revokeObjectURL(img.src);
+      URL.revokeObjectURL(objectUrl);
     };
   }, [file]);
 
@@ -212,19 +217,25 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
     const img = imageRef.current;
     if (!canvas || !img || canvasSize.width === 0) return;
 
-    // Create a full-resolution off-screen canvas for export
+    // Create a memory-safe off-screen canvas for export
+    const maxDimension = 2048;
+    const largestSide = Math.max(img.naturalWidth, img.naturalHeight);
+    const exportScale = largestSide > maxDimension ? maxDimension / largestSide : 1;
+    const exportWidth = Math.max(1, Math.round(img.naturalWidth * exportScale));
+    const exportHeight = Math.max(1, Math.round(img.naturalHeight * exportScale));
+
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = img.naturalWidth;
-    exportCanvas.height = img.naturalHeight;
+    exportCanvas.width = exportWidth;
+    exportCanvas.height = exportHeight;
     const ctx = exportCanvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw original image at full resolution
-    ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+    // Draw original image within the safe export size
+    ctx.drawImage(img, 0, 0, exportWidth, exportHeight);
 
-    // Scale factor from display canvas to original image
-    const scaleX = img.naturalWidth / canvasSize.width;
-    const scaleY = img.naturalHeight / canvasSize.height;
+    // Scale factor from display canvas to export canvas
+    const scaleX = exportWidth / canvasSize.width;
+    const scaleY = exportHeight / canvasSize.height;
 
     // Redraw all paths scaled to full resolution
     paths.forEach((path) => {

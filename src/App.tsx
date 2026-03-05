@@ -121,11 +121,11 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const allowLoginInNativeMode =
+  const isNativeLoginPath =
     location.pathname === "/portal/login" && shouldForceNativePortalLogin();
 
-  if (user && !allowLoginInNativeMode) {
-    return <Navigate to="/portal" replace />;
+  if (user) {
+    return <Navigate to="/portal" replace state={isNativeLoginPath ? { from: "/portal/login" } : undefined} />;
   }
 
   return <>{children}</>;
