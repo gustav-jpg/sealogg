@@ -46,10 +46,15 @@ export function ImageAnnotator({ file, onSave, onCancel, open }: ImageAnnotatorP
       imageRef.current = img;
       setImageLoaded(true);
     };
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      console.error('Failed to load image for annotation');
+      setImageLoaded(false);
+    };
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
 
     return () => {
-      URL.revokeObjectURL(img.src);
+      URL.revokeObjectURL(objectUrl);
     };
   }, [file]);
 

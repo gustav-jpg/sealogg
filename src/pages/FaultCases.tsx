@@ -242,31 +242,33 @@ export default function FaultCases() {
     try {
       const selectedFiles = Array.from(e.target.files || []);
       if (selectedFiles.length === 0) return;
-      
-      // Create file items with unique IDs
+
+      // Keep preview/annotation only for broadly supported browser formats.
+      // iOS camera often returns HEIC, which should be uploaded but not force-previewed.
+      const previewableTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
       const newFileItems = selectedFiles.map(file => ({
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         file,
       }));
-      
-      // Find first image to auto-open annotation
-      const firstImageItem = newFileItems.find(item => item.file.type.startsWith('image/'));
-      
-      // Create previews for images
+
       const newPreviews = newFileItems
-        .filter(item => item.file.type.startsWith('image/'))
+        .filter(item => previewableTypes.has(item.file.type))
         .map(item => ({
           id: item.id,
           file: item.file,
           preview: URL.createObjectURL(item.file),
         }));
-      
+
       setFiles(prev => [...prev, ...newFileItems]);
       setFilePreviews(prev => [...prev, ...newPreviews]);
-      
-      // Auto-open annotation dialog for the first image
-      if (firstImageItem) {
-        setFileToAnnotateId(firstImageItem.id);
+
+      const skippedPreviews = newFileItems.filter(item => item.file.type.startsWith('image/') && !previewableTypes.has(item.file.type)).length;
+      if (skippedPreviews > 0) {
+        toast({
+          title: 'Bild tillagd',
+          description: 'Vissa bildformat (t.ex. HEIC) laddas upp utan förhandsvisning/markering.',
+        });
       }
     } catch (error) {
       console.error('Error handling file selection:', error);
