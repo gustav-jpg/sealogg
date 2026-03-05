@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AppRole, Profile } from '@/lib/types';
+import { backupSession, getBackupSession, clearBackupSession } from '@/lib/capacitor-auth-persistence';
 
 interface AuthContextType {
   user: User | null;
