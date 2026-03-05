@@ -6,6 +6,10 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   // Use bundled web assets from dist in native app.
   // (Temporarily disable remote server URL to avoid stale remote content.)
+  ios: {
+    // Prevent cap sync from overwriting native assets like app icons
+    contentInset: 'automatic',
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
