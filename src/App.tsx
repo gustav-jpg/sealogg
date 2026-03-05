@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { isNativePlatform } from "@/lib/capacitor";
 
 // Lazy-loaded pages for better initial load performance
 const Home = lazy(() => import("./pages/Home"));
@@ -123,7 +124,7 @@ function AppRoutes() {
       <PageTracker />
       <Routes>
         {/* Public pages */}
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={isNativePlatform() ? <Navigate to="/portal/login" replace /> : <Home />} />
         <Route path="/changelog" element={<Changelog />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
