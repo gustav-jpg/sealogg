@@ -30,11 +30,10 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User, Camera } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User } from 'lucide-react';
 import { sanitizeStorageFileName } from '@/lib/storage';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
-import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -51,18 +50,6 @@ export default function FaultCaseDetail() {
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const commentRef = useRef<HTMLTextAreaElement>(null);
-  const { takePhoto } = useNativeCamera();
-
-  const handleTakeCommentPhoto = async () => {
-    try {
-      const photo = await takePhoto();
-      if (photo) {
-        setCommentFiles(prev => [...prev, photo]);
-      }
-    } catch {
-      toast({ title: 'Fel', description: 'Kunde inte öppna kameran', variant: 'destructive' });
-    }
-  };
 
   const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
 
