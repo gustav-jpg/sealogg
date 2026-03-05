@@ -123,7 +123,7 @@ function AppRoutes() {
       <PageTracker />
       <Routes>
         {/* Public pages */}
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={isNativePlatform() ? <Navigate to="/portal/login" replace /> : <Home />} />
         <Route path="/changelog" element={<Changelog />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
