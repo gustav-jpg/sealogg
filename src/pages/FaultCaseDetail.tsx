@@ -583,14 +583,26 @@ export default function FaultCaseDetail() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <Input
-                        type="file"
-                        multiple
-                        accept="image/*,.pdf"
-                        onChange={(e) => setCommentFiles(Array.from(e.target.files || []))}
-                        className="max-w-xs"
-                      />
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={handleTakeCommentPhoto}
+                          title="Ta foto"
+                          className="flex-shrink-0"
+                        >
+                          <Camera className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf"
+                          onChange={(e) => setCommentFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
+                          className="max-w-xs"
+                        />
+                      </div>
                       <Button onClick={() => addComment.mutate()} disabled={!newComment || addComment.isPending}>
                         <Send className="h-4 w-4 mr-2" />
                         Skicka
