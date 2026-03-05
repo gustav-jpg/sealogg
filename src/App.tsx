@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { isNativePlatform } from "@/lib/capacitor";
 
 // Lazy-loaded pages for better initial load performance
 const Home = lazy(() => import("./pages/Home"));
