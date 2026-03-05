@@ -51,6 +51,18 @@ export default function FaultCaseDetail() {
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const commentRef = useRef<HTMLTextAreaElement>(null);
+  const { takePhoto } = useNativeCamera();
+
+  const handleTakeCommentPhoto = async () => {
+    try {
+      const photo = await takePhoto();
+      if (photo) {
+        setCommentFiles(prev => [...prev, photo]);
+      }
+    } catch {
+      toast({ title: 'Fel', description: 'Kunde inte öppna kameran', variant: 'destructive' });
+    }
+  };
 
   const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
 
