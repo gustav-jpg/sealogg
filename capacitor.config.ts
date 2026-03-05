@@ -4,10 +4,8 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.ca12acbb7d5746d89d77109ee6b9dc68',
   appName: 'SeaLogg',
   webDir: 'dist',
-  server: {
-    url: 'https://sealogg.se?forceHideBadge=true',
-    cleartext: true,
-  },
+  // Use bundled web assets from dist in native app.
+  // (Temporarily disable remote server URL to avoid stale remote content.)
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
