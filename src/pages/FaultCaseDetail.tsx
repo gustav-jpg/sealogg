@@ -30,10 +30,11 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User, Camera } from 'lucide-react';
 import { sanitizeStorageFileName } from '@/lib/storage';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
