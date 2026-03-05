@@ -430,15 +430,24 @@ export default function FaultCases() {
 
                 <div className="space-y-3">
                   <Label>Bilagor (bilder & dokument)</Label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       type="button"
                       variant="outline"
-                      size="icon"
+                      size="sm"
                       onClick={handleTakePhoto}
-                      title="Ta foto"
                     >
-                      <Camera className="h-4 w-4" />
+                      <Camera className="h-4 w-4 mr-2" />
+                      Ta foto
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Välj från enhet
                     </Button>
                     <Input
                       ref={fileInputRef}
@@ -446,7 +455,7 @@ export default function FaultCases() {
                       multiple
                       accept="image/*,.pdf"
                       onChange={handleFileSelect}
-                      className={`flex-1 ${filePreviews.length > 0 ? 'file:mr-2' : ''}`}
+                      className="hidden"
                     />
                     {filePreviews.length > 0 && (
                       <span className="text-sm text-muted-foreground self-center">

@@ -583,25 +583,36 @@ export default function FaultCaseDetail() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
                         <Button
                           type="button"
                           variant="outline"
-                          size="icon"
+                          size="sm"
                           onClick={handleTakeCommentPhoto}
-                          title="Ta foto"
-                          className="flex-shrink-0"
                         >
-                          <Camera className="h-4 w-4" />
+                          <Camera className="h-4 w-4 mr-2" />
+                          Ta foto
                         </Button>
-                        <Input
-                          type="file"
-                          multiple
-                          accept="image/*,.pdf"
-                          onChange={(e) => setCommentFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
-                          className="max-w-xs"
-                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.multiple = true;
+                            input.accept = 'image/*,.pdf';
+                            input.onchange = (e) => {
+                              const files = Array.from((e.target as HTMLInputElement).files || []);
+                              setCommentFiles(prev => [...prev, ...files]);
+                            };
+                            input.click();
+                          }}
+                        >
+                          <Image className="h-4 w-4 mr-2" />
+                          Välj fil
+                        </Button>
                       </div>
                       <Button onClick={() => addComment.mutate()} disabled={!newComment || addComment.isPending}>
                         <Send className="h-4 w-4 mr-2" />
