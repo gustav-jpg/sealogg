@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'SeaLogg',
   webDir: 'dist',
   server: {
-    url: 'https://sealogg.lovable.app?forceHideBadge=true',
+    url: 'https://sealogg.se?forceHideBadge=true',
     cleartext: true,
   },
   plugins: {
