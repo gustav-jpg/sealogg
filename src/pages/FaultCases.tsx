@@ -431,6 +431,15 @@ export default function FaultCases() {
                 <div className="space-y-3">
                   <Label>Bilagor (bilder & dokument)</Label>
                   <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleTakePhoto}
+                      title="Ta foto"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
                     <Input
                       ref={fileInputRef}
                       type="file"
