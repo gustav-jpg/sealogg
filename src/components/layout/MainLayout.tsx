@@ -16,8 +16,10 @@ export function MainLayout({ children }: MainLayoutProps) {
         <AppSidebar />
         
         <div className="flex-1 flex flex-col min-h-screen">
+          {/* Safe area spacer for iOS notch/Dynamic Island */}
+          <div className="bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }} />
           {/* Compact Header */}
-          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <header className="sticky z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" style={{ top: 'env(safe-area-inset-top)' }}>
             <div className="flex h-12 items-center gap-4 px-4">
               <SidebarTrigger />
               <div className="flex items-center md:hidden">
