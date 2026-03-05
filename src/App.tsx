@@ -61,6 +61,20 @@ const Kartvisaren = lazy(() => import("./pages/Kartvisaren"));
 const Documents = lazy(() => import("./pages/Documents"));
 
 const queryClient = new QueryClient();
+const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
+
+function shouldForceNativePortalLogin(): boolean {
+  const hasForceHideBadge = new URLSearchParams(window.location.search).has("forceHideBadge");
+  const isLikelyNativeApp =
+    isNativePlatform() || window.navigator.userAgent.toLowerCase().includes("capacitor");
+
+  if (hasForceHideBadge || isLikelyNativeApp) {
+    sessionStorage.setItem(NATIVE_PORTAL_LOGIN_KEY, "1");
+    return true;
+  }
+
+  return sessionStorage.getItem(NATIVE_PORTAL_LOGIN_KEY) === "1";
+}
 
 function LazyFallback() {
   return (
@@ -97,6 +111,7 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -106,7 +121,10 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (user) {
+  const allowLoginInNativeMode =
+    location.pathname === "/portal/login" && shouldForceNativePortalLogin();
+
+  if (user && !allowLoginInNativeMode) {
     return <Navigate to="/portal" replace />;
   }
 
@@ -124,7 +142,7 @@ function AppRoutes() {
       <PageTracker />
       <Routes>
         {/* Public pages */}
-        <Route path="/" element={isNativePlatform() || new URLSearchParams(window.location.search).has('forceHideBadge') ? <Navigate to="/portal/login" replace /> : <Home />} />
+        <Route path="/" element={shouldForceNativePortalLogin() ? <Navigate to="/portal/login" replace /> : <Home />} />
         <Route path="/changelog" element={<Changelog />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
