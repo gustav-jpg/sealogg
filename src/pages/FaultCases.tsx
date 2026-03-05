@@ -239,37 +239,43 @@ export default function FaultCases() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    
-    // Create file items with unique IDs
-    const newFileItems = selectedFiles.map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file,
-    }));
-    
-    // Find first image to auto-open annotation
-    const firstImageItem = newFileItems.find(item => item.file.type.startsWith('image/'));
-    
-    // Create previews for images
-    const newPreviews = newFileItems
-      .filter(item => item.file.type.startsWith('image/'))
-      .map(item => ({
-        id: item.id,
-        file: item.file,
-        preview: URL.createObjectURL(item.file),
+    try {
+      const selectedFiles = Array.from(e.target.files || []);
+      if (selectedFiles.length === 0) return;
+      
+      // Create file items with unique IDs
+      const newFileItems = selectedFiles.map(file => ({
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        file,
       }));
-    
-    setFiles(prev => [...prev, ...newFileItems]);
-    setFilePreviews(prev => [...prev, ...newPreviews]);
-    
-    // Auto-open annotation dialog for the first image
-    if (firstImageItem) {
-      setFileToAnnotateId(firstImageItem.id);
-    }
-    
-    // Reset input so the same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      
+      // Find first image to auto-open annotation
+      const firstImageItem = newFileItems.find(item => item.file.type.startsWith('image/'));
+      
+      // Create previews for images
+      const newPreviews = newFileItems
+        .filter(item => item.file.type.startsWith('image/'))
+        .map(item => ({
+          id: item.id,
+          file: item.file,
+          preview: URL.createObjectURL(item.file),
+        }));
+      
+      setFiles(prev => [...prev, ...newFileItems]);
+      setFilePreviews(prev => [...prev, ...newPreviews]);
+      
+      // Auto-open annotation dialog for the first image
+      if (firstImageItem) {
+        setFileToAnnotateId(firstImageItem.id);
+      }
+    } catch (error) {
+      console.error('Error handling file selection:', error);
+      toast({ title: 'Fel', description: 'Kunde inte hantera filen. Försök igen.', variant: 'destructive' });
+    } finally {
+      // Reset input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
