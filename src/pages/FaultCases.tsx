@@ -33,12 +33,13 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Wrench, Plus, Filter, Archive, Printer, Pencil, X, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wrench, Plus, Filter, Archive, Printer, Pencil, X, ImageIcon, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrint } from '@/hooks/usePrint';
 import { ImageAnnotator } from '@/components/ImageAnnotator';
 import { sanitizeStorageFileName } from '@/lib/storage';
+import { useNativeCamera } from '@/hooks/useNativeCamera';
 export default function FaultCases() {
   const { user } = useAuth();
   const { selectedOrgId } = useOrganization();
@@ -64,6 +65,24 @@ export default function FaultCases() {
   const [fileToAnnotateId, setFileToAnnotateId] = useState<string | null>(null);
   const [filePreviews, setFilePreviews] = useState<{ id: string; file: File; preview: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { takePhoto } = useNativeCamera();
+
+  const handleTakePhoto = async () => {
+    try {
+      const photo = await takePhoto();
+      if (!photo) return;
+      
+      const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const fileItem = { id, file: photo };
+      const preview = { id, file: photo, preview: URL.createObjectURL(photo) };
+      
+      setFiles(prev => [...prev, fileItem]);
+      setFilePreviews(prev => [...prev, preview]);
+      setFileToAnnotateId(id);
+    } catch (error) {
+      toast({ title: 'Fel', description: 'Kunde inte öppna kameran', variant: 'destructive' });
+    }
+  };
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -412,6 +431,15 @@ export default function FaultCases() {
                 <div className="space-y-3">
                   <Label>Bilagor (bilder & dokument)</Label>
                   <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleTakePhoto}
+                      title="Ta foto"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
                     <Input
                       ref={fileInputRef}
                       type="file"
