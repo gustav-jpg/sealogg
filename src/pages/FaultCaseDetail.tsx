@@ -30,11 +30,10 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User, Camera } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User } from 'lucide-react';
 import { sanitizeStorageFileName } from '@/lib/storage';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
-import { useNativeCamera } from '@/hooks/useNativeCamera';
 
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -51,18 +50,6 @@ export default function FaultCaseDetail() {
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const commentRef = useRef<HTMLTextAreaElement>(null);
-  const { takePhoto } = useNativeCamera();
-
-  const handleTakeCommentPhoto = async () => {
-    try {
-      const photo = await takePhoto();
-      if (photo) {
-        setCommentFiles(prev => [...prev, photo]);
-      }
-    } catch {
-      toast({ title: 'Fel', description: 'Kunde inte öppna kameran', variant: 'destructive' });
-    }
-  };
 
   const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
 
@@ -583,37 +570,21 @@ export default function FaultCaseDetail() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleTakeCommentPhoto}
-                        >
-                          <Camera className="h-4 w-4 mr-2" />
-                          Ta foto
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.multiple = true;
-                            input.accept = 'image/*,.pdf';
-                            input.onchange = (e) => {
-                              const files = Array.from((e.target as HTMLInputElement).files || []);
-                              setCommentFiles(prev => [...prev, ...files]);
-                            };
-                            input.click();
-                          }}
-                        >
-                          <Image className="h-4 w-4 mr-2" />
-                          Välj fil
-                        </Button>
-                      </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <Input
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf"
+                        onChange={(e) => {
+                          try {
+                            setCommentFiles(Array.from(e.target.files || []));
+                          } catch (error) {
+                            console.error('Error selecting files:', error);
+                            toast({ title: 'Fel', description: 'Kunde inte hantera filen. Försök igen.', variant: 'destructive' });
+                          }
+                        }}
+                        className="max-w-xs"
+                      />
                       <Button onClick={() => addComment.mutate()} disabled={!newComment || addComment.isPending}>
                         <Send className="h-4 w-4 mr-2" />
                         Skicka

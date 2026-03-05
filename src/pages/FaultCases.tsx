@@ -33,13 +33,12 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Wrench, Plus, Filter, Archive, Printer, Pencil, X, ImageIcon, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
+import { Wrench, Plus, Filter, Archive, Printer, Pencil, X, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrint } from '@/hooks/usePrint';
 import { ImageAnnotator } from '@/components/ImageAnnotator';
 import { sanitizeStorageFileName } from '@/lib/storage';
-import { useNativeCamera } from '@/hooks/useNativeCamera';
 export default function FaultCases() {
   const { user } = useAuth();
   const { selectedOrgId } = useOrganization();
@@ -65,24 +64,6 @@ export default function FaultCases() {
   const [fileToAnnotateId, setFileToAnnotateId] = useState<string | null>(null);
   const [filePreviews, setFilePreviews] = useState<{ id: string; file: File; preview: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { takePhoto } = useNativeCamera();
-
-  const handleTakePhoto = async () => {
-    try {
-      const photo = await takePhoto();
-      if (!photo) return;
-      
-      const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const fileItem = { id, file: photo };
-      const preview = { id, file: photo, preview: URL.createObjectURL(photo) };
-      
-      setFiles(prev => [...prev, fileItem]);
-      setFilePreviews(prev => [...prev, preview]);
-      setFileToAnnotateId(id);
-    } catch (error) {
-      toast({ title: 'Fel', description: 'Kunde inte öppna kameran', variant: 'destructive' });
-    }
-  };
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels', selectedOrgId],
@@ -258,37 +239,43 @@ export default function FaultCases() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    
-    // Create file items with unique IDs
-    const newFileItems = selectedFiles.map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file,
-    }));
-    
-    // Find first image to auto-open annotation
-    const firstImageItem = newFileItems.find(item => item.file.type.startsWith('image/'));
-    
-    // Create previews for images
-    const newPreviews = newFileItems
-      .filter(item => item.file.type.startsWith('image/'))
-      .map(item => ({
-        id: item.id,
-        file: item.file,
-        preview: URL.createObjectURL(item.file),
+    try {
+      const selectedFiles = Array.from(e.target.files || []);
+      if (selectedFiles.length === 0) return;
+      
+      // Create file items with unique IDs
+      const newFileItems = selectedFiles.map(file => ({
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        file,
       }));
-    
-    setFiles(prev => [...prev, ...newFileItems]);
-    setFilePreviews(prev => [...prev, ...newPreviews]);
-    
-    // Auto-open annotation dialog for the first image
-    if (firstImageItem) {
-      setFileToAnnotateId(firstImageItem.id);
-    }
-    
-    // Reset input so the same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      
+      // Find first image to auto-open annotation
+      const firstImageItem = newFileItems.find(item => item.file.type.startsWith('image/'));
+      
+      // Create previews for images
+      const newPreviews = newFileItems
+        .filter(item => item.file.type.startsWith('image/'))
+        .map(item => ({
+          id: item.id,
+          file: item.file,
+          preview: URL.createObjectURL(item.file),
+        }));
+      
+      setFiles(prev => [...prev, ...newFileItems]);
+      setFilePreviews(prev => [...prev, ...newPreviews]);
+      
+      // Auto-open annotation dialog for the first image
+      if (firstImageItem) {
+        setFileToAnnotateId(firstImageItem.id);
+      }
+    } catch (error) {
+      console.error('Error handling file selection:', error);
+      toast({ title: 'Fel', description: 'Kunde inte hantera filen. Försök igen.', variant: 'destructive' });
+    } finally {
+      // Reset input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -430,32 +417,14 @@ export default function FaultCases() {
 
                 <div className="space-y-3">
                   <Label>Bilagor (bilder & dokument)</Label>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleTakePhoto}
-                    >
-                      <Camera className="h-4 w-4 mr-2" />
-                      Ta foto
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Välj från enhet
-                    </Button>
+                  <div className="flex gap-2">
                     <Input
                       ref={fileInputRef}
                       type="file"
                       multiple
                       accept="image/*,.pdf"
                       onChange={handleFileSelect}
-                      className="hidden"
+                      className={`flex-1 ${filePreviews.length > 0 ? 'file:mr-2' : ''}`}
                     />
                     {filePreviews.length > 0 && (
                       <span className="text-sm text-muted-foreground self-center">
