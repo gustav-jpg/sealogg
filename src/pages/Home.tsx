@@ -56,7 +56,6 @@ const features = [
 ];
 
 const benefits = [
-  { icon: CheckCircle2, text: "Uppfyller Transportstyrelsens krav" },
   { icon: Smartphone, text: "Fungerar på mobil, surfplatta och dator" },
   { icon: Cloud, text: "Säker molnlagring av all data" },
   { icon: Users, text: "Hantering av besättning och behörigheter" }
