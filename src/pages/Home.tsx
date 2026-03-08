@@ -11,7 +11,6 @@ import {
   Anchor,
   Waves,
   Ship,
-  CheckCircle2,
   Smartphone,
   Cloud,
   Users,
