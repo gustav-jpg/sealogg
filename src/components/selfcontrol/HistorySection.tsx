@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -34,6 +35,11 @@ import {
   Calendar,
   User,
   Trash2,
+  Clock,
+  Gauge,
+  ChevronRight,
+  MessageSquare,
+  Eye,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
@@ -49,8 +55,8 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
   const [filterControlPoint, setFilterControlPoint] = useState<string>('all');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
+  const [detailRecord, setDetailRecord] = useState<any>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -81,7 +87,6 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
     if (!controlRecords) return [];
 
     return controlRecords.filter((record: any) => {
-      // Search query filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchName = record.control_point?.name?.toLowerCase().includes(query);
@@ -90,12 +95,10 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
         if (!matchName && !matchNotes && !matchPerformer) return false;
       }
 
-      // Control point filter
       if (filterControlPoint !== 'all' && record.control_point_id !== filterControlPoint) {
         return false;
       }
 
-      // Date range filter
       if (filterDateFrom) {
         const recordDate = new Date(record.performed_at);
         const fromDate = new Date(filterDateFrom);
@@ -124,6 +127,14 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
     });
     return Array.from(unique.values()).sort((a, b) => a.name.localeCompare(b.name, 'sv'));
   }, [controlRecords]);
+
+  // Get history for the same control point as the detail record
+  const relatedHistory = useMemo(() => {
+    if (!detailRecord || !controlRecords) return [];
+    return controlRecords
+      .filter((r: any) => r.control_point_id === detailRecord.control_point_id && r.id !== detailRecord.id)
+      .slice(0, 5);
+  }, [detailRecord, controlRecords]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -190,21 +201,19 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
     URL.revokeObjectURL(url);
   };
 
-  const openAttachments = (record: any) => {
-    setSelectedRecord(record);
-    setAttachmentsDialogOpen(true);
+  const openDetailDialog = (record: any) => {
+    setDetailRecord(record);
+    setDetailDialogOpen(true);
   };
 
   const deleteRecordMutation = useMutation({
     mutationFn: async (recordId: string) => {
-      // Find the record being deleted to know which control point it belongs to
       const deletedRecord = controlRecords?.find((r: any) => r.id === recordId);
       if (!deletedRecord) throw new Error('Post hittades inte');
 
       const controlPointId = deletedRecord.control_point_id;
       const controlPoint = deletedRecord.control_point;
 
-      // Delete attachments first, then the record
       const { error: attachError } = await supabase
         .from('control_point_attachments')
         .delete()
@@ -217,7 +226,6 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
         .eq('id', recordId);
       if (error) throw error;
 
-      // Find the previous record for this control point (the one before the deleted one)
       const { data: previousRecords } = await supabase
         .from('control_point_records')
         .select('*, engine:vessel_engine_hours(*)')
@@ -230,7 +238,6 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
       const previousRecord = previousRecords?.[0];
 
       if (previousRecord) {
-        // Recalculate state from the previous record
         const nextDueDate = controlPoint?.type === 'calendar' && controlPoint?.interval_months
           ? (() => {
               const d = new Date(previousRecord.performed_at);
@@ -256,7 +263,6 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
           .eq('vessel_id', selectedVessel)
           .eq('control_point_id', controlPointId);
       } else {
-        // No previous records exist — remove the state entry
         await supabase
           .from('vessel_control_point_state')
           .delete()
@@ -270,6 +276,7 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
       queryClient.invalidateQueries({ queryKey: ['control-point-records'] });
       toast.success('Posten har raderats');
       setDeleteRecordId(null);
+      setDetailDialogOpen(false);
     },
     onError: () => {
       toast.error('Kunde inte radera posten');
@@ -297,7 +304,6 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
       {/* Filter and export controls */}
       <Card>
         <CardContent className="p-4 space-y-4">
-          {/* Search and quick filters */}
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -320,7 +326,6 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
             </div>
           </div>
 
-          {/* Advanced filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Kontrollpunkt</Label>
@@ -369,7 +374,6 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
             </div>
           </div>
 
-          {/* Results count */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
               Visar {filteredRecords.length} av {controlRecords.length} poster
@@ -396,7 +400,11 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
       ) : (
         <div className="space-y-3">
           {filteredRecords.map((record: any) => (
-            <Card key={record.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={record.id}
+              className="hover:shadow-md transition-shadow cursor-pointer group"
+              onClick={() => openDetailDialog(record)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -423,44 +431,27 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
                         {record.performer?.full_name || 'Okänd'}
                       </span>
                       {record.engine_hours_at_perform && (
-                        <span>
+                        <span className="flex items-center gap-1">
+                          <Gauge className="h-3.5 w-3.5" />
                           {record.engine_hours_at_perform}h
-                          {record.engine && ` (${getEngineName(record.engine)})`}
+                        </span>
+                      )}
+                      {record.attachments && record.attachments.length > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Paperclip className="h-3.5 w-3.5" />
+                          {record.attachments.length}
+                        </span>
+                      )}
+                      {record.notes && (
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          Kommentar
                         </span>
                       )}
                     </div>
-
-                    {record.notes && (
-                      <p className="text-sm text-muted-foreground mt-2 p-2 bg-muted/50 rounded line-clamp-2">
-                        {record.notes}
-                      </p>
-                    )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {record.attachments && record.attachments.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openAttachments(record)}
-                      >
-                        <Paperclip className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Bilagor</span>
-                        <Badge variant="secondary" className="ml-1">
-                          {record.attachments.length}
-                        </Badge>
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => setDeleteRecordId(record.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0 mt-1" />
                 </div>
               </CardContent>
             </Card>
@@ -468,61 +459,213 @@ export function HistorySection({ selectedVessel, controlPoints, getEngineName }:
         </div>
       )}
 
-      {/* Attachments dialog */}
-      <Dialog open={attachmentsDialogOpen} onOpenChange={setAttachmentsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Paperclip className="h-5 w-5" />
-              Bilagor - {selectedRecord?.control_point?.name}
-            </DialogTitle>
-          </DialogHeader>
+      {/* Detail dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {detailRecord && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-lg">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  {detailRecord.control_point?.name || 'Okänd kontrollpunkt'}
+                </DialogTitle>
+              </DialogHeader>
 
-          {selectedRecord && (
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                Utförd {format(new Date(selectedRecord.performed_at), 'yyyy-MM-dd', { locale: sv })} av {selectedRecord.performer?.full_name}
-              </div>
-
-              <div className="grid gap-4">
-                {selectedRecord.attachments?.map((attachment: any) => (
-                  <div
-                    key={attachment.id}
-                    className="border rounded-lg overflow-hidden"
-                  >
-                    {isImageFile(attachment.file_name) ? (
-                      <div className="bg-muted">
-                        <img
-                          src={attachment.file_url}
-                          alt={attachment.file_name}
-                          className="w-full max-h-64 object-contain"
-                        />
-                      </div>
-                    ) : (
-                      <div className="p-4 flex items-center gap-3 bg-muted/50">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
-                        <span className="flex-1 font-medium truncate">{attachment.file_name}</span>
-                      </div>
-                    )}
-                    <div className="p-3 flex items-center justify-between border-t">
-                      <span className="text-sm text-muted-foreground truncate flex-1">
-                        {attachment.file_name}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
-                        <a href={attachment.file_url} target="_blank" rel="noopener noreferrer" download>
-                          <Download className="h-4 w-4 mr-1" />
-                          Ladda ner
-                        </a>
-                      </Button>
-                    </div>
+              <div className="space-y-6 mt-2">
+                {/* Meta info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Utförd datum</p>
+                    <p className="font-medium flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      {format(new Date(detailRecord.performed_at), 'd MMMM yyyy', { locale: sv })}
+                    </p>
                   </div>
-                ))}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Utförd av</p>
+                    <p className="font-medium flex items-center gap-1.5">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      {detailRecord.performer?.full_name || 'Okänd'}
+                    </p>
+                  </div>
+                  {detailRecord.control_point?.category && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Kategori</p>
+                      <p className="font-medium">{detailRecord.control_point.category}</p>
+                    </div>
+                  )}
+                  {detailRecord.control_point?.type && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Typ</p>
+                      <p className="font-medium flex items-center gap-1.5">
+                        {detailRecord.control_point.type === 'calendar' ? (
+                          <><Calendar className="h-4 w-4 text-muted-foreground" /> Kalender</>
+                        ) : (
+                          <><Gauge className="h-4 w-4 text-muted-foreground" /> Maskintimmar</>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  {detailRecord.engine_hours_at_perform != null && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Maskintimmar vid utförande</p>
+                      <p className="font-medium flex items-center gap-1.5">
+                        <Gauge className="h-4 w-4 text-muted-foreground" />
+                        {detailRecord.engine_hours_at_perform}h
+                        {detailRecord.engine && ` (${getEngineName(detailRecord.engine)})`}
+                      </p>
+                    </div>
+                  )}
+                  {detailRecord.control_point?.interval_months && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Intervall</p>
+                      <p className="font-medium">Var {detailRecord.control_point.interval_months}:e månad</p>
+                    </div>
+                  )}
+                  {detailRecord.control_point?.interval_engine_hours && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Intervall</p>
+                      <p className="font-medium">Var {detailRecord.control_point.interval_engine_hours}:e timme</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                {detailRecord.control_point?.description && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Beskrivning av kontrollpunkt</p>
+                      <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">{detailRecord.control_point.description}</p>
+                    </div>
+                  </>
+                )}
+
+                {/* Notes/Comment */}
+                {detailRecord.notes && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Kommentar
+                      </p>
+                      <p className="text-sm bg-muted/50 rounded-lg p-3">{detailRecord.notes}</p>
+                    </div>
+                  </>
+                )}
+
+                {/* Attachments */}
+                {detailRecord.attachments && detailRecord.attachments.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Paperclip className="h-3.5 w-3.5" />
+                        Bilagor ({detailRecord.attachments.length})
+                      </p>
+                      <div className="grid gap-3">
+                        {detailRecord.attachments.map((attachment: any) => (
+                          <div key={attachment.id} className="border rounded-lg overflow-hidden">
+                            {isImageFile(attachment.file_name) ? (
+                              <div className="bg-muted">
+                                <img
+                                  src={attachment.file_url}
+                                  alt={attachment.file_name}
+                                  className="w-full max-h-64 object-contain"
+                                />
+                              </div>
+                            ) : (
+                              <div className="p-4 flex items-center gap-3 bg-muted/50">
+                                <FileText className="h-8 w-8 text-muted-foreground" />
+                                <span className="flex-1 font-medium truncate">{attachment.file_name}</span>
+                              </div>
+                            )}
+                            <div className="p-3 flex items-center justify-between border-t">
+                              <span className="text-sm text-muted-foreground truncate flex-1">
+                                {attachment.file_name}
+                              </span>
+                              <Button variant="outline" size="sm" asChild>
+                                <a href={attachment.file_url} target="_blank" rel="noopener noreferrer" download>
+                                  <Download className="h-4 w-4 mr-1" />
+                                  Ladda ner
+                                </a>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Related history */}
+                {relatedHistory.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <History className="h-3.5 w-3.5" />
+                        Tidigare utföranden ({relatedHistory.length})
+                      </p>
+                      <div className="space-y-2">
+                        {relatedHistory.map((prev: any) => (
+                          <div
+                            key={prev.id}
+                            className="flex items-center justify-between p-3 bg-muted/30 rounded-lg text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => {
+                              setDetailRecord(prev);
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium">
+                                {format(new Date(prev.performed_at), 'd MMM yyyy', { locale: sv })}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {prev.performer?.full_name || 'Okänd'}
+                              </span>
+                              {prev.engine_hours_at_perform != null && (
+                                <span className="text-muted-foreground">{prev.engine_hours_at_perform}h</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              {prev.notes && <MessageSquare className="h-3.5 w-3.5" />}
+                              {prev.attachments?.length > 0 && (
+                                <span className="flex items-center gap-0.5">
+                                  <Paperclip className="h-3.5 w-3.5" />
+                                  {prev.attachments.length}
+                                </span>
+                              )}
+                              <ChevronRight className="h-4 w-4" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Actions */}
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Registrerad {format(new Date(detailRecord.created_at), 'yyyy-MM-dd HH:mm', { locale: sv })}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteRecordId(detailRecord.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Radera
+                  </Button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
