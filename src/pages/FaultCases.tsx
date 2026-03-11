@@ -62,6 +62,7 @@ export default function FaultCases() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<FaultPriority>('normal');
+  const [category, setCategory] = useState<FaultCategory | ''>('');
   const [files, setFiles] = useState<{ id: string; file: File }[]>([]);
   const [fileToAnnotateId, setFileToAnnotateId] = useState<string | null>(null);
   const [filePreviews, setFilePreviews] = useState<{ id: string; file: File; preview: string }[]>([]);
