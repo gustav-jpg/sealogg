@@ -187,8 +187,11 @@ export default function FaultCases() {
           title,
           description,
           priority,
+          category: category || null,
           created_by: user?.id,
-        })
+        } as any)
+        .select()
+        .single();
         .select()
         .single();
 
