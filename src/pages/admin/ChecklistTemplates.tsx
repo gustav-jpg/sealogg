@@ -859,7 +859,7 @@ export default function ChecklistTemplates() {
                                 <span className="font-medium text-muted-foreground">{step.step_order}.</span>
                                 <div>
                                   <span className="font-medium">{step.title}</span>
-                                  <span className="text-muted-foreground ml-2">({step.confirmation_type === 'checkbox' ? 'Checkbox' : 'Ja/Nej'})</span>
+                                  <span className="text-muted-foreground ml-2">({step.confirmation_type === 'checklist' ? 'Checklista' : 'Checkbox'})</span>
                                 </div>
                               </div>
                             ))}
