@@ -7,6 +7,7 @@ export type DeviationSeverity = 'lag' | 'medel' | 'hog';
 export type DeviationStatus = 'oppen' | 'under_utredning' | 'aterrapporterad' | 'stangd';
 export type FaultPriority = 'lag' | 'normal' | 'hog' | 'kritisk';
 export type FaultStatus = 'ny' | 'varvsatgard' | 'arbete_pagar' | 'atgardad' | 'avslutad';
+export type FaultCategory = 'tekniskt' | 'operativt' | 'forattningskvitton';
 export type ControlType = 'calendar' | 'engine_hours';
 export type ControlStatus = 'ok' | 'kommande' | 'forfallen';
 
@@ -64,6 +65,12 @@ export const FAULT_STATUS_LABELS: Record<FaultStatus, string> = {
   arbete_pagar: 'Arbete pågår',
   atgardad: 'Åtgärdad',
   avslutad: 'Avslutad',
+};
+
+export const FAULT_CATEGORY_LABELS: Record<FaultCategory, string> = {
+  tekniskt: 'Tekniskt',
+  operativt: 'Operativt',
+  forattningskvitton: 'Förättningskvitton',
 };
 
 export const CONTROL_TYPE_LABELS: Record<ControlType, string> = {

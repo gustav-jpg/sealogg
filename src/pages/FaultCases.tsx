@@ -28,8 +28,10 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import {
   FAULT_PRIORITY_LABELS,
   FAULT_STATUS_LABELS,
+  FAULT_CATEGORY_LABELS,
   FaultPriority,
   FaultStatus,
+  FaultCategory,
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -51,6 +53,7 @@ export default function FaultCases() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 25;
@@ -60,6 +63,7 @@ export default function FaultCases() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<FaultPriority>('normal');
+  const [category, setCategory] = useState<FaultCategory | ''>('');
   const [files, setFiles] = useState<{ id: string; file: File }[]>([]);
   const [fileToAnnotateId, setFileToAnnotateId] = useState<string | null>(null);
   const [filePreviews, setFilePreviews] = useState<{ id: string; file: File; preview: string }[]>([]);
@@ -83,13 +87,14 @@ export default function FaultCases() {
   const vesselIds = vessels?.map((v) => v.id) || [];
 
   const { data: faultCases, isLoading } = useQuery({
-    queryKey: [
+     queryKey: [
       'fault-cases',
       selectedOrgId,
       vesselIds,
       filterVessel,
       filterStatus,
       filterPriority,
+      filterCategory,
       searchText,
       activeTab,
       page,
@@ -118,6 +123,7 @@ export default function FaultCases() {
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);
       if (filterStatus !== 'all') query = query.eq('status', filterStatus as FaultStatus);
       if (filterPriority !== 'all') query = query.eq('priority', filterPriority as FaultPriority);
+      if (filterCategory !== 'all') query = query.eq('category', filterCategory);
       if (searchText) query = query.or(`title.ilike.%${searchText}%,description.ilike.%${searchText}%`);
 
       const { data, error } = await query;
@@ -135,6 +141,7 @@ export default function FaultCases() {
       filterVessel,
       filterStatus,
       filterPriority,
+      filterCategory,
       searchText,
       activeTab,
     ],
@@ -154,6 +161,7 @@ export default function FaultCases() {
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);
       if (filterStatus !== 'all') query = query.eq('status', filterStatus as FaultStatus);
       if (filterPriority !== 'all') query = query.eq('priority', filterPriority as FaultPriority);
+      if (filterCategory !== 'all') query = query.eq('category', filterCategory);
       if (searchText) query = query.or(`title.ilike.%${searchText}%,description.ilike.%${searchText}%`);
 
       const { count, error } = await query;
@@ -184,8 +192,9 @@ export default function FaultCases() {
           title,
           description,
           priority,
+          category: category || null,
           created_by: user?.id,
-        })
+        } as any)
         .select()
         .single();
 
@@ -233,6 +242,7 @@ export default function FaultCases() {
     setTitle('');
     setDescription('');
     setPriority('normal');
+    setCategory('');
     setFiles([]);
     setFilePreviews([]);
     setFileToAnnotateId(null);
@@ -414,6 +424,20 @@ export default function FaultCases() {
                         <SelectItem key={key} value={key}>{label}</SelectItem>
                       ))}
                     </SelectContent>
+                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Kategori</Label>
+                  <Select value={category} onValueChange={(v) => setCategory(v as FaultCategory)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Välj kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(FAULT_CATEGORY_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
 
@@ -546,7 +570,7 @@ export default function FaultCases() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-5">
               <Select value={filterVessel} onValueChange={handleFilterChange(setFilterVessel)}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Alla fartyg" />
@@ -582,6 +606,18 @@ export default function FaultCases() {
                 <SelectContent>
                   <SelectItem value="all">Alla prioriteter</SelectItem>
                   {Object.entries(FAULT_PRIORITY_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterCategory} onValueChange={handleFilterChange(setFilterCategory)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Alla kategorier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla kategorier</SelectItem>
+                  {Object.entries(FAULT_CATEGORY_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -630,10 +666,16 @@ export default function FaultCases() {
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                           <span>{(faultCase as any).vessel?.name}</span>
                           <span>•</span>
                           <span>{format(new Date(faultCase.created_at), 'd MMM', { locale: sv })}</span>
+                          {(faultCase as any).category && (
+                            <>
+                              <span>•</span>
+                              <span>{FAULT_CATEGORY_LABELS[(faultCase as any).category as FaultCategory] || (faultCase as any).category}</span>
+                            </>
+                          )}
                           {(faultCase as any).assigned_profile?.full_name && (
                             <>
                               <span>•</span>
@@ -656,6 +698,7 @@ export default function FaultCases() {
                   <tr>
                     <th className="text-left p-2 border-b">Rubrik</th>
                     <th className="text-left p-2 border-b">Fartyg</th>
+                    <th className="text-left p-2 border-b">Kategori</th>
                     <th className="text-left p-2 border-b">Prioritet</th>
                     <th className="text-left p-2 border-b">Status</th>
                     <th className="text-left p-2 border-b">Ansvarig</th>
@@ -675,6 +718,9 @@ export default function FaultCases() {
                       >
                         <td className="p-2 border-b font-medium">{faultCase.title}</td>
                         <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
+                        <td className="p-2 border-b text-sm text-muted-foreground">
+                          {(faultCase as any).category ? FAULT_CATEGORY_LABELS[(faultCase as any).category as FaultCategory] || (faultCase as any).category : '–'}
+                        </td>
                         <td className="p-2 border-b">
                           <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
                             {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
