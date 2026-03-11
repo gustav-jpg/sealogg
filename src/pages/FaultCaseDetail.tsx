@@ -389,7 +389,9 @@ export default function FaultCaseDetail() {
               </Badge>
             </div>
             <p className="text-muted-foreground mt-1">
-              {(faultCase as any).vessel?.name} • Skapad {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
+              {(faultCase as any).vessel?.name}
+              {(faultCase as any).category && ` • ${FAULT_CATEGORY_LABELS[(faultCase as any).category as FaultCategory] || (faultCase as any).category}`}
+              {' • '}Skapad {format(new Date(faultCase.created_at), 'PPP', { locale: sv })}
             </p>
           </div>
           <div className="flex gap-2">

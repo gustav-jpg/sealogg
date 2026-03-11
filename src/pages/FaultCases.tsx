@@ -161,6 +161,7 @@ export default function FaultCases() {
       if (filterVessel !== 'all') query = query.eq('vessel_id', filterVessel);
       if (filterStatus !== 'all') query = query.eq('status', filterStatus as FaultStatus);
       if (filterPriority !== 'all') query = query.eq('priority', filterPriority as FaultPriority);
+      if (filterCategory !== 'all') query = query.eq('category', filterCategory);
       if (searchText) query = query.or(`title.ilike.%${searchText}%,description.ilike.%${searchText}%`);
 
       const { count, error } = await query;
