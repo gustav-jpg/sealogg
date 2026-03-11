@@ -192,8 +192,6 @@ export default function FaultCases() {
         } as any)
         .select()
         .single();
-        .select()
-        .single();
 
       if (error) throw error;
 
