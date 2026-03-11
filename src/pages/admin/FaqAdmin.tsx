@@ -24,7 +24,7 @@ interface FaqItem {
 
 export default function FaqAdmin() {
   const { user } = useAuth();
-  const { currentOrg } = useOrganization();
+  const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
