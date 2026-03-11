@@ -556,7 +556,7 @@ export default function ChecklistTemplates() {
                         <Select 
                           value={step.confirmation_type} 
                           onValueChange={(v) => {
-                            const newType = v as 'checkbox' | 'yes_no' | 'checklist';
+                            const newType = v as 'checkbox' | 'checklist';
                             // Preserve existing checklist_items, only initialize with [''] if switching TO checklist and items are empty
                             const newItems = newType === 'checklist' && (!step.checklist_items || step.checklist_items.length === 0)
                               ? ['']
