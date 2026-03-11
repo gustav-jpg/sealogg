@@ -59,6 +59,8 @@ const Changelog = lazy(() => import("./pages/Changelog"));
 const BackofficeChangelog = lazy(() => import("./pages/backoffice/Changelog"));
 const Kartvisaren = lazy(() => import("./pages/Kartvisaren"));
 const Documents = lazy(() => import("./pages/Documents"));
+const Support = lazy(() => import("./pages/Support"));
+const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -144,6 +146,7 @@ function AppRoutes() {
         {/* Public pages */}
         <Route path="/" element={shouldForceNativePortalLogin() ? <Navigate to="/portal/login" replace /> : <Home />} />
         <Route path="/changelog" element={<Changelog />} />
+        <Route path="/support" element={<Support />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         
@@ -183,6 +186,7 @@ function AppRoutes() {
         <Route path="/portal/admin/startsida" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/notifications" element={<ProtectedRoute adminOnly><NotificationSettingsPage /></ProtectedRoute>} />
+        <Route path="/portal/admin/faq" element={<ProtectedRoute adminOnly><FaqAdmin /></ProtectedRoute>} />
         
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />

@@ -1382,6 +1382,50 @@ export type Database = {
           },
         ]
       }
+      faq_items: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string
+          id: string
+          is_published: boolean
+          organization_id: string | null
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          organization_id?: string | null
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          organization_id?: string | null
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faq_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fault_attachments: {
         Row: {
           comment_id: string | null
