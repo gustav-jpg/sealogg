@@ -239,6 +239,7 @@ export default function FaultCases() {
     setTitle('');
     setDescription('');
     setPriority('normal');
+    setCategory('');
     setFiles([]);
     setFilePreviews([]);
     setFileToAnnotateId(null);
