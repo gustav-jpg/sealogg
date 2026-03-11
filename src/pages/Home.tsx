@@ -92,6 +92,9 @@ export default function Home() {
             <a href="#fordelar" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
               Fördelar
             </a>
+            <Link to="/support" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              Support
+            </Link>
             <a href="#kontakt" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
               Kontakt
             </a>
