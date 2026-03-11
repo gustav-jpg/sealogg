@@ -681,6 +681,7 @@ export default function FaultCases() {
                   <tr>
                     <th className="text-left p-2 border-b">Rubrik</th>
                     <th className="text-left p-2 border-b">Fartyg</th>
+                    <th className="text-left p-2 border-b">Kategori</th>
                     <th className="text-left p-2 border-b">Prioritet</th>
                     <th className="text-left p-2 border-b">Status</th>
                     <th className="text-left p-2 border-b">Ansvarig</th>
