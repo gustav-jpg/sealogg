@@ -41,7 +41,7 @@ export default function Support() {
 
   const categories = [...new Set(filtered.map((f) => f.category))];
 
-  const WHATSAPP_NUMBER = '46700000000'; // Replace with actual number
+  
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
