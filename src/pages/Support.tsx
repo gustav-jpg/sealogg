@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, Search, ArrowLeft, HelpCircle, Mail } from 'lucide-react';
+import { Search, ArrowLeft, HelpCircle, Mail } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo.png';
 
 interface FaqItem {
@@ -41,7 +41,7 @@ export default function Support() {
 
   const categories = [...new Set(filtered.map((f) => f.category))];
 
-  const WHATSAPP_NUMBER = '46700000000'; // Replace with actual number
+  
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -116,21 +116,11 @@ export default function Support() {
         {/* Contact section */}
         <div className="border-t pt-10 mt-10">
           <h2 className="text-lg font-semibold mb-4 text-center">Hittade du inte svaret?</h2>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild size="lg" className="gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white">
-              <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle className="h-5 w-5" />
-                Chatta med oss på WhatsApp
-              </a>
-            </Button>
-            <Button variant="outline" size="lg" className="gap-2" asChild>
+          <div className="flex justify-center">
+            <Button size="lg" className="gap-2" asChild>
               <a href="mailto:support@sealogg.se">
                 <Mail className="h-5 w-5" />
-                Skicka e-post
+                support@sealogg.se
               </a>
             </Button>
           </div>
