@@ -419,6 +419,20 @@ export default function FaultCases() {
                         <SelectItem key={key} value={key}>{label}</SelectItem>
                       ))}
                     </SelectContent>
+                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Kategori</Label>
+                  <Select value={category} onValueChange={(v) => setCategory(v as FaultCategory)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Välj kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(FAULT_CATEGORY_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
 
