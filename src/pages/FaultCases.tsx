@@ -701,6 +701,9 @@ export default function FaultCases() {
                       >
                         <td className="p-2 border-b font-medium">{faultCase.title}</td>
                         <td className="p-2 border-b">{(faultCase as any).vessel?.name}</td>
+                        <td className="p-2 border-b text-sm text-muted-foreground">
+                          {(faultCase as any).category ? FAULT_CATEGORY_LABELS[(faultCase as any).category as FaultCategory] || (faultCase as any).category : '–'}
+                        </td>
                         <td className="p-2 border-b">
                           <Badge variant={getPriorityColor(faultCase.priority as FaultPriority)}>
                             {FAULT_PRIORITY_LABELS[faultCase.priority as FaultPriority]}
