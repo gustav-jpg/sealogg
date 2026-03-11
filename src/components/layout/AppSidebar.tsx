@@ -32,6 +32,7 @@ import {
   Bell,
   Map,
   FileText,
+  HelpCircle,
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo-white.png';
 import sealoggIcon from '@/assets/sealog-icon.png';
