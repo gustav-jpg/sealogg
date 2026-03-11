@@ -25,8 +25,10 @@ import { usePrint } from '@/hooks/usePrint';
 import {
   FAULT_PRIORITY_LABELS,
   FAULT_STATUS_LABELS,
+  FAULT_CATEGORY_LABELS,
   FaultPriority,
   FaultStatus,
+  FaultCategory,
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
