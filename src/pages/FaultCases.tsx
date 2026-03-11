@@ -141,6 +141,7 @@ export default function FaultCases() {
       filterVessel,
       filterStatus,
       filterPriority,
+      filterCategory,
       searchText,
       activeTab,
     ],
