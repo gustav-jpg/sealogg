@@ -32,7 +32,7 @@ export default function FaqAdmin() {
   const [editing, setEditing] = useState<FaqItem | null>(null);
   const [form, setForm] = useState({ category: 'Allmänt', question: '', answer: '', is_published: true });
 
-  const orgId = currentOrg?.id;
+  const orgId = selectedOrgId;
 
   const fetchFaqs = useCallback(async () => {
     if (!orgId) return;
