@@ -37,7 +37,7 @@ interface ChecklistStep {
   title: string;
   instruction: string;
   help_text: string;
-  confirmation_type: 'checkbox' | 'yes_no' | 'checklist';
+  confirmation_type: 'checkbox' | 'checklist';
   requires_comment: boolean;
   requires_photo: boolean;
   reference_image_url?: string | null;
@@ -385,7 +385,7 @@ export default function ChecklistTemplates() {
       title: s.title,
       instruction: s.instruction,
       help_text: s.help_text || '',
-      confirmation_type: s.confirmation_type as 'checkbox' | 'yes_no' | 'checklist',
+      confirmation_type: (s.confirmation_type === 'yes_no' ? 'checkbox' : s.confirmation_type) as 'checkbox' | 'checklist',
       requires_comment: s.requires_comment,
       requires_photo: s.requires_photo,
       reference_image_url: s.reference_image_url || null,
@@ -556,7 +556,7 @@ export default function ChecklistTemplates() {
                         <Select 
                           value={step.confirmation_type} 
                           onValueChange={(v) => {
-                            const newType = v as 'checkbox' | 'yes_no' | 'checklist';
+                            const newType = v as 'checkbox' | 'checklist';
                             // Preserve existing checklist_items, only initialize with [''] if switching TO checklist and items are empty
                             const newItems = newType === 'checklist' && (!step.checklist_items || step.checklist_items.length === 0)
                               ? ['']
@@ -569,7 +569,6 @@ export default function ChecklistTemplates() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="checkbox">Checkbox</SelectItem>
-                            <SelectItem value="yes_no">Ja/Nej</SelectItem>
                             <SelectItem value="checklist">Checklista</SelectItem>
                           </SelectContent>
                         </Select>
@@ -860,7 +859,7 @@ export default function ChecklistTemplates() {
                                 <span className="font-medium text-muted-foreground">{step.step_order}.</span>
                                 <div>
                                   <span className="font-medium">{step.title}</span>
-                                  <span className="text-muted-foreground ml-2">({step.confirmation_type === 'checkbox' ? 'Checkbox' : 'Ja/Nej'})</span>
+                                  <span className="text-muted-foreground ml-2">({step.confirmation_type === 'checklist' ? 'Checklista' : 'Checkbox'})</span>
                                 </div>
                               </div>
                             ))}
