@@ -569,7 +569,6 @@ export default function ChecklistTemplates() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="checkbox">Checkbox</SelectItem>
-                            <SelectItem value="yes_no">Ja/Nej</SelectItem>
                             <SelectItem value="checklist">Checklista</SelectItem>
                           </SelectContent>
                         </Select>
