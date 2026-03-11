@@ -7,6 +7,7 @@ export type DeviationSeverity = 'lag' | 'medel' | 'hog';
 export type DeviationStatus = 'oppen' | 'under_utredning' | 'aterrapporterad' | 'stangd';
 export type FaultPriority = 'lag' | 'normal' | 'hog' | 'kritisk';
 export type FaultStatus = 'ny' | 'varvsatgard' | 'arbete_pagar' | 'atgardad' | 'avslutad';
+export type FaultCategory = 'tekniskt' | 'operativt' | 'forattningskvitton';
 export type ControlType = 'calendar' | 'engine_hours';
 export type ControlStatus = 'ok' | 'kommande' | 'forfallen';
 
