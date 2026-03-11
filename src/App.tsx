@@ -59,6 +59,8 @@ const Changelog = lazy(() => import("./pages/Changelog"));
 const BackofficeChangelog = lazy(() => import("./pages/backoffice/Changelog"));
 const Kartvisaren = lazy(() => import("./pages/Kartvisaren"));
 const Documents = lazy(() => import("./pages/Documents"));
+const Support = lazy(() => import("./pages/Support"));
+const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
