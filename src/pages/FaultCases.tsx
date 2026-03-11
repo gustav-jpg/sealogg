@@ -568,7 +568,7 @@ export default function FaultCases() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-5">
               <Select value={filterVessel} onValueChange={handleFilterChange(setFilterVessel)}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Alla fartyg" />
