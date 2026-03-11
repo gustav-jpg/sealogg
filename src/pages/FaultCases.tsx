@@ -649,10 +649,16 @@ export default function FaultCases() {
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                           <span>{(faultCase as any).vessel?.name}</span>
                           <span>•</span>
                           <span>{format(new Date(faultCase.created_at), 'd MMM', { locale: sv })}</span>
+                          {(faultCase as any).category && (
+                            <>
+                              <span>•</span>
+                              <span>{FAULT_CATEGORY_LABELS[(faultCase as any).category as FaultCategory] || (faultCase as any).category}</span>
+                            </>
+                          )}
                           {(faultCase as any).assigned_profile?.full_name && (
                             <>
                               <span>•</span>
