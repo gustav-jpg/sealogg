@@ -67,6 +67,12 @@ export const FAULT_STATUS_LABELS: Record<FaultStatus, string> = {
   avslutad: 'Avslutad',
 };
 
+export const FAULT_CATEGORY_LABELS: Record<FaultCategory, string> = {
+  tekniskt: 'Tekniskt',
+  operativt: 'Operativt',
+  forattningskvitton: 'Förättningskvitton',
+};
+
 export const CONTROL_TYPE_LABELS: Record<ControlType, string> = {
   calendar: 'Kalender',
   engine_hours: 'Maskintimmar',
