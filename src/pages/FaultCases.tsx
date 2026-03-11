@@ -609,6 +609,18 @@ export default function FaultCases() {
                 </SelectContent>
               </Select>
 
+              <Select value={filterCategory} onValueChange={handleFilterChange(setFilterCategory)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Alla kategorier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla kategorier</SelectItem>
+                  {Object.entries(FAULT_CATEGORY_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Input
                 placeholder="Sök..."
                 value={searchText}
