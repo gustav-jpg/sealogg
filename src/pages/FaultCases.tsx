@@ -53,6 +53,7 @@ export default function FaultCases() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 25;
