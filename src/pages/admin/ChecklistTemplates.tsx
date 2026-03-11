@@ -37,7 +37,7 @@ interface ChecklistStep {
   title: string;
   instruction: string;
   help_text: string;
-  confirmation_type: 'checkbox' | 'yes_no' | 'checklist';
+  confirmation_type: 'checkbox' | 'checklist';
   requires_comment: boolean;
   requires_photo: boolean;
   reference_image_url?: string | null;
