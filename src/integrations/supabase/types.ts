@@ -1437,6 +1437,7 @@ export type Database = {
       fault_cases: {
         Row: {
           assigned_to: string | null
+          category: string | null
           closed_at: string | null
           created_at: string
           created_by: string
@@ -1451,6 +1452,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          category?: string | null
           closed_at?: string | null
           created_at?: string
           created_by: string
@@ -1465,6 +1467,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          category?: string | null
           closed_at?: string | null
           created_at?: string
           created_by?: string

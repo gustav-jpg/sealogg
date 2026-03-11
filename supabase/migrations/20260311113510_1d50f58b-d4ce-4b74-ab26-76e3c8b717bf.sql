@@ -1,0 +1,1 @@
+ALTER TABLE public.fault_cases ADD COLUMN category text DEFAULT NULL;
