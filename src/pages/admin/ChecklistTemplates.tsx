@@ -385,7 +385,7 @@ export default function ChecklistTemplates() {
       title: s.title,
       instruction: s.instruction,
       help_text: s.help_text || '',
-      confirmation_type: s.confirmation_type as 'checkbox' | 'yes_no' | 'checklist',
+      confirmation_type: (s.confirmation_type === 'yes_no' ? 'checkbox' : s.confirmation_type) as 'checkbox' | 'checklist',
       requires_comment: s.requires_comment,
       requires_photo: s.requires_photo,
       reference_image_url: s.reference_image_url || null,
