@@ -87,13 +87,14 @@ export default function FaultCases() {
   const vesselIds = vessels?.map((v) => v.id) || [];
 
   const { data: faultCases, isLoading } = useQuery({
-    queryKey: [
+     queryKey: [
       'fault-cases',
       selectedOrgId,
       vesselIds,
       filterVessel,
       filterStatus,
       filterPriority,
+      filterCategory,
       searchText,
       activeTab,
       page,
