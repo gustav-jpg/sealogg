@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, ArrowLeft, HelpCircle, Mail } from 'lucide-react';
+import { Search, HelpCircle, Mail } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo.png';
 
 interface FaqItem {
