@@ -5,6 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Use relative asset paths so Capacitor iOS can load built files from the app bundle
+  base: "./",
   server: {
     host: "::",
     port: 8080,
