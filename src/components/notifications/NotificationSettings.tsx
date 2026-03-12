@@ -33,10 +33,7 @@ interface NotificationPreferences {
   days_before_warning: number;
 }
 
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
-
-  const defaultPreferences: NotificationPreferences = {
+const defaultPreferences: NotificationPreferences = {
   email_daily_digest: false,
   digest_frequency: 'daily',
   email_expiring_certificates: true,
@@ -53,6 +50,8 @@ interface NotificationPreferences {
 
 export function NotificationSettings() {
   const { user } = useAuth();
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
   const { selectedOrgId } = useOrganization();
   const webPush = usePushNotifications();
   const nativePush = useNativePushNotifications();
