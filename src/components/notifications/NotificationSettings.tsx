@@ -33,7 +33,10 @@ interface NotificationPreferences {
   days_before_warning: number;
 }
 
-const defaultPreferences: NotificationPreferences = {
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+
+  const defaultPreferences: NotificationPreferences = {
   email_daily_digest: false,
   digest_frequency: 'daily',
   email_expiring_certificates: true,
