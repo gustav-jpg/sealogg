@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Bell, Mail, Smartphone, Loader2 } from 'lucide-react';
+import { Bell, Mail, Smartphone, Loader2, Send, CheckCircle, XCircle } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNativePushNotifications } from '@/hooks/useNativePushNotifications';
 import { useAuth } from '@/contexts/AuthContext';
