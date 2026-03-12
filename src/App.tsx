@@ -205,6 +205,7 @@ function AppRoutes() {
         <Route path="/backoffice/organizations/:id" element={<BackofficeLayout><OrganizationDetail /></BackofficeLayout>} />
         <Route path="/backoffice/changelog" element={<BackofficeLayout><BackofficeChangelog /></BackofficeLayout>} />
         <Route path="/backoffice/audit-logs" element={<BackofficeLayout><AuditLogs /></BackofficeLayout>} />
+        <Route path="/backoffice/faq" element={<BackofficeLayout><FaqAdmin /></BackofficeLayout>} />
         
         {/* Legacy redirects */}
         <Route path="/login" element={<Navigate to="/portal/login" replace />} />

@@ -180,6 +180,6 @@ export default function FaqAdmin() {
           </div>
         </DialogContent>
       </Dialog>
-    </MainLayout>
+    </div>
   );
 }
