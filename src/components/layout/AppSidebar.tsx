@@ -174,7 +174,7 @@ export function AppSidebar() {
     { href: '/portal/admin/vessels', label: 'Fartyg', icon: Ship },
     { href: '/portal/admin/users', label: 'Besättning', icon: Users },
     { href: '/portal/admin/notifications', label: 'Notifikationer', icon: Bell },
-    { href: '/portal/admin/faq', label: 'FAQ / Support', icon: HelpCircle },
+    
   ];
 
   // Items that Skeppare can also access

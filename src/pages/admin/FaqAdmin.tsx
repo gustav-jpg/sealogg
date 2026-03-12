@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -96,7 +96,7 @@ export default function FaqAdmin() {
   };
 
   return (
-    <MainLayout>
+    <>
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -181,6 +181,6 @@ export default function FaqAdmin() {
           </div>
         </DialogContent>
       </Dialog>
-    </MainLayout>
+    </>
   );
 }
