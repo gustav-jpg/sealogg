@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
