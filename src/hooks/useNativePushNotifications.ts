@@ -28,61 +28,67 @@ export function useNativePushNotifications() {
         return false;
       }
 
-      // Register with APNs/FCM
-      await PushNotifications.register();
+      // Set up listeners BEFORE calling register() to avoid missing the event
+      await PushNotifications.removeAllListeners();
 
-      // Listen for registration token
-      PushNotifications.addListener('registration', async (token) => {
-        console.log('[NativePush] Device token:', token.value);
+      const registrationResult = await new Promise<boolean>((resolve) => {
+        // Listen for registration token
+        PushNotifications.addListener('registration', async (token) => {
+          console.log('[NativePush] Device token:', token.value);
 
-        // Save device token to database
-        const { error } = await supabase
-          .from('push_subscriptions')
-          .upsert({
-            user_id: user.id,
-            endpoint: `apns://${token.value}`,
-            p256dh: token.value,
-            auth: 'native',
-            user_agent: `capacitor-${(await import('@capacitor/core')).Capacitor.getPlatform()}`
-          }, {
-            onConflict: 'endpoint'
-          });
+          const { error } = await supabase
+            .from('push_subscriptions')
+            .upsert({
+              user_id: user.id,
+              endpoint: `apns://${token.value}`,
+              p256dh: token.value,
+              auth: 'native',
+              user_agent: `capacitor-${(await import('@capacitor/core')).Capacitor.getPlatform()}`
+            }, {
+              onConflict: 'endpoint'
+            });
 
-        if (error) {
-          console.error('[NativePush] Error saving token:', error);
-          toast.error('Kunde inte spara push-token');
-        } else {
-          setIsRegistered(true);
-          toast.success('Push-notifikationer aktiverade!');
-        }
-      });
-
-      // Listen for registration errors
-      PushNotifications.addListener('registrationError', (error) => {
-        console.error('[NativePush] Registration error:', error);
-        toast.error('Kunde inte registrera push-notifikationer');
-      });
-
-      // Listen for incoming notifications while app is in foreground
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('[NativePush] Received:', notification);
-        // Show an in-app toast for foreground notifications
-        toast(notification.title || 'Ny notifikation', {
-          description: notification.body,
+          if (error) {
+            console.error('[NativePush] Error saving token:', error);
+            toast.error('Kunde inte spara push-token');
+            resolve(false);
+          } else {
+            setIsRegistered(true);
+            toast.success('Push-notifikationer aktiverade!');
+            resolve(true);
+          }
         });
-      });
 
-      // Listen for notification taps (app opened from notification)
-      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-        console.log('[NativePush] Action performed:', action);
-        const url = action.notification.data?.url;
-        if (url) {
-          window.location.href = url;
-        }
+        // Listen for registration errors
+        PushNotifications.addListener('registrationError', (error) => {
+          console.error('[NativePush] Registration error:', error);
+          toast.error('Kunde inte registrera push-notifikationer');
+          resolve(false);
+        });
+
+        // Listen for incoming notifications while app is in foreground
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('[NativePush] Received:', notification);
+          toast(notification.title || 'Ny notifikation', {
+            description: notification.body,
+          });
+        });
+
+        // Listen for notification taps (app opened from notification)
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          console.log('[NativePush] Action performed:', action);
+          const url = action.notification.data?.url;
+          if (url) {
+            window.location.href = url;
+          }
+        });
+
+        // Now register with APNs/FCM
+        PushNotifications.register();
       });
 
       setIsLoading(false);
-      return true;
+      return registrationResult;
     } catch (error) {
       console.error('[NativePush] Error:', error);
       toast.error('Kunde inte aktivera push-notifikationer');
