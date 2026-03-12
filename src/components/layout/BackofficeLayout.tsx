@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Building2, LogOut, LayoutDashboard, Menu, Activity, History, HelpCircle } from 'lucide-react';
+import { Building2, LogOut, LayoutDashboard, Menu, Activity, History, HelpCircle, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import sealoggLogo from '@/assets/sealog-logo.png';
 
