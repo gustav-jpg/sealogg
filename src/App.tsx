@@ -204,6 +204,7 @@ function AppRoutes() {
         <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />
         <Route path="/backoffice/organizations" element={<BackofficeLayout><Organizations /></BackofficeLayout>} />
         <Route path="/backoffice/organizations/:id" element={<BackofficeLayout><OrganizationDetail /></BackofficeLayout>} />
+        <Route path="/backoffice/billing" element={<BackofficeLayout><BackofficeBilling /></BackofficeLayout>} />
         <Route path="/backoffice/changelog" element={<BackofficeLayout><BackofficeChangelog /></BackofficeLayout>} />
         <Route path="/backoffice/audit-logs" element={<BackofficeLayout><AuditLogs /></BackofficeLayout>} />
         <Route path="/backoffice/faq" element={<BackofficeLayout><FaqAdmin /></BackofficeLayout>} />

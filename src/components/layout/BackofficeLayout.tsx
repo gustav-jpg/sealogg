@@ -65,6 +65,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
   const navItems = [
     { href: '/backoffice', label: 'Översikt', icon: LayoutDashboard },
     { href: '/backoffice/organizations', label: 'Organisationer', icon: Building2 },
+    { href: '/backoffice/billing', label: 'Fakturering', icon: CreditCard },
     { href: '/backoffice/faq', label: 'FAQ / Support', icon: HelpCircle },
     { href: '/backoffice/changelog', label: 'Uppdateringshistorik', icon: History },
     { href: '/backoffice/audit-logs', label: 'Systemloggar', icon: Activity },
