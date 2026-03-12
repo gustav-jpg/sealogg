@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, Mail, Smartphone, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Bell, Mail, Smartphone, Loader2, Send, CheckCircle, XCircle } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNativePushNotifications } from '@/hooks/useNativePushNotifications';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +33,10 @@ interface NotificationPreferences {
   days_before_warning: number;
 }
 
-const defaultPreferences: NotificationPreferences = {
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+
+  const defaultPreferences: NotificationPreferences = {
   email_daily_digest: false,
   digest_frequency: 'daily',
   email_expiring_certificates: true,
@@ -338,7 +342,69 @@ export function NotificationSettings() {
         </CardContent>
       </Card>
 
-      {/* General Settings */}
+      {/* Test Push Notification */}
+      {isSubscribed && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Testa push-notifikationer
+            </CardTitle>
+            <CardDescription>
+              Skicka en testnotis till denna enhet för att verifiera att push fungerar
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setIsTesting(true);
+                setTestResult(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke('test-push-notification');
+                  if (error) throw error;
+                  if (data?.sent > 0) {
+                    setTestResult({ success: true, message: `Testnotis skickad! (${data.sent} enhet${data.sent > 1 ? 'er' : ''})` });
+                  } else {
+                    setTestResult({ success: false, message: 'Ingen prenumeration hittades. Försök avaktivera och aktivera push igen.' });
+                  }
+                } catch (err) {
+                  console.error('Test push error:', err);
+                  setTestResult({ success: false, message: 'Kunde inte skicka testnotis. Försök igen.' });
+                } finally {
+                  setIsTesting(false);
+                }
+              }}
+              disabled={isTesting}
+              className="w-full"
+            >
+              {isTesting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Skickar testnotis...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Skicka testnotis
+                </>
+              )}
+            </Button>
+            {testResult && (
+              <Alert variant={testResult.success ? 'default' : 'destructive'}>
+                {testResult.success ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                <AlertDescription>{testResult.message}</AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
