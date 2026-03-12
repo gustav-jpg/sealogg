@@ -57,6 +57,7 @@ const PassengerAdmin = lazy(() => import("./pages/admin/PassengerAdmin"));
 const NotificationSettingsPage = lazy(() => import("./pages/admin/NotificationSettings"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const BackofficeChangelog = lazy(() => import("./pages/backoffice/Changelog"));
+const BackofficeBilling = lazy(() => import("./pages/backoffice/Billing"));
 const Kartvisaren = lazy(() => import("./pages/Kartvisaren"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Support = lazy(() => import("./pages/Support"));
