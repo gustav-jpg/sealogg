@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, ArrowLeft, HelpCircle, Mail } from 'lucide-react';
+import { Search, HelpCircle, Mail } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo.png';
 
 interface FaqItem {
@@ -46,14 +46,30 @@ export default function Support() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={sealoggLogo} alt="SeaLogg" className="h-7" />
+      <header className="bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b border-border/40">
+        <div className="container flex h-16 items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <img src={sealoggLogo} alt="SeaLogg" className="h-8" />
           </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/"><ArrowLeft className="mr-1 h-4 w-4" />Tillbaka</Link>
+
+          <nav className="hidden md:flex items-center gap-8">
+            <Link to="/#funktioner" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              Funktioner
+            </Link>
+            <Link to="/#fordelar" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              Fördelar
+            </Link>
+            <Link to="/support" className="text-foreground text-sm font-medium">
+              Support
+            </Link>
+            <Link to="/#kontakt" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              Kontakt
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <Button asChild size="sm">
+              <Link to="/portal/login">Logga in</Link>
             </Button>
           </div>
         </div>
@@ -129,8 +145,59 @@ export default function Support() {
 
       {/* Footer */}
       <footer className="border-t border-border/40 bg-muted/30">
-        <div className="container py-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} SeaLogg™ – en del av AhrensGroup AB
+        <div className="container py-12">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="md:col-span-2">
+              <img src={sealoggLogo} alt="SeaLogg" className="h-8 mb-4" />
+              <p className="text-sm text-muted-foreground max-w-sm">
+                SeaLogg är ett komplett system för fartygsloggbok, egenkontroll och säkerhetsarbete. 
+                Utvecklat i Sverige för svensk sjöfart.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Snabblänkar</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/portal/login" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Logga in
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/#funktioner" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Funktioner
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Juridiskt</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Integritetspolicy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Användaravtal
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/changelog" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Uppdateringshistorik
+                  </Link>
+                </li>
+                <li>
+                  <a href="mailto:info@sealogg.se" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Kontakt
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-border/40 mt-8 pt-8 text-center text-sm text-muted-foreground">
+            © {new Date().getFullYear()} SeaLogg™ – en del av AhrensGroup AB
+          </div>
         </div>
       </footer>
     </div>
