@@ -57,6 +57,7 @@ const PassengerAdmin = lazy(() => import("./pages/admin/PassengerAdmin"));
 const NotificationSettingsPage = lazy(() => import("./pages/admin/NotificationSettings"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const BackofficeChangelog = lazy(() => import("./pages/backoffice/Changelog"));
+const BackofficeBilling = lazy(() => import("./pages/backoffice/Billing"));
 const Kartvisaren = lazy(() => import("./pages/Kartvisaren"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Support = lazy(() => import("./pages/Support"));
@@ -203,6 +204,7 @@ function AppRoutes() {
         <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />
         <Route path="/backoffice/organizations" element={<BackofficeLayout><Organizations /></BackofficeLayout>} />
         <Route path="/backoffice/organizations/:id" element={<BackofficeLayout><OrganizationDetail /></BackofficeLayout>} />
+        <Route path="/backoffice/billing" element={<BackofficeLayout><BackofficeBilling /></BackofficeLayout>} />
         <Route path="/backoffice/changelog" element={<BackofficeLayout><BackofficeChangelog /></BackofficeLayout>} />
         <Route path="/backoffice/audit-logs" element={<BackofficeLayout><AuditLogs /></BackofficeLayout>} />
         <Route path="/backoffice/faq" element={<BackofficeLayout><FaqAdmin /></BackofficeLayout>} />
