@@ -46,14 +46,30 @@ export default function Support() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={sealoggLogo} alt="SeaLogg" className="h-7" />
+      <header className="bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b border-border/40">
+        <div className="container flex h-16 items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <img src={sealoggLogo} alt="SeaLogg" className="h-8" />
           </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/"><ArrowLeft className="mr-1 h-4 w-4" />Tillbaka</Link>
+
+          <nav className="hidden md:flex items-center gap-8">
+            <Link to="/#funktioner" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              Funktioner
+            </Link>
+            <Link to="/#fordelar" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              Fördelar
+            </Link>
+            <Link to="/support" className="text-foreground text-sm font-medium">
+              Support
+            </Link>
+            <Link to="/#kontakt" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              Kontakt
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <Button asChild size="sm">
+              <Link to="/portal/login">Logga in</Link>
             </Button>
           </div>
         </div>
