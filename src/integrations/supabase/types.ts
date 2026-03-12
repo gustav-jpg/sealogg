@@ -2167,6 +2167,53 @@ export type Database = {
           },
         ]
       }
+      organization_billing: {
+        Row: {
+          billing_frequency: Database["public"]["Enums"]["billing_frequency"]
+          created_at: string
+          id: string
+          last_paid_at: string | null
+          next_invoice_date: string | null
+          notes: string | null
+          organization_id: string
+          price_sek: number
+          status: Database["public"]["Enums"]["billing_status"]
+          updated_at: string
+        }
+        Insert: {
+          billing_frequency?: Database["public"]["Enums"]["billing_frequency"]
+          created_at?: string
+          id?: string
+          last_paid_at?: string | null
+          next_invoice_date?: string | null
+          notes?: string | null
+          organization_id: string
+          price_sek?: number
+          status?: Database["public"]["Enums"]["billing_status"]
+          updated_at?: string
+        }
+        Update: {
+          billing_frequency?: Database["public"]["Enums"]["billing_frequency"]
+          created_at?: string
+          id?: string
+          last_paid_at?: string | null
+          next_invoice_date?: string | null
+          notes?: string | null
+          organization_id?: string
+          price_sek?: number
+          status?: Database["public"]["Enums"]["billing_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_billing_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_features: {
         Row: {
           created_at: string
@@ -3246,6 +3293,8 @@ export type Database = {
         | "bookings"
         | "documents"
       app_role: "admin" | "skeppare" | "readonly" | "deckhand"
+      billing_frequency: "monthly" | "yearly" | "quarterly"
+      billing_status: "active" | "overdue" | "cancelled" | "trial"
       blocking_reason:
         | "service"
         | "privat"
@@ -3437,6 +3486,8 @@ export const Constants = {
         "documents",
       ],
       app_role: ["admin", "skeppare", "readonly", "deckhand"],
+      billing_frequency: ["monthly", "yearly", "quarterly"],
+      billing_status: ["active", "overdue", "cancelled", "trial"],
       blocking_reason: [
         "service",
         "privat",
