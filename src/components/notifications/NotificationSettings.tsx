@@ -62,10 +62,22 @@ export function NotificationSettings() {
   const isSubscribed = isNative ? nativePush.isRegistered : webPush.isSubscribed;
   const pushLoading = isNative ? nativePush.isLoading : webPush.isLoading;
   const permission = isNative ? 'default' : webPush.permission;
-  
+
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [optimisticPushEnabled, setOptimisticPushEnabled] = useState<boolean | null>(null);
+
+  const effectivePushEnabled = optimisticPushEnabled ?? isSubscribed;
+  const pushStatusText = permission === 'denied'
+    ? 'Du har blockerat notifikationer i webbläsaren'
+    : pushLoading && optimisticPushEnabled === true
+      ? 'Aktiverar push-notifikationer...'
+      : pushLoading && optimisticPushEnabled === false
+        ? 'Avaktiverar push-notifikationer...'
+        : effectivePushEnabled
+          ? 'Push-notifikationer är aktiverade'
+          : 'Tillåt notifikationer för att aktivera';
 
   // Load preferences
   useEffect(() => {
