@@ -7,9 +7,11 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://www.sealogg.se',
     cleartext: true,
+    allowNavigation: ['*.sealogg.se', '*.lovable.app', '*.supabase.co'],
   },
   ios: {
     contentInset: 'automatic',
+    allowsLinkPreview: false,
   },
   plugins: {
     SplashScreen: {
