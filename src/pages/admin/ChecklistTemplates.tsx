@@ -367,7 +367,18 @@ export default function ChecklistTemplates() {
     setSteps([]);
   };
 
-  const openEditDialog = (template: any) => {
+  const resolveSignedUrl = async (url: string | null): Promise<string | null> => {
+    if (!url) return null;
+    const match = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+    if (match) {
+      const [, bucket, path] = match;
+      const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+      return data?.signedUrl || url;
+    }
+    return url;
+  };
+
+  const openEditDialog = async (template: any) => {
     setEditingTemplate(template);
     setName(template.name);
     setDescription(template.description || '');
@@ -379,7 +390,7 @@ export default function ChecklistTemplates() {
     setSelectedVessels(tvList.map((tv) => tv.vessel_id));
     
     const templateSteps = allSteps?.filter((s) => s.checklist_template_id === template.id) || [];
-    setSteps(templateSteps.map((s) => ({
+    const stepsWithPreviews = await Promise.all(templateSteps.map(async (s) => ({
       id: s.id,
       step_order: s.step_order,
       title: s.title,
@@ -390,9 +401,10 @@ export default function ChecklistTemplates() {
       requires_photo: s.requires_photo,
       reference_image_url: s.reference_image_url || null,
       reference_image_file: null,
-      reference_image_preview: s.reference_image_url || null,
+      reference_image_preview: await resolveSignedUrl(s.reference_image_url),
       checklist_items: (s as any).checklist_items || [],
     })));
+    setSteps(stepsWithPreviews);
   };
 
   const handleVesselToggle = (vesselId: string) => {
