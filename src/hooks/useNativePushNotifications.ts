@@ -19,71 +19,81 @@ export function useNativePushNotifications() {
 
     try {
       const { PushNotifications } = await import('@capacitor/push-notifications');
+      const { Capacitor } = await import('@capacitor/core');
 
-      // Request permission
-      const permResult = await PushNotifications.requestPermissions();
-      if (permResult.receive !== 'granted') {
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+
+      if (permStatus.receive !== 'granted') {
         toast.error('Du måste tillåta notifikationer i enhetens inställningar');
-        setIsLoading(false);
         return false;
       }
 
-      // Set up listeners BEFORE calling register() to avoid missing the event
       await PushNotifications.removeAllListeners();
 
       const registrationResult = await new Promise<boolean>(async (resolve) => {
         let isResolved = false;
+
         const resolveOnce = (value: boolean) => {
           if (isResolved) return;
           isResolved = true;
           resolve(value);
         };
 
-        const timeoutId = window.setTimeout(() => {
+        const timeoutId = globalThis.setTimeout(() => {
           console.error('[NativePush] Registration timed out');
-          toast.error('Registrering av push-notifikationer tog för lång tid');
+          const isSimulator = /simulator/i.test(globalThis.navigator?.userAgent ?? '');
+
+          if (isSimulator) {
+            toast.error('Push-notiser fungerar inte alltid i iOS-simulatorn. Testa på fysisk iPhone.');
+          } else {
+            toast.error('Registrering av push-notifikationer tog för lång tid');
+          }
+
           resolveOnce(false);
-        }, 15000);
+        }, 45000);
 
         try {
-          // Listen for registration token
           await PushNotifications.addListener('registration', async (token) => {
+            globalThis.clearTimeout(timeoutId);
             console.log('[NativePush] Device token:', token.value);
 
             const { error } = await supabase
               .from('push_subscriptions')
-              .upsert({
-                user_id: user.id,
-                endpoint: `apns://${token.value}`,
-                p256dh: token.value,
-                auth: 'native',
-                user_agent: `capacitor-${(await import('@capacitor/core')).Capacitor.getPlatform()}`
-              }, {
-                onConflict: 'user_id,endpoint'
-              });
-
-            window.clearTimeout(timeoutId);
+              .upsert(
+                {
+                  user_id: user.id,
+                  endpoint: `apns://${token.value}`,
+                  p256dh: token.value,
+                  auth: 'native',
+                  user_agent: `capacitor-${Capacitor.getPlatform()}`,
+                },
+                {
+                  onConflict: 'user_id,endpoint',
+                }
+              );
 
             if (error) {
               console.error('[NativePush] Error saving token:', error);
               toast.error('Kunde inte spara push-token');
               resolveOnce(false);
-            } else {
-              setIsRegistered(true);
-              toast.success('Push-notifikationer aktiverade!');
-              resolveOnce(true);
+              return;
             }
+
+            setIsRegistered(true);
+            toast.success('Push-notifikationer aktiverade!');
+            resolveOnce(true);
           });
 
-          // Listen for registration errors
           await PushNotifications.addListener('registrationError', (error) => {
-            window.clearTimeout(timeoutId);
+            globalThis.clearTimeout(timeoutId);
             console.error('[NativePush] Registration error:', error);
             toast.error('Kunde inte registrera push-notifikationer');
             resolveOnce(false);
           });
 
-          // Listen for incoming notifications while app is in foreground
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
             console.log('[NativePush] Received:', notification);
             toast(notification.title || 'Ny notifikation', {
@@ -91,7 +101,6 @@ export function useNativePushNotifications() {
             });
           });
 
-          // Listen for notification taps (app opened from notification)
           await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
             console.log('[NativePush] Action performed:', action);
             const url = action.notification.data?.url;
@@ -100,22 +109,22 @@ export function useNativePushNotifications() {
             }
           });
 
-          // Now register with APNs/FCM
           await PushNotifications.register();
         } catch (listenerError) {
-          window.clearTimeout(timeoutId);
+          globalThis.clearTimeout(timeoutId);
           console.error('[NativePush] Listener setup error:', listenerError);
+          toast.error('Kunde inte starta push-registrering');
           resolveOnce(false);
         }
       });
 
-      setIsLoading(false);
       return registrationResult;
     } catch (error) {
       console.error('[NativePush] Error:', error);
       toast.error('Kunde inte aktivera push-notifikationer');
-      setIsLoading(false);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   }, [user]);
 
