@@ -393,7 +393,13 @@ serve(async (req) => {
               url: payload.url || "/portal",
             };
 
-            const result = await sendApns(deviceToken, apnsJwt, BUNDLE_ID, apnsPayload);
+            let result = await sendApns(deviceToken, apnsJwt, BUNDLE_ID, apnsPayload);
+
+            // Xcode/debug builds often use sandbox tokens. Retry once against sandbox APNs.
+            if (!result.ok && isBadDeviceToken(result.status, result.body)) {
+              console.warn(`APNs production rejected token for ${sub.id}, retrying sandbox`);
+              result = await sendApns(deviceToken, apnsJwt, BUNDLE_ID, apnsPayload, { sandbox: true });
+            }
 
             if (!result.ok) {
               console.error(`APNs push failed for ${sub.id}: ${result.status} ${result.body}`);
