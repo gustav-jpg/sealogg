@@ -68,6 +68,7 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
     { href: '/backoffice/billing', label: 'Fakturering', icon: CreditCard },
     { href: '/backoffice/faq', label: 'FAQ / Support', icon: HelpCircle },
     { href: '/backoffice/changelog', label: 'Uppdateringshistorik', icon: History },
+    { href: '/backoffice/push', label: 'Push-notiser', icon: Bell },
     { href: '/backoffice/audit-logs', label: 'Systemloggar', icon: Activity },
   ];
 
