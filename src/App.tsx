@@ -62,6 +62,7 @@ const Kartvisaren = lazy(() => import("./pages/Kartvisaren"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Support = lazy(() => import("./pages/Support"));
 const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
+const BroadcastPush = lazy(() => import("./pages/backoffice/BroadcastPush"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -208,6 +209,7 @@ function AppRoutes() {
         <Route path="/backoffice/changelog" element={<BackofficeLayout><BackofficeChangelog /></BackofficeLayout>} />
         <Route path="/backoffice/audit-logs" element={<BackofficeLayout><AuditLogs /></BackofficeLayout>} />
         <Route path="/backoffice/faq" element={<BackofficeLayout><FaqAdmin /></BackofficeLayout>} />
+        <Route path="/backoffice/push" element={<BackofficeLayout><BroadcastPush /></BackofficeLayout>} />
         
         {/* Legacy redirects */}
         <Route path="/login" element={<Navigate to="/portal/login" replace />} />
