@@ -59,6 +59,7 @@ function ReferenceImage({ url }: { url: string }) {
   );
 }
 
+interface StepResult {
   checklist_step_id: string;
   value: string;
   comment: string;
