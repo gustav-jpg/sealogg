@@ -28,35 +28,27 @@ interface ChecklistStep {
   checklist_items: string[] | null;
 }
 
-function ReferenceImage({ url }: { url: string }) {
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const match = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
-    if (match) {
-      const [, bucket, path] = match;
-      supabase.storage.from(bucket).createSignedUrl(path, 3600).then(({ data }) => {
-        setSignedUrl(data?.signedUrl || url);
-      });
-    } else {
-      setSignedUrl(url);
+function getStorageBucketAndPath(url: string): { bucket: string; path: string } | null {
+  try {
+    const parsedUrl = new URL(url);
+    const parts = parsedUrl.pathname.split('/').filter(Boolean);
+    const objectIndex = parts.findIndex((part) => part === 'object');
+
+    if (objectIndex === -1 || parts.length < objectIndex + 4) {
+      return null;
     }
-  }, [url]);
 
-  if (!signedUrl) return null;
+    const bucket = parts[objectIndex + 2];
+    const path = decodeURIComponent(parts.slice(objectIndex + 3).join('/'));
 
-  return (
-    <div className="mt-3">
-      <img 
-        src={signedUrl} 
-        alt="Referensbild" 
-        className="w-full max-h-48 object-contain rounded-lg border bg-muted/50"
-      />
-      <p className="text-xs text-muted-foreground mt-1 text-center">
-        Referensbild - så här ska det se ut
-      </p>
-    </div>
-  );
+    if (!bucket || !path) {
+      return null;
+    }
+
+    return { bucket, path };
+  } catch {
+    return null;
+  }
 }
 
 interface StepResult {
