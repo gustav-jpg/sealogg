@@ -112,10 +112,11 @@ async function sendApns(
   deviceToken: string,
   jwt: string,
   bundleId: string,
-  payload: object
+  payload: object,
+  options?: { sandbox?: boolean }
 ): Promise<{ ok: boolean; status: number; body: string }> {
-  // Use production APNs endpoint
-  const url = `https://api.push.apple.com/3/device/${deviceToken}`;
+  const host = options?.sandbox ? "api.sandbox.push.apple.com" : "api.push.apple.com";
+  const url = `https://${host}/3/device/${deviceToken}`;
 
   const response = await fetch(url, {
     method: "POST",
@@ -132,6 +133,17 @@ async function sendApns(
 
   const body = await response.text();
   return { ok: response.ok, status: response.status, body };
+}
+
+function isBadDeviceToken(status: number, body: string): boolean {
+  if (status !== 400) return false;
+
+  try {
+    const parsed = JSON.parse(body) as { reason?: string };
+    return parsed.reason === "BadDeviceToken";
+  } catch {
+    return body.includes("BadDeviceToken");
+  }
 }
 
 // ── Web Push (VAPID + aes128gcm) ────────────────────────────────────
@@ -381,7 +393,13 @@ serve(async (req) => {
               url: payload.url || "/portal",
             };
 
-            const result = await sendApns(deviceToken, apnsJwt, BUNDLE_ID, apnsPayload);
+            let result = await sendApns(deviceToken, apnsJwt, BUNDLE_ID, apnsPayload);
+
+            // Xcode/debug builds often use sandbox tokens. Retry once against sandbox APNs.
+            if (!result.ok && isBadDeviceToken(result.status, result.body)) {
+              console.warn(`APNs production rejected token for ${sub.id}, retrying sandbox`);
+              result = await sendApns(deviceToken, apnsJwt, BUNDLE_ID, apnsPayload, { sandbox: true });
+            }
 
             if (!result.ok) {
               console.error(`APNs push failed for ${sub.id}: ${result.status} ${result.body}`);
