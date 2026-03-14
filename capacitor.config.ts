@@ -4,10 +4,11 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.ca12acbb7d5746d89d77109ee6b9dc68',
   appName: 'SeaLogg',
   webDir: 'dist',
-  // Use bundled web assets from dist in native app.
-  // (Temporarily disable remote server URL to avoid stale remote content.)
+  server: {
+    url: 'https://sealogg.lovable.app',
+    cleartext: true,
+  },
   ios: {
-    // Prevent cap sync from overwriting native assets like app icons
     contentInset: 'automatic',
   },
   plugins: {
