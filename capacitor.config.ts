@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'SeaLogg',
   webDir: 'dist',
   server: {
-    url: 'https://sealogg.lovable.app',
+    url: 'https://www.sealogg.se',
     cleartext: true,
   },
   ios: {
