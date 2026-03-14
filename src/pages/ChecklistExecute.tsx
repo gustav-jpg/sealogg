@@ -28,7 +28,37 @@ interface ChecklistStep {
   checklist_items: string[] | null;
 }
 
-interface StepResult {
+function ReferenceImage({ url }: { url: string }) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const match = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+    if (match) {
+      const [, bucket, path] = match;
+      supabase.storage.from(bucket).createSignedUrl(path, 3600).then(({ data }) => {
+        setSignedUrl(data?.signedUrl || url);
+      });
+    } else {
+      setSignedUrl(url);
+    }
+  }, [url]);
+
+  if (!signedUrl) return null;
+
+  return (
+    <div className="mt-3">
+      <img 
+        src={signedUrl} 
+        alt="Referensbild" 
+        className="w-full max-h-48 object-contain rounded-lg border bg-muted/50"
+      />
+      <p className="text-xs text-muted-foreground mt-1 text-center">
+        Referensbild - så här ska det se ut
+      </p>
+    </div>
+  );
+}
+
   checklist_step_id: string;
   value: string;
   comment: string;
