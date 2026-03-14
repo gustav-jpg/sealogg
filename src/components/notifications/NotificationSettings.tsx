@@ -62,10 +62,22 @@ export function NotificationSettings() {
   const isSubscribed = isNative ? nativePush.isRegistered : webPush.isSubscribed;
   const pushLoading = isNative ? nativePush.isLoading : webPush.isLoading;
   const permission = isNative ? 'default' : webPush.permission;
-  
+
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [optimisticPushEnabled, setOptimisticPushEnabled] = useState<boolean | null>(null);
+
+  const effectivePushEnabled = optimisticPushEnabled ?? isSubscribed;
+  const pushStatusText = permission === 'denied'
+    ? 'Du har blockerat notifikationer i webbläsaren'
+    : pushLoading && optimisticPushEnabled === true
+      ? 'Aktiverar push-notifikationer...'
+      : pushLoading && optimisticPushEnabled === false
+        ? 'Avaktiverar push-notifikationer...'
+        : effectivePushEnabled
+          ? 'Push-notifikationer är aktiverade'
+          : 'Tillåt notifikationer för att aktivera';
 
   // Load preferences
   useEffect(() => {
@@ -109,6 +121,10 @@ export function NotificationSettings() {
     loadPreferences();
   }, [user, selectedOrgId]);
 
+  useEffect(() => {
+    setOptimisticPushEnabled(null);
+  }, [isSubscribed]);
+
   // Save preferences
   const savePreferences = async () => {
     if (!user || !selectedOrgId) return;
@@ -139,15 +155,21 @@ export function NotificationSettings() {
 
   // Handle push toggle
   const handlePushToggle = async (enabled: boolean) => {
+    setOptimisticPushEnabled(enabled);
+
     if (enabled) {
       const success = isNative ? await nativePush.register() : await webPush.subscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: true }));
+      } else {
+        setOptimisticPushEnabled(false);
       }
     } else {
       const success = isNative ? await nativePush.unregister() : await webPush.unsubscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: false }));
+      } else {
+        setOptimisticPushEnabled(true);
       }
     }
   };
@@ -283,16 +305,12 @@ export function NotificationSettings() {
                 <Label htmlFor="push_enabled" className="flex flex-col">
                   <span>Aktivera push-notifikationer</span>
                   <span className="text-sm text-muted-foreground font-normal">
-                    {permission === 'denied' 
-                      ? 'Du har blockerat notifikationer i webbläsaren'
-                      : isSubscribed 
-                        ? 'Push-notifikationer är aktiverade'
-                        : 'Tillåt notifikationer för att aktivera'}
+                    {pushStatusText}
                   </span>
                 </Label>
                 <Switch
                   id="push_enabled"
-                  checked={isSubscribed}
+                  checked={effectivePushEnabled}
                   onCheckedChange={handlePushToggle}
                   disabled={pushLoading || permission === 'denied'}
                 />
