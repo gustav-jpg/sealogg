@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -28,35 +28,27 @@ interface ChecklistStep {
   checklist_items: string[] | null;
 }
 
-function ReferenceImage({ url }: { url: string }) {
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const match = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
-    if (match) {
-      const [, bucket, path] = match;
-      supabase.storage.from(bucket).createSignedUrl(path, 3600).then(({ data }) => {
-        setSignedUrl(data?.signedUrl || url);
-      });
-    } else {
-      setSignedUrl(url);
+function getStorageBucketAndPath(url: string): { bucket: string; path: string } | null {
+  try {
+    const parsedUrl = new URL(url);
+    const parts = parsedUrl.pathname.split('/').filter(Boolean);
+    const objectIndex = parts.findIndex((part) => part === 'object');
+
+    if (objectIndex === -1 || parts.length < objectIndex + 4) {
+      return null;
     }
-  }, [url]);
 
-  if (!signedUrl) return null;
+    const bucket = parts[objectIndex + 2];
+    const path = decodeURIComponent(parts.slice(objectIndex + 3).join('/'));
 
-  return (
-    <div className="mt-3">
-      <img 
-        src={signedUrl} 
-        alt="Referensbild" 
-        className="w-full max-h-48 object-contain rounded-lg border bg-muted/50"
-      />
-      <p className="text-xs text-muted-foreground mt-1 text-center">
-        Referensbild - så här ska det se ut
-      </p>
-    </div>
-  );
+    if (!bucket || !path) {
+      return null;
+    }
+
+    return { bucket, path };
+  } catch {
+    return null;
+  }
 }
 
 interface StepResult {
@@ -130,13 +122,38 @@ export default function ChecklistExecute() {
     queryKey: ['checklist-steps', template?.id],
     queryFn: async () => {
       if (!template?.id) return [];
+
       const { data, error } = await supabase
         .from('checklist_steps')
         .select('*')
         .eq('checklist_template_id', template.id)
         .order('step_order');
       if (error) throw error;
-      return data as ChecklistStep[];
+
+      const resolvedSteps = await Promise.all(
+        (data ?? []).map(async (step) => {
+          if (!step.reference_image_url) {
+            return step as ChecklistStep;
+          }
+
+          const storageTarget = getStorageBucketAndPath(step.reference_image_url);
+          if (!storageTarget) {
+            return step as ChecklistStep;
+          }
+
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from(storageTarget.bucket)
+            .createSignedUrl(storageTarget.path, 60 * 60 * 24);
+
+          if (signedError || !signedData?.signedUrl) {
+            return { ...step, reference_image_url: null } as ChecklistStep;
+          }
+
+          return { ...step, reference_image_url: signedData.signedUrl } as ChecklistStep;
+        })
+      );
+
+      return resolvedSteps;
     },
     enabled: !!template?.id,
   });
@@ -638,7 +655,16 @@ export default function ChecklistExecute() {
               
               {/* Reference image - show if available */}
               {currentStep.reference_image_url && (
-                <ReferenceImage url={currentStep.reference_image_url} />
+                <div className="mt-3">
+                  <img
+                    src={currentStep.reference_image_url}
+                    alt="Referensbild"
+                    className="w-full max-h-48 object-contain rounded-lg border bg-muted/50"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 text-center">
+                    Referensbild - så här ska det se ut
+                  </p>
+                </div>
               )}
               
               {currentStep.help_text && (
