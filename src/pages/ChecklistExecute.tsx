@@ -122,13 +122,38 @@ export default function ChecklistExecute() {
     queryKey: ['checklist-steps', template?.id],
     queryFn: async () => {
       if (!template?.id) return [];
+
       const { data, error } = await supabase
         .from('checklist_steps')
         .select('*')
         .eq('checklist_template_id', template.id)
         .order('step_order');
       if (error) throw error;
-      return data as ChecklistStep[];
+
+      const resolvedSteps = await Promise.all(
+        (data ?? []).map(async (step) => {
+          if (!step.reference_image_url) {
+            return step as ChecklistStep;
+          }
+
+          const storageTarget = getStorageBucketAndPath(step.reference_image_url);
+          if (!storageTarget) {
+            return step as ChecklistStep;
+          }
+
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from(storageTarget.bucket)
+            .createSignedUrl(storageTarget.path, 60 * 60 * 24);
+
+          if (signedError || !signedData?.signedUrl) {
+            return { ...step, reference_image_url: null } as ChecklistStep;
+          }
+
+          return { ...step, reference_image_url: signedData.signedUrl } as ChecklistStep;
+        })
+      );
+
+      return resolvedSteps;
     },
     enabled: !!template?.id,
   });
