@@ -121,6 +121,10 @@ export function NotificationSettings() {
     loadPreferences();
   }, [user, selectedOrgId]);
 
+  useEffect(() => {
+    setOptimisticPushEnabled(null);
+  }, [isSubscribed]);
+
   // Save preferences
   const savePreferences = async () => {
     if (!user || !selectedOrgId) return;
