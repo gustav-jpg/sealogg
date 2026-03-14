@@ -41,7 +41,7 @@ const defaultPreferences: NotificationPreferences = {
   email_new_deviations: true,
   email_new_faults: true,
   email_unsigned_logbooks: false,
-  push_enabled: false,
+  push_enabled: true,
   push_new_deviations: true,
   push_new_faults: true,
   push_expiring_controls: true,
