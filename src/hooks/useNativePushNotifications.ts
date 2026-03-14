@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { isNativePlatform } from '@/lib/capacitor';
 
+const NATIVE_REGISTRATION_TIMEOUT_MS = 12000;
+
 /**
  * Hook for native push notifications via APNs/FCM (Capacitor).
  * Falls back to Web Push on web.
@@ -47,35 +49,45 @@ export function useNativePushNotifications() {
           const isSimulator = /simulator/i.test(globalThis.navigator?.userAgent ?? '');
 
           if (isSimulator) {
-            toast.error('Push-notiser fungerar inte alltid i iOS-simulatorn. Testa på fysisk iPhone.');
+            toast.error('Push-notiser fungerar inte i iOS-simulatorn. Testa på fysisk iPhone.');
           } else {
-            toast.error('Registrering av push-notifikationer tog för lång tid');
+            toast.error('Ingen push-token kom från iOS. Kontrollera AppDelegate-bridge för push.');
           }
 
           resolveOnce(false);
-        }, 45000);
+        }, NATIVE_REGISTRATION_TIMEOUT_MS);
 
         try {
           await PushNotifications.addListener('registration', async (token) => {
             globalThis.clearTimeout(timeoutId);
-            console.log('[NativePush] Device token:', token.value);
+            console.log('[NativePush] Device token received');
+
+            const endpoint = `apns://${token.value}`;
+
+            const { error: cleanupError } = await supabase
+              .from('push_subscriptions')
+              .delete()
+              .eq('user_id', user.id)
+              .like('endpoint', 'apns://%');
+
+            if (cleanupError) {
+              console.warn('[NativePush] Could not cleanup old APNs tokens:', cleanupError);
+            }
 
             const { error } = await supabase
               .from('push_subscriptions')
-              .upsert(
-                {
-                  user_id: user.id,
-                  endpoint: `apns://${token.value}`,
-                  p256dh: token.value,
-                  auth: 'native',
-                  user_agent: `capacitor-${Capacitor.getPlatform()}`,
-                },
-                {
-                  onConflict: 'user_id,endpoint',
-                }
-              );
+              .insert({
+                user_id: user.id,
+                endpoint,
+                p256dh: token.value,
+                auth: 'native',
+                user_agent: `capacitor-${Capacitor.getPlatform()}`,
+              });
 
-            if (error) {
+            const errorCode = (error as { code?: string } | null)?.code;
+            const isDuplicate = errorCode === '23505';
+
+            if (error && !isDuplicate) {
               console.error('[NativePush] Error saving token:', error);
               toast.error('Kunde inte spara push-token');
               resolveOnce(false);
@@ -90,7 +102,18 @@ export function useNativePushNotifications() {
           await PushNotifications.addListener('registrationError', (error) => {
             globalThis.clearTimeout(timeoutId);
             console.error('[NativePush] Registration error:', error);
-            toast.error('Kunde inte registrera push-notifikationer');
+
+            const message =
+              (error as { errorMessage?: string; message?: string } | null)?.errorMessage ||
+              (error as { errorMessage?: string; message?: string } | null)?.message ||
+              '';
+
+            if (/capacitorDidRegisterForRemoteNotifications/i.test(message)) {
+              toast.error('iOS push-bridge saknas i AppDelegate. Lägg till didRegister/didFail-metoderna.');
+            } else {
+              toast.error('Kunde inte registrera push-notifikationer');
+            }
+
             resolveOnce(false);
           });
 
@@ -159,14 +182,19 @@ export function useNativePushNotifications() {
     if (!user || !isNativePlatform()) return;
 
     const checkRegistration = async () => {
-      const { data } = await supabase
+      const { count, error } = await supabase
         .from('push_subscriptions')
-        .select('id')
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .like('endpoint', 'apns://%')
-        .maybeSingle();
+        .like('endpoint', 'apns://%');
 
-      setIsRegistered(!!data);
+      if (error) {
+        console.error('[NativePush] Registration status check failed:', error);
+        setIsRegistered(false);
+        return;
+      }
+
+      setIsRegistered((count ?? 0) > 0);
     };
 
     checkRegistration();
