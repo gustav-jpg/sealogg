@@ -390,7 +390,7 @@ export default function ChecklistTemplates() {
       requires_photo: s.requires_photo,
       reference_image_url: s.reference_image_url || null,
       reference_image_file: null,
-      reference_image_preview: s.reference_image_url || null,
+      reference_image_preview: null,
       checklist_items: (s as any).checklist_items || [],
     })));
   };
