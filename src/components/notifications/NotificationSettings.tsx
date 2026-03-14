@@ -305,16 +305,12 @@ export function NotificationSettings() {
                 <Label htmlFor="push_enabled" className="flex flex-col">
                   <span>Aktivera push-notifikationer</span>
                   <span className="text-sm text-muted-foreground font-normal">
-                    {permission === 'denied' 
-                      ? 'Du har blockerat notifikationer i webbläsaren'
-                      : isSubscribed 
-                        ? 'Push-notifikationer är aktiverade'
-                        : 'Tillåt notifikationer för att aktivera'}
+                    {pushStatusText}
                   </span>
                 </Label>
                 <Switch
                   id="push_enabled"
-                  checked={isSubscribed}
+                  checked={effectivePushEnabled}
                   onCheckedChange={handlePushToggle}
                   disabled={pushLoading || permission === 'denied'}
                 />
