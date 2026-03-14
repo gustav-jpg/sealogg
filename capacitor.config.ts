@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'SeaLogg',
   webDir: 'dist',
   server: {
-    url: 'https://www.sealogg.se',
+    url: 'https://www.sealogg.se/portal/login?forceHideBadge=true',
     cleartext: true,
     allowNavigation: ['*.sealogg.se', '*.lovable.app', '*.supabase.co'],
   },
