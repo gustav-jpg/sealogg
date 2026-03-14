@@ -155,15 +155,21 @@ export function NotificationSettings() {
 
   // Handle push toggle
   const handlePushToggle = async (enabled: boolean) => {
+    setOptimisticPushEnabled(enabled);
+
     if (enabled) {
       const success = isNative ? await nativePush.register() : await webPush.subscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: true }));
+      } else {
+        setOptimisticPushEnabled(false);
       }
     } else {
       const success = isNative ? await nativePush.unregister() : await webPush.unsubscribe();
       if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: false }));
+      } else {
+        setOptimisticPushEnabled(true);
       }
     }
   };
