@@ -9,6 +9,11 @@ html {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
+  background-color: hsl(210 25% 97%);
+}
+
+.dark html {
+  background-color: hsl(210 50% 8%);
 }
 
 /* Fartygsloggbok Design System - Maritime Theme */
