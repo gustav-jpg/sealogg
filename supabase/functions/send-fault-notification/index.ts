@@ -211,6 +211,35 @@ serve(async (req) => {
       }
     }
 
+    // Also send push notifications to users who want them
+    const { data: pushPrefs } = await supabase
+      .from("notification_preferences")
+      .select("user_id")
+      .eq("organization_id", vessel.organization_id)
+      .eq("push_new_faults", true);
+
+    if (pushPrefs && pushPrefs.length > 0) {
+      const pushUserIds = pushPrefs.map((p: { user_id: string }) => p.user_id);
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            user_ids: pushUserIds,
+            title: `🔧 Nytt felärende: ${payload.title}`,
+            body: `${creator?.full_name || "Okänd"} rapporterade: ${payload.title}`,
+            tag: "new_fault",
+            url: "/portal/fault-cases",
+          }),
+        });
+      } catch (e) {
+        console.error("Push send error:", e);
+      }
+    }
+
     console.log(`Sent ${sent} fault notification emails`);
 
     return new Response(JSON.stringify({ message: "Notifications sent", sent }), {
