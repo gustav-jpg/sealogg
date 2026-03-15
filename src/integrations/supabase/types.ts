@@ -2107,6 +2107,8 @@ export type Database = {
           email_daily_digest: boolean
           email_expiring_certificates: boolean
           email_expiring_controls: boolean
+          email_fault_assigned: boolean
+          email_fault_comment: boolean
           email_new_deviations: boolean
           email_new_faults: boolean
           email_unsigned_logbooks: boolean
@@ -2114,6 +2116,8 @@ export type Database = {
           organization_id: string
           push_enabled: boolean
           push_expiring_controls: boolean
+          push_fault_assigned: boolean
+          push_fault_comment: boolean
           push_new_deviations: boolean
           push_new_faults: boolean
           updated_at: string
@@ -2126,6 +2130,8 @@ export type Database = {
           email_daily_digest?: boolean
           email_expiring_certificates?: boolean
           email_expiring_controls?: boolean
+          email_fault_assigned?: boolean
+          email_fault_comment?: boolean
           email_new_deviations?: boolean
           email_new_faults?: boolean
           email_unsigned_logbooks?: boolean
@@ -2133,6 +2139,8 @@ export type Database = {
           organization_id: string
           push_enabled?: boolean
           push_expiring_controls?: boolean
+          push_fault_assigned?: boolean
+          push_fault_comment?: boolean
           push_new_deviations?: boolean
           push_new_faults?: boolean
           updated_at?: string
@@ -2145,6 +2153,8 @@ export type Database = {
           email_daily_digest?: boolean
           email_expiring_certificates?: boolean
           email_expiring_controls?: boolean
+          email_fault_assigned?: boolean
+          email_fault_comment?: boolean
           email_new_deviations?: boolean
           email_new_faults?: boolean
           email_unsigned_logbooks?: boolean
@@ -2152,6 +2162,8 @@ export type Database = {
           organization_id?: string
           push_enabled?: boolean
           push_expiring_controls?: boolean
+          push_fault_assigned?: boolean
+          push_fault_comment?: boolean
           push_new_deviations?: boolean
           push_new_faults?: boolean
           updated_at?: string
