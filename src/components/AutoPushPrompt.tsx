@@ -26,14 +26,10 @@ export function AutoPushPrompt() {
   useEffect(() => {
     if (!user || !isRunningAsNativeApp() || isLoading || isRegistered || hasTriggered.current) return;
 
-    const alreadyPrompted = localStorage.getItem(`${PUSH_PROMPTED_KEY}-${user.id}`);
-    if (alreadyPrompted) return;
-
     hasTriggered.current = true;
 
     // Small delay to let the app settle after login
     const timer = setTimeout(async () => {
-      localStorage.setItem(`${PUSH_PROMPTED_KEY}-${user.id}`, '1');
       await register();
     }, 1500);
 
