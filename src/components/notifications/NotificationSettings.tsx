@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Bell, Mail, Smartphone, Loader2, Send, CheckCircle, XCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Bell, Mail, Smartphone, Loader2 } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNativePushNotifications } from '@/hooks/useNativePushNotifications';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,10 +26,14 @@ interface NotificationPreferences {
   email_new_deviations: boolean;
   email_new_faults: boolean;
   email_unsigned_logbooks: boolean;
+  email_fault_comment: boolean;
+  email_fault_assigned: boolean;
   push_enabled: boolean;
   push_new_deviations: boolean;
   push_new_faults: boolean;
   push_expiring_controls: boolean;
+  push_fault_comment: boolean;
+  push_fault_assigned: boolean;
   days_before_warning: number;
 }
 
@@ -41,22 +45,74 @@ const defaultPreferences: NotificationPreferences = {
   email_new_deviations: true,
   email_new_faults: true,
   email_unsigned_logbooks: false,
+  email_fault_comment: true,
+  email_fault_assigned: true,
   push_enabled: true,
   push_new_deviations: true,
   push_new_faults: true,
   push_expiring_controls: true,
-  days_before_warning: 14
+  push_fault_comment: true,
+  push_fault_assigned: true,
+  days_before_warning: 14,
 };
 
+/** A single notification row with Mail + Push toggles */
+function NotificationRow({
+  label,
+  description,
+  emailKey,
+  pushKey,
+  preferences,
+  onUpdate,
+  pushAvailable,
+}: {
+  label: string;
+  description?: string;
+  emailKey?: keyof NotificationPreferences;
+  pushKey?: keyof NotificationPreferences;
+  preferences: NotificationPreferences;
+  onUpdate: (key: keyof NotificationPreferences, value: boolean) => void;
+  pushAvailable: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium">{label}</span>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-4 shrink-0">
+        {emailKey && (
+          <div className="flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+            <Switch
+              checked={preferences[emailKey] as boolean}
+              onCheckedChange={(checked) => onUpdate(emailKey, checked)}
+            />
+          </div>
+        )}
+        {pushKey && (
+          <div className="flex items-center gap-1.5">
+            <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
+            <Switch
+              checked={pushAvailable ? (preferences[pushKey] as boolean) : false}
+              onCheckedChange={(checked) => onUpdate(pushKey, checked)}
+              disabled={!pushAvailable}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function NotificationSettings() {
-  const { user } = useAuth();
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
+  const { user, isAdmin } = useAuth();
   const { selectedOrgId } = useOrganization();
   const webPush = usePushNotifications();
   const nativePush = useNativePushNotifications();
-  
-  // Use native push on native platforms, web push otherwise
+
   const isNative = nativePush.isNative;
   const isSupported = isNative || webPush.isSupported;
   const isSubscribed = isNative ? nativePush.isRegistered : webPush.isSubscribed;
@@ -69,21 +125,21 @@ export function NotificationSettings() {
   const [optimisticPushEnabled, setOptimisticPushEnabled] = useState<boolean | null>(null);
 
   const effectivePushEnabled = optimisticPushEnabled ?? isSubscribed;
+  const pushAvailable = effectivePushEnabled && isSubscribed;
+
   const pushStatusText = permission === 'denied'
     ? 'Du har blockerat notifikationer i webbläsaren'
     : pushLoading && optimisticPushEnabled === true
-      ? 'Aktiverar push-notifikationer...'
+      ? 'Aktiverar...'
       : pushLoading && optimisticPushEnabled === false
-        ? 'Avaktiverar push-notifikationer...'
+        ? 'Avaktiverar...'
         : effectivePushEnabled
-          ? 'Push-notifikationer är aktiverade'
-          : 'Tillåt notifikationer för att aktivera';
+          ? 'Aktiverat'
+          : 'Avaktiverat';
 
-  // Load preferences
   useEffect(() => {
     const loadPreferences = async () => {
       if (!user || !selectedOrgId) return;
-
       try {
         const { data, error } = await supabase
           .from('notification_preferences')
@@ -93,7 +149,6 @@ export function NotificationSettings() {
           .maybeSingle();
 
         if (error) throw error;
-
         if (data) {
           setPreferences({
             id: data.id,
@@ -104,11 +159,15 @@ export function NotificationSettings() {
             email_new_deviations: data.email_new_deviations,
             email_new_faults: data.email_new_faults,
             email_unsigned_logbooks: data.email_unsigned_logbooks,
+            email_fault_comment: data.email_fault_comment ?? true,
+            email_fault_assigned: data.email_fault_assigned ?? true,
             push_enabled: data.push_enabled,
             push_new_deviations: data.push_new_deviations,
             push_new_faults: data.push_new_faults,
             push_expiring_controls: data.push_expiring_controls,
-            days_before_warning: data.days_before_warning
+            push_fault_comment: data.push_fault_comment ?? true,
+            push_fault_assigned: data.push_fault_assigned ?? true,
+            days_before_warning: data.days_before_warning,
           });
         }
       } catch (error) {
@@ -117,7 +176,6 @@ export function NotificationSettings() {
         setIsLoading(false);
       }
     };
-
     loadPreferences();
   }, [user, selectedOrgId]);
 
@@ -125,10 +183,8 @@ export function NotificationSettings() {
     setOptimisticPushEnabled(null);
   }, [isSubscribed]);
 
-  // Save preferences
   const savePreferences = async () => {
     if (!user || !selectedOrgId) return;
-
     setIsSaving(true);
     try {
       const { error } = await supabase
@@ -137,13 +193,10 @@ export function NotificationSettings() {
           id: preferences.id,
           user_id: user.id,
           organization_id: selectedOrgId,
-          ...preferences
-        }, {
-          onConflict: 'user_id,organization_id'
-        });
+          ...preferences,
+        }, { onConflict: 'user_id,organization_id' });
 
       if (error) throw error;
-
       toast.success('Inställningar sparade');
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -153,10 +206,8 @@ export function NotificationSettings() {
     }
   };
 
-  // Handle push toggle
   const handlePushToggle = async (enabled: boolean) => {
     setOptimisticPushEnabled(enabled);
-
     if (enabled) {
       const success = isNative ? await nativePush.register() : await webPush.subscribe();
       if (success) {
@@ -188,102 +239,7 @@ export function NotificationSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Email Notifications */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            E-postnotifikationer
-          </CardTitle>
-          <CardDescription>
-            Välj vilka e-postmeddelanden du vill ta emot
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="email_daily_digest" className="flex flex-col">
-              <span>Sammanfattning via e-post</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Få en översikt med utgående certifikat, kontroller, avvikelser och fel
-              </span>
-            </Label>
-            <Switch
-              id="email_daily_digest"
-              checked={preferences.email_daily_digest}
-              onCheckedChange={(checked) => updatePreference('email_daily_digest', checked)}
-            />
-          </div>
-
-          {preferences.email_daily_digest && (
-            <div className="flex items-center justify-between pl-4 border-l-2 border-muted">
-              <Label htmlFor="digest_frequency" className="flex flex-col">
-                <span>Frekvens</span>
-                <span className="text-sm text-muted-foreground font-normal">
-                  Hur ofta vill du få sammanfattningen
-                </span>
-              </Label>
-              <Select
-                value={preferences.digest_frequency}
-                onValueChange={(value) => updatePreference('digest_frequency', value)}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Dagligen</SelectItem>
-                  <SelectItem value="weekly">Veckovis</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="email_new_deviations" className="flex flex-col">
-              <span>Nya avvikelser</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                När en ny avvikelse rapporteras
-              </span>
-            </Label>
-            <Switch
-              id="email_new_deviations"
-              checked={preferences.email_new_deviations}
-              onCheckedChange={(checked) => updatePreference('email_new_deviations', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="email_new_faults" className="flex flex-col">
-              <span>Nya felrapporter</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                När ett nytt fel rapporteras
-              </span>
-            </Label>
-            <Switch
-              id="email_new_faults"
-              checked={preferences.email_new_faults}
-              onCheckedChange={(checked) => updatePreference('email_new_faults', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="email_unsigned_logbooks" className="flex flex-col">
-              <span>Osignerade loggböcker</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Påminnelse om loggböcker som saknar signatur
-              </span>
-            </Label>
-            <Switch
-              id="email_unsigned_logbooks"
-              checked={preferences.email_unsigned_logbooks}
-              onCheckedChange={(checked) => updatePreference('email_unsigned_logbooks', checked)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Push Notifications */}
+      {/* Push master toggle */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -291,164 +247,171 @@ export function NotificationSettings() {
             Push-notifikationer
           </CardTitle>
           <CardDescription>
-            Få direkta notifikationer i webbläsaren
+            {isSupported ? pushStatusText : 'Push-notifikationer stöds inte i din webbläsare.'}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {!isSupported ? (
-            <p className="text-sm text-muted-foreground">
-              Push-notifikationer stöds inte i din webbläsare.
-            </p>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="push_enabled" className="flex flex-col">
-                  <span>Aktivera push-notifikationer</span>
-                  <span className="text-sm text-muted-foreground font-normal">
-                    {pushStatusText}
-                  </span>
-                </Label>
-                <Switch
-                  id="push_enabled"
-                  checked={effectivePushEnabled}
-                  onCheckedChange={handlePushToggle}
-                  disabled={pushLoading || permission === 'denied'}
-                />
-              </div>
-
-              {isSubscribed && (
-                <>
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="push_new_deviations" className="flex flex-col">
-                      <span>Nya avvikelser</span>
-                    </Label>
-                    <Switch
-                      id="push_new_deviations"
-                      checked={preferences.push_new_deviations}
-                      onCheckedChange={(checked) => updatePreference('push_new_deviations', checked)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="push_new_faults" className="flex flex-col">
-                      <span>Nya felrapporter</span>
-                    </Label>
-                    <Switch
-                      id="push_new_faults"
-                      checked={preferences.push_new_faults}
-                      onCheckedChange={(checked) => updatePreference('push_new_faults', checked)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="push_expiring_controls" className="flex flex-col">
-                      <span>Förfallande egenkontroller</span>
-                    </Label>
-                    <Switch
-                      id="push_expiring_controls"
-                      checked={preferences.push_expiring_controls}
-                      onCheckedChange={(checked) => updatePreference('push_expiring_controls', checked)}
-                    />
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </CardContent>
+        {isSupported && (
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="push_enabled" className="flex flex-col">
+                <span>Aktivera push-notifikationer</span>
+              </Label>
+              <Switch
+                id="push_enabled"
+                checked={effectivePushEnabled}
+                onCheckedChange={handlePushToggle}
+                disabled={pushLoading || permission === 'denied'}
+              />
+            </div>
+          </CardContent>
+        )}
       </Card>
 
-      {/* Test Push Notification */}
-      {isSubscribed && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              Testa push-notifikationer
-            </CardTitle>
-            <CardDescription>
-              Skicka en testnotis till denna enhet för att verifiera att push fungerar
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              onClick={async () => {
-                setIsTesting(true);
-                setTestResult(null);
-                try {
-                  const { data, error } = await supabase.functions.invoke('test-push-notification');
-                  if (error) throw error;
-                  if (data?.sent > 0) {
-                    setTestResult({ success: true, message: `Testnotis skickad! (${data.sent} enhet${data.sent > 1 ? 'er' : ''})` });
-                  } else {
-                    setTestResult({ success: false, message: 'Ingen prenumeration hittades. Försök avaktivera och aktivera push igen.' });
-                  }
-                } catch (err) {
-                  console.error('Test push error:', err);
-                  setTestResult({ success: false, message: 'Kunde inte skicka testnotis. Försök igen.' });
-                } finally {
-                  setIsTesting(false);
-                }
-              }}
-              disabled={isTesting}
-              className="w-full"
-            >
-              {isTesting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Skickar testnotis...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Skicka testnotis
-                </>
-              )}
-            </Button>
-            {testResult && (
-              <Alert variant={testResult.success ? 'default' : 'destructive'}>
-                {testResult.success ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
-                <AlertDescription>{testResult.message}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-
+      {/* Notification categories */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Allmänna inställningar
+            Notifikationstyper
           </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="days_before_warning" className="flex flex-col">
-              <span>Dagar innan varning</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Hur många dagar i förväg ska påminnelser skickas
-              </span>
-            </Label>
-            <Input
-              id="days_before_warning"
-              type="number"
-              min={1}
-              max={90}
-              value={preferences.days_before_warning}
-              onChange={(e) => updatePreference('days_before_warning', parseInt(e.target.value) || 14)}
-              className="w-20"
-            />
+          <CardDescription>
+            Välj vilka notifikationer du vill ta emot via e-post och/eller push
+          </CardDescription>
+          {/* Legend */}
+          <div className="flex items-center gap-4 pt-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Mail className="h-3.5 w-3.5" />
+              <span>E-post</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Smartphone className="h-3.5 w-3.5" />
+              <span>Push</span>
+            </div>
           </div>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {/* Admin-only section */}
+          {isAdmin && (
+            <>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1">Administration</p>
+
+              {/* Digest - email only */}
+              <div className="flex items-center justify-between gap-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium">Sammanfattning</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Översikt med certifikat, kontroller, avvikelser och fel
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Switch
+                      checked={preferences.email_daily_digest}
+                      onCheckedChange={(checked) => updatePreference('email_daily_digest', checked)}
+                    />
+                  </div>
+                  {/* No push for digest */}
+                  <div className="w-[52px]" />
+                </div>
+              </div>
+
+              {preferences.email_daily_digest && (
+                <div className="pl-4 border-l-2 border-muted pb-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Frekvens</Label>
+                    <Select
+                      value={preferences.digest_frequency}
+                      onValueChange={(value) => updatePreference('digest_frequency', value)}
+                    >
+                      <SelectTrigger className="w-32 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Dagligen</SelectItem>
+                        <SelectItem value="weekly">Veckovis</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              <NotificationRow
+                label="Nya avvikelser"
+                description="När en ny avvikelse rapporteras"
+                emailKey="email_new_deviations"
+                pushKey="push_new_deviations"
+                preferences={preferences}
+                onUpdate={updatePreference}
+                pushAvailable={pushAvailable}
+              />
+
+              <NotificationRow
+                label="Nya felrapporter"
+                description="När ett nytt fel rapporteras"
+                emailKey="email_new_faults"
+                pushKey="push_new_faults"
+                preferences={preferences}
+                onUpdate={updatePreference}
+                pushAvailable={pushAvailable}
+              />
+
+              <Separator className="my-2" />
+            </>
+          )}
+
+          {/* Shared section - all roles */}
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 pt-1">Felärenden</p>
+
+          <NotificationRow
+            label="Ny kommentar / taggning"
+            description="När någon kommenterar eller taggar dig i ett felärende"
+            emailKey="email_fault_comment"
+            pushKey="push_fault_comment"
+            preferences={preferences}
+            onUpdate={updatePreference}
+            pushAvailable={pushAvailable}
+          />
+
+          <NotificationRow
+            label="Tilldelad ansvarig"
+            description="När du blir tilldelad ansvarig på ett felärende"
+            emailKey="email_fault_assigned"
+            pushKey="push_fault_assigned"
+            preferences={preferences}
+            onUpdate={updatePreference}
+            pushAvailable={pushAvailable}
+          />
         </CardContent>
       </Card>
+
+      {/* General settings - admin only */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Allmänna inställningar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="days_before_warning" className="flex flex-col">
+                <span>Dagar innan varning</span>
+                <span className="text-sm text-muted-foreground font-normal">
+                  Hur många dagar i förväg ska påminnelser skickas
+                </span>
+              </Label>
+              <Input
+                id="days_before_warning"
+                type="number"
+                min={1}
+                max={90}
+                value={preferences.days_before_warning}
+                onChange={(e) => updatePreference('days_before_warning', parseInt(e.target.value) || 14)}
+                className="w-20"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Button onClick={savePreferences} disabled={isSaving} className="w-full">
         {isSaving ? (
