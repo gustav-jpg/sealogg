@@ -349,13 +349,15 @@ serve(async (req) => {
 
     const privateKeyRaw = base64UrlDecode(vapidPrivateKey);
 
+    const targetUrl = payload.url || "/portal";
+
     const notificationPayload = JSON.stringify({
       title: payload.title,
       body: payload.body,
       icon: "/favicon.png",
       badge: "/favicon.png",
       tag: payload.tag || "sealogg-notification",
-      data: { url: payload.url || "/portal" },
+      data: { url: targetUrl, deepLink: targetUrl },
     });
 
     // Cache APNs JWT (valid for ~1 hour)
