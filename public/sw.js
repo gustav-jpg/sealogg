@@ -130,19 +130,19 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
-  const urlToOpen = event.notification.data?.url || '/portal';
+  const path = event.notification.data?.url || '/portal';
+  const fullUrl = new URL(path, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Try to focus an existing window and navigate it
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(urlToOpen);
-          return client.focus();
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          return client.focus().then((c) => c.navigate(fullUrl));
         }
       }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+      // No existing window — open a new one
+      return clients.openWindow(fullUrl);
     })
   );
 });
