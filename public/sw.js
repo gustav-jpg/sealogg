@@ -1,5 +1,5 @@
 // Service Worker for Push Notifications & Offline Caching
-const CACHE_NAME = 'sealogg-v2';
+const CACHE_NAME = 'sealogg-v3';
 const STATIC_ASSETS = [
   '/',
   '/favicon.png',

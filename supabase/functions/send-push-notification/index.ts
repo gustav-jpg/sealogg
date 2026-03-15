@@ -392,7 +392,9 @@ serve(async (req) => {
                 sound: "default",
                 badge: 1,
               },
-              url: payload.url || "/portal",
+              data: { url: targetUrl, deepLink: targetUrl },
+              url: targetUrl,
+              deepLink: targetUrl,
             };
 
             let result = await sendApns(deviceToken, apnsJwt, BUNDLE_ID, apnsPayload);

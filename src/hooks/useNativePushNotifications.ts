@@ -126,10 +126,19 @@ export function useNativePushNotifications() {
 
           await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
             console.log('[NativePush] Action performed:', action);
-            const url = action.notification.data?.url;
-            if (url) {
-              window.location.href = url;
-            }
+
+            const data = (action.notification?.data ?? {}) as Record<string, string | undefined>;
+            const rawUrl =
+              data.url ||
+              data.deepLink ||
+              (action.notification as unknown as { url?: string })?.url ||
+              '/portal';
+
+            const targetUrl = rawUrl.startsWith('http')
+              ? rawUrl
+              : new URL(rawUrl, window.location.origin).href;
+
+            window.location.assign(targetUrl);
           });
 
           await PushNotifications.register();
