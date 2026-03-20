@@ -27,7 +27,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </header>
 
           {/* Main content */}
-          <main className="flex-1 container py-6 px-3 md:px-4 lg:px-8 animate-fade-in">
+          <main className="flex-1 container py-6 px-3 md:px-4 lg:px-8 animate-fade-in overflow-x-hidden max-w-full">
             {children}
           </main>
 
