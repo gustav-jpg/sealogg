@@ -277,22 +277,23 @@ export default function AdminStatus() {
         </div>
 
         {/* Live passenger counts */}
-        {vesselsWithPassengers.length > 0 && (
+        {vessels && vessels.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {vesselsWithPassengers.map(vessel => {
+            {vessels.map(vessel => {
+              const hasActiveSession = vesselPassengerCounts[vessel.id] !== undefined;
               const count = vesselPassengerCounts[vessel.id] || 0;
               const maxPax = (vessel as any).max_passengers;
               const isOver = maxPax && count > maxPax;
               return (
                 <Card key={vessel.id} className={`p-3 ${isOver ? 'border-destructive/50 bg-destructive/5' : ''}`}>
                   <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-md ${isOver ? 'bg-destructive/10' : 'bg-primary/10'}`}>
-                      <Users className={`h-4 w-4 ${isOver ? 'text-destructive' : 'text-primary'}`} />
+                    <div className={`p-1.5 rounded-md ${isOver ? 'bg-destructive/10' : hasActiveSession ? 'bg-primary/10' : 'bg-muted'}`}>
+                      <Users className={`h-4 w-4 ${isOver ? 'text-destructive' : hasActiveSession ? 'text-primary' : 'text-muted-foreground'}`} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground truncate">{vessel.name}</p>
                       <div className="flex items-baseline gap-1">
-                        <span className={`text-lg font-bold leading-none ${isOver ? 'text-destructive' : ''}`}>
+                        <span className={`text-lg font-bold leading-none ${isOver ? 'text-destructive' : !hasActiveSession ? 'text-muted-foreground' : ''}`}>
                           {count}
                         </span>
                         {maxPax && (
@@ -301,8 +302,14 @@ export default function AdminStatus() {
                       </div>
                     </div>
                     <div className="relative h-2 w-2 flex-shrink-0">
-                      <span className="absolute inset-0 rounded-full bg-green-500 animate-pulse" />
-                      <span className="absolute inset-0 rounded-full bg-green-500" />
+                      {hasActiveSession ? (
+                        <>
+                          <span className="absolute inset-0 rounded-full bg-green-500 animate-pulse" />
+                          <span className="absolute inset-0 rounded-full bg-green-500" />
+                        </>
+                      ) : (
+                        <span className="absolute inset-0 rounded-full bg-destructive" />
+                      )}
                     </div>
                   </div>
                 </Card>
