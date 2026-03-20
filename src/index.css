@@ -10,6 +10,17 @@ html {
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
   background-color: hsl(210 25% 97%);
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  overflow-x: hidden;
+  min-height: 100vh;
 }
 
 .dark html {
