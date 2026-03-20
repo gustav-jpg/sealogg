@@ -65,6 +65,9 @@ serve(async (req) => {
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email,
+      options: {
+        redirectTo: 'https://sealogg.se/portal/reset-password',
+      },
     });
 
     if (linkError) {
