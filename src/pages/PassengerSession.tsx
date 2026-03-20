@@ -487,6 +487,17 @@ export default function PassengerSession() {
   }
 
   return (
+    <>
+      {counterMode && (
+        <CounterMode
+          dockName={currentDockName}
+          currentOnboard={currentOnboard}
+          maxPassengers={(session as any).vessel?.max_passengers}
+          isActive={session.is_active}
+          onSave={handleCounterSave}
+          onClose={() => setCounterMode(false)}
+        />
+      )}
     <MainLayout>
       <div className="space-y-3 md:space-y-4">
         {/* Header - Mobile optimized */}
