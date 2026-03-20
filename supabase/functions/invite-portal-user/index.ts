@@ -244,9 +244,10 @@ serve(async (req) => {
 
         if (resetError) {
           console.error("Failed to generate reset link:", resetError);
-        } else if (linkData?.properties?.action_link) {
-          resetLink = linkData.properties.action_link;
-          console.log("Reset link generated successfully");
+        } else if (linkData?.properties?.hashed_token) {
+          // Use token_hash approach to bypass Supabase redirect URL allowlist
+          resetLink = `https://sealogg.se/portal/reset-password?token_hash=${linkData.properties.hashed_token}&type=recovery`;
+          console.log("Reset link generated successfully (token_hash approach)");
         }
         
         console.log("RESEND_API_KEY available:", !!RESEND_API_KEY);
