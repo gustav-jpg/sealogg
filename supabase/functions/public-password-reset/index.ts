@@ -40,7 +40,7 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const redirectTo = `${req.headers.get("origin") ?? ""}/portal/reset-password`;
+    const redirectTo = 'https://sealogg.se/portal/reset-password';
 
     const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
