@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ export default function ResetPassword() {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,6 +34,29 @@ export default function ResetPassword() {
     });
 
     const checkSession = async () => {
+      // First, check for token_hash in URL params (bypass redirect approach)
+      const tokenHash = searchParams.get('token_hash');
+      const type = searchParams.get('type');
+
+      if (tokenHash && type === 'recovery') {
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          });
+          if (!error && data.session) {
+            setIsValidSession(true);
+            setIsCheckingSession(false);
+            return;
+          } else {
+            console.error('Token verification failed:', error?.message);
+          }
+        } catch (err) {
+          console.error('Token verification exception:', err);
+        }
+      }
+
+      // Fallback: check for existing session (e.g. from hash fragment redirect)
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setIsValidSession(true);
@@ -40,9 +64,6 @@ export default function ResetPassword() {
       } else {
         setTimeout(() => {
           setIsCheckingSession(prev => {
-            if (prev) {
-              // Don't show toast — the expired UI itself is informative enough
-            }
             return false;
           });
         }, 3000);
@@ -52,7 +73,7 @@ export default function ResetPassword() {
     checkSession();
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
