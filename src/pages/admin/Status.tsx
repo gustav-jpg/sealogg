@@ -317,17 +317,8 @@ export default function AdminStatus() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview tab - summary cards */}
+          {/* Overview tab - vessels & passengers only */}
           <TabsContent value="overview" className="space-y-4 mt-0">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <SummaryCard icon={Wrench} count={counts.faults} label="Felärenden" alert={kritiskaFaults > 0} sublabel={kritiskaFaults > 0 ? `${kritiskaFaults} kritiska/höga` : undefined} />
-              <SummaryCard icon={CheckCircle} count={counts.controls} label="Underhåll" alert={forfallnaControls > 0} sublabel={forfallnaControls > 0 ? `${forfallnaControls} förfallna` : undefined} />
-              <SummaryCard icon={Ship} count={counts.vesselCerts} label="Fartygscert." />
-              <SummaryCard icon={Award} count={counts.userCerts} label="Personliga cert." />
-              <SummaryCard icon={AlertTriangle} count={counts.deviations} label="Avvikelser" />
-            </div>
-
-            {/* Quick info about active vessels */}
             {vessels && vessels.length > 0 && (
               <Card>
                 <CardHeader className="py-3 px-4">
@@ -362,8 +353,16 @@ export default function AdminStatus() {
             )}
           </TabsContent>
 
-          {/* Issues tab */}
+          {/* Issues tab - all oversight items */}
           <TabsContent value="issues" className="space-y-3 mt-0">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <SummaryCard icon={Wrench} count={counts.faults} label="Felärenden" alert={kritiskaFaults > 0} sublabel={kritiskaFaults > 0 ? `${kritiskaFaults} kritiska/höga` : undefined} />
+              <SummaryCard icon={CheckCircle} count={counts.controls} label="Underhåll" alert={forfallnaControls > 0} sublabel={forfallnaControls > 0 ? `${forfallnaControls} förfallna` : undefined} />
+              <SummaryCard icon={Ship} count={counts.vesselCerts} label="Fartygscert." />
+              <SummaryCard icon={Award} count={counts.userCerts} label="Personliga cert." />
+              <SummaryCard icon={AlertTriangle} count={counts.deviations} label="Avvikelser" />
+            </div>
+
             <div className="flex justify-end">
               <div className="space-y-1">
                 <Label className="text-xs">Tidsperiod</Label>
