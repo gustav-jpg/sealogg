@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +34,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus, Pencil, AlertTriangle } from "lucide-react";
+import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus, Pencil, AlertTriangle, Hash } from "lucide-react";
+import { CounterMode } from "@/components/passenger/CounterMode";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { toast } from "sonner";
@@ -82,6 +83,7 @@ export default function PassengerSession() {
   const [paxOn, setPaxOn] = useState<string>('');
   const [paxOff, setPaxOff] = useState<string>('');
   const [lastEntriesCount, setLastEntriesCount] = useState(0);
+  const [counterMode, setCounterMode] = useState(false);
   
   const paxOnRef = useRef<HTMLInputElement>(null);
 
@@ -407,6 +409,41 @@ export default function PassengerSession() {
     }
   };
 
+  // Counter mode save handler
+  const handleCounterSave = useCallback(async (paxOnVal: number, paxOffVal: number) => {
+    if (!session?.is_active) throw new Error('Sessionen är låst');
+    const dockId = selectedDockId || null;
+    const dockName = allDocks.find(d => d.id === selectedDockId)?.name || 'Okänd brygga';
+
+    const { error } = await supabase
+      .from('passenger_entries')
+      .insert({
+        session_id: sessionId,
+        dock_id: dockId,
+        dock_name: dockName,
+        departure_time: format(new Date(), 'HH:mm'),
+        pax_on: paxOnVal,
+        pax_off: paxOffVal,
+        entry_order: entries.length + 1,
+        registered_by: user?.id,
+      });
+
+    if (error) throw error;
+    queryClient.invalidateQueries({ queryKey: ['passenger-entries', sessionId] });
+    toast.success('Registrering sparad');
+  }, [session?.is_active, selectedDockId, allDocks, sessionId, entries.length, user?.id, queryClient]);
+
+  // Get current dock name for counter mode
+  const currentDockName = useMemo(() => {
+    if (selectedDockId) {
+      const dock = allDocks.find(d => d.id === selectedDockId);
+      if (dock) return dock.name;
+      const stop = routeStops.find(s => s.dock_id === selectedDockId);
+      if (stop) return stop.dock?.name || '';
+    }
+    return '';
+  }, [selectedDockId, allDocks, routeStops]);
+
   if (sessionLoading || crewCheckLoading) {
     return (
       <MainLayout>
@@ -450,6 +487,17 @@ export default function PassengerSession() {
   }
 
   return (
+    <>
+      {counterMode && (
+        <CounterMode
+          dockName={currentDockName}
+          currentOnboard={currentOnboard}
+          maxPassengers={(session as any).vessel?.max_passengers}
+          isActive={session.is_active}
+          onSave={handleCounterSave}
+          onClose={() => setCounterMode(false)}
+        />
+      )}
     <MainLayout>
       <div className="space-y-3 md:space-y-4">
         {/* Header - Mobile optimized */}
@@ -516,8 +564,19 @@ export default function PassengerSession() {
 
         {/* Quick Entry Form - Mobile optimized */}
         <Card>
-          <CardHeader className="py-2 md:py-3">
+          <CardHeader className="py-2 md:py-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm md:text-base">Ny registrering</CardTitle>
+            {session.is_active && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs h-8"
+                onClick={() => setCounterMode(true)}
+              >
+                <Hash className="h-3.5 w-3.5" />
+                Räknare
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="py-2 md:py-3">
             <div className="space-y-3 md:space-y-0" onKeyDown={handleKeyDown}>
@@ -805,5 +864,6 @@ export default function PassengerSession() {
 
       </div>
     </MainLayout>
+    </>
   );
 }
