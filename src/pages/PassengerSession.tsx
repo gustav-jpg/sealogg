@@ -83,6 +83,7 @@ export default function PassengerSession() {
   const [paxOn, setPaxOn] = useState<string>('');
   const [paxOff, setPaxOff] = useState<string>('');
   const [lastEntriesCount, setLastEntriesCount] = useState(0);
+  const [counterMode, setCounterMode] = useState(false);
   
   const paxOnRef = useRef<HTMLInputElement>(null);
 
