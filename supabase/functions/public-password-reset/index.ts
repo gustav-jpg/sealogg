@@ -40,23 +40,24 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const redirectTo = 'https://sealogg.se/portal/reset-password';
-
     const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,
-      options: { redirectTo },
+      options: { redirectTo: 'https://sealogg.se/portal/reset-password' },
     });
 
-    const resetLink = linkData?.properties?.action_link;
+    // Use token_hash approach to bypass Supabase redirect URL allowlist
+    const hashedToken = linkData?.properties?.hashed_token;
 
     // If we can't generate a link (e.g. email doesn't exist), still return 200.
-    if (!resetLink) {
+    if (!hashedToken) {
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const resetLink = `https://sealogg.se/portal/reset-password?token_hash=${hashedToken}&type=recovery`;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

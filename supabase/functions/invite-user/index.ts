@@ -239,7 +239,10 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } else {
-        const resetLink = linkData.properties?.action_link;
+        // Use token_hash approach to bypass Supabase redirect URL allowlist
+        const resetLink = linkData?.properties?.hashed_token
+          ? `${APP_URL}/portal/reset-password?token_hash=${linkData.properties.hashed_token}&type=recovery`
+          : null;
 
         if (!resetLink) {
           console.error("Missing reset link in generateLink response");

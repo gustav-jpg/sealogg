@@ -77,14 +77,17 @@ serve(async (req) => {
       });
     }
 
-    const resetLink = linkData.properties?.action_link;
+    // Use token_hash approach to bypass Supabase redirect URL allowlist
+    const hashedToken = linkData?.properties?.hashed_token;
     
-    if (!resetLink) {
+    if (!hashedToken) {
       return new Response(JSON.stringify({ error: "Failed to generate reset link" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const resetLink = `https://sealogg.se/portal/reset-password?token_hash=${hashedToken}&type=recovery`;
 
     // Send email via Resend
     const res = await fetch("https://api.resend.com/emails", {
