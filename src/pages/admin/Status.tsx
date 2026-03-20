@@ -42,15 +42,18 @@ export default function AdminStatus() {
   const profileIds = profiles?.map(p => p.id) || [];
 
   // --- Realtime passenger counts ---
+  const today = new Date().toISOString().split('T')[0];
+
   const { data: activeSessions = [] } = useQuery({
-    queryKey: ['status-active-sessions', vesselIds],
+    queryKey: ['status-active-sessions', vesselIds, today],
     queryFn: async () => {
       if (vesselIds.length === 0) return [];
       const { data, error } = await supabase
         .from('passenger_sessions')
-        .select('id, vessel_id, is_active')
+        .select('id, vessel_id, is_active, session_date')
         .in('vessel_id', vesselIds)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('session_date', today);
       if (error) throw error;
       return data || [];
     },
