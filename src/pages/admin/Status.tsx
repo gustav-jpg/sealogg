@@ -310,7 +310,7 @@ export default function AdminStatus() {
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="overview">Översikt</TabsTrigger>
             <TabsTrigger value="issues" className="gap-1.5">
-              Ärenden
+              Åtgärder
               {totalIssues > 0 && (
                 <Badge variant="secondary" className="text-xs h-5 px-1.5">{totalIssues}</Badge>
               )}
