@@ -409,6 +409,41 @@ export default function PassengerSession() {
     }
   };
 
+  // Counter mode save handler
+  const handleCounterSave = useCallback(async (paxOnVal: number, paxOffVal: number) => {
+    if (!session?.is_active) throw new Error('Sessionen är låst');
+    const dockId = selectedDockId || null;
+    const dockName = allDocks.find(d => d.id === selectedDockId)?.name || 'Okänd brygga';
+
+    const { error } = await supabase
+      .from('passenger_entries')
+      .insert({
+        session_id: sessionId,
+        dock_id: dockId,
+        dock_name: dockName,
+        departure_time: format(new Date(), 'HH:mm'),
+        pax_on: paxOnVal,
+        pax_off: paxOffVal,
+        entry_order: entries.length + 1,
+        registered_by: user?.id,
+      });
+
+    if (error) throw error;
+    queryClient.invalidateQueries({ queryKey: ['passenger-entries', sessionId] });
+    toast.success('Registrering sparad');
+  }, [session?.is_active, selectedDockId, allDocks, sessionId, entries.length, user?.id, queryClient]);
+
+  // Get current dock name for counter mode
+  const currentDockName = useMemo(() => {
+    if (selectedDockId) {
+      const dock = allDocks.find(d => d.id === selectedDockId);
+      if (dock) return dock.name;
+      const stop = routeStops.find(s => s.dock_id === selectedDockId);
+      if (stop) return stop.dock?.name || '';
+    }
+    return '';
+  }, [selectedDockId, allDocks, routeStops]);
+
   if (sessionLoading || crewCheckLoading) {
     return (
       <MainLayout>
