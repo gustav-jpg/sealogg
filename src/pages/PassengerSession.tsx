@@ -433,16 +433,29 @@ export default function PassengerSession() {
     toast.success('Registrering sparad');
   }, [session?.is_active, selectedDockId, allDocks, sessionId, entries.length, user?.id, queryClient]);
 
+  // Build deduplicated dock options: route stops if route selected, otherwise all docks
+  const dockOptions = useMemo(() => {
+    if (session?.route_id && routeStops.length > 0) {
+      const seen = new Set<string>();
+      return routeStops
+        .filter(stop => {
+          if (seen.has(stop.dock_id)) return false;
+          seen.add(stop.dock_id);
+          return true;
+        })
+        .map(stop => ({ id: stop.dock_id, name: stop.dock?.name || 'Okänd' }));
+    }
+    return allDocks;
+  }, [session?.route_id, routeStops, allDocks]);
+
   // Get current dock name for counter mode
   const currentDockName = useMemo(() => {
     if (selectedDockId) {
-      const dock = allDocks.find(d => d.id === selectedDockId);
+      const dock = dockOptions.find(d => d.id === selectedDockId);
       if (dock) return dock.name;
-      const stop = routeStops.find(s => s.dock_id === selectedDockId);
-      if (stop) return stop.dock?.name || '';
     }
     return '';
-  }, [selectedDockId, allDocks, routeStops]);
+  }, [selectedDockId, dockOptions]);
 
   if (sessionLoading || crewCheckLoading) {
     return (
@@ -599,17 +612,11 @@ export default function PassengerSession() {
                       <SelectValue placeholder="Välj" />
                     </SelectTrigger>
                     <SelectContent>
-                      {session.route_id && routeStops.length > 0
-                        ? routeStops.map((stop) => (
-                            <SelectItem key={stop.dock_id} value={stop.dock_id}>
-                              {stop.dock?.name}
-                            </SelectItem>
-                          ))
-                        : allDocks.map((dock) => (
-                            <SelectItem key={dock.id} value={dock.id}>
-                              {dock.name}
-                            </SelectItem>
-                          ))}
+                      {dockOptions.map((dock) => (
+                        <SelectItem key={dock.id} value={dock.id}>
+                          {dock.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -679,17 +686,11 @@ export default function PassengerSession() {
                       <SelectValue placeholder="Välj brygga" />
                     </SelectTrigger>
                     <SelectContent>
-                      {session.route_id && routeStops.length > 0
-                        ? routeStops.map((stop) => (
-                            <SelectItem key={stop.dock_id} value={stop.dock_id}>
-                              {stop.dock?.name}
-                            </SelectItem>
-                          ))
-                        : allDocks.map((dock) => (
-                            <SelectItem key={dock.id} value={dock.id}>
-                              {dock.name}
-                            </SelectItem>
-                          ))}
+                      {dockOptions.map((dock) => (
+                        <SelectItem key={dock.id} value={dock.id}>
+                          {dock.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
