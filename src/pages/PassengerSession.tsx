@@ -564,8 +564,19 @@ export default function PassengerSession() {
 
         {/* Quick Entry Form - Mobile optimized */}
         <Card>
-          <CardHeader className="py-2 md:py-3">
+          <CardHeader className="py-2 md:py-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm md:text-base">Ny registrering</CardTitle>
+            {session.is_active && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs h-8"
+                onClick={() => setCounterMode(true)}
+              >
+                <Hash className="h-3.5 w-3.5" />
+                Räknare
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="py-2 md:py-3">
             <div className="space-y-3 md:space-y-0" onKeyDown={handleKeyDown}>
