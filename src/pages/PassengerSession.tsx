@@ -34,7 +34,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus, Pencil, AlertTriangle } from "lucide-react";
+import { Ship, Users, Plus, ArrowLeft, Check, Trash2, Lock, Clock, UserPlus, UserMinus, Pencil, AlertTriangle, Hash } from "lucide-react";
+import { CounterMode } from "@/components/passenger/CounterMode";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { toast } from "sonner";
