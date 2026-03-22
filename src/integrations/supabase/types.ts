@@ -1687,6 +1687,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          otp_code: string | null
           token: string
           used_at: string | null
           user_email: string
@@ -1695,6 +1696,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
+          otp_code?: string | null
           token: string
           used_at?: string | null
           user_email: string
@@ -1703,6 +1705,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          otp_code?: string | null
           token?: string
           used_at?: string | null
           user_email?: string
