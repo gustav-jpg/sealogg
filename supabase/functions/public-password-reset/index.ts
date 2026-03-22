@@ -44,7 +44,7 @@ serve(async (req) => {
     const otpCode = generateOtpCode();
     const inviteToken = crypto.randomUUID();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 1); // 24h for password resets
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days for password resets
 
     await supabaseAdmin.from("invitation_tokens").insert({
       token: inviteToken,
