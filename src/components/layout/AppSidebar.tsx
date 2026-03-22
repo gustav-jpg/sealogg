@@ -481,27 +481,35 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
         
-        {/* User info - clickable to change password */}
-        <button
-          onClick={() => setShowPasswordDialog(true)}
-          className={cn(
-            "flex items-center gap-2 px-2 py-1 rounded-md bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors w-full text-left cursor-pointer",
-            isCollapsed && "justify-center"
-          )}
-          title="Byt lösenord"
-        >
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              {profile?.full_name ? getInitials(profile.full_name) : <User className="h-4 w-4" />}
-            </AvatarFallback>
-          </Avatar>
-          {!isCollapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium truncate">{profile?.full_name}</span>
-              <span className="text-xs text-muted-foreground truncate">{profile?.email}</span>
-            </div>
-          )}
-        </button>
+        {/* User info - dropdown menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                "flex items-center gap-2 px-2 py-1 rounded-md bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors w-full text-left cursor-pointer",
+                isCollapsed && "justify-center"
+              )}
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {profile?.full_name ? getInitials(profile.full_name) : <User className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+              {!isCollapsed && (
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium truncate">{profile?.full_name}</span>
+                  <span className="text-xs text-muted-foreground truncate">{profile?.email}</span>
+                </div>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-48">
+            <DropdownMenuItem onClick={() => setShowPasswordDialog(true)}>
+              <KeyRound className="mr-2 h-4 w-4" />
+              Byt lösenord
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
 
       <ChangePasswordDialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog} />
