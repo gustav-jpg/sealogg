@@ -19,24 +19,47 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { token } = await req.json();
+    const { token, otp_code, email } = await req.json();
 
-    if (!token) {
-      return new Response(JSON.stringify({ error: "Token krävs" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Support two modes: token-based (link click) or OTP-based (manual code entry)
+    let invitation;
 
-    // Look up the invitation token
-    const { data: invitation, error: lookupError } = await supabaseAdmin
-      .from("invitation_tokens")
-      .select("*")
-      .eq("token", token)
-      .maybeSingle();
+    if (otp_code && email) {
+      // OTP mode: look up by email + code
+      const { data, error } = await supabaseAdmin
+        .from("invitation_tokens")
+        .select("*")
+        .eq("user_email", email.toLowerCase().trim())
+        .eq("otp_code", otp_code.trim())
+        .is("used_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (lookupError || !invitation) {
-      return new Response(JSON.stringify({ error: "Ogiltig länk" }), {
+      if (error || !data) {
+        return new Response(JSON.stringify({ error: "Felaktig kod. Kontrollera koden och e-postadressen." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      invitation = data;
+    } else if (token) {
+      // Token mode: look up by UUID token (link click)
+      const { data, error } = await supabaseAdmin
+        .from("invitation_tokens")
+        .select("*")
+        .eq("token", token)
+        .maybeSingle();
+
+      if (error || !data) {
+        return new Response(JSON.stringify({ error: "Ogiltig länk" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      invitation = data;
+    } else {
+      return new Response(JSON.stringify({ error: "Token eller kod krävs" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -44,7 +67,7 @@ serve(async (req) => {
 
     // Check if already used
     if (invitation.used_at) {
-      return new Response(JSON.stringify({ error: "Länken har redan använts" }), {
+      return new Response(JSON.stringify({ error: "Koden/länken har redan använts" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -52,13 +75,13 @@ serve(async (req) => {
 
     // Check if expired
     if (new Date(invitation.expires_at) < new Date()) {
-      return new Response(JSON.stringify({ error: "Länken har utgått" }), {
+      return new Response(JSON.stringify({ error: "Koden/länken har utgått. Begär en ny." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Generate a fresh Supabase recovery link (short-lived, but created on-demand)
+    // Generate a fresh Supabase recovery link
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email: invitation.user_email,
@@ -78,7 +101,6 @@ serve(async (req) => {
       .update({ used_at: new Date().toISOString() })
       .eq("id", invitation.id);
 
-    // Return the fresh token_hash for the client to use with verifyOtp
     return new Response(
       JSON.stringify({
         token_hash: linkData.properties.hashed_token,
