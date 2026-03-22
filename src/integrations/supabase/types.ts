@@ -1682,6 +1682,33 @@ export type Database = {
           },
         ]
       }
+      invitation_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+          user_email: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+          used_at?: string | null
+          user_email: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       logbook_crew: {
         Row: {
           created_at: string
