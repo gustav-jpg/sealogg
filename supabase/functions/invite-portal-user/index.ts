@@ -230,25 +230,32 @@ serve(async (req) => {
       if (useInitialPassword) {
         console.log("Admin set password, skipping welcome email");
       } else {
-        // Generate password reset link
-        console.log("Generating password reset link for:", email);
-        let resetLink: string | null = null;
-        
-        const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'recovery',
-          email,
-          options: {
-            redirectTo: 'https://sealogg.se/portal/reset-password',
-          },
-        });
+        // Generate a custom invitation token valid for 7 days
+        console.log("Generating invitation token for:", email);
+        const inviteToken = crypto.randomUUID();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
 
-        if (resetError) {
-          console.error("Failed to generate reset link:", resetError);
-        } else if (linkData?.properties?.hashed_token) {
-          // Use token_hash approach to bypass Supabase redirect URL allowlist
-          resetLink = `https://sealogg.se/portal/reset-password?token_hash=${linkData.properties.hashed_token}&type=recovery`;
-          console.log("Reset link generated successfully (token_hash approach)");
+        const { error: tokenError } = await supabaseAdmin
+          .from('invitation_tokens')
+          .insert({
+            token: inviteToken,
+            user_email: email,
+            expires_at: expiresAt.toISOString(),
+          });
+
+        if (tokenError) {
+          console.error("Failed to create invitation token:", tokenError);
+          return new Response(JSON.stringify({
+            error: "Failed to create invitation token",
+            details: tokenError.message,
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
+
+        const resetLink = `https://sealogg.se/portal/reset-password?invite_token=${inviteToken}`;
         
         console.log("RESEND_API_KEY available:", !!RESEND_API_KEY);
         
@@ -256,13 +263,11 @@ serve(async (req) => {
         if (RESEND_API_KEY) {
           const roleText = role === 'admin' ? 'administratör' : role === 'skeppare' ? 'skeppare' : role === 'deckhand' ? 'däcksman' : 'läsare';
           
-          // Build email HTML - include reset button only if link was generated
-          const resetButtonHtml = resetLink 
-            ? `<p style="text-align: center; margin: 30px 0;">
-                 <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
-               </p>
-               <p><small>Länken är giltig i 24 timmar.</small></p>`
-            : `<p>Kontakta din administratör för att få ett lösenord.</p>`;
+          // Build email HTML with 7-day invitation link
+          const resetButtonHtml = `<p style="text-align: center; margin: 30px 0;">
+               <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
+             </p>
+             <p><small>Länken är giltig i 7 dagar.</small></p>`;
         
         console.log("Sending welcome email to:", email);
         
