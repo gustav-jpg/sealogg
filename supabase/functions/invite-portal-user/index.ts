@@ -230,9 +230,10 @@ serve(async (req) => {
       if (useInitialPassword) {
         console.log("Admin set password, skipping welcome email");
       } else {
-        // Generate a custom invitation token valid for 7 days
+        // Generate a custom invitation token valid for 7 days with OTP code
         console.log("Generating invitation token for:", email);
         const inviteToken = crypto.randomUUID();
+        const otpCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -241,6 +242,7 @@ serve(async (req) => {
           .insert({
             token: inviteToken,
             user_email: email,
+            otp_code: otpCode,
             expires_at: expiresAt.toISOString(),
           });
 
