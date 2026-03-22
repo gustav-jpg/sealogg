@@ -479,11 +479,15 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
         
-        {/* User info */}
-        <div className={cn(
-          "flex items-center gap-2 px-2 py-1 rounded-md bg-sidebar-accent/50",
-          isCollapsed && "justify-center"
-        )}>
+        {/* User info - clickable to change password */}
+        <button
+          onClick={() => setShowPasswordDialog(true)}
+          className={cn(
+            "flex items-center gap-2 px-2 py-1 rounded-md bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors w-full text-left cursor-pointer",
+            isCollapsed && "justify-center"
+          )}
+          title="Byt lösenord"
+        >
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
               {profile?.full_name ? getInitials(profile.full_name) : <User className="h-4 w-4" />}
@@ -495,8 +499,10 @@ export function AppSidebar() {
               <span className="text-xs text-muted-foreground truncate">{profile?.email}</span>
             </div>
           )}
-        </div>
+        </button>
       </SidebarFooter>
+
+      <ChangePasswordDialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog} />
     </Sidebar>
   );
 }
