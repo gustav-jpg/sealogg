@@ -302,13 +302,20 @@ serve(async (req) => {
                       Roll: ${roleText}
                     </div>
                     
-                    <p>För att komma igång behöver du sätta ett lösenord för ditt konto:</p>
-                    
-                    <p style="text-align: center; margin: 30px 0;">
-                      <a href="${resetLink}" class="button" style="color: white;">Skapa ditt lösenord</a>
-                    </p>
-                    
-                    <p><small>Länken är giltig i 7 dagar. Om du inte förväntade dig detta mail kan du ignorera det.</small></p>
+                     <p>För att komma igång behöver du sätta ett lösenord för ditt konto:</p>
+                     
+                     <p style="text-align: center; margin: 30px 0;">
+                       <a href="${resetLink}" class="button" style="color: white;">Skapa ditt lösenord</a>
+                     </p>
+                     
+                     <div style="text-align: center; color: #999; margin: 20px 0; font-size: 13px;">─── Fungerar inte länken? Använd koden nedan ───</div>
+                     <div style="background-color: #f0f9ff; border: 2px dashed #0077b6; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+                       <p style="margin: 0 0 10px; font-size: 14px; color: #666;">Din engångskod:</p>
+                       <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0077b6; font-family: monospace;">${otpCode}</div>
+                     </div>
+                     <p style="font-size: 13px; color: #666; text-align: center;">Ange koden på <a href="https://sealogg.se/portal/reset-password">sealogg.se/portal/reset-password</a> tillsammans med din e-postadress.</p>
+                     
+                     <p><small>Länken och koden är giltiga i 7 dagar. Om du inte förväntade dig detta mail kan du ignorera det.</small></p>
                   </div>
                   <div class="footer">
                     <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
