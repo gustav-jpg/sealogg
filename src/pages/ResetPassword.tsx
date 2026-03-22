@@ -34,7 +34,41 @@ export default function ResetPassword() {
     });
 
     const checkSession = async () => {
-      // First, check for token_hash in URL params (bypass redirect approach)
+      // Check for custom invitation token (7-day validity)
+      const inviteToken = searchParams.get('invite_token');
+      if (inviteToken) {
+        try {
+          const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-invitation-token', {
+            body: { token: inviteToken },
+          });
+
+          if (verifyError) {
+            console.error('Invite token verification failed:', verifyError);
+          } else if (verifyData?.token_hash) {
+            // Use the fresh token_hash from the edge function
+            const { data, error } = await supabase.auth.verifyOtp({
+              token_hash: verifyData.token_hash,
+              type: 'recovery',
+            });
+            if (!error && data.session) {
+              setIsValidSession(true);
+              setIsCheckingSession(false);
+              return;
+            } else {
+              console.error('OTP verification failed:', error?.message);
+            }
+          } else if (verifyData?.error) {
+            console.error('Invite token error:', verifyData.error);
+          }
+        } catch (err) {
+          console.error('Invite token exception:', err);
+        }
+        // If invite token failed, fall through to show expired page
+        setIsCheckingSession(false);
+        return;
+      }
+
+      // Check for direct token_hash in URL params (password reset flow)
       const tokenHash = searchParams.get('token_hash');
       const type = searchParams.get('type');
 
