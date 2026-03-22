@@ -173,19 +173,33 @@ serve(async (req) => {
       console.error("Failed to add to organization:", orgError);
     }
 
-    // Generate password reset link and send via Resend
-    const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: {
-        redirectTo: `${APP_URL}/portal/reset-password`,
-      },
-    });
+    // Generate a custom invitation token valid for 7 days and send via Resend
+    const inviteToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
-    if (resetError) {
-      console.error("Failed to generate reset link:", resetError);
-    } else if (linkData?.properties?.action_link && RESEND_API_KEY) {
-      const resetLink = linkData.properties.action_link;
+    const { error: tokenError } = await supabaseAdmin
+      .from('invitation_tokens')
+      .insert({
+        token: inviteToken,
+        user_email: email,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (tokenError) {
+      console.error("Failed to create invitation token:", tokenError);
+      return new Response(JSON.stringify({
+        error: "Failed to create invitation token",
+        details: tokenError.message,
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const resetLink = `${APP_URL}/portal/reset-password?invite_token=${inviteToken}`;
+
+    if (RESEND_API_KEY) {
       
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -224,7 +238,7 @@ serve(async (req) => {
                   <p style="text-align: center; margin: 30px 0;">
                     <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
                   </p>
-                  <p><small>Länken är giltig i 24 timmar.</small></p>
+                  <p><small>Länken är giltig i 7 dagar.</small></p>
                 </div>
                 <div class="footer">
                   <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
