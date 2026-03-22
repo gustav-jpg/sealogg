@@ -135,7 +135,7 @@ serve(async (req) => {
                 <p style="text-align: center; margin: 30px 0;">
                   <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
                 </p>
-                <p><small>Länken är giltig i 24 timmar.</small></p>
+                <p><small>Länken är giltig i 7 dagar.</small></p>
               </div>
               <div class="footer">
                 <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
