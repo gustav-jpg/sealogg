@@ -101,14 +101,12 @@ export default function Login() {
       console.error('Password reset invoke error (ignored):', err);
     }
 
-    // Av säkerhetsskäl: visa alltid samma framgångsmeddelande
-    toast({
-      title: 'Återställningslänk skickad',
-      description: 'Om kontot finns skickas en länk till din e-post. Kolla även skräppost.',
-    });
     setResetDialogOpen(false);
     setResetEmail('');
     setIsResetLoading(false);
+    
+    // Navigera till reset-sidan så användaren kan ange PIN direkt
+    navigate('/portal/reset-password', { state: { emailSent: true } });
   };
 
   return (
