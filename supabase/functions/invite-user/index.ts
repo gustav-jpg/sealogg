@@ -217,40 +217,35 @@ serve(async (req) => {
         });
       }
 
-      // Generate password reset link
-      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email,
-        options: {
-          redirectTo: `${APP_URL}/portal/reset-password`,
-        },
-      });
-
       // Skip email if admin set a password - user will login directly
       if (useInitialPassword) {
         console.log("Admin set password, skipping welcome email");
-      } else if (linkError) {
-        console.error("Failed to generate reset link:", linkError);
-        return new Response(JSON.stringify({
-          error: "Failed to generate password setup link",
-          details: linkError.message,
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
       } else {
-        // Use token_hash approach to bypass Supabase redirect URL allowlist
-        const resetLink = linkData?.properties?.hashed_token
-          ? `${APP_URL}/portal/reset-password?token_hash=${linkData.properties.hashed_token}&type=recovery`
-          : null;
+        // Generate a custom invitation token valid for 7 days
+        const inviteToken = crypto.randomUUID();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
 
-        if (!resetLink) {
-          console.error("Missing reset link in generateLink response");
-          return new Response(JSON.stringify({ error: "Missing reset link" }), {
+        const { error: tokenError } = await supabaseAdmin
+          .from('invitation_tokens')
+          .insert({
+            token: inviteToken,
+            user_email: email,
+            expires_at: expiresAt.toISOString(),
+          });
+
+        if (tokenError) {
+          console.error("Failed to create invitation token:", tokenError);
+          return new Response(JSON.stringify({
+            error: "Failed to create invitation token",
+            details: tokenError.message,
+          }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+
+        const resetLink = `${APP_URL}/portal/reset-password?invite_token=${inviteToken}`;
 
         if (!RESEND_API_KEY) {
           console.error("RESEND_API_KEY is not configured");
@@ -260,84 +255,82 @@ serve(async (req) => {
           });
         }
 
-        if (resetLink && RESEND_API_KEY) {
-          // Send welcome email with password setup link via Resend
-          const roleText = role === 'org_admin' ? 'administratör' : 'användare';
-          
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${RESEND_API_KEY}`,
-            },
-            body: JSON.stringify({
-              from: "SeaLogg <noreply@sealogg.se>",
-              to: [email],
-              subject: `Välkommen till SeaLogg - ${organizationName}`,
-              html: `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                  <meta charset="utf-8">
-                  <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #0077b6; }
-                    .logo { font-size: 24px; font-weight: bold; color: #0077b6; }
-                    .content { padding: 30px 0; }
-                    .button { display: inline-block; padding: 14px 28px; background-color: #0077b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
-                    .info-box { background-color: #f0f9ff; border-left: 4px solid #0077b6; padding: 15px; margin: 20px 0; }
-                    .footer { padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <div class="header">
-                      <img src="https://sealogg.se/sealog-logo.png" alt="SeaLogg" style="height: 50px; width: auto;" />
-                    </div>
-                    <div class="content">
-                      <h2>Välkommen ${fullName}!</h2>
-                      <p>Du har lagts till som <strong>${roleText}</strong> i <strong>${organizationName}</strong> på SeaLogg.</p>
-                      
-                      <div class="info-box">
-                        <strong>Ditt konto:</strong><br>
-                        E-post: ${email}<br>
-                        Organisation: ${organizationName}<br>
-                        Roll: ${roleText}
-                      </div>
-                      
-                      <p>För att komma igång behöver du sätta ett lösenord för ditt konto:</p>
-                      
-                      <p style="text-align: center; margin: 30px 0;">
-                        <a href="${resetLink}" class="button" style="color: white;">Skapa ditt lösenord</a>
-                      </p>
-                      
-                      <p><small>Länken är giltig i 24 timmar. Om du inte förväntade dig detta mail kan du ignorera det.</small></p>
-                    </div>
-                    <div class="footer">
-                      <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
-                      <p>SeaLogg - Digital Fartygsloggbok<br>En del av AhrensGroup AB</p>
-                    </div>
+        // Send welcome email with password setup link via Resend
+        const roleText = role === 'org_admin' ? 'administratör' : 'användare';
+        
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "SeaLogg <noreply@sealogg.se>",
+            to: [email],
+            subject: `Välkommen till SeaLogg - ${organizationName}`,
+            html: `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="utf-8">
+                <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+                  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                  .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #0077b6; }
+                  .logo { font-size: 24px; font-weight: bold; color: #0077b6; }
+                  .content { padding: 30px 0; }
+                  .button { display: inline-block; padding: 14px 28px; background-color: #0077b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+                  .info-box { background-color: #f0f9ff; border-left: 4px solid #0077b6; padding: 15px; margin: 20px 0; }
+                  .footer { padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <img src="https://sealogg.se/sealog-logo.png" alt="SeaLogg" style="height: 50px; width: auto;" />
                   </div>
-                </body>
-                </html>
-              `,
-            }),
-          });
+                  <div class="content">
+                    <h2>Välkommen ${fullName}!</h2>
+                    <p>Du har lagts till som <strong>${roleText}</strong> i <strong>${organizationName}</strong> på SeaLogg.</p>
+                    
+                    <div class="info-box">
+                      <strong>Ditt konto:</strong><br>
+                      E-post: ${email}<br>
+                      Organisation: ${organizationName}<br>
+                      Roll: ${roleText}
+                    </div>
+                    
+                    <p>För att komma igång behöver du sätta ett lösenord för ditt konto:</p>
+                    
+                    <p style="text-align: center; margin: 30px 0;">
+                      <a href="${resetLink}" class="button" style="color: white;">Skapa ditt lösenord</a>
+                    </p>
+                    
+                    <p><small>Länken är giltig i 7 dagar. Om du inte förväntade dig detta mail kan du ignorera det.</small></p>
+                  </div>
+                  <div class="footer">
+                    <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
+                    <p>SeaLogg - Digital Fartygsloggbok<br>En del av AhrensGroup AB</p>
+                  </div>
+                </div>
+              </body>
+              </html>
+            `,
+          }),
+        });
 
-          const emailResponse = await res.json();
-          if (!res.ok) {
-            console.error("Resend API error:", emailResponse);
-            return new Response(JSON.stringify({
-              error: "Failed to send welcome email",
-              details: emailResponse,
-            }), {
-              status: 502,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          } else {
-            console.log("Welcome email sent successfully:", emailResponse);
-          }
+        const emailResponse = await res.json();
+        if (!res.ok) {
+          console.error("Resend API error:", emailResponse);
+          return new Response(JSON.stringify({
+            error: "Failed to send welcome email",
+            details: emailResponse,
+          }), {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        } else {
+          console.log("Welcome email sent successfully:", emailResponse);
         }
       }
     }

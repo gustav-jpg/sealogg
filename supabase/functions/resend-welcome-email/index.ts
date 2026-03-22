@@ -66,34 +66,28 @@ serve(async (req) => {
 
     console.log("Resending welcome email to:", email);
 
-    // Generate password reset link
-    const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: {
-        redirectTo: 'https://sealogg.se/portal/reset-password',
-      },
-    });
+    // Generate a custom invitation token valid for 7 days
+    const inviteToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
-    if (resetError) {
-      console.error("Failed to generate reset link:", resetError);
-      return new Response(JSON.stringify({ error: "Could not generate reset link: " + resetError.message }), {
-        status: 400,
+    const { error: tokenError } = await supabaseAdmin
+      .from('invitation_tokens')
+      .insert({
+        token: inviteToken,
+        user_email: email,
+        expires_at: expiresAt.toISOString(),
+      });
+
+    if (tokenError) {
+      console.error("Failed to create invitation token:", tokenError);
+      return new Response(JSON.stringify({ error: "Could not create invitation token" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Use token_hash approach to bypass Supabase redirect URL allowlist
-    const hashedToken = linkData?.properties?.hashed_token;
-    
-    if (!hashedToken) {
-      return new Response(JSON.stringify({ error: "No reset link generated" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const resetLink = `https://sealogg.se/portal/reset-password?token_hash=${hashedToken}&type=recovery`;
+    const resetLink = `https://sealogg.se/portal/reset-password?invite_token=${inviteToken}`;
 
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not configured");
@@ -141,7 +135,7 @@ serve(async (req) => {
                 <p style="text-align: center; margin: 30px 0;">
                   <a href="${resetLink}" class="button" style="color: white;">Sätt lösenord</a>
                 </p>
-                <p><small>Länken är giltig i 24 timmar.</small></p>
+                <p><small>Länken är giltig i 7 dagar.</small></p>
               </div>
               <div class="footer">
                 <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
