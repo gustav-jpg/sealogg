@@ -19,6 +19,9 @@ export default function ResetPassword() {
   const [resendEmail, setResendEmail] = useState('');
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [pendingLink, setPendingLink] = useState<{ type: 'invite' | 'recovery'; token: string } | null>(null);
+  const [linkErrorMessage, setLinkErrorMessage] = useState<string | null>(null);
+  const [isActivatingLink, setIsActivatingLink] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -34,36 +37,24 @@ export default function ResetPassword() {
     });
 
     const checkSession = async () => {
+      const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+      const hashParams = new URLSearchParams(hash);
+      const hashErrorCode = hashParams.get('error_code') || hashParams.get('error');
+      const hashErrorDescription = hashParams.get('error_description');
+
+      if (hashErrorCode) {
+        const decodedDescription = hashErrorDescription
+          ? decodeURIComponent(hashErrorDescription.replace(/\+/g, ' '))
+          : 'Länken är ogiltig eller har utgått.';
+        setLinkErrorMessage(decodedDescription);
+        setIsCheckingSession(false);
+        return;
+      }
+
       // Check for custom invitation token (7-day validity)
       const inviteToken = searchParams.get('invite_token');
       if (inviteToken) {
-        try {
-          const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-invitation-token', {
-            body: { token: inviteToken },
-          });
-
-          if (verifyError) {
-            console.error('Invite token verification failed:', verifyError);
-          } else if (verifyData?.token_hash) {
-            // Use the fresh token_hash from the edge function
-            const { data, error } = await supabase.auth.verifyOtp({
-              token_hash: verifyData.token_hash,
-              type: 'recovery',
-            });
-            if (!error && data.session) {
-              setIsValidSession(true);
-              setIsCheckingSession(false);
-              return;
-            } else {
-              console.error('OTP verification failed:', error?.message);
-            }
-          } else if (verifyData?.error) {
-            console.error('Invite token error:', verifyData.error);
-          }
-        } catch (err) {
-          console.error('Invite token exception:', err);
-        }
-        // If invite token failed, fall through to show expired page
+        setPendingLink({ type: 'invite', token: inviteToken });
         setIsCheckingSession(false);
         return;
       }
@@ -73,41 +64,79 @@ export default function ResetPassword() {
       const type = searchParams.get('type');
 
       if (tokenHash && type === 'recovery') {
-        try {
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: 'recovery',
-          });
-          if (!error && data.session) {
-            setIsValidSession(true);
-            setIsCheckingSession(false);
-            return;
-          } else {
-            console.error('Token verification failed:', error?.message);
-          }
-        } catch (err) {
-          console.error('Token verification exception:', err);
-        }
+        setPendingLink({ type: 'recovery', token: tokenHash });
+        setIsCheckingSession(false);
+        return;
       }
 
       // Fallback: check for existing session (e.g. from hash fragment redirect)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setIsValidSession(true);
-        setIsCheckingSession(false);
-      } else {
-        setTimeout(() => {
-          setIsCheckingSession(prev => {
-            return false;
-          });
-        }, 3000);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsValidSession(true);
+          setIsCheckingSession(false);
+          return;
+        }
+        if (attempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
       }
+
+      setIsCheckingSession(false);
     };
 
     checkSession();
 
     return () => subscription.unsubscribe();
   }, [searchParams]);
+
+  const handleActivateLink = async () => {
+    if (!pendingLink) return;
+
+    setIsActivatingLink(true);
+    setLinkErrorMessage(null);
+
+    try {
+      let tokenHashToVerify = pendingLink.token;
+
+      if (pendingLink.type === 'invite') {
+        const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-invitation-token', {
+          body: { token: pendingLink.token },
+        });
+
+        if (verifyError) {
+          throw new Error('Kunde inte verifiera inbjudningslänken. Be om en ny länk.');
+        }
+
+        if (verifyData?.error) {
+          throw new Error(verifyData.error);
+        }
+
+        if (!verifyData?.token_hash) {
+          throw new Error('Ogiltig inbjudningslänk. Be om en ny länk.');
+        }
+
+        tokenHashToVerify = verifyData.token_hash;
+      }
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHashToVerify,
+        type: 'recovery',
+      });
+
+      if (error || !data.session) {
+        throw new Error('Länken är ogiltig eller har utgått. Be om en ny länk.');
+      }
+
+      setPendingLink(null);
+      setIsValidSession(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Länken är ogiltig eller har utgått.';
+      setLinkErrorMessage(message);
+    } finally {
+      setIsActivatingLink(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,9 +235,11 @@ export default function ResetPassword() {
             <div className="flex justify-center mb-4">
               <img src={sealoggLogo} alt="SeaLogg" className="h-10" />
             </div>
-            <CardTitle>Länken har utgått</CardTitle>
+            <CardTitle>{pendingLink ? 'Bekräfta länken' : 'Länken har utgått'}</CardTitle>
             <CardDescription>
-              Återställningslänken är ogiltig eller har utgått. Ange din e-postadress nedan så skickar vi en ny länk direkt.
+              {pendingLink
+                ? 'Tryck på knappen nedan för att öppna länken säkert och välja nytt lösenord.'
+                : 'Återställningslänken är ogiltig eller har utgått. Ange din e-postadress nedan så skickar vi en ny länk direkt.'}
             </CardDescription>
           </CardHeader>
 
@@ -228,6 +259,17 @@ export default function ResetPassword() {
           ) : (
             <form onSubmit={handleResendLink}>
               <CardContent className="space-y-4">
+                {pendingLink && (
+                  <Button type="button" className="w-full" onClick={handleActivateLink} disabled={isActivatingLink}>
+                    {isActivatingLink && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Öppna återställningslänk
+                  </Button>
+                )}
+
+                {linkErrorMessage && (
+                  <p className="text-sm text-destructive text-center">{linkErrorMessage}</p>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="resend-email">E-postadress</Label>
                   <Input
