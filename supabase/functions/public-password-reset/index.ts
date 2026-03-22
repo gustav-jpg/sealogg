@@ -40,25 +40,11 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Generate recovery link
-    const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
-      type: "recovery",
-      email,
-    });
-
-    const hashedToken = linkData?.properties?.hashed_token;
-    if (!hashedToken) {
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Create an invitation_token with OTP code as fallback
+    // Generate OTP code and invitation token (7 days validity)
     const otpCode = generateOtpCode();
     const inviteToken = crypto.randomUUID();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 1); // 24h for password resets
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days for password resets
 
     await supabaseAdmin.from("invitation_tokens").insert({
       token: inviteToken,
