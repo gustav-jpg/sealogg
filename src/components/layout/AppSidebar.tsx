@@ -86,6 +86,7 @@ export function AppSidebar() {
   const { state, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed' && !isMobile;
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   useEffect(() => {
     const checkSuperadmin = async () => {
