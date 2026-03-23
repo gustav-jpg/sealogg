@@ -321,7 +321,7 @@ export default function Home() {
       </section>
 
       {/* Contact */}
-      <section id="kontakt" className="py-20 md:py-28">
+      <section id="kontakt" className="py-12 md:py-28">
         <div className="container">
           <motion.div 
             initial="hidden"
