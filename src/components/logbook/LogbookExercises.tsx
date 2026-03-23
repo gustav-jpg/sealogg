@@ -36,10 +36,10 @@ export function LogbookExercises({
 }: LogbookExercisesProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+        <CardTitle className="flex items-center justify-between text-base sm:text-lg">
           <span className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5" />
+            <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
             Övningar
           </span>
           {isOpen && canEditThis && (
@@ -86,7 +86,7 @@ export function LogbookExercises({
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         {isOpen && canEditThis ? (
           editableExercises.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">Inga övningar tillagda ännu.</p>
