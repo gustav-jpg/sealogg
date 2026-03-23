@@ -141,24 +141,18 @@ export function LogbookStops({
         return (
           <div className="space-y-4">
             {/* Summary header with lock status */}
-            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted rounded-lg">
               <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-muted-foreground" />
-                <span className="font-semibold">Passagerarregistrering låst</span>
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">Passagerarregistrering låst</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span className="font-mono">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span className="font-mono text-xs">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
                 </div>
                 {canLockSession && onUnlockPassengerSession && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={onUnlockPassengerSession}
-                    disabled={isLockingSession}
-                    className="gap-1"
-                  >
+                  <Button variant="outline" size="sm" onClick={onUnlockPassengerSession} disabled={isLockingSession} className="gap-1 h-7 text-xs">
                     <Unlock className="h-3 w-3" />
                     Lås upp
                   </Button>
@@ -167,24 +161,24 @@ export function LogbookStops({
             </div>
 
             {/* Compact summary stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-                <div className="flex items-center gap-2 text-primary">
-                  <UserPlus className="h-4 w-4" />
-                  <span className="text-sm">Påstigande</span>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center p-2 bg-primary/10 rounded-lg">
+                <div className="flex items-center gap-1 text-primary">
+                  <UserPlus className="h-3.5 w-3.5" />
+                  <span className="text-xs">På</span>
                 </div>
-                <span className="text-xl font-bold text-primary">{passengerSummary.totalPaxOn}</span>
+                <span className="text-lg font-bold text-primary">{passengerSummary.totalPaxOn}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
-                <div className="flex items-center gap-2 text-destructive">
-                  <UserMinus className="h-4 w-4" />
-                  <span className="text-sm">Avstigande</span>
+              <div className="flex flex-col items-center p-2 bg-destructive/10 rounded-lg">
+                <div className="flex items-center gap-1 text-destructive">
+                  <UserMinus className="h-3.5 w-3.5" />
+                  <span className="text-xs">Av</span>
                 </div>
-                <span className="text-xl font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
+                <span className="text-lg font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">Stopp</span>
-                <span className="text-xl font-bold">{passengerSummary.stopCount}</span>
+              <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
+                <span className="text-xs text-muted-foreground">Stopp</span>
+                <span className="text-lg font-bold">{passengerSummary.stopCount}</span>
               </div>
             </div>
 
@@ -351,7 +345,91 @@ export function LogbookStops({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto -mx-1">
+      {/* Mobile card view */}
+      <div className="space-y-2 md:hidden">
+        {sortedStops.map((stop, index) => {
+          const onboard = calculateOnboard(sortedStops, index);
+          const vehiclesOnboard = showVehicles ? calculateVehiclesOnboard(sortedStops, index) : 0;
+          const cargoOnboard = showCargo ? calculateCargoOnboard(sortedStops, index) : 0;
+          return (
+            <div key={stop.tempId} className="border rounded-lg p-3 space-y-2 bg-card">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Stopp {stop.stopOrder}</span>
+                <div className="flex items-center gap-2">
+                  {showPax && (
+                    <Badge 
+                      variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"}
+                      className="font-mono text-xs"
+                    >
+                      {onboard} ombord
+                    </Badge>
+                  )}
+                  {!disabled && (
+                    <Button variant="ghost" size="icon" onClick={() => removeStop(stop.tempId)} className="h-7 w-7 text-destructive hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">Tid</span>
+                  <Input type="time" value={stop.departureTime} onChange={e => updateStop(stop.tempId, 'departureTime', e.target.value)} disabled={disabled} className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">Position</span>
+                  <Input value={stop.departureLocation || stop.arrivalLocation} onChange={e => { updateStop(stop.tempId, 'departureLocation', e.target.value); updateStop(stop.tempId, 'arrivalLocation', e.target.value); }} disabled={disabled} placeholder="Hamn/plats" className="h-8 text-xs" />
+                </div>
+              </div>
+              {showPax && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><UserPlus className="h-3 w-3" /> Pax på</span>
+                    <Input type="number" min={0} value={stop.paxOn} onChange={e => updateStop(stop.tempId, 'paxOn', e.target.value)} disabled={disabled} placeholder="0" className="h-8 text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><UserMinus className="h-3 w-3" /> Pax av</span>
+                    <Input type="number" min={0} value={stop.paxOff} onChange={e => updateStop(stop.tempId, 'paxOff', e.target.value)} disabled={disabled} placeholder="0" className="h-8 text-xs" />
+                  </div>
+                </div>
+              )}
+              {showVehicles && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Car className="h-3 w-3" /> Fordon på</span>
+                    <Input type="number" min={0} value={stop.vehiclesOn} onChange={e => updateStop(stop.tempId, 'vehiclesOn', e.target.value)} disabled={disabled} placeholder="0" className="h-8 text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Car className="h-3 w-3" /> Fordon av</span>
+                    <Input type="number" min={0} value={stop.vehiclesOff} onChange={e => updateStop(stop.tempId, 'vehiclesOff', e.target.value)} disabled={disabled} placeholder="0" className="h-8 text-xs" />
+                  </div>
+                </div>
+              )}
+              {showCargo && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Package className="h-3 w-3" /> Gods på (kg)</span>
+                    <Input type="number" min={0} step="0.1" value={stop.cargoOnKg} onChange={e => updateStop(stop.tempId, 'cargoOnKg', e.target.value)} disabled={disabled} placeholder="0" className="h-8 text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1"><Package className="h-3 w-3" /> Gods av (kg)</span>
+                    <Input type="number" min={0} step="0.1" value={stop.cargoOffKg} onChange={e => updateStop(stop.tempId, 'cargoOffKg', e.target.value)} disabled={disabled} placeholder="0" className="h-8 text-xs" />
+                  </div>
+                </div>
+              )}
+              {maxPassengers && onboard > maxPassengers && (
+                <div className="flex items-center gap-1 text-destructive text-xs">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>Max {maxPassengers} passagerare!</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="overflow-x-auto -mx-1 hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -381,60 +459,24 @@ export function LogbookStops({
                     {stop.stopOrder}
                   </TableCell>
                   <TableCell className="py-1.5 px-1.5">
-                    <Input
-                      type="time"
-                      value={stop.departureTime}
-                      onChange={e => updateStop(stop.tempId, 'departureTime', e.target.value)}
-                      disabled={disabled}
-                      className="h-8 w-22 text-xs px-2"
-                    />
+                    <Input type="time" value={stop.departureTime} onChange={e => updateStop(stop.tempId, 'departureTime', e.target.value)} disabled={disabled} className="h-8 w-22 text-xs px-2" />
                   </TableCell>
                   <TableCell className="py-1.5 px-1.5">
-                    <Input
-                      value={stop.departureLocation || stop.arrivalLocation}
-                      onChange={e => {
-                        updateStop(stop.tempId, 'departureLocation', e.target.value);
-                        updateStop(stop.tempId, 'arrivalLocation', e.target.value);
-                      }}
-                      disabled={disabled}
-                      placeholder="Hamn/plats"
-                      className="h-8 text-xs px-2"
-                    />
+                    <Input value={stop.departureLocation || stop.arrivalLocation} onChange={e => { updateStop(stop.tempId, 'departureLocation', e.target.value); updateStop(stop.tempId, 'arrivalLocation', e.target.value); }} disabled={disabled} placeholder="Hamn/plats" className="h-8 text-xs px-2" />
                   </TableCell>
                   {showPax && (
                     <TableCell className="py-1.5 px-1.5">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={stop.paxOn}
-                        onChange={e => updateStop(stop.tempId, 'paxOn', e.target.value)}
-                        disabled={disabled}
-                        placeholder="0"
-                        className="h-8 w-14 text-xs px-1.5 text-center"
-                      />
+                      <Input type="number" min={0} value={stop.paxOn} onChange={e => updateStop(stop.tempId, 'paxOn', e.target.value)} disabled={disabled} placeholder="0" className="h-8 w-14 text-xs px-1.5 text-center" />
                     </TableCell>
                   )}
                   {showPax && (
                     <TableCell className="py-1.5 px-1.5">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={stop.paxOff}
-                        onChange={e => updateStop(stop.tempId, 'paxOff', e.target.value)}
-                        disabled={disabled}
-                        placeholder="0"
-                        className="h-8 w-14 text-xs px-1.5 text-center"
-                      />
+                      <Input type="number" min={0} value={stop.paxOff} onChange={e => updateStop(stop.tempId, 'paxOff', e.target.value)} disabled={disabled} placeholder="0" className="h-8 w-14 text-xs px-1.5 text-center" />
                     </TableCell>
                   )}
                   {showPax && (
                     <TableCell className="text-center py-1.5">
-                      <Badge 
-                        variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"}
-                        className="font-mono min-w-10 justify-center"
-                      >
-                        {onboard}
-                      </Badge>
+                      <Badge variant={maxPassengers && onboard > maxPassengers ? "destructive" : onboard > 0 ? "default" : "secondary"} className="font-mono min-w-10 justify-center">{onboard}</Badge>
                       {maxPassengers && onboard > maxPassengers && (
                         <div className="flex items-center gap-1 text-destructive text-xs mt-1 justify-center">
                           <AlertTriangle className="h-3 w-3" />
@@ -445,86 +487,37 @@ export function LogbookStops({
                   )}
                   {showVehicles && (
                     <TableCell className="py-1.5 px-1.5">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={stop.vehiclesOn}
-                        onChange={e => updateStop(stop.tempId, 'vehiclesOn', e.target.value)}
-                        disabled={disabled}
-                        placeholder="0"
-                        className="h-8 w-14 text-xs px-1.5 text-center"
-                      />
+                      <Input type="number" min={0} value={stop.vehiclesOn} onChange={e => updateStop(stop.tempId, 'vehiclesOn', e.target.value)} disabled={disabled} placeholder="0" className="h-8 w-14 text-xs px-1.5 text-center" />
                     </TableCell>
                   )}
                   {showVehicles && (
                     <TableCell className="py-1.5 px-1.5">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={stop.vehiclesOff}
-                        onChange={e => updateStop(stop.tempId, 'vehiclesOff', e.target.value)}
-                        disabled={disabled}
-                        placeholder="0"
-                        className="h-8 w-14 text-xs px-1.5 text-center"
-                      />
+                      <Input type="number" min={0} value={stop.vehiclesOff} onChange={e => updateStop(stop.tempId, 'vehiclesOff', e.target.value)} disabled={disabled} placeholder="0" className="h-8 w-14 text-xs px-1.5 text-center" />
                     </TableCell>
                   )}
                   {showVehicles && (
                     <TableCell className="text-center py-1.5">
-                      <Badge 
-                        variant={vehiclesOnboard > 0 ? "default" : "secondary"}
-                        className="font-mono min-w-10 justify-center"
-                      >
-                        {vehiclesOnboard}
-                      </Badge>
+                      <Badge variant={vehiclesOnboard > 0 ? "default" : "secondary"} className="font-mono min-w-10 justify-center">{vehiclesOnboard}</Badge>
                     </TableCell>
                   )}
                   {showCargo && (
                     <TableCell className="py-1.5 px-1.5">
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.1"
-                        value={stop.cargoOnKg}
-                        onChange={e => updateStop(stop.tempId, 'cargoOnKg', e.target.value)}
-                        disabled={disabled}
-                        placeholder="0"
-                        className="h-8 w-18 text-xs px-1.5 text-center"
-                      />
+                      <Input type="number" min={0} step="0.1" value={stop.cargoOnKg} onChange={e => updateStop(stop.tempId, 'cargoOnKg', e.target.value)} disabled={disabled} placeholder="0" className="h-8 w-18 text-xs px-1.5 text-center" />
                     </TableCell>
                   )}
                   {showCargo && (
                     <TableCell className="py-1.5 px-1.5">
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.1"
-                        value={stop.cargoOffKg}
-                        onChange={e => updateStop(stop.tempId, 'cargoOffKg', e.target.value)}
-                        disabled={disabled}
-                        placeholder="0"
-                        className="h-8 w-18 text-xs px-1.5 text-center"
-                      />
+                      <Input type="number" min={0} step="0.1" value={stop.cargoOffKg} onChange={e => updateStop(stop.tempId, 'cargoOffKg', e.target.value)} disabled={disabled} placeholder="0" className="h-8 w-18 text-xs px-1.5 text-center" />
                     </TableCell>
                   )}
                   {showCargo && (
                     <TableCell className="text-center py-1.5">
-                      <Badge 
-                        variant={cargoOnboard > 0 ? "default" : "secondary"}
-                        className="font-mono min-w-10 justify-center text-xs"
-                      >
-                        {cargoOnboard.toFixed(0)} kg
-                      </Badge>
+                      <Badge variant={cargoOnboard > 0 ? "default" : "secondary"} className="font-mono min-w-10 justify-center text-xs">{cargoOnboard.toFixed(0)} kg</Badge>
                     </TableCell>
                   )}
                   {!disabled && (
                     <TableCell className="py-1.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeStop(stop.tempId)}
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => removeStop(stop.tempId)} className="h-7 w-7 text-destructive hover:text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
@@ -543,26 +536,26 @@ export function LogbookStops({
             Lägg till stopp
           </Button>
         )}
-        <div className="flex items-center gap-5 text-sm ml-auto flex-wrap">
+        <div className="flex items-center gap-3 text-sm ml-auto flex-wrap">
           {showPax && (
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Passagerare ombord:</span>
-              <Badge variant="outline" className="font-mono">{finalOnboard}</Badge>
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Ombord:</span>
+              <Badge variant="outline" className="font-mono text-xs">{finalOnboard}</Badge>
             </div>
           )}
           {showVehicles && (
-            <div className="flex items-center gap-2">
-              <Car className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Fordon ombord:</span>
-              <Badge variant="outline" className="font-mono">{calculateVehiclesOnboard(sortedStops, sortedStops.length - 1)}</Badge>
+            <div className="flex items-center gap-1.5">
+              <Car className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Fordon:</span>
+              <Badge variant="outline" className="font-mono text-xs">{calculateVehiclesOnboard(sortedStops, sortedStops.length - 1)}</Badge>
             </div>
           )}
           {showCargo && (
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Gods ombord:</span>
-              <Badge variant="outline" className="font-mono">{calculateCargoOnboard(sortedStops, sortedStops.length - 1).toFixed(0)} kg</Badge>
+            <div className="flex items-center gap-1.5">
+              <Package className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Gods:</span>
+              <Badge variant="outline" className="font-mono text-xs">{calculateCargoOnboard(sortedStops, sortedStops.length - 1).toFixed(0)} kg</Badge>
             </div>
           )}
         </div>
