@@ -330,7 +330,7 @@ export default function Home() {
             variants={staggerContainer}
             className="text-center max-w-2xl mx-auto"
           >
-            <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
               Har du frågor?
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-muted-foreground mb-8">
