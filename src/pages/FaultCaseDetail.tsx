@@ -252,6 +252,7 @@ export default function FaultCaseDetail() {
     },
   });
 
+  const deleteFaultCase = useMutation({
     mutationFn: async () => {
       if (attachments && attachments.length > 0) {
         for (const att of attachments) {
