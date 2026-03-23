@@ -254,7 +254,7 @@ export default function Home() {
       </section>
 
       {/* Value Props */}
-      <section id="fordelar" className="py-20 md:py-28">
+      <section id="fordelar" className="py-12 md:py-28">
         <div className="container">
           <div className="max-w-2xl mx-auto">
             <motion.div
