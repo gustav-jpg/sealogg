@@ -785,18 +785,19 @@ export default function LogbookDetail() {
   return (
     <MainLayout>
       <div className="max-w-6xl mx-auto space-y-4 px-0 md:px-0">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/portal/logbooks')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-display font-bold">{(logbook as any).vessel?.name}</h1>
+              <h1 className="text-xl sm:text-3xl font-display font-bold truncate">{(logbook as any).vessel?.name}</h1>
               <Badge variant={isOpen ? 'default' : 'secondary'}>
                 {LOGBOOK_STATUS_LABELS[logbook.status as keyof typeof LOGBOOK_STATUS_LABELS]}
               </Badge>
             </div>
             <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {format(new Date(logbook.date), 'PPPP', { locale: sv })}
             </p>
           </div>
