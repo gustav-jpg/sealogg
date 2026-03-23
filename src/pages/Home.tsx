@@ -239,12 +239,12 @@ export default function Home() {
             {features.map((feature, index) => (
               <motion.div key={index} variants={fadeInUp}>
                 <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group">
-                  <CardContent className="pt-8 pb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
-                      <feature.icon className="h-7 w-7 text-primary" />
+                  <CardContent className="pt-4 pb-4 md:pt-8 md:pb-6 px-3 md:px-6">
+                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-3 md:mb-5 group-hover:scale-110 transition-transform duration-300">
+                      <feature.icon className="h-5 w-5 md:h-7 md:w-7 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                    <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{feature.title}</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
