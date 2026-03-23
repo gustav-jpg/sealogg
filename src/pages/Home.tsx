@@ -221,7 +221,7 @@ export default function Home() {
               <Ship className="h-4 w-4" />
               <span>Funktioner</span>
             </motion.div>
-            <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
               Allt du behöver för säker sjöfart
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-muted-foreground max-w-2xl mx-auto">
