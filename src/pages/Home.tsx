@@ -136,7 +136,7 @@ export default function Home() {
                 <span>Byggd för svensk sjöfart</span>
               </motion.div>
               
-              <motion.h1 variants={fadeInUp} className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
+              <motion.h1 variants={fadeInUp} className="font-display text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 leading-tight">
                 Fartygsloggbok.
                 <br />
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
