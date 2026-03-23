@@ -235,6 +235,7 @@ const App = () => (
           <AuthProvider>
             <OrganizationProvider>
               <AppRoutes />
+              <OfflineBanner />
               <AppUpdatePrompt />
               <AutoPushPrompt />
               <CookieConsent />
