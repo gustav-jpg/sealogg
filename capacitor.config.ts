@@ -5,9 +5,8 @@ const config: CapacitorConfig = {
   appName: 'SeaLogg',
   webDir: 'dist',
   server: {
-    url: 'https://www.sealogg.se',
-    cleartext: true,
-    allowNavigation: ['sealogg.se', 'www.sealogg.se', '*.sealogg.se', '*.lovable.app', '*.supabase.co'],
+    // Offline mode – app serves from bundled assets in /dist
+    allowNavigation: ['*.supabase.co'],
   },
   ios: {
     contentInset: 'automatic',
