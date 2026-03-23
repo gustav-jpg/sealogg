@@ -53,6 +53,7 @@ export default function FaultCaseDetail() {
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const [newStatus, setNewStatus] = useState<FaultStatus | ''>('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const commentRef = useRef<HTMLTextAreaElement>(null);
