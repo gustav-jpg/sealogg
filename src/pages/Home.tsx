@@ -208,7 +208,7 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section id="funktioner" className="py-20 md:py-28 bg-muted/30">
+      <section id="funktioner" className="py-12 md:py-28 bg-muted/30">
         <div className="container">
           <motion.div 
             initial="hidden"
