@@ -761,6 +761,19 @@ export default function FaultCaseDetail() {
         onConfirm={() => deleteFaultCase.mutate()}
         variant="destructive"
       />
+
+      {/* Image lightbox */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 sm:p-4 flex items-center justify-center bg-background/95">
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Förstorad bild"
+              className="max-w-full max-h-[85vh] object-contain rounded"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
