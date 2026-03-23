@@ -302,7 +302,7 @@ export default function Home() {
             variants={staggerContainer}
             className="text-center max-w-3xl mx-auto"
           >
-            <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">
+            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
               Redo att digitalisera din fartygsloggbok?
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-lg text-muted-foreground mb-8">
