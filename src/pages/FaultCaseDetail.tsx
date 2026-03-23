@@ -32,7 +32,11 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User, ZoomIn } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 import { sanitizeStorageFileName } from '@/lib/storage';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
@@ -49,6 +53,7 @@ export default function FaultCaseDetail() {
   const [commentFiles, setCommentFiles] = useState<File[]>([]);
   const [newStatus, setNewStatus] = useState<FaultStatus | ''>('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const commentRef = useRef<HTMLTextAreaElement>(null);
@@ -434,19 +439,21 @@ export default function FaultCaseDetail() {
                     {mainAttachments
                       .filter(a => /\.(jpg|jpeg|png|gif|webp)$/i.test(a.file_name))
                       .map((att) => (
-                        <a
+                        <button
                           key={att.id}
-                          href={att.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block overflow-hidden rounded-lg border hover:border-primary transition-colors"
+                          type="button"
+                          onClick={() => setLightboxUrl(att.file_url)}
+                          className="block overflow-hidden rounded-lg border hover:border-primary transition-colors relative group cursor-pointer"
                         >
                           <img
                             src={att.file_url}
                             alt={att.file_name}
-                            className="w-full h-48 object-cover hover:scale-105 transition-transform duration-200"
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
                           />
-                        </a>
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </button>
                       ))}
                   </div>
                 </CardContent>
@@ -516,18 +523,34 @@ export default function FaultCaseDetail() {
                           <p className="whitespace-pre-wrap">{renderCommentText(comment.comment_text)}</p>
                           {commentAttachments.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
-                              {commentAttachments.map((att) => (
-                                <a
-                                  key={att.id}
-                                  href={att.file_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                                >
-                                  <Image className="h-3 w-3" />
-                                  {att.file_name}
-                                </a>
-                              ))}
+                              {commentAttachments.map((att) => {
+                                const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(att.file_name);
+                                if (isImage) {
+                                  return (
+                                    <button
+                                      key={att.id}
+                                      type="button"
+                                      onClick={() => setLightboxUrl(att.file_url)}
+                                      className="text-xs text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Image className="h-3 w-3" />
+                                      {att.file_name}
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <a
+                                    key={att.id}
+                                    href={att.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    <Image className="h-3 w-3" />
+                                    {att.file_name}
+                                  </a>
+                                );
+                              })}
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground mt-2">
@@ -738,6 +761,19 @@ export default function FaultCaseDetail() {
         onConfirm={() => deleteFaultCase.mutate()}
         variant="destructive"
       />
+
+      {/* Image lightbox */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 sm:p-4 flex items-center justify-center bg-background/95">
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="Förstorad bild"
+              className="max-w-full max-h-[85vh] object-contain rounded"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
