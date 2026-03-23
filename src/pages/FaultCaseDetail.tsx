@@ -523,18 +523,34 @@ export default function FaultCaseDetail() {
                           <p className="whitespace-pre-wrap">{renderCommentText(comment.comment_text)}</p>
                           {commentAttachments.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
-                              {commentAttachments.map((att) => (
-                                <a
-                                  key={att.id}
-                                  href={att.file_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                                >
-                                  <Image className="h-3 w-3" />
-                                  {att.file_name}
-                                </a>
-                              ))}
+                              {commentAttachments.map((att) => {
+                                const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(att.file_name);
+                                if (isImage) {
+                                  return (
+                                    <button
+                                      key={att.id}
+                                      type="button"
+                                      onClick={() => setLightboxUrl(att.file_url)}
+                                      className="text-xs text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Image className="h-3 w-3" />
+                                      {att.file_name}
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <a
+                                    key={att.id}
+                                    href={att.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    <Image className="h-3 w-3" />
+                                    {att.file_name}
+                                  </a>
+                                );
+                              })}
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground mt-2">
