@@ -124,7 +124,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        <div className="container relative py-20 md:py-32">
+        <div className="container relative py-12 md:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial="hidden"
