@@ -235,7 +235,23 @@ export default function FaultCaseDetail() {
     },
   });
 
-  const deleteFaultCase = useMutation({
+  const deleteComment = useMutation({
+    mutationFn: async (commentId: string) => {
+      // Also delete any attachments linked to this comment
+      await supabase.from('fault_attachments').delete().eq('comment_id', commentId);
+      const { error } = await supabase.from('fault_comments').delete().eq('id', commentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fault-comments', id] });
+      queryClient.invalidateQueries({ queryKey: ['fault-attachments', id] });
+      toast({ title: 'Kommentar raderad' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
     mutationFn: async () => {
       if (attachments && attachments.length > 0) {
         for (const att of attachments) {
