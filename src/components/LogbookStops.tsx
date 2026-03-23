@@ -141,24 +141,18 @@ export function LogbookStops({
         return (
           <div className="space-y-4">
             {/* Summary header with lock status */}
-            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-muted rounded-lg">
               <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-muted-foreground" />
-                <span className="font-semibold">Passagerarregistrering låst</span>
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold text-sm">Passagerarregistrering låst</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span className="font-mono">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span className="font-mono text-xs">{passengerSummary.firstDeparture} – {passengerSummary.lastDeparture}</span>
                 </div>
                 {canLockSession && onUnlockPassengerSession && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={onUnlockPassengerSession}
-                    disabled={isLockingSession}
-                    className="gap-1"
-                  >
+                  <Button variant="outline" size="sm" onClick={onUnlockPassengerSession} disabled={isLockingSession} className="gap-1 h-7 text-xs">
                     <Unlock className="h-3 w-3" />
                     Lås upp
                   </Button>
