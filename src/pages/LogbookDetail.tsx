@@ -784,7 +784,7 @@ export default function LogbookDetail() {
 
   return (
     <MainLayout>
-      <div className="max-w-6xl mx-auto space-y-4 px-0 md:px-0">
+      <div className="max-w-6xl mx-auto space-y-3 sm:space-y-4 px-0 md:px-0">
         <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/portal/logbooks')}>
             <ArrowLeft className="h-5 w-5" />
@@ -803,7 +803,7 @@ export default function LogbookDetail() {
         </div>
 
         <div id="logbook-print-content" className="grid gap-3 md:grid-cols-[1fr_200px] lg:grid-cols-[1fr_260px]">
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <LogbookBasicInfo
               weather={weather}
               wind={wind}
@@ -836,13 +836,13 @@ export default function LogbookDetail() {
 
             {/* Travel info card */}
             <div className="rounded-lg border bg-card">
-              <div className="px-4 pt-4 pb-1">
-                <h3 className="flex items-center gap-2 text-base font-semibold leading-none tracking-tight font-display">
-                  <MapPin className="h-4 w-4" />
+              <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-1">
+                <h3 className="flex items-center gap-2 text-base sm:text-lg font-semibold leading-none tracking-tight font-display">
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                   Reseinformation
                 </h3>
               </div>
-              <div className="px-3 pb-4 pt-1">
+              <div className="px-2 sm:px-3 pb-3 sm:pb-4 pt-1">
                 {isOpen ? (
                   <LogbookStops
                     stops={stops}
