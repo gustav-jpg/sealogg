@@ -267,7 +267,7 @@ export default function Home() {
                 <Shield className="h-4 w-4" />
                 <span>Fördelar</span>
               </motion.div>
-              <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">
+              <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
                 Fokusera på sjöfarten,
                 <br />
                 <span className="text-muted-foreground">inte pappersarbetet</span>
