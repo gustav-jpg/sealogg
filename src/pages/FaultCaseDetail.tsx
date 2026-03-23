@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils';
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAdmin, canEdit } = useAuth();
+  const { user, profile, isAdmin, canEdit } = useAuth();
   const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const { printContent } = usePrint();
