@@ -548,9 +548,10 @@ export default function FaultCaseDetail() {
                   <div className="space-y-4">
                     {comments.map((comment) => {
                       const commentAttachments = attachments?.filter((a) => a.comment_id === comment.id) || [];
+                      const isSystemComment = /ändrade status till:/.test(comment.comment_text);
                       return (
-                        <div key={comment.id} className="p-4 rounded-lg bg-muted/50 border">
-                          <p className="whitespace-pre-wrap">{renderCommentText(comment.comment_text)}</p>
+                        <div key={comment.id} className={cn("p-4 rounded-lg border", isSystemComment ? "bg-muted/30 border-dashed" : "bg-muted/50")}>
+                          <p className={cn("whitespace-pre-wrap", isSystemComment && "text-sm italic text-muted-foreground")}>{renderCommentText(comment.comment_text)}</p>
                           {commentAttachments.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
                               {commentAttachments.map((att) => {
@@ -585,9 +586,9 @@ export default function FaultCaseDetail() {
                           )}
                           <div className="flex items-center justify-between mt-2">
                             <p className="text-xs text-muted-foreground">
-                              {(comment as any).commenter_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
+                              {isSystemComment ? 'System' : (comment as any).commenter_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
                             </p>
-                            {(comment.user_id === user?.id || isAdmin) && (
+                            {!isSystemComment && (comment.user_id === user?.id || isAdmin) && (
                               <button
                                 type="button"
                                 onClick={() => deleteComment.mutate(comment.id)}
