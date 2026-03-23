@@ -113,15 +113,19 @@ export function LogbookEngineHours({
           engineHours && engineHours.length > 0 ? (
             <div className="space-y-2">
               {engineHours.map((entry: any) => (
-                <div key={entry.id} className="flex items-center gap-4 p-2 rounded bg-muted/50">
-                  <span className="text-sm font-medium min-w-28">
-                    {entry.engine_name || (entry.engine_type === 'auxiliary' 
-                      ? `Hjälpmaskin ${entry.engine_number}` 
-                      : `Huvudmaskin ${entry.engine_number || 1}`)}
-                  </span>
-                  <span className="font-mono">{entry.start_hours} → {entry.stop_hours ?? '—'}</span>
-                  <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
-                  {entry.notes && <span className="text-muted-foreground text-sm">{entry.notes}</span>}
+                <div key={entry.id} className="p-2 rounded bg-muted/50 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {entry.engine_name || (entry.engine_type === 'auxiliary' 
+                        ? `Hjälpmaskin ${entry.engine_number}` 
+                        : `Huvudmaskin ${entry.engine_number || 1}`)}
+                    </span>
+                    <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-mono">{entry.start_hours} → {entry.stop_hours ?? '—'}</span>
+                    {entry.notes && <span>· {entry.notes}</span>}
+                  </div>
                 </div>
               ))}
             </div>
