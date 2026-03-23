@@ -17,7 +17,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         
         <div className="flex-1 flex flex-col min-h-screen">
           {/* Compact Header with safe area built in */}
-          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <header className="sticky top-0 z-40 border-b border-transparent bg-primary md:border-border md:bg-background/95 backdrop-blur supports-[backdrop-filter]:md:bg-background/60">
             <div className="flex h-12 items-center gap-4 px-4">
               <SidebarTrigger />
               <div className="flex items-center md:hidden">
