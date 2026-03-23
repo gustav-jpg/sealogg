@@ -22,10 +22,10 @@ export function LogbookEngineHours({
 }: LogbookEngineHoursProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+        <CardTitle className="flex items-center justify-between text-base sm:text-lg">
           <span className="flex items-center gap-2">
-            <Gauge className="h-5 w-5" />
+            <Gauge className="h-4 w-4 sm:h-5 sm:w-5" />
             Maskintimmar
           </span>
           {canEditThis && editableEngineHours.length > 0 && (
@@ -42,7 +42,7 @@ export function LogbookEngineHours({
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         {isOpen && canEditThis ? (
           editableEngineHours.length === 0 ? (
             <div className="text-center py-4">
@@ -62,10 +62,10 @@ export function LogbookEngineHours({
           ) : (
             <div className="space-y-3">
               {editableEngineHours.map(entry => (
-                <div key={entry.tempId} className="space-y-2">
+                <div key={entry.tempId} className="space-y-1">
                   <Label className="text-sm font-medium">{entry.engineLabel}</Label>
-                  <div className="flex gap-2 items-end">
-                    <div className="w-24 space-y-1">
+                  <div className="grid grid-cols-3 gap-2 items-end sm:flex">
+                    <div className="space-y-1 sm:w-24">
                       <Label className="text-xs">Start</Label>
                       <Input 
                         type="number" 
@@ -78,7 +78,7 @@ export function LogbookEngineHours({
                         placeholder="0"
                       />
                     </div>
-                    <div className="w-24 space-y-1">
+                    <div className="space-y-1 sm:w-24">
                       <Label className="text-xs">Stopp</Label>
                       <Input 
                         type="number" 
@@ -91,13 +91,13 @@ export function LogbookEngineHours({
                         placeholder="0"
                       />
                     </div>
-                    <div className="w-20 space-y-1">
+                    <div className="space-y-1 sm:w-20">
                       <Label className="text-xs">Diff</Label>
                       <div className="h-10 flex items-center px-3 bg-muted rounded-md text-sm font-mono">
                         {entry.stopHours !== null ? `${(entry.stopHours || 0) - entry.startHours}h` : '—'}
                       </div>
                     </div>
-                    <div className="flex-1 space-y-1">
+                    <div className="col-span-3 sm:col-span-1 sm:flex-1 space-y-1">
                       <Label className="text-xs">Anteckning</Label>
                       <Input 
                         value={entry.notes} 

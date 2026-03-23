@@ -13,10 +13,10 @@ interface LogbookCrewProps {
 export function LogbookCrew({ crewMembers, canEditThis, onOpenCrewDialog }: LogbookCrewProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+        <CardTitle className="flex items-center justify-between text-base sm:text-lg">
           <span className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
             Besättning
           </span>
           {canEditThis && crewMembers && crewMembers.length > 0 && (
@@ -27,7 +27,7 @@ export function LogbookCrew({ crewMembers, canEditThis, onOpenCrewDialog }: Logb
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         {!crewMembers || crewMembers.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-muted-foreground">Ingen besättning registrerad.</p>

@@ -34,15 +34,15 @@ export function LogbookBasicInfo({
 }: LogbookBasicInfoProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Ship className="h-5 w-5" />
+      <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <Ship className="h-4 w-4 sm:h-5 sm:w-5" />
           Grunduppgifter
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
+      <CardContent className="space-y-3 px-3 sm:px-6">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
             <Label htmlFor="weather">Väder</Label>
             <Input
               id="weather"
@@ -52,7 +52,7 @@ export function LogbookBasicInfo({
               placeholder="T.ex. Soligt, 18°C"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Label htmlFor="wind">Vind</Label>
             <div className="flex gap-2">
               <Input
@@ -82,7 +82,7 @@ export function LogbookBasicInfo({
             </div>
           </div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="bunker">Nuvarande bunkernivå (liter)</Label>
           <Input
             id="bunker"
@@ -93,14 +93,14 @@ export function LogbookBasicInfo({
             placeholder="T.ex. 500"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label htmlFor="notes">Allmänna anteckningar</Label>
           <Textarea
             id="notes"
             value={generalNotes}
             onChange={e => onGeneralNotesChange(e.target.value)}
             disabled={!canEditThis}
-            rows={3}
+            rows={2}
           />
           {canEditThis && (
             <div className="flex gap-2 flex-wrap pt-1">
