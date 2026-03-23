@@ -333,7 +333,6 @@ export default function PassengerSession() {
       setManualDockName('');
       // Focus on pax_on for quick next entry
       setTimeout(() => paxOnRef.current?.focus(), 100);
-      toast.success('Registrering sparad');
     },
     onError: (error) => {
       if ((error as any)?.message?.includes('låst')) {
@@ -430,7 +429,6 @@ export default function PassengerSession() {
 
     if (error) throw error;
     queryClient.invalidateQueries({ queryKey: ['passenger-entries', sessionId] });
-    toast.success('Registrering sparad');
   }, [session?.is_active, selectedDockId, allDocks, sessionId, entries.length, user?.id, queryClient]);
 
   // Build deduplicated dock options: route stops if route selected, otherwise all docks
