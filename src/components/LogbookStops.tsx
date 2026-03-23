@@ -161,24 +161,24 @@ export function LogbookStops({
             </div>
 
             {/* Compact summary stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-                <div className="flex items-center gap-2 text-primary">
-                  <UserPlus className="h-4 w-4" />
-                  <span className="text-sm">Påstigande</span>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center p-2 bg-primary/10 rounded-lg">
+                <div className="flex items-center gap-1 text-primary">
+                  <UserPlus className="h-3.5 w-3.5" />
+                  <span className="text-xs">På</span>
                 </div>
-                <span className="text-xl font-bold text-primary">{passengerSummary.totalPaxOn}</span>
+                <span className="text-lg font-bold text-primary">{passengerSummary.totalPaxOn}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-destructive/10 rounded-lg">
-                <div className="flex items-center gap-2 text-destructive">
-                  <UserMinus className="h-4 w-4" />
-                  <span className="text-sm">Avstigande</span>
+              <div className="flex flex-col items-center p-2 bg-destructive/10 rounded-lg">
+                <div className="flex items-center gap-1 text-destructive">
+                  <UserMinus className="h-3.5 w-3.5" />
+                  <span className="text-xs">Av</span>
                 </div>
-                <span className="text-xl font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
+                <span className="text-lg font-bold text-destructive">{passengerSummary.totalPaxOff}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">Stopp</span>
-                <span className="text-xl font-bold">{passengerSummary.stopCount}</span>
+              <div className="flex flex-col items-center p-2 bg-muted rounded-lg">
+                <span className="text-xs text-muted-foreground">Stopp</span>
+                <span className="text-lg font-bold">{passengerSummary.stopCount}</span>
               </div>
             </div>
 
