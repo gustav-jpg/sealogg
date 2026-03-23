@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { CookieConsent } from "@/components/CookieConsent";
 import { AutoPushPrompt } from "@/components/AutoPushPrompt";
 import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -234,6 +235,7 @@ const App = () => (
           <AuthProvider>
             <OrganizationProvider>
               <AppRoutes />
+              <OfflineBanner />
               <AppUpdatePrompt />
               <AutoPushPrompt />
               <CookieConsent />
