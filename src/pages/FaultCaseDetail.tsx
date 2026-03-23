@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils';
 export default function FaultCaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAdmin, canEdit } = useAuth();
+  const { user, profile, isAdmin, canEdit } = useAuth();
   const { selectedOrgId } = useOrganization();
   const { toast } = useToast();
   const { printContent } = usePrint();
@@ -192,10 +192,23 @@ export default function FaultCaseDetail() {
         .update(updateData)
         .eq('id', id);
       if (error) throw error;
+
+      // Add automatic status change comment
+      const userName = profile?.full_name || 'Okänd';
+      const statusLabel = FAULT_STATUS_LABELS[status] || status;
+      const { error: commentError } = await supabase
+        .from('fault_comments')
+        .insert({
+          fault_case_id: id!,
+          user_id: user!.id,
+          comment_text: `${userName} ändrade status till: ${statusLabel}`,
+        });
+      if (commentError) console.error('Could not add status comment:', commentError);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fault-case', id] });
       queryClient.invalidateQueries({ queryKey: ['fault-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['fault-comments', id] });
       toast({ title: 'Uppdaterad', description: 'Status har ändrats.' });
       setNewStatus('');
     },
