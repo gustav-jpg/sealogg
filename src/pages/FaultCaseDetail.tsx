@@ -439,19 +439,21 @@ export default function FaultCaseDetail() {
                     {mainAttachments
                       .filter(a => /\.(jpg|jpeg|png|gif|webp)$/i.test(a.file_name))
                       .map((att) => (
-                        <a
+                        <button
                           key={att.id}
-                          href={att.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block overflow-hidden rounded-lg border hover:border-primary transition-colors"
+                          type="button"
+                          onClick={() => setLightboxUrl(att.file_url)}
+                          className="block overflow-hidden rounded-lg border hover:border-primary transition-colors relative group cursor-pointer"
                         >
                           <img
                             src={att.file_url}
                             alt={att.file_name}
-                            className="w-full h-48 object-cover hover:scale-105 transition-transform duration-200"
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
                           />
-                        </a>
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </button>
                       ))}
                   </div>
                 </CardContent>
