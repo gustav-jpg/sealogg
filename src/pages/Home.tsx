@@ -293,7 +293,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 md:py-28 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5">
+      <section className="py-12 md:py-28 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5">
         <div className="container">
           <motion.div 
             initial="hidden"
