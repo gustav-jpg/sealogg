@@ -1,7 +1,7 @@
 /**
  * Current app version — bump this each time you publish a new native build.
  */
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '1.0.0';
 
 /**
  * Compare two semver strings. Returns:
