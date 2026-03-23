@@ -408,37 +408,39 @@ export default function FaultCases() {
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Kort beskrivande rubrik" />
                 </div>
 
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Kategori</Label>
+                    <Select value={category} onValueChange={(v) => setCategory(v as FaultCategory)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Välj kategori" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(FAULT_CATEGORY_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Prioritet *</Label>
+                    <Select value={priority} onValueChange={(v) => setPriority(v as FaultPriority)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(FAULT_PRIORITY_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Beskrivning *</Label>
-                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} required rows={4} placeholder="Beskriv felet..." />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Prioritet *</Label>
-                  <Select value={priority} onValueChange={(v) => setPriority(v as FaultPriority)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(FAULT_PRIORITY_LABELS).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                   </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Kategori</Label>
-                  <Select value={category} onValueChange={(v) => setCategory(v as FaultCategory)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Välj kategori" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(FAULT_CATEGORY_LABELS).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} required rows={3} placeholder="Beskriv felet..." />
                 </div>
 
                 <div className="space-y-3">
