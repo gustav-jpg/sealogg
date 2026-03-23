@@ -149,44 +149,43 @@ export default function Login() {
               Logga in
             </Button>
             <div className="flex flex-col items-center gap-2 text-sm">
-              <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-                <DialogTrigger asChild>
-                  <button type="button" className="text-primary hover:underline">
-                    Glömt lösenord?
-                  </button>
-                </DialogTrigger>
-                <DialogContent>
-                  <form onSubmit={handlePasswordReset}>
-                    <DialogHeader>
-                      <DialogTitle>Återställ lösenord</DialogTitle>
-                      <DialogDescription>
-                        Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <Label htmlFor="reset-email">E-postadress</Label>
-                      <Input
-                        id="reset-email"
-                        type="email"
-                        placeholder="din@email.se"
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
-                        className="mt-2"
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" disabled={isResetLoading}>
-                        {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Skicka återställningslänk
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <button type="button" className="text-primary hover:underline" onClick={() => setResetDialogOpen(true)}>
+                Glömt lösenord?
+              </button>
             </div>
           </CardFooter>
         </form>
       </Card>
+
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent>
+          <form onSubmit={handlePasswordReset}>
+            <DialogHeader>
+              <DialogTitle>Återställ lösenord</DialogTitle>
+              <DialogDescription>
+                Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="reset-email">E-postadress</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="din@email.se"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={isResetLoading}>
+                {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Skicka återställningslänk
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       
       <ForcePasswordChangeDialog 
         open={showForcePasswordChange} 
