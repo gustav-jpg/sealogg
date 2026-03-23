@@ -583,9 +583,21 @@ export default function FaultCaseDetail() {
                               })}
                             </div>
                           )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {(comment as any).commenter_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
-                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs text-muted-foreground">
+                              {(comment as any).commenter_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
+                            </p>
+                            {(comment.user_id === user?.id || isAdmin) && (
+                              <button
+                                type="button"
+                                onClick={() => deleteComment.mutate(comment.id)}
+                                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                                title="Radera kommentar"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
