@@ -124,7 +124,7 @@ export default function Home() {
           </motion.div>
         </div>
 
-        <div className="container relative py-20 md:py-32">
+        <div className="container relative py-12 md:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial="hidden"
@@ -136,7 +136,7 @@ export default function Home() {
                 <span>Byggd för svensk sjöfart</span>
               </motion.div>
               
-              <motion.h1 variants={fadeInUp} className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
+              <motion.h1 variants={fadeInUp} className="font-display text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 leading-tight">
                 Fartygsloggbok.
                 <br />
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -144,7 +144,7 @@ export default function Home() {
                 </span>
               </motion.h1>
               
-              <motion.p variants={fadeInUp} className="text-lg text-muted-foreground mb-8 max-w-lg">
+              <motion.p variants={fadeInUp} className="text-base md:text-lg text-muted-foreground mb-6 max-w-lg">
                 Komplett system för loggbok, egenkontroll och säkerhetsarbete. 
                 Spara tid och säkerställ efterlevnad med SeaLogg.
               </motion.p>
@@ -208,7 +208,7 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section id="funktioner" className="py-20 md:py-28 bg-muted/30">
+      <section id="funktioner" className="py-12 md:py-28 bg-muted/30">
         <div className="container">
           <motion.div 
             initial="hidden"
@@ -221,7 +221,7 @@ export default function Home() {
               <Ship className="h-4 w-4" />
               <span>Funktioner</span>
             </motion.div>
-            <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
               Allt du behöver för säker sjöfart
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-muted-foreground max-w-2xl mx-auto">
@@ -234,17 +234,17 @@ export default function Home() {
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={staggerContainer}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
           >
             {features.map((feature, index) => (
               <motion.div key={index} variants={fadeInUp}>
                 <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group">
-                  <CardContent className="pt-8 pb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
-                      <feature.icon className="h-7 w-7 text-primary" />
+                  <CardContent className="pt-4 pb-4 md:pt-8 md:pb-6 px-3 md:px-6">
+                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-3 md:mb-5 group-hover:scale-110 transition-transform duration-300">
+                      <feature.icon className="h-5 w-5 md:h-7 md:w-7 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                    <h3 className="font-semibold text-sm md:text-lg mb-1 md:mb-2">{feature.title}</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -254,7 +254,7 @@ export default function Home() {
       </section>
 
       {/* Value Props */}
-      <section id="fordelar" className="py-20 md:py-28">
+      <section id="fordelar" className="py-12 md:py-28">
         <div className="container">
           <div className="max-w-2xl mx-auto">
             <motion.div
@@ -267,7 +267,7 @@ export default function Home() {
                 <Shield className="h-4 w-4" />
                 <span>Fördelar</span>
               </motion.div>
-              <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">
+              <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
                 Fokusera på sjöfarten,
                 <br />
                 <span className="text-muted-foreground">inte pappersarbetet</span>
@@ -293,7 +293,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 md:py-28 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5">
+      <section className="py-12 md:py-28 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5">
         <div className="container">
           <motion.div 
             initial="hidden"
@@ -302,7 +302,7 @@ export default function Home() {
             variants={staggerContainer}
             className="text-center max-w-3xl mx-auto"
           >
-            <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">
+            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
               Redo att digitalisera din fartygsloggbok?
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-lg text-muted-foreground mb-8">
@@ -321,7 +321,7 @@ export default function Home() {
       </section>
 
       {/* Contact */}
-      <section id="kontakt" className="py-20 md:py-28">
+      <section id="kontakt" className="py-12 md:py-28">
         <div className="container">
           <motion.div 
             initial="hidden"
@@ -330,7 +330,7 @@ export default function Home() {
             variants={staggerContainer}
             className="text-center max-w-2xl mx-auto"
           >
-            <motion.h2 variants={fadeInUp} className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
               Har du frågor?
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-muted-foreground mb-8">
