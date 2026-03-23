@@ -796,8 +796,7 @@ export default function LogbookDetail() {
                 {LOGBOOK_STATUS_LABELS[logbook.status as keyof typeof LOGBOOK_STATUS_LABELS]}
               </Badge>
             </div>
-            <p className="text-muted-foreground mt-1">
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {format(new Date(logbook.date), 'PPPP', { locale: sv })}
             </p>
           </div>
