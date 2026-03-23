@@ -235,6 +235,23 @@ export default function FaultCaseDetail() {
     },
   });
 
+  const deleteComment = useMutation({
+    mutationFn: async (commentId: string) => {
+      // Also delete any attachments linked to this comment
+      await supabase.from('fault_attachments').delete().eq('comment_id', commentId);
+      const { error } = await supabase.from('fault_comments').delete().eq('id', commentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fault-comments', id] });
+      queryClient.invalidateQueries({ queryKey: ['fault-attachments', id] });
+      toast({ title: 'Kommentar raderad' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const deleteFaultCase = useMutation({
     mutationFn: async () => {
       if (attachments && attachments.length > 0) {
@@ -566,9 +583,21 @@ export default function FaultCaseDetail() {
                               })}
                             </div>
                           )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {(comment as any).commenter_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
-                          </p>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs text-muted-foreground">
+                              {(comment as any).commenter_name} • {format(new Date(comment.created_at), 'PPP HH:mm', { locale: sv })}
+                            </p>
+                            {(comment.user_id === user?.id || isAdmin) && (
+                              <button
+                                type="button"
+                                onClick={() => deleteComment.mutate(comment.id)}
+                                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                                title="Radera kommentar"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
