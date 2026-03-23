@@ -73,7 +73,7 @@ export function AppUpdatePrompt() {
           </AlertDialogAction>
           {!forceUpdate && (
             <AlertDialogAction
-              variant="outline"
+              className="border border-input bg-background text-foreground hover:bg-accent"
               onClick={() => setDismissed(true)}
             >
               Senare
