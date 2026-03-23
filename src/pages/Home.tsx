@@ -144,7 +144,7 @@ export default function Home() {
                 </span>
               </motion.h1>
               
-              <motion.p variants={fadeInUp} className="text-lg text-muted-foreground mb-8 max-w-lg">
+              <motion.p variants={fadeInUp} className="text-base md:text-lg text-muted-foreground mb-6 max-w-lg">
                 Komplett system för loggbok, egenkontroll och säkerhetsarbete. 
                 Spara tid och säkerställ efterlevnad med SeaLogg.
               </motion.p>
