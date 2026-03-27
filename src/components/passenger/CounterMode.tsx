@@ -72,10 +72,6 @@ export function CounterMode({
 
   const handleSave = async () => {
     if (!isActive) return;
-    if (paxOn === 0 && paxOff === 0) {
-      toast.error('Ange minst en påstigande eller avstigande');
-      return;
-    }
     setSaving(true);
     try {
       await onSave(paxOn, paxOff);
