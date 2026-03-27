@@ -213,7 +213,7 @@ export default function PassengerSession() {
         .from('passenger_entries')
         .select('*')
         .eq('session_id', sessionId)
-        .order('entry_order', { ascending: true });
+        .order('entry_order', { ascending: false });
 
       if (error) throw error;
       
