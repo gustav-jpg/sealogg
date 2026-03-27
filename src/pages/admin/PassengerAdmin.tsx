@@ -220,18 +220,26 @@ export default function PassengerAdmin() {
   // Route stop mutations
   const addRouteStop = useMutation({
     mutationFn: async () => {
-      const maxOrder = routeStops.reduce((max, s) => Math.max(max, s.stop_order), 0);
+      const { data: lastStop, error: fetchLastError } = await supabase
+        .from('passenger_route_stops')
+        .select('stop_order')
+        .eq('route_id', selectedRoute!.id)
+        .order('stop_order', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (fetchLastError) throw fetchLastError;
+
       const { error } = await supabase
         .from('passenger_route_stops')
         .insert({
           route_id: selectedRoute!.id,
           dock_id: selectedDockForStop,
-          stop_order: maxOrder + 1,
+          stop_order: (lastStop?.stop_order ?? 0) + 1,
         });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-route-stops'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-route-stops', selectedRoute?.id] });
       setSelectedDockForStop('');
       toast.success('Stopp tillagt');
     },
