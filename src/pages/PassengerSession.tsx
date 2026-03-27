@@ -665,13 +665,10 @@ export default function PassengerSession() {
               <div className="hidden md:grid md:grid-cols-5 gap-3">
                 <div>
                   <Label className="text-xs">Avgång</Label>
-                  <Input
-                    type="time"
-                    value={departureTime}
-                    onChange={(e) => setDepartureTime(e.target.value)}
-                    disabled={!session.is_active}
-                    className="h-10"
-                  />
+                  <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm tabular-nums text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                    Automatisk
+                  </div>
                 </div>
                 
                 <div>
