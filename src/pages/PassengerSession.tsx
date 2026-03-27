@@ -315,7 +315,7 @@ export default function PassengerSession() {
           session_id: sessionId,
           dock_id: dockId,
           dock_name: dockName,
-          departure_time: departureTime,
+          departure_time: format(new Date(), 'HH:mm'),
           pax_on: parseInt(paxOn) || 0,
           pax_off: parseInt(paxOff) || 0,
           entry_order: entries.length + 1,
