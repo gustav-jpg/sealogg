@@ -292,8 +292,8 @@ export default function PassengerSession() {
       return;
     }
     
-    // Find last saved dock and move to next in list
-    const lastEntry = entries[entries.length - 1];
+    // Find last saved dock (first in list since sorted descending) and move to next in route
+    const lastEntry = entries[0];
     const lastIndex = routeStops.findIndex(s => s.dock_id === lastEntry.dock_id);
     const nextIndex = (lastIndex + 1) % routeStops.length;
     setSelectedDockId(routeStops[nextIndex].dock_id);
