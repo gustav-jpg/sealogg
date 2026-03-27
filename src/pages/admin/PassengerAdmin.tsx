@@ -245,6 +245,21 @@ export default function PassengerAdmin() {
         .delete()
         .eq('id', stopId);
       if (error) throw error;
+
+      // Reorder remaining stops to remove gaps
+      const remaining = routeStops
+        .filter(s => s.id !== stopId)
+        .sort((a, b) => a.stop_order - b.stop_order);
+      
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i].stop_order !== i + 1) {
+          const { error: reorderError } = await supabase
+            .from('passenger_route_stops')
+            .update({ stop_order: i + 1 })
+            .eq('id', remaining[i].id);
+          if (reorderError) throw reorderError;
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-route-stops'] });
