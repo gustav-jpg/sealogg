@@ -220,13 +220,13 @@ export default function PassengerAdmin() {
   // Route stop mutations
   const addRouteStop = useMutation({
     mutationFn: async () => {
-      const nextOrder = routeStops.length + 1;
+      const maxOrder = routeStops.reduce((max, s) => Math.max(max, s.stop_order), 0);
       const { error } = await supabase
         .from('passenger_route_stops')
         .insert({
           route_id: selectedRoute!.id,
           dock_id: selectedDockForStop,
-          stop_order: nextOrder,
+          stop_order: maxOrder + 1,
         });
       if (error) throw error;
     },
