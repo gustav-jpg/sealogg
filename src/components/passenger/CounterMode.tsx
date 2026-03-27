@@ -174,7 +174,7 @@ export function CounterMode({
       <div className="px-4 py-3 border-t bg-muted/40">
         <Button
           onClick={handleSave}
-          disabled={!isActive || saving || (paxOn === 0 && paxOff === 0)}
+          disabled={!isActive || saving}
           className="w-full h-14 text-base font-semibold gap-2"
           size="lg"
         >
