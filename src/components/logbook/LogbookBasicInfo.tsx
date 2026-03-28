@@ -31,7 +31,7 @@ export function LogbookBasicInfo({
   weather, wind, generalNotes, bunkerLiters, quickEntries,
   canEditThis, creatorName, fetchingWind,
   onWeatherChange, onWindChange, onGeneralNotesChange, onBunkerLitersChange,
-  onFetchWind, onOpenBunkerDialog, onAddFarskvatten, onAddSeptik, onRemoveQuickEntry,
+  onFetchWind, onOpenBunkerDialog, onOpenOljaGlykolDialog, onAddFarskvatten, onAddSeptik, onRemoveQuickEntry,
 }: LogbookBasicInfoProps) {
   return (
     <Card>
