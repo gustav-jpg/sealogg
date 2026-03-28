@@ -17,6 +17,7 @@ export interface CertificateUpload {
 
 interface AiResult {
   certificate_type: string;
+  certificate_type_id: string | null;
   expiry_date: string | null;
   issue_date: string | null;
   holder_name: string | null;
