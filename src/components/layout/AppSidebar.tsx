@@ -90,6 +90,7 @@ export function AppSidebar() {
   const isCollapsed = state === 'collapsed' && !isMobile;
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const { data: pendingCount = 0 } = usePendingRegistrationCount(isAdmin ? selectedOrgId : null);
 
   useEffect(() => {
     const checkSuperadmin = async () => {
