@@ -109,6 +109,10 @@ export function LogbookBasicInfo({
                 <Fuel className="h-4 w-4 mr-1" />
                 Bunkring
               </Button>
+              <Button type="button" variant="outline" size="sm" onClick={onOpenOljaGlykolDialog} title="Registrera olja eller glykol">
+                <Droplet className="h-4 w-4 mr-1" />
+                Olja/Glykol
+              </Button>
               <Button type="button" variant="outline" size="sm" onClick={onAddFarskvatten} title="Lägg till färskvatten">
                 <Droplets className="h-4 w-4 mr-1" />
                 Färskvatten
