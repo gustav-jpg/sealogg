@@ -795,6 +795,23 @@ export default function VesselDetail() {
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Hjälpmaskin
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  const gbCount = engineHoursInputs.filter(e => e.engine_type === 'gearbox').length;
+                  setEngineHoursInputs(prev => [...prev, {
+                    engine_type: 'gearbox',
+                    engine_number: gbCount + 1,
+                    current_hours: 0,
+                    name: `Backslag ${gbCount + 1}`,
+                  }]);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Backslag
+              </Button>
             </div>
 
             <Button onClick={() => handleSaveEngines()} disabled={updateEngineHours.isPending} className="w-full">
