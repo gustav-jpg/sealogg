@@ -21,6 +21,7 @@ interface LogbookBasicInfoProps {
   onBunkerLitersChange: (v: string) => void;
   onFetchWind: () => void;
   onOpenBunkerDialog: () => void;
+  onOpenOljaGlykolDialog: () => void;
   onAddFarskvatten: () => void;
   onAddSeptik: () => void;
   onRemoveQuickEntry: (entry: QuickEntry) => void;
