@@ -57,7 +57,21 @@ export default function OrganizationDetail() {
     },
   });
 
-  const { data: features } = useQuery({
+  const { data: registrationCode } = useQuery({
+    queryKey: ['registration-code', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organization_registration_codes')
+        .select('code, is_active')
+        .eq('organization_id', id!)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
     queryKey: ['organization-features', id],
     queryFn: async () => {
       const { data, error } = await supabase
