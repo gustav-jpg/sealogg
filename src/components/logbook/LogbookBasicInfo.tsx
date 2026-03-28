@@ -131,6 +131,7 @@ export function LogbookBasicInfo({
                 <div key={entry.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50 text-sm">
                   <div className="flex items-center gap-2">
                     {entry.type === 'bunkring' && <Fuel className="h-4 w-4 text-muted-foreground" />}
+                    {entry.type === 'olja_glykol' && <Droplet className="h-4 w-4 text-muted-foreground" />}
                     {entry.type === 'farskvatten' && <Droplets className="h-4 w-4 text-muted-foreground" />}
                     {entry.type === 'septik' && <Trash className="h-4 w-4 text-muted-foreground" />}
                     <span className="text-muted-foreground">{entry.timestamp}</span>
