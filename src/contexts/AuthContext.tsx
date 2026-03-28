@@ -185,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isSkeppare,
         isDeckhand,
         canEdit,
+        isPendingRegistration,
         signIn,
         signUp,
         signOut,
