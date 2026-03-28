@@ -110,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession.user);
         fetchProfile(initialSession.user.id);
         fetchRoles(initialSession.user.id);
+        fetchPendingStatus(initialSession.user.id);
         setIsLoading(false);
         return;
       }
