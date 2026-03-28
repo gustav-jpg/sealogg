@@ -1,0 +1,2 @@
+ALTER TABLE public.vessel_engine_hours DROP CONSTRAINT vessel_engine_hours_engine_type_check;
+ALTER TABLE public.vessel_engine_hours ADD CONSTRAINT vessel_engine_hours_engine_type_check CHECK (engine_type = ANY (ARRAY['main'::text, 'auxiliary'::text, 'gearbox'::text]));
