@@ -768,6 +768,12 @@ export default function OrganizationDetail() {
                     {format(new Date(organization.created_at), 'd MMMM yyyy', { locale: sv })}
                   </p>
                 </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Registreringskod:</span>
+                  <p className="font-mono font-bold text-lg tracking-widest">
+                    {registrationCode?.code || '–'}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
