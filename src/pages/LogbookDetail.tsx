@@ -462,6 +462,11 @@ export default function LogbookDetail() {
       const existing = vesselEngineHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
       entries.push({ tempId: crypto.randomUUID(), engineType: 'auxiliary', engineNumber: i, engineLabel: existing?.name || `Hjälpmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '' });
     }
+    // Gearboxes (backslag) — derived from vessel_engine_hours, no separate count on vessel
+    const gearboxEngines = vesselEngineHours.filter(h => h.engine_type === 'gearbox');
+    for (const gb of gearboxEngines) {
+      entries.push({ tempId: crypto.randomUUID(), engineType: 'gearbox', engineNumber: gb.engine_number, engineLabel: gb.name || `Backslag ${gb.engine_number}`, startHours: gb.current_hours || 0, stopHours: null, notes: '' });
+    }
     setEditableEngineHours(entries);
   };
 

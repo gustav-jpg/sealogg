@@ -3,7 +3,7 @@ import { CrewRole } from '@/lib/types';
 export interface EngineHourEntry {
   id?: string;
   tempId: string;
-  engineType: 'main' | 'auxiliary';
+  engineType: 'main' | 'auxiliary' | 'gearbox';
   engineNumber: number;
   engineLabel: string;
   startHours: number;
