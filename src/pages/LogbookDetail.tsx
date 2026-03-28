@@ -1257,7 +1257,7 @@ export default function LogbookDetail() {
                 <SelectContent>
                   {vesselEngineHours?.map(engine => (
                     <SelectItem key={engine.id} value={engine.id}>
-                      {engine.name || `${engine.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${engine.engine_number}`}
+                      {engine.name || `${engine.engine_type === 'auxiliary' ? 'Hjälpmaskin' : engine.engine_type === 'gearbox' ? 'Backslag' : 'Huvudmaskin'} ${engine.engine_number}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
