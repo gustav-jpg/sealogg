@@ -57,7 +57,7 @@ function RefillButton({ entry, canEdit, onUpdate }: { entry: EngineHourEntry; ca
         {canEdit && (
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+              <Button variant="outline" className="h-10 px-3 text-xs">
                 <Droplets className="h-3 w-3 mr-1" />
                 Påfyllning
               </Button>
