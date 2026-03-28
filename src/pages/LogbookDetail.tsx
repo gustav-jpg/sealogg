@@ -757,6 +757,10 @@ export default function LogbookDetail() {
       queryClient.invalidateQueries({ queryKey: ['bunker-events'] });
       queryClient.invalidateQueries({ queryKey: ['bunker-stats'] });
     }
+    if (entry.type === 'olja_glykol') {
+      // Delete the matching engine_refill by parsing from entry text
+      await supabase.from('engine_refills').delete().eq('logbook_id', id);
+    }
     setQuickEntries(prev => prev.filter(e => e.id !== entry.id));
   };
 
