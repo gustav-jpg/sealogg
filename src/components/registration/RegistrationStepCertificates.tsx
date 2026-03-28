@@ -39,8 +39,8 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
     if (!files) return;
 
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        toast({ variant: 'destructive', title: 'Fel filformat', description: 'Ladda upp en bild (JPG, PNG, etc.).' });
+      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        toast({ variant: 'destructive', title: 'Fel filformat', description: 'Ladda upp en bild (JPG, PNG) eller PDF.' });
         continue;
       }
 
