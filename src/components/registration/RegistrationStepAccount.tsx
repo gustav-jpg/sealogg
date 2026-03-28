@@ -3,97 +3,38 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, Building2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { ArrowLeft, Building2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface Props {
-  organizationId: string;
   organizationName: string;
-  onAccountCreated: (registrationId: string) => void;
+  initialData?: { fullName: string; email: string; password: string };
+  onNext: (data: { fullName: string; email: string; password: string }) => void;
   onBack: () => void;
 }
 
-export function RegistrationStepAccount({ organizationId, organizationName, onAccountCreated, onBack }: Props) {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+export function RegistrationStepAccount({ organizationName, initialData, onNext, onBack }: Props) {
+  const [fullName, setFullName] = useState(initialData?.fullName || '');
+  const [email, setEmail] = useState(initialData?.email || '');
+  const [password, setPassword] = useState(initialData?.password || '');
+  const [confirmPassword, setConfirmPassword] = useState(initialData?.password || '');
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
     if (password !== confirmPassword) {
-      toast({ variant: 'destructive', title: 'Lösenorden matchar inte', description: 'Kontrollera att du skrivit samma lösenord två gånger.' });
+      setError('Lösenorden matchar inte.');
       return;
     }
 
     if (password.length < 6) {
-      toast({ variant: 'destructive', title: 'För kort lösenord', description: 'Lösenordet måste vara minst 6 tecken.' });
+      setError('Lösenordet måste vara minst 6 tecken.');
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      // Sign up user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: { full_name: fullName },
-        },
-      });
-
-      if (signUpError) {
-        toast({ variant: 'destructive', title: 'Registrering misslyckades', description: signUpError.message });
-        setIsLoading(false);
-        return;
-      }
-
-      const userId = signUpData.user?.id;
-      if (!userId) {
-        toast({ variant: 'destructive', title: 'Fel', description: 'Kunde inte skapa konto.' });
-        setIsLoading(false);
-        return;
-      }
-
-      // Create pending registration
-      const { data: regData, error: regError } = await supabase
-        .from('pending_registrations')
-        .insert({
-          user_id: userId,
-          organization_id: organizationId,
-        })
-        .select('id')
-        .single();
-
-      if (regError) {
-        console.error('Failed to create pending registration:', regError);
-        toast({ variant: 'destructive', title: 'Fel', description: 'Konto skapades men registrering kunde inte slutföras.' });
-        setIsLoading(false);
-        return;
-      }
-
-      // Send welcome email
-      try {
-        await supabase.functions.invoke('send-welcome-email', {
-          body: { email, fullName },
-        });
-      } catch {
-        console.error('Failed to send welcome email');
-      }
-
-      onAccountCreated(regData.id);
-    } catch {
-      toast({ variant: 'destructive', title: 'Fel', description: 'Ett oväntat fel uppstod.' });
-    }
-
-    setIsLoading(false);
+    onNext({ fullName, email, password });
   };
 
   return (
@@ -121,11 +62,12 @@ export function RegistrationStepAccount({ organizationId, organizationName, onAc
           <Label htmlFor="confirmPassword">Bekräfta lösenord</Label>
           <Input id="confirmPassword" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
         </div>
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Skapa konto & fortsätt
+        <Button type="submit" className="w-full">
+          Fortsätt
         </Button>
         <Button type="button" variant="ghost" className="w-full" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
