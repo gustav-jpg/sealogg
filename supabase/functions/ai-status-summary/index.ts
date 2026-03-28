@@ -135,32 +135,33 @@ ${vesselSummaries}
         messages: [
           {
             role: "system",
-            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus baserat på data nedan. Gå rakt på sak.
+            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus. Gå rakt på sak.
 
 Använd EXAKT detta markdown-format:
 
 **Statusrapport [dagens datum]**
 
 ## Övergripande lägesbild
-[2-3 meningar om nuläget]
+[2-3 meningar om nuläget med antal felärenden, avvikelser etc.]
 
 ## Kritiska punkter
-- [punkt 1]
-- [punkt 2]
-(hoppa över denna sektion helt om inget är kritiskt)
+- [Lista ALLA kritiska/höga felärenden från ALLA fartyg med fartygsnamn]
+(hoppa över om inga kritiska/höga finns)
 
 ## Trender
-[Kort analys av mönster, t.ex. återkommande fel, fartyg med flest problem]
+[Kort analys: vilket fartyg har flest problem? Återkommande mönster?]
 
 ## Rekommendationer
 - [åtgärd 1]
 - [åtgärd 2]
 - [åtgärd 3]
 
-VIKTIGT:
-- Använd ## för rubriker, INTE **fetstil**
+REGLER:
+- Använd ## för rubriker
 - Använd - för listor
-- Max 250 ord
+- I "Kritiska punkter": lista ALLA felärenden med prioritet kritisk eller hög, inkludera fartygsnamn för varje punkt
+- Utelämna ALDRIG ett fartyg som har kritiska/höga ärenden
+- Max 300 ord
 - Svensk sjöfartsterminologi`,
           },
           {
