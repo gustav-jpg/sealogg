@@ -27,14 +27,24 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
     queryKey: ['pending-registrations', selectedOrgId],
     enabled: !!selectedOrgId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: regs, error } = await supabase
         .from('pending_registrations')
-        .select('*, profiles!pending_registrations_user_id_fkey(full_name, email)')
+        .select('*')
         .eq('organization_id', selectedOrgId!)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Fetch profile info for each registration
+      if (!regs || regs.length === 0) return [];
+      const userIds = regs.map((r: any) => r.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      return regs.map((r: any) => ({ ...r, profile: profileMap.get(r.user_id) || null }));
     },
   });
 
