@@ -101,7 +101,7 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
             <Camera className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium">Tryck för att ladda upp</p>
-          <p className="text-xs text-muted-foreground mt-1">JPG, PNG — ta foto eller välj fil</p>
+          <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF — ta foto eller välj fil</p>
         </div>
 
         <input
