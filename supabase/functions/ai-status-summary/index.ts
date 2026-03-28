@@ -90,43 +90,75 @@ serve(async (req) => {
 
     const todayStr = new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Group data per vessel for consistent reporting
-    const vesselSummaries = vessels?.map((v: any) => {
-      const vFaults = openFaults.filter((f: any) => f.vessel_id === v.id);
-      const vDeviations = openDeviations.filter((d: any) => d.vessel_id === v.id);
-      const vOverdue = overdue.filter((c: any) => c.vessel_id === v.id);
-      const kritiska = vFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog");
-      const normalFaults = vFaults.filter((f: any) => f.priority !== "kritisk" && f.priority !== "hog");
-      return `#### ${v.name}
-- Öppna felärenden: ${vFaults.length} (varav ${kritiska.length} kritiska/höga)
-${kritiska.map((f: any) => `  - [${f.priority}] "${f.title}"`).join("\n")}
-${normalFaults.map((f: any) => `  - [${f.priority}] "${f.title}"`).join("\n")}
-- Öppna avvikelser: ${vDeviations.length}
-${vDeviations.map((d: any) => `  - [${d.severity}] "${d.title}" (${d.date})`).join("\n")}
-- Förfallna kontrollpunkter: ${vOverdue.length}`;
-    }).join("\n\n");
+    const criticalPerVessel = (vessels || [])
+      .map((v: any) => {
+        const criticalFaults = openFaults.filter(
+          (f: any) => f.vessel_id === v.id && (f.priority === "kritisk" || f.priority === "hog"),
+        );
+        return {
+          name: v.name,
+          count: criticalFaults.length,
+          examples: criticalFaults.slice(0, 2).map((f: any) => f.title),
+        };
+      })
+      .filter((v: any) => v.count > 0);
 
-    // Pre-build the critical list so AI doesn't skip any
-    const allCriticalFaults = openFaults
-      .filter((f: any) => f.priority === "kritisk" || f.priority === "hog")
-      .map((f: any) => `- ${f.title} (${vesselNames[f.vessel_id]}) [${f.priority}]`);
+    const workloadPerVessel = (vessels || [])
+      .map((v: any) => {
+        const vOpenFaults = openFaults.filter((f: any) => f.vessel_id === v.id).length;
+        const vOpenDeviations = openDeviations.filter((d: any) => d.vessel_id === v.id).length;
+        const vOverdue = overdue.filter((c: any) => c.vessel_id === v.id).length;
+        return {
+          name: v.name,
+          openFaults: vOpenFaults,
+          openDeviations: vOpenDeviations,
+          overdueControls: vOverdue,
+          totalLoad: vOpenFaults + vOpenDeviations + vOverdue,
+        };
+      })
+      .sort((a: any, b: any) => b.totalLoad - a.totalLoad);
+
+    const criticalLines =
+      criticalPerVessel.length > 0
+        ? criticalPerVessel
+            .map(
+              (v: any) =>
+                `- ${v.name}: ${v.count} kritiska/höga fel${
+                  v.examples.length ? ` (exempel: ${v.examples.join(", ")})` : ""
+                }`,
+            )
+            .join("\n")
+        : "- Inga kritiska/höga felärenden";
+
+    const workloadLines = workloadPerVessel
+      .map(
+        (v: any) =>
+          `- ${v.name}: ${v.openFaults} öppna fel, ${v.openDeviations} öppna avvikelser, ${v.overdueControls} förfallna kontroller`,
+      )
+      .join("\n");
+
+    const avgPassengers = logbooks?.length
+      ? Math.round(logbooks.reduce((sum: number, l: any) => sum + (l.passenger_count || 0), 0) / logbooks.length)
+      : 0;
 
     const dataContext = `
 Dagens datum: ${todayStr}
 ## Organisationsdata (senaste ${period_days} dagar)
 
-### Sammanfattning
+### Nyckeltal
 - Fartyg: ${vessels?.length || 0}
-- Totalt öppna felärenden: ${openFaults.length} (varav ${allCriticalFaults.length} kritiska/höga)
-- Totalt öppna avvikelser: ${openDeviations.length}
+- Öppna felärenden: ${openFaults.length}
+- Kritiska/höga felärenden: ${openFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog").length}
+- Öppna avvikelser: ${openDeviations.length}
 - Förfallna kontrollpunkter: ${overdue.length}
-- Loggboksanteckningar: ${logbooks?.length || 0}
+- Loggböcker: ${logbooks?.length || 0}
+- Snitt passagerare (från loggböcker): ${avgPassengers}
 
-### ALLA kritiska/höga felärenden (MÅSTE inkluderas i rapporten under "Kritiska punkter"):
-${allCriticalFaults.length > 0 ? allCriticalFaults.join("\n") : "Inga kritiska/höga felärenden"}
+### Kritiska per fartyg
+${criticalLines}
 
-### Per fartyg
-${vesselSummaries}
+### Belastning per fartyg
+${workloadLines}
 `;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -143,21 +175,20 @@ ${vesselSummaries}
         messages: [
           {
             role: "system",
-            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus. Gå rakt på sak.
+            content: `Skriv en kort operativ sammanfattning på svenska av organisationens läge. Detta ska vara en sammanfattning, inte en presentation eller full ärendelista.
 
-Använd EXAKT detta markdown-format:
+Använd detta format:
 
 **Statusrapport [dagens datum]**
 
 ## Övergripande lägesbild
-[2-3 meningar om nuläget med antal felärenden, avvikelser etc.]
+[2-3 meningar med nuläge och risknivå]
 
 ## Kritiska punkter
-- [Kopiera EXAKT alla punkter från listan "ALLA kritiska/höga felärenden" i datan, inklusive fartygsnamn]
-(hoppa över ENDAST om listan explicit säger "Inga kritiska/höga felärenden")
+- [1-3 korta punkter]
 
 ## Trender
-[Kort analys: vilket fartyg har flest problem? Återkommande mönster?]
+[1 kort stycke med tydliga mönster]
 
 ## Rekommendationer
 - [åtgärd 1]
@@ -165,12 +196,11 @@ Använd EXAKT detta markdown-format:
 - [åtgärd 3]
 
 REGLER:
-- Använd ## för rubriker
-- Använd - för listor
-- I "Kritiska punkter": lista ALLA felärenden med prioritet kritisk eller hög, inkludera fartygsnamn för varje punkt
-- Utelämna ALDRIG ett fartyg som har kritiska/höga ärenden
-- Max 300 ord
-- Svensk sjöfartsterminologi`,
+- Håll det koncist (max 180 ord)
+- I "Kritiska punkter" måste alla fartyg från "Kritiska per fartyg" nämnas minst en gång
+- Om inga kritiska finns: skriv exakt "- Inga kritiska/höga felärenden just nu"
+- Summera, repetera inte hela listor
+- Använd svensk sjöfartsterminologi`,
           },
           {
             role: "user",
