@@ -83,7 +83,7 @@ export function AiStatusSummary({ organizationId, periodDays }: AiStatusSummaryP
       <CardHeader className="py-3 px-4 flex-row items-center justify-between">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          AI-sammanfattning
+          AI-sammanfattning <span className="text-xs font-normal text-muted-foreground">(beta)</span>
         </CardTitle>
         <Button
           variant="ghost"
