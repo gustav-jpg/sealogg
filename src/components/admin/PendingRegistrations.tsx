@@ -284,6 +284,16 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
                         certTypes={certTypes}
                         edit={certEdits[cert.id]}
                         onEditChange={(field, value) => updateCertEdit(cert.id, field, value)}
+                        onDelete={async () => {
+                          // Delete file from storage
+                          await supabase.storage.from('registration-certificates').remove([cert.file_url]);
+                          // Delete DB record
+                          await supabase.from('pending_certificates').delete().eq('id', cert.id);
+                          // Remove from local edits
+                          setCertEdits((prev) => { const next = { ...prev }; delete next[cert.id]; return next; });
+                          queryClient.invalidateQueries({ queryKey: ['pending-certificates', selectedRegistration?.id] });
+                          toast({ title: 'Borttaget', description: 'Certifikatet har tagits bort.' });
+                        }}
                       />
                     ))}
                   </div>
