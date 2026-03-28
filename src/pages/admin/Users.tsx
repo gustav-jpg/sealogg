@@ -33,6 +33,7 @@ export default function AdminUsers() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: string; id: string; name: string } | null>(null);
 
   const { data: profiles } = useOrgProfiles(selectedOrgId);
+  const { data: pendingCount = 0 } = usePendingRegistrationCount(selectedOrgId);
 
   const profileIds = profiles?.map((p) => p.id) || [];
   const profileUserIds = profiles?.map((p) => p.user_id).filter(Boolean) || [];
