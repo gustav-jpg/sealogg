@@ -33,7 +33,7 @@ import { LogbookCrew } from '@/components/logbook/LogbookCrew';
 import { LogbookSidebar } from '@/components/logbook/LogbookSidebar';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, MapPin, ArrowLeft, Save, Trash2, Plus, ShieldCheck, History, Fuel, Loader2, CheckCircle2, CloudOff } from 'lucide-react';
+import { Ship, MapPin, ArrowLeft, Save, Trash2, Plus, ShieldCheck, History, Fuel, Loader2, CheckCircle2, CloudOff, Droplet } from 'lucide-react';
 
 export default function LogbookDetail() {
   const { id } = useParams<{ id: string }>();
