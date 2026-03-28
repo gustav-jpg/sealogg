@@ -1225,6 +1225,81 @@ export default function LogbookDetail() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Olja/Glykol Dialog */}
+      <Dialog open={showOljaGlykolDialog} onOpenChange={setShowOljaGlykolDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Droplet className="h-5 w-5" />
+              Registrera olja/glykol
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Typ</Label>
+              <Select value={oljaGlykolType} onValueChange={(v: 'olja' | 'glykol') => setOljaGlykolType(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="olja">Olja</SelectItem>
+                  <SelectItem value="glykol">Glykol</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Maskin</Label>
+              <Select value={oljaGlykolEngine} onValueChange={setOljaGlykolEngine}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Välj maskin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vesselEngineHours?.map(engine => (
+                    <SelectItem key={engine.id} value={engine.id}>
+                      {engine.name || `${engine.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${engine.engine_number}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="olja-liters">Antal liter</Label>
+              <Input id="olja-liters" type="number" value={oljaGlykolLiters} onChange={(e) => setOljaGlykolLiters(e.target.value)} placeholder="T.ex. 5" min="0" step="0.1" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowOljaGlykolDialog(false)}>Avbryt</Button>
+              <Button
+                onClick={async () => {
+                  const engine = vesselEngineHours?.find(e => e.id === oljaGlykolEngine);
+                  const engineName = engine?.name || `${engine?.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${engine?.engine_number || 1}`;
+                  const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                  const typeLabel = oljaGlykolType === 'olja' ? 'Olja' : 'Glykol';
+                  const text = `${typeLabel} ${oljaGlykolLiters}L – ${engineName}`;
+                  const { error } = await supabase.from('engine_refills').insert({
+                    logbook_id: id,
+                    engine_type: engine?.engine_type || 'main',
+                    engine_number: engine?.engine_number || 1,
+                    engine_name: engineName,
+                    refill_type: oljaGlykolType,
+                    liters: parseFloat(oljaGlykolLiters),
+                  });
+                  if (error) { toast({ title: 'Fel', description: 'Kunde inte spara', variant: 'destructive' }); return; }
+                  setQuickEntries(prev => [...prev, { id: crypto.randomUUID(), type: 'olja_glykol', text, timestamp }]);
+                  setOljaGlykolLiters('');
+                  setOljaGlykolEngine('');
+                  setShowOljaGlykolDialog(false);
+                  toast({ title: `${typeLabel} registrerad`, description: `${oljaGlykolLiters}L ${typeLabel.toLowerCase()} på ${engineName}` });
+                }}
+                disabled={!oljaGlykolLiters || !oljaGlykolEngine}
+              >
+                <Droplet className="h-4 w-4 mr-2" />
+                Registrera
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
