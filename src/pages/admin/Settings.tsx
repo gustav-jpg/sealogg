@@ -288,6 +288,40 @@ export default function SettingsAdmin() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Registration code card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <KeyRound className="h-5 w-5" />
+                  Registreringskod
+                </CardTitle>
+                <CardDescription>
+                  Nya anställda anger denna kod på <span className="font-medium">sealogg.se/ny</span> för att registrera sig.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {registrationCode ? (
+                  <div className="flex items-center gap-3">
+                    <code className="text-3xl font-mono font-bold tracking-[0.3em] bg-muted px-4 py-2 rounded-lg">
+                      {registrationCode.code}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(registrationCode.code);
+                        toast({ title: 'Kopierad', description: 'Registreringskoden har kopierats.' });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Ingen registreringskod genererad.</p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Startsida Settings Tab */}
