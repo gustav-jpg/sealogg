@@ -365,6 +365,8 @@ export default function AdminStatus() {
                 </CardContent>
               </Card>
             )}
+
+            <AiStatusSummary organizationId={selectedOrgId} periodDays={parseInt(period)} />
           </TabsContent>
 
           {/* Issues tab - all oversight items */}
