@@ -3469,6 +3469,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      seed_default_certificate_types: {
+        Args: { org_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_module:
