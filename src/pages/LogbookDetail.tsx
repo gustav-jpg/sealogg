@@ -832,6 +832,12 @@ export default function LogbookDetail() {
                 setBunkerDialogEngineHours('');
                 setShowBunkerDialog(true);
               }}
+              onOpenOljaGlykolDialog={() => {
+                setOljaGlykolType('olja');
+                setOljaGlykolLiters('');
+                setOljaGlykolEngine('');
+                setShowOljaGlykolDialog(true);
+              }}
               onAddFarskvatten={() => {
                 const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
                 setQuickEntries(prev => [...prev, { id: crypto.randomUUID(), type: 'farskvatten', text: 'Fyllt färskvatten', timestamp }]);
