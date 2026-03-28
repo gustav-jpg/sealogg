@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Ship, User, Fuel, Droplets, Trash, X, Wind, Loader2 } from 'lucide-react';
+import { Ship, User, Fuel, Droplets, Trash, X, Wind, Loader2, Droplet } from 'lucide-react';
 import { QuickEntry } from '@/lib/logbook-types';
 
 interface LogbookBasicInfoProps {
@@ -21,6 +21,7 @@ interface LogbookBasicInfoProps {
   onBunkerLitersChange: (v: string) => void;
   onFetchWind: () => void;
   onOpenBunkerDialog: () => void;
+  onOpenOljaGlykolDialog: () => void;
   onAddFarskvatten: () => void;
   onAddSeptik: () => void;
   onRemoveQuickEntry: (entry: QuickEntry) => void;
@@ -30,7 +31,7 @@ export function LogbookBasicInfo({
   weather, wind, generalNotes, bunkerLiters, quickEntries,
   canEditThis, creatorName, fetchingWind,
   onWeatherChange, onWindChange, onGeneralNotesChange, onBunkerLitersChange,
-  onFetchWind, onOpenBunkerDialog, onAddFarskvatten, onAddSeptik, onRemoveQuickEntry,
+  onFetchWind, onOpenBunkerDialog, onOpenOljaGlykolDialog, onAddFarskvatten, onAddSeptik, onRemoveQuickEntry,
 }: LogbookBasicInfoProps) {
   return (
     <Card>
@@ -108,6 +109,10 @@ export function LogbookBasicInfo({
                 <Fuel className="h-4 w-4 mr-1" />
                 Bunkring
               </Button>
+              <Button type="button" variant="outline" size="sm" onClick={onOpenOljaGlykolDialog} title="Registrera olja eller glykol">
+                <Droplet className="h-4 w-4 mr-1" />
+                Olja/Glykol
+              </Button>
               <Button type="button" variant="outline" size="sm" onClick={onAddFarskvatten} title="Lägg till färskvatten">
                 <Droplets className="h-4 w-4 mr-1" />
                 Färskvatten
@@ -126,6 +131,7 @@ export function LogbookBasicInfo({
                 <div key={entry.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50 text-sm">
                   <div className="flex items-center gap-2">
                     {entry.type === 'bunkring' && <Fuel className="h-4 w-4 text-muted-foreground" />}
+                    {entry.type === 'olja_glykol' && <Droplet className="h-4 w-4 text-muted-foreground" />}
                     {entry.type === 'farskvatten' && <Droplets className="h-4 w-4 text-muted-foreground" />}
                     {entry.type === 'septik' && <Trash className="h-4 w-4 text-muted-foreground" />}
                     <span className="text-muted-foreground">{entry.timestamp}</span>

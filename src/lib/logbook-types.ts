@@ -20,7 +20,7 @@ export interface CrewMember {
 
 export interface QuickEntry {
   id: string;
-  type: 'bunkring' | 'farskvatten' | 'septik';
+  type: 'bunkring' | 'farskvatten' | 'septik' | 'olja_glykol';
   text: string;
   timestamp: string;
 }
