@@ -91,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null);
           setRoles([]);
+          setIsPendingRegistration(false);
           if (event === 'SIGNED_OUT') {
             clearBackupSession();
           }
