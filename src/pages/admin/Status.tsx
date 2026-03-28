@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Wrench, Award, Ship, CheckCircle, Clock, ChevronDown, Users } from 'lucide-react';
+import { AiStatusSummary } from '@/components/admin/AiStatusSummary';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -364,6 +365,8 @@ export default function AdminStatus() {
                 </CardContent>
               </Card>
             )}
+
+            <AiStatusSummary organizationId={selectedOrgId} periodDays={parseInt(period)} />
           </TabsContent>
 
           {/* Issues tab - all oversight items */}
