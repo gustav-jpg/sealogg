@@ -55,10 +55,10 @@ serve(async (req) => {
     let mimeType = "image/jpeg";
     let cleanBase64 = imageBase64;
     if (imageBase64.startsWith("data:")) {
-      const match = imageBase64.match(/^data:(image\/\w+);base64,/);
+      const match = imageBase64.match(/^data:([^;]+);base64,/);
       if (match) {
         mimeType = match[1];
-        cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, "");
       }
     }
 

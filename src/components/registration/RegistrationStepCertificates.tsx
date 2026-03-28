@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Camera, X, FileCheck, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, Camera, X, FileCheck, AlertCircle, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 
@@ -39,8 +39,8 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
     if (!files) return;
 
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        toast({ variant: 'destructive', title: 'Fel filformat', description: 'Ladda upp en bild (JPG, PNG, etc.).' });
+      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        toast({ variant: 'destructive', title: 'Fel filformat', description: 'Ladda upp en bild (JPG, PNG) eller PDF.' });
         continue;
       }
 
@@ -101,13 +101,13 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
             <Camera className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium">Tryck för att ladda upp</p>
-          <p className="text-xs text-muted-foreground mt-1">JPG, PNG — ta foto eller välj fil</p>
+          <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF — ta foto eller välj fil</p>
         </div>
 
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
           capture="environment"
           multiple
           className="hidden"
@@ -118,11 +118,17 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
         {certificates.map((cert) => (
           <div key={cert.id} className="border rounded-lg p-3 space-y-2">
             <div className="flex items-start gap-3">
-              <img
-                src={cert.previewUrl}
-                alt="Certifikat"
-                className="w-16 h-16 object-cover rounded border"
-              />
+              {cert.file.type === 'application/pdf' ? (
+                <div className="w-16 h-16 rounded border flex items-center justify-center bg-muted">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+              ) : (
+                <img
+                  src={cert.previewUrl}
+                  alt="Certifikat"
+                  className="w-16 h-16 object-cover rounded border"
+                />
+              )}
               <div className="flex-1 min-w-0">
                 {cert.isAnalyzing && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
