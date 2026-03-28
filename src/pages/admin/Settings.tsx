@@ -18,7 +18,7 @@ import { useOrgCertificateTypes } from '@/hooks/useOrgCertificateTypes';
 import { useQuery } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { WEATHER_STATIONS, UFS_CHARTS, getUFSChartsByRegion } from '@/lib/maritime-data';
-import { Plus, Trash2, Award, GraduationCap, Settings, Building2, Wind, AlertTriangle, Save, Home, X } from 'lucide-react';
+import { Plus, Trash2, Award, GraduationCap, Settings, Building2, Wind, AlertTriangle, Save, Home, X, KeyRound, Copy } from 'lucide-react';
 
 export default function SettingsAdmin() {
   const { toast } = useToast();
