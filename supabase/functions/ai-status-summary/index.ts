@@ -106,16 +106,24 @@ ${vDeviations.map((d: any) => `  - [${d.severity}] "${d.title}" (${d.date})`).jo
 - Förfallna kontrollpunkter: ${vOverdue.length}`;
     }).join("\n\n");
 
+    // Pre-build the critical list so AI doesn't skip any
+    const allCriticalFaults = openFaults
+      .filter((f: any) => f.priority === "kritisk" || f.priority === "hog")
+      .map((f: any) => `- ${f.title} (${vesselNames[f.vessel_id]}) [${f.priority}]`);
+
     const dataContext = `
 Dagens datum: ${todayStr}
 ## Organisationsdata (senaste ${period_days} dagar)
 
 ### Sammanfattning
 - Fartyg: ${vessels?.length || 0}
-- Totalt öppna felärenden: ${openFaults.length} (varav ${openFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog").length} kritiska/höga)
+- Totalt öppna felärenden: ${openFaults.length} (varav ${allCriticalFaults.length} kritiska/höga)
 - Totalt öppna avvikelser: ${openDeviations.length}
 - Förfallna kontrollpunkter: ${overdue.length}
 - Loggboksanteckningar: ${logbooks?.length || 0}
+
+### ALLA kritiska/höga felärenden (MÅSTE inkluderas i rapporten under "Kritiska punkter"):
+${allCriticalFaults.length > 0 ? allCriticalFaults.join("\n") : "Inga kritiska/höga felärenden"}
 
 ### Per fartyg
 ${vesselSummaries}
@@ -145,8 +153,8 @@ Använd EXAKT detta markdown-format:
 [2-3 meningar om nuläget med antal felärenden, avvikelser etc.]
 
 ## Kritiska punkter
-- [Lista ALLA kritiska/höga felärenden från ALLA fartyg med fartygsnamn]
-(hoppa över om inga kritiska/höga finns)
+- [Kopiera EXAKT alla punkter från listan "ALLA kritiska/höga felärenden" i datan, inklusive fartygsnamn]
+(hoppa över ENDAST om listan explicit säger "Inga kritiska/höga felärenden")
 
 ## Trender
 [Kort analys: vilket fartyg har flest problem? Återkommande mönster?]
