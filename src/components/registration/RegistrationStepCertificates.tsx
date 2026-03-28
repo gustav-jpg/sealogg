@@ -107,7 +107,7 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
           capture="environment"
           multiple
           className="hidden"
