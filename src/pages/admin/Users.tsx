@@ -509,13 +509,18 @@ export default function AdminUsers() {
               <Users className="h-4 w-4" />
               Personal
             </TabsTrigger>
-            <TabsTrigger value="seadays" className="gap-2">
-              <Anchor className="h-4 w-4" />
-              Sjödagar
-            </TabsTrigger>
             <TabsTrigger value="pending" className="gap-2">
               <UserPlus className="h-4 w-4" />
               Väntande
+              {pendingCount > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5 text-xs">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="seadays" className="gap-2">
+              <Anchor className="h-4 w-4" />
+              Sjödagar
             </TabsTrigger>
           </TabsList>
           
