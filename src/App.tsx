@@ -93,7 +93,7 @@ function LazyFallback() {
 }
 
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
-  const { user, isLoading, isAdmin } = useAuth();
+  const { user, isLoading, isAdmin, isPendingRegistration } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -105,9 +105,12 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
   }
 
   if (!user) {
-    // Save the current URL (including query params) so we can redirect back after login
     const currentPath = location.pathname + location.search;
     return <Navigate to="/portal/login" state={{ from: currentPath }} replace />;
+  }
+
+  if (isPendingRegistration) {
+    return <PendingApprovalPage />;
   }
 
   if (adminOnly && !isAdmin) {

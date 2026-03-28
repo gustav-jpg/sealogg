@@ -52,6 +52,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchPendingStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from('pending_registrations')
+      .select('status')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle();
+    
+    setIsPendingRegistration(!!data);
+  };
+
   const refreshProfile = async () => {
     if (user) {
       await Promise.all([fetchProfile(user.id), fetchRoles(user.id)]);
