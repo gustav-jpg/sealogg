@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Waves } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import sealoggLogo from '@/assets/sealog-logo.png';
 import { RegistrationStepPin } from '@/components/registration/RegistrationStepPin';
 import { RegistrationStepAccount } from '@/components/registration/RegistrationStepAccount';
 import { RegistrationStepCertificates } from '@/components/registration/RegistrationStepCertificates';
@@ -24,9 +24,7 @@ export default function Register() {
       <Card className="w-full max-w-md animate-fade-in">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 rounded-full maritime-gradient">
-              <Waves className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img src={sealoggLogo} alt="SeaLogg" className="h-10" />
           </div>
           <CardTitle className="font-display text-2xl">
             {step === 4 ? 'Registrering klar!' : 'Skapa konto'}
