@@ -4,6 +4,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { usePendingRegistrationCount } from '@/hooks/usePendingRegistrationCount';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import {
   Ship,
@@ -89,6 +90,7 @@ export function AppSidebar() {
   const isCollapsed = state === 'collapsed' && !isMobile;
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const { data: pendingCount = 0 } = usePendingRegistrationCount(isAdmin ? selectedOrgId : null);
 
   useEffect(() => {
     const checkSuperadmin = async () => {
@@ -348,6 +350,11 @@ export function AppSidebar() {
                       <Link to={item.href}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.label}</span>
+                        {item.href === '/portal/admin/users' && pendingCount > 0 && !isCollapsed && (
+                          <span className="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-medium">
+                            {pendingCount}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

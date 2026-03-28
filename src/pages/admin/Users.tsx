@@ -22,6 +22,7 @@ import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePendingRegistrationCount } from '@/hooks/usePendingRegistrationCount';
 
 export default function AdminUsers() {
   const { toast } = useToast();
@@ -32,6 +33,7 @@ export default function AdminUsers() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: string; id: string; name: string } | null>(null);
 
   const { data: profiles } = useOrgProfiles(selectedOrgId);
+  const { data: pendingCount = 0 } = usePendingRegistrationCount(selectedOrgId);
 
   const profileIds = profiles?.map((p) => p.id) || [];
   const profileUserIds = profiles?.map((p) => p.user_id).filter(Boolean) || [];
@@ -509,13 +511,18 @@ export default function AdminUsers() {
               <Users className="h-4 w-4" />
               Personal
             </TabsTrigger>
-            <TabsTrigger value="seadays" className="gap-2">
-              <Anchor className="h-4 w-4" />
-              Sjödagar
-            </TabsTrigger>
             <TabsTrigger value="pending" className="gap-2">
               <UserPlus className="h-4 w-4" />
               Väntande
+              {pendingCount > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5 text-xs">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="seadays" className="gap-2">
+              <Anchor className="h-4 w-4" />
+              Sjödagar
             </TabsTrigger>
           </TabsList>
           
