@@ -80,14 +80,20 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
       if (memberError) throw memberError;
 
       // 3. Create user_certificates from confirmed pending_certificates
-      if (certificates && certificates.length > 0) {
+      // Get profile_id for the user
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', reg.user_id)
+        .single();
+
+      if (profile && certificates && certificates.length > 0) {
         const certInserts = certificates
           .filter((c: any) => c.confirmed_type_id || c.ai_suggested_type)
           .map((c: any) => ({
-            user_id: reg.user_id,
+            profile_id: profile.id,
             certificate_type_id: c.confirmed_type_id,
             expiry_date: c.confirmed_expiry || c.ai_suggested_expiry,
-            issue_date: null,
           }))
           .filter((c: any) => c.certificate_type_id && c.expiry_date);
 
