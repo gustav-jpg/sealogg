@@ -650,8 +650,12 @@ export default function AdminUsers() {
             </Card>
           </TabsContent>
           
-          <TabsContent value="seadays" className="mt-6">
+           <TabsContent value="seadays" className="mt-6">
             <SeaDaysTab />
+          </TabsContent>
+
+          <TabsContent value="pending" className="mt-6">
+            <PendingRegistrations selectedOrgId={selectedOrgId} />
           </TabsContent>
         </Tabs>
 
