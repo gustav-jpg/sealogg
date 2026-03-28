@@ -345,15 +345,17 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
   );
 }
 
-function CertificateReviewCard({ cert, certTypes, edit, onEditChange }: {
+function CertificateReviewCard({ cert, certTypes, edit, onEditChange, onDelete }: {
   cert: any;
   certTypes: CertType[];
   edit?: { typeId: string | null; expiry: string | null };
   onEditChange: (field: 'typeId' | 'expiry', value: string | null) => void;
+  onDelete: () => Promise<void>;
 }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isPdf = cert.file_name?.toLowerCase().endsWith('.pdf');
 
