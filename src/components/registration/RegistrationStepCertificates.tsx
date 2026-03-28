@@ -17,6 +17,7 @@ export interface CertificateUpload {
 
 interface AiResult {
   certificate_type: string;
+  certificate_type_id: string | null;
   expiry_date: string | null;
   issue_date: string | null;
   holder_name: string | null;
@@ -28,9 +29,10 @@ interface Props {
   onComplete: (certificates: CertificateUpload[]) => void;
   onBack: () => void;
   isSubmitting: boolean;
+  organizationId?: string;
 }
 
-export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting }: Props) {
+export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting, organizationId }: Props) {
   const [certificates, setCertificates] = useState<CertificateUpload[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -54,7 +56,7 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
       try {
         const base64 = await fileToBase64(file);
         const { data, error } = await supabase.functions.invoke('analyze-certificate', {
-          body: { imageBase64: base64 },
+          body: { imageBase64: base64, organizationId },
         });
 
         if (error || data?.error) {

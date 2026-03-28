@@ -13,7 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    // Verify auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -37,7 +36,7 @@ serve(async (req) => {
       });
     }
 
-    const { imageBase64 } = await req.json();
+    const { imageBase64, organizationId } = await req.json();
 
     if (!imageBase64 || typeof imageBase64 !== "string") {
       return new Response(
@@ -46,12 +45,31 @@ serve(async (req) => {
       );
     }
 
+    // Fetch organization's certificate types if organizationId provided
+    let certTypesList = "";
+    let certTypesForMatching: { id: string; name: string }[] = [];
+    if (organizationId) {
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: certTypes } = await adminClient
+        .from("certificate_types")
+        .select("id, name")
+        .eq("organization_id", organizationId)
+        .order("name");
+
+      if (certTypes && certTypes.length > 0) {
+        certTypesForMatching = certTypes;
+        certTypesList = certTypes.map((ct: any) => `- "${ct.name}" (id: ${ct.id})`).join("\n");
+      }
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Detect mime type from base64 prefix or default to jpeg
     let mimeType = "image/jpeg";
     let cleanBase64 = imageBase64;
     if (imageBase64.startsWith("data:")) {
@@ -62,6 +80,10 @@ serve(async (req) => {
       }
     }
 
+    const certTypesInstruction = certTypesList
+      ? `\n\nOrganisationens registrerade certifikatstyper:\n${certTypesList}\n\nDu MÅSTE matcha certifikatet mot en av dessa typer. Använd exakt namn och ange certificate_type_id. Om ingen typ matchar, välj den närmaste och sätt confidence lägre.`
+      : "";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -69,16 +91,17 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
             content: `Du är en expert på att analysera sjöfartscertifikat och andra maritima behörighetshandlingar. 
 Analysera bilden och identifiera:
-1. Typ av certifikat/behörighet (t.ex. Sjöbefälsklass VII, Fartygsbefäl klass VIII, Maskinbefäl, Sjöfartsbok, Grundläggande säkerhetsutbildning, etc.)
+1. Typ av certifikat/behörighet
 2. Utgångsdatum (om synligt)
 3. Utfärdandedatum (om synligt)
 4. Innehavarens namn (om synligt)
+${certTypesInstruction}
 
 Svara ALLTID med ett anrop till funktionen extract_certificate_info.`,
           },
@@ -109,7 +132,11 @@ Svara ALLTID med ett anrop till funktionen extract_certificate_info.`,
                 properties: {
                   certificate_type: {
                     type: "string",
-                    description: "Typ av certifikat, t.ex. 'Sjöbefälsklass VII', 'Fartygsbefäl klass VIII', 'Maskinbefäl', 'Sjöfartsbok', 'Grundläggande säkerhetsutbildning', 'Begränsad radiooperatör (SRC)', 'Intyg om specialbehörighet', 'Lotsbehörighet' etc.",
+                    description: "Typ av certifikat — använd exakt namn från organisationens lista om tillgänglig",
+                  },
+                  certificate_type_id: {
+                    type: "string",
+                    description: "UUID för matchad certifikatstyp från organisationens lista, eller null om ingen matchning",
                   },
                   expiry_date: {
                     type: "string",
@@ -168,6 +195,14 @@ Svara ALLTID med ett anrop till funktionen extract_certificate_info.`,
     }
 
     const extracted = JSON.parse(toolCall.function.arguments);
+
+    // Validate that returned certificate_type_id actually exists
+    if (extracted.certificate_type_id && certTypesForMatching.length > 0) {
+      const valid = certTypesForMatching.some((ct) => ct.id === extracted.certificate_type_id);
+      if (!valid) {
+        extracted.certificate_type_id = null;
+      }
+    }
 
     return new Response(JSON.stringify(extracted), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
