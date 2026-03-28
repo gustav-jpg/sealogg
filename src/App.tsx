@@ -151,6 +151,7 @@ function AppRoutes() {
       <Routes>
         {/* Public pages */}
         <Route path="/" element={shouldForceNativePortalLogin() ? <Navigate to="/portal/login" replace /> : <Home />} />
+        <Route path="/ny" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/changelog" element={<Changelog />} />
         <Route path="/support" element={<Support />} />
         <Route path="/privacy" element={<Privacy />} />

@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
 import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings, Search, Users, X, Anchor } from 'lucide-react';
 import { SeaDaysTab } from '@/components/admin/SeaDaysTab';
+import { PendingRegistrations } from '@/components/admin/PendingRegistrations';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -512,6 +513,10 @@ export default function AdminUsers() {
               <Anchor className="h-4 w-4" />
               Sjödagar
             </TabsTrigger>
+            <TabsTrigger value="pending" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Väntande
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="users" className="mt-6 space-y-6">
@@ -645,8 +650,12 @@ export default function AdminUsers() {
             </Card>
           </TabsContent>
           
-          <TabsContent value="seadays" className="mt-6">
+           <TabsContent value="seadays" className="mt-6">
             <SeaDaysTab />
+          </TabsContent>
+
+          <TabsContent value="pending" className="mt-6">
+            <PendingRegistrations selectedOrgId={selectedOrgId} />
           </TabsContent>
         </Tabs>
 
