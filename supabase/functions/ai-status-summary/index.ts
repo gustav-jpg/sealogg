@@ -88,7 +88,10 @@ serve(async (req) => {
       return new Date(c.next_due_date) < new Date();
     }) || [];
 
+    const todayStr = new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
     const dataContext = `
+Dagens datum: ${todayStr}
 ## Organisationsdata (senaste ${period_days} dagar)
 
 ### Fartyg
