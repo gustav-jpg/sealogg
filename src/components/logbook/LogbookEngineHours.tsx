@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Gauge, Plus, Pencil } from 'lucide-react';
-import { EngineHourEntry } from '@/lib/logbook-types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Gauge, Plus, Pencil, Droplets, X } from 'lucide-react';
+import { EngineHourEntry, EngineRefill } from '@/lib/logbook-types';
 
 interface LogbookEngineHoursProps {
   editableEngineHours: EngineHourEntry[];
@@ -12,8 +15,90 @@ interface LogbookEngineHoursProps {
   vesselEngineHours: any[] | undefined;
   isOpen: boolean;
   canEditThis: boolean;
-  onUpdateEngineHour: (tempId: string, field: keyof EngineHourEntry, value: string | number | null) => void;
+  onUpdateEngineHour: (tempId: string, field: keyof EngineHourEntry, value: any) => void;
   onInitializeFromVessel: () => void;
+}
+
+function RefillButton({ entry, canEdit, onUpdate }: { entry: EngineHourEntry; canEdit: boolean; onUpdate: (tempId: string, field: keyof EngineHourEntry, value: any) => void }) {
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<'olja' | 'glykol'>('olja');
+  const [liters, setLiters] = useState('');
+
+  const addRefill = () => {
+    if (!liters || Number(liters) <= 0) return;
+    const newRefill: EngineRefill = {
+      tempId: crypto.randomUUID(),
+      refillType: type,
+      liters: Number(liters),
+    };
+    onUpdate(entry.tempId, 'refills', [...entry.refills, newRefill]);
+    setLiters('');
+    setOpen(false);
+  };
+
+  const removeRefill = (refillTempId: string) => {
+    onUpdate(entry.tempId, 'refills', entry.refills.filter(r => r.tempId !== refillTempId));
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1 flex-wrap">
+        {entry.refills.map(r => (
+          <Badge key={r.tempId} variant="secondary" className="text-xs gap-1">
+            <Droplets className="h-3 w-3" />
+            {r.liters}L {r.refillType === 'olja' ? 'olja' : 'glykol'}
+            {canEdit && (
+              <button onClick={() => removeRefill(r.tempId)} className="ml-1 hover:text-destructive">
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </Badge>
+        ))}
+        {canEdit && (
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+                <Droplets className="h-3 w-3 mr-1" />
+                Påfyllning
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-3 space-y-3" align="start">
+              <p className="text-sm font-medium">Lägg till påfyllning</p>
+              <div className="space-y-2">
+                <Select value={type} onValueChange={(v: 'olja' | 'glykol') => setType(v)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="olja">Olja</SelectItem>
+                    <SelectItem value="glykol">Glykol</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Liter</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={liters}
+                      onChange={e => setLiters(e.target.value)}
+                      placeholder="0"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <Button size="sm" className="h-8" onClick={addRefill} disabled={!liters || Number(liters) <= 0}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    Lägg till
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function LogbookEngineHours({
@@ -105,6 +190,7 @@ export function LogbookEngineHours({
                       />
                     </div>
                   </div>
+                  <RefillButton entry={entry} canEdit={true} onUpdate={onUpdateEngineHour} />
                 </div>
               ))}
             </div>
@@ -112,22 +198,37 @@ export function LogbookEngineHours({
         ) : (
           engineHours && engineHours.length > 0 ? (
             <div className="space-y-2">
-              {engineHours.map((entry: any) => (
-                <div key={entry.id} className="p-2 rounded bg-muted/50 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {entry.engine_name || (entry.engine_type === 'auxiliary' 
-                        ? `Hjälpmaskin ${entry.engine_number}` 
-                        : `Huvudmaskin ${entry.engine_number || 1}`)}
-                    </span>
-                    <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
+              {engineHours.map((entry: any) => {
+                const matchingEditable = editableEngineHours.find(
+                  e => e.engineType === entry.engine_type && e.engineNumber === (entry.engine_number || 1)
+                );
+                return (
+                  <div key={entry.id} className="p-2 rounded bg-muted/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        {entry.engine_name || (entry.engine_type === 'auxiliary' 
+                          ? `Hjälpmaskin ${entry.engine_number}` 
+                          : `Huvudmaskin ${entry.engine_number || 1}`)}
+                      </span>
+                      <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-mono">{entry.start_hours} → {entry.stop_hours ?? '—'}</span>
+                      {entry.notes && <span>· {entry.notes}</span>}
+                    </div>
+                    {matchingEditable && matchingEditable.refills.length > 0 && (
+                      <div className="flex gap-1 flex-wrap mt-1">
+                        {matchingEditable.refills.map(r => (
+                          <Badge key={r.tempId} variant="secondary" className="text-xs gap-1">
+                            <Droplets className="h-3 w-3" />
+                            {r.liters}L {r.refillType === 'olja' ? 'olja' : 'glykol'}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="font-mono">{entry.start_hours} → {entry.stop_hours ?? '—'}</span>
-                    {entry.notes && <span>· {entry.notes}</span>}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-4">Inga maskintimmar registrerade.</p>

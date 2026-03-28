@@ -1365,6 +1365,47 @@ export type Database = {
           },
         ]
       }
+      engine_refills: {
+        Row: {
+          created_at: string
+          engine_name: string | null
+          engine_number: number
+          engine_type: string
+          id: string
+          liters: number
+          logbook_id: string
+          refill_type: string
+        }
+        Insert: {
+          created_at?: string
+          engine_name?: string | null
+          engine_number?: number
+          engine_type: string
+          id?: string
+          liters: number
+          logbook_id: string
+          refill_type: string
+        }
+        Update: {
+          created_at?: string
+          engine_name?: string | null
+          engine_number?: number
+          engine_type?: string
+          id?: string
+          liters?: number
+          logbook_id?: string
+          refill_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engine_refills_logbook_id_fkey"
+            columns: ["logbook_id"]
+            isOneToOne: false
+            referencedRelation: "logbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_categories: {
         Row: {
           created_at: string
