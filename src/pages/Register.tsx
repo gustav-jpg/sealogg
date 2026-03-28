@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Waves } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import sealoggLogo from '@/assets/sealog-logo.png';
 import { RegistrationStepPin } from '@/components/registration/RegistrationStepPin';
 import { RegistrationStepAccount } from '@/components/registration/RegistrationStepAccount';
 import { RegistrationStepCertificates } from '@/components/registration/RegistrationStepCertificates';
