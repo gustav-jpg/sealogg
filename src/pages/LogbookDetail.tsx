@@ -451,11 +451,11 @@ export default function LogbookDetail() {
     const entries: EngineHourEntry[] = [];
     for (let i = 1; i <= (vessel.main_engine_count || 0); i++) {
       const existing = vesselEngineHours.find(h => h.engine_type === 'main' && h.engine_number === i);
-      entries.push({ tempId: crypto.randomUUID(), engineType: 'main', engineNumber: i, engineLabel: existing?.name || `Huvudmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '' });
+      entries.push({ tempId: crypto.randomUUID(), engineType: 'main', engineNumber: i, engineLabel: existing?.name || `Huvudmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '', refills: [] });
     }
     for (let i = 1; i <= (vessel.auxiliary_engine_count || 0); i++) {
       const existing = vesselEngineHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
-      entries.push({ tempId: crypto.randomUUID(), engineType: 'auxiliary', engineNumber: i, engineLabel: existing?.name || `Hjälpmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '' });
+      entries.push({ tempId: crypto.randomUUID(), engineType: 'auxiliary', engineNumber: i, engineLabel: existing?.name || `Hjälpmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '', refills: [] });
     }
     setEditableEngineHours(entries);
   };
