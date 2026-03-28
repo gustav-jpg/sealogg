@@ -735,7 +735,7 @@ export default function VesselDetail() {
                             updated[index].name = e.target.value;
                             setEngineHoursInputs(updated);
                           }}
-                          placeholder={input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
+                          placeholder={input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : input.engine_type === 'gearbox' ? `Backslag ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
                           className="mt-1"
                         />
                       </div>
