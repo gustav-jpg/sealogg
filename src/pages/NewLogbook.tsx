@@ -37,7 +37,7 @@ interface CrewMember {
 
 interface EngineHourEntry {
   tempId: string;
-  engineType: 'main' | 'auxiliary';
+  engineType: 'main' | 'auxiliary' | 'gearbox';
   engineNumber: number;
   engineLabel: string;
   startHours: number;

@@ -260,7 +260,7 @@ export default function VesselDetail() {
       engine_type: h.engine_type,
       engine_number: h.engine_number,
       current_hours: h.current_hours,
-      name: h.name || `${h.engine_type === 'main' ? 'Huvudmaskin' : 'Hjälpmaskin'} ${h.engine_number}`,
+      name: h.name || `${h.engine_type === 'main' ? 'Huvudmaskin' : h.engine_type === 'gearbox' ? 'Backslag' : 'Hjälpmaskin'} ${h.engine_number}`,
     }));
     setEngineHoursInputs(inputs);
     setSelectedPrimaryEngineId(vessel.primary_engine_id || null);
@@ -419,11 +419,14 @@ export default function VesselDetail() {
                     {vessel.auxiliary_engine_count > 0 && (
                       <span> + {vessel.auxiliary_engine_count} hjälpmaskin{vessel.auxiliary_engine_count !== 1 ? 'er' : ''}</span>
                     )}
+                    {vesselEngineHours?.filter(e => e.engine_type === 'gearbox').length ? (
+                      <span> + {vesselEngineHours.filter(e => e.engine_type === 'gearbox').length} backslag</span>
+                    ) : null}
                   </div>
                   {vesselEngineHours?.map(engine => (
                     <div key={engine.id} className="flex items-center justify-between text-sm">
-                      <span>{engine.name || `${engine.engine_type === 'main' ? 'Huvudmaskin' : 'Hjälpmaskin'} ${engine.engine_number}`}</span>
-                      <Badge variant="secondary">{engine.current_hours} h</Badge>
+                      <span>{engine.name || `${engine.engine_type === 'main' ? 'Huvudmaskin' : engine.engine_type === 'gearbox' ? 'Backslag' : 'Hjälpmaskin'} ${engine.engine_number}`}</span>
+                      {engine.engine_type !== 'gearbox' && <Badge variant="secondary">{engine.current_hours} h</Badge>}
                     </div>
                   ))}
 
@@ -710,8 +713,8 @@ export default function VesselDetail() {
                 {engineHoursInputs.map((input, index) => (
                   <div key={`${input.engine_type}-${input.engine_number}-${index}`} className="py-3 first:pt-0 last:pb-0">
                     <div className="flex items-center justify-between mb-2">
-                      <Badge variant={input.engine_type === 'main' ? 'default' : 'secondary'} className="text-xs">
-                        {input.engine_type === 'main' ? 'Huvud' : 'Hjälp'} #{input.engine_number}
+                      <Badge variant={input.engine_type === 'main' ? 'default' : input.engine_type === 'gearbox' ? 'outline' : 'secondary'} className="text-xs">
+                        {input.engine_type === 'main' ? 'Huvud' : input.engine_type === 'gearbox' ? 'Backslag' : 'Hjälp'} #{input.engine_number}
                       </Badge>
                       <Button
                         variant="ghost"
@@ -725,7 +728,7 @@ export default function VesselDetail() {
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={`grid ${input.engine_type === 'gearbox' ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                       <div>
                         <Label className="text-xs text-muted-foreground">Namn</Label>
                         <Input
@@ -735,24 +738,26 @@ export default function VesselDetail() {
                             updated[index].name = e.target.value;
                             setEngineHoursInputs(updated);
                           }}
-                          placeholder={input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
+                          placeholder={input.engine_type === 'main' ? `Huvudmaskin ${input.engine_number}` : input.engine_type === 'gearbox' ? `Backslag ${input.engine_number}` : `Hjälpmaskin ${input.engine_number}`}
                           className="mt-1"
                         />
                       </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Timmar</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={input.current_hours}
-                          onChange={e => {
-                            const updated = [...engineHoursInputs];
-                            updated[index].current_hours = parseInt(e.target.value) || 0;
-                            setEngineHoursInputs(updated);
-                          }}
-                          className="mt-1"
-                        />
-                      </div>
+                      {input.engine_type !== 'gearbox' && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Timmar</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={input.current_hours}
+                            onChange={e => {
+                              const updated = [...engineHoursInputs];
+                              updated[index].current_hours = parseInt(e.target.value) || 0;
+                              setEngineHoursInputs(updated);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -794,6 +799,23 @@ export default function VesselDetail() {
               >
                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Hjälpmaskin
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  const gbCount = engineHoursInputs.filter(e => e.engine_type === 'gearbox').length;
+                  setEngineHoursInputs(prev => [...prev, {
+                    engine_type: 'gearbox',
+                    engine_number: gbCount + 1,
+                    current_hours: 0,
+                    name: `Backslag ${gbCount + 1}`,
+                  }]);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Backslag
               </Button>
             </div>
 

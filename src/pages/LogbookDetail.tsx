@@ -439,9 +439,9 @@ export default function LogbookDetail() {
       setEditableEngineHours(engineHours.map(e => ({
         id: e.id,
         tempId: e.id,
-        engineType: (e.engine_type as 'main' | 'auxiliary') || 'main',
+        engineType: (e.engine_type as 'main' | 'auxiliary' | 'gearbox') || 'main',
         engineNumber: e.engine_number || 1,
-        engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${e.engine_number || 1}`,
+        engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : e.engine_type === 'gearbox' ? 'Backslag' : 'Huvudmaskin'} ${e.engine_number || 1}`,
         startHours: e.start_hours || 0,
         stopHours: e.stop_hours,
         notes: e.notes || '',
@@ -1257,7 +1257,7 @@ export default function LogbookDetail() {
                 <SelectContent>
                   {vesselEngineHours?.map(engine => (
                     <SelectItem key={engine.id} value={engine.id}>
-                      {engine.name || `${engine.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${engine.engine_number}`}
+                      {engine.name || `${engine.engine_type === 'auxiliary' ? 'Hjälpmaskin' : engine.engine_type === 'gearbox' ? 'Backslag' : 'Huvudmaskin'} ${engine.engine_number}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1272,7 +1272,7 @@ export default function LogbookDetail() {
               <Button
                 onClick={async () => {
                   const engine = vesselEngineHours?.find(e => e.id === oljaGlykolEngine);
-                  const engineName = engine?.name || `${engine?.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${engine?.engine_number || 1}`;
+                  const engineName = engine?.name || `${engine?.engine_type === 'auxiliary' ? 'Hjälpmaskin' : engine?.engine_type === 'gearbox' ? 'Backslag' : 'Huvudmaskin'} ${engine?.engine_number || 1}`;
                   const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
                   const typeLabel = oljaGlykolType === 'olja' ? 'Olja' : 'Glykol';
                   const text = `${typeLabel} ${oljaGlykolLiters}L – ${engineName}`;
