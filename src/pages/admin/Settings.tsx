@@ -59,6 +59,22 @@ export default function SettingsAdmin() {
     enabled: !!selectedOrgId,
   });
 
+  const { data: registrationCode } = useQuery({
+    queryKey: ['registration-code', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return null;
+      const { data, error } = await supabase
+        .from('organization_registration_codes')
+        .select('code, is_active')
+        .eq('organization_id', selectedOrgId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrgId,
+  });
+
   const { data: exerciseCategories } = useQuery({
     queryKey: ['exercise-categories', selectedOrgId],
     queryFn: async () => {
