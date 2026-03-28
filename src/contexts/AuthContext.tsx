@@ -14,6 +14,7 @@ interface AuthContextType {
   isSkeppare: boolean;
   isDeckhand: boolean;
   canEdit: boolean;
+  isPendingRegistration: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [isPendingRegistration, setIsPendingRegistration] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -50,9 +52,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchPendingStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from('pending_registrations')
+      .select('status')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle();
+    
+    setIsPendingRegistration(!!data);
+  };
+
   const refreshProfile = async () => {
     if (user) {
-      await Promise.all([fetchProfile(user.id), fetchRoles(user.id)]);
+      await Promise.all([fetchProfile(user.id), fetchRoles(user.id), fetchPendingStatus(user.id)]);
     }
   };
 
@@ -73,10 +86,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTimeout(() => {
             fetchProfile(currentSession.user.id);
             fetchRoles(currentSession.user.id);
+            fetchPendingStatus(currentSession.user.id);
           }, 0);
         } else {
           setProfile(null);
           setRoles([]);
+          setIsPendingRegistration(false);
           if (event === 'SIGNED_OUT') {
             clearBackupSession();
           }
@@ -95,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession.user);
         fetchProfile(initialSession.user.id);
         fetchRoles(initialSession.user.id);
+        fetchPendingStatus(initialSession.user.id);
         setIsLoading(false);
         return;
       }
@@ -169,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isSkeppare,
         isDeckhand,
         canEdit,
+        isPendingRegistration,
         signIn,
         signUp,
         signOut,
