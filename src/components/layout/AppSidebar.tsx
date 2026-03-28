@@ -350,6 +350,11 @@ export function AppSidebar() {
                       <Link to={item.href}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.label}</span>
+                        {item.href === '/portal/admin/users' && pendingCount > 0 && !isCollapsed && (
+                          <span className="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-medium">
+                            {pendingCount}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
