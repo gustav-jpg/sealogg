@@ -84,6 +84,7 @@ export default function Register() {
           ai_suggested_type: cert.aiResult?.certificate_type || null,
           ai_suggested_expiry: cert.aiResult?.expiry_date || null,
           ai_confidence: cert.aiResult?.confidence || null,
+          confirmed_type_id: cert.aiResult?.certificate_type_id || null,
         });
       }
 
