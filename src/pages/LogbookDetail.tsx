@@ -66,6 +66,10 @@ export default function LogbookDetail() {
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showDeletePassengerSessionDialog, setShowDeletePassengerSessionDialog] = useState(false);
   const [showBunkerDialog, setShowBunkerDialog] = useState(false);
+  const [showOljaGlykolDialog, setShowOljaGlykolDialog] = useState(false);
+  const [oljaGlykolType, setOljaGlykolType] = useState<'olja' | 'glykol'>('olja');
+  const [oljaGlykolLiters, setOljaGlykolLiters] = useState('');
+  const [oljaGlykolEngine, setOljaGlykolEngine] = useState('');
   const [bunkerDialogLiters, setBunkerDialogLiters] = useState('');
   const [bunkerDialogEngineHours, setBunkerDialogEngineHours] = useState('');
   const [quickEntries, setQuickEntries] = useState<QuickEntry[]>([]);
