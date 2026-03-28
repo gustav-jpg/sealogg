@@ -182,15 +182,17 @@ export function LogbookEngineHours({
                         {entry.stopHours !== null ? `${(entry.stopHours || 0) - entry.startHours}h` : '—'}
                       </div>
                     </div>
-                    <div className="col-span-3 sm:col-span-1 sm:flex-1 space-y-1">
+                    <div className="col-span-2 sm:col-span-1 sm:flex-1 space-y-1">
                       <Label className="text-xs">Anteckning</Label>
                       <Input 
                         value={entry.notes} 
-                        onChange={e => onUpdateEngineHour(entry.tempId, 'notes', e.target.value)} 
+                        onChange={e => onUpdateEngineHour(entry.tempId, 'notes', e.target.value)}
+                        className="text-xs h-10"
                       />
                     </div>
-                  </div>
-                  <RefillButton entry={entry} canEdit={true} onUpdate={onUpdateEngineHour} />
+                    <div className="col-span-1 sm:col-span-1 sm:w-auto space-y-1 flex flex-col justify-end">
+                      <RefillButton entry={entry} canEdit={true} onUpdate={onUpdateEngineHour} />
+                    </div>
                 </div>
               ))}
             </div>
