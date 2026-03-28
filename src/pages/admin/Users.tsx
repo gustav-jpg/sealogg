@@ -22,6 +22,7 @@ import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePendingRegistrationCount } from '@/hooks/usePendingRegistrationCount';
 
 export default function AdminUsers() {
   const { toast } = useToast();
