@@ -2347,6 +2347,38 @@ export type Database = {
           },
         ]
       }
+      organization_registration_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          organization_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          organization_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_registration_codes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_settings: {
         Row: {
           created_at: string
@@ -2691,6 +2723,101 @@ export type Database = {
             columns: ["vessel_id"]
             isOneToOne: false
             referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_certificates: {
+        Row: {
+          ai_confidence: number | null
+          ai_suggested_expiry: string | null
+          ai_suggested_type: string | null
+          confirmed_expiry: string | null
+          confirmed_type_id: string | null
+          created_at: string
+          file_name: string | null
+          file_url: string
+          id: string
+          registration_id: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_suggested_expiry?: string | null
+          ai_suggested_type?: string | null
+          confirmed_expiry?: string | null
+          confirmed_type_id?: string | null
+          created_at?: string
+          file_name?: string | null
+          file_url: string
+          id?: string
+          registration_id: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_suggested_expiry?: string | null
+          ai_suggested_type?: string | null
+          confirmed_expiry?: string | null
+          confirmed_type_id?: string | null
+          created_at?: string
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_certificates_confirmed_type_id_fkey"
+            columns: ["confirmed_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_certificates_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "pending_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_registrations: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assigned_role: Database["public"]["Enums"]["org_role"] | null
+          created_at: string
+          id: string
+          organization_id: string
+          status: Database["public"]["Enums"]["registration_status"]
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_role?: Database["public"]["Enums"]["org_role"] | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          status?: Database["public"]["Enums"]["registration_status"]
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assigned_role?: Database["public"]["Enums"]["org_role"] | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          status?: Database["public"]["Enums"]["registration_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_registrations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -3409,6 +3536,7 @@ export type Database = {
       logbook_status: "oppen" | "stangd"
       org_role: "org_admin" | "org_user" | "deckhand"
       pm_type: "besattning" | "servering" | "kok" | "bar"
+      registration_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3609,6 +3737,7 @@ export const Constants = {
       logbook_status: ["oppen", "stangd"],
       org_role: ["org_admin", "org_user", "deckhand"],
       pm_type: ["besattning", "servering", "kok", "bar"],
+      registration_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
