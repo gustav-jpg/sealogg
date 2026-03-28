@@ -158,20 +158,6 @@ export default function NewLogbook() {
       });
     }
     
-    // Gearboxes (backslag)
-    const gearboxEngines = vesselEngineHours.filter(h => h.engine_type === 'gearbox');
-    for (const gb of gearboxEngines) {
-      entries.push({
-        tempId: crypto.randomUUID(),
-        engineType: 'gearbox',
-        engineNumber: gb.engine_number,
-        engineLabel: gb.name || `Backslag ${gb.engine_number}`,
-        startHours: gb.current_hours || 0,
-        stopHours: gb.current_hours || 0,
-        notes: ''
-      });
-    }
-    
     setEngineHours(entries);
   };
 
