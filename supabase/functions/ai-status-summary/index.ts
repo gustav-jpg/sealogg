@@ -153,8 +153,8 @@ Använd EXAKT detta markdown-format:
 [2-3 meningar om nuläget med antal felärenden, avvikelser etc.]
 
 ## Kritiska punkter
-- [Lista ALLA kritiska/höga felärenden från ALLA fartyg med fartygsnamn]
-(hoppa över om inga kritiska/höga finns)
+- [Kopiera EXAKT alla punkter från listan "ALLA kritiska/höga felärenden" i datan, inklusive fartygsnamn]
+(hoppa över ENDAST om listan explicit säger "Inga kritiska/höga felärenden")
 
 ## Trender
 [Kort analys: vilket fartyg har flest problem? Återkommande mönster?]
