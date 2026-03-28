@@ -27,14 +27,24 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
     queryKey: ['pending-registrations', selectedOrgId],
     enabled: !!selectedOrgId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: regs, error } = await supabase
         .from('pending_registrations')
-        .select('*, profiles!pending_registrations_user_id_fkey(full_name, email)')
+        .select('*')
         .eq('organization_id', selectedOrgId!)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Fetch profile info for each registration
+      if (!regs || regs.length === 0) return [];
+      const userIds = regs.map((r: any) => r.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      return regs.map((r: any) => ({ ...r, profile: profileMap.get(r.user_id) || null }));
     },
   });
 
@@ -166,8 +176,8 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
               <TableBody>
                 {pendingRegs?.map((reg: any) => (
                   <TableRow key={reg.id}>
-                    <TableCell className="font-medium">{(reg as any).profiles?.full_name || 'Okänd'}</TableCell>
-                    <TableCell>{(reg as any).profiles?.email || '—'}</TableCell>
+                    <TableCell className="font-medium">{reg.profile?.full_name || 'Okänd'}</TableCell>
+                    <TableCell>{reg.profile?.email || '—'}</TableCell>
                     <TableCell>{format(new Date(reg.created_at), 'yyyy-MM-dd')}</TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="outline" onClick={() => setSelectedRegistration(reg)}>
@@ -195,11 +205,11 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Namn:</span>
-                  <p className="font-medium">{(selectedRegistration as any).profiles?.full_name}</p>
+                  <p className="font-medium">{selectedRegistration?.profile?.full_name}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">E-post:</span>
-                  <p className="font-medium">{(selectedRegistration as any).profiles?.email}</p>
+                  <p className="font-medium">{selectedRegistration?.profile?.email}</p>
                 </div>
               </div>
 
