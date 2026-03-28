@@ -388,10 +388,21 @@ function CertificateReviewCard({ cert, certTypes, edit, onEditChange, onDelete }
             </Badge>
           )}
         </div>
-        <Button size="sm" variant="outline" onClick={loadImage} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPdf ? <FileText className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-          {isPdf ? 'Öppna PDF' : 'Visa'}
-        </Button>
+        <div className="flex gap-1 shrink-0">
+          <Button size="sm" variant="outline" onClick={loadImage} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPdf ? <FileText className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+            {isPdf ? 'PDF' : 'Visa'}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            disabled={deleting}
+            onClick={async () => { setDeleting(true); await onDelete(); setDeleting(false); }}
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
       {showImage && imageUrl && (
