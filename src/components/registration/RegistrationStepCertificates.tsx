@@ -28,6 +28,7 @@ interface Props {
   onComplete: (certificates: CertificateUpload[]) => void;
   onBack: () => void;
   isSubmitting: boolean;
+  organizationId?: string;
 }
 
 export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting }: Props) {
