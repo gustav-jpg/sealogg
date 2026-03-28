@@ -513,6 +513,10 @@ export default function AdminUsers() {
               <Anchor className="h-4 w-4" />
               Sjödagar
             </TabsTrigger>
+            <TabsTrigger value="pending" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Väntande
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="users" className="mt-6 space-y-6">
