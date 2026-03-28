@@ -4,6 +4,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { usePendingRegistrationCount } from '@/hooks/usePendingRegistrationCount';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import {
   Ship,
