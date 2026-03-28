@@ -728,7 +728,7 @@ export default function VesselDetail() {
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={`grid ${input.engine_type === 'gearbox' ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                       <div>
                         <Label className="text-xs text-muted-foreground">Namn</Label>
                         <Input
@@ -742,20 +742,22 @@ export default function VesselDetail() {
                           className="mt-1"
                         />
                       </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Timmar</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={input.current_hours}
-                          onChange={e => {
-                            const updated = [...engineHoursInputs];
-                            updated[index].current_hours = parseInt(e.target.value) || 0;
-                            setEngineHoursInputs(updated);
-                          }}
-                          className="mt-1"
-                        />
-                      </div>
+                      {input.engine_type !== 'gearbox' && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Timmar</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={input.current_hours}
+                            onChange={e => {
+                              const updated = [...engineHoursInputs];
+                              updated[index].current_hours = parseInt(e.target.value) || 0;
+                              setEngineHoursInputs(updated);
+                            }}
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
