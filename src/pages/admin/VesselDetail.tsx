@@ -426,7 +426,7 @@ export default function VesselDetail() {
                   {vesselEngineHours?.map(engine => (
                     <div key={engine.id} className="flex items-center justify-between text-sm">
                       <span>{engine.name || `${engine.engine_type === 'main' ? 'Huvudmaskin' : engine.engine_type === 'gearbox' ? 'Backslag' : 'Hjälpmaskin'} ${engine.engine_number}`}</span>
-                      <Badge variant="secondary">{engine.current_hours} h</Badge>
+                      {engine.engine_type !== 'gearbox' && <Badge variant="secondary">{engine.current_hours} h</Badge>}
                     </div>
                   ))}
 
