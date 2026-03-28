@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Ship, User, Fuel, Droplets, Trash, X, Wind, Loader2 } from 'lucide-react';
+import { Ship, User, Fuel, Droplets, Trash, X, Wind, Loader2, Droplet } from 'lucide-react';
 import { QuickEntry } from '@/lib/logbook-types';
 
 interface LogbookBasicInfoProps {
