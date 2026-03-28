@@ -25,7 +25,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/LogbookStops';
 import { useLogbookSignatures, useSignLogbook } from '@/hooks/useLogbookSignature';
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
-import { EngineHourEntry, EngineRefill, CrewMember, QuickEntry } from '@/lib/logbook-types';
+import { EngineHourEntry, CrewMember, QuickEntry } from '@/lib/logbook-types';
 import { LogbookBasicInfo } from '@/components/logbook/LogbookBasicInfo';
 import { LogbookEngineHours } from '@/components/logbook/LogbookEngineHours';
 import { LogbookExercises } from '@/components/logbook/LogbookExercises';
