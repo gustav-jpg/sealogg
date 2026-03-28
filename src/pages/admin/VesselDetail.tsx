@@ -419,6 +419,9 @@ export default function VesselDetail() {
                     {vessel.auxiliary_engine_count > 0 && (
                       <span> + {vessel.auxiliary_engine_count} hjälpmaskin{vessel.auxiliary_engine_count !== 1 ? 'er' : ''}</span>
                     )}
+                    {vesselEngineHours?.filter(e => e.engine_type === 'gearbox').length ? (
+                      <span> + {vesselEngineHours.filter(e => e.engine_type === 'gearbox').length} backslag</span>
+                    ) : null}
                   </div>
                   {vesselEngineHours?.map(engine => (
                     <div key={engine.id} className="flex items-center justify-between text-sm">
