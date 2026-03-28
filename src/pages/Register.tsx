@@ -24,9 +24,7 @@ export default function Register() {
       <Card className="w-full max-w-md animate-fade-in">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 rounded-full maritime-gradient">
-              <Waves className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img src={sealoggLogo} alt="SeaLogg" className="h-10" />
           </div>
           <CardTitle className="font-display text-2xl">
             {step === 4 ? 'Registrering klar!' : 'Skapa konto'}
