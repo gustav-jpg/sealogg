@@ -126,15 +126,15 @@ ${openDeviations.slice(0, 10).map((d: any) => `  - [${d.severity}/${d.type}] "${
         messages: [
           {
             role: "system",
-            content: `Du är en maritim driftsanalytiker för SeaLogg, ett sjöfartssystem. Ge en kort och tydlig sammanfattning på svenska av organisationens status baserat på data nedan. 
+            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus baserat på data nedan. Gå rakt på sak utan inledande presentation.
 
 Strukturera svaret med dessa rubriker (använd markdown):
 1. **Övergripande lägesbild** — 2-3 meningar om nuläget
-2. **Kritiska punkter** — Lista med det som kräver omedelbar uppmärksamhet
+2. **Kritiska punkter** — Lista med det som kräver omedelbar uppmärksamhet (hoppa över om inget är kritiskt)
 3. **Trender** — Kort analys av mönster (t.ex. återkommande fel, fartyg med flest problem)
 4. **Rekommendationer** — 2-3 konkreta åtgärdsförslag
 
-Håll det koncist (max 300 ord). Använd svensk sjöfartsterminologi.`,
+Håll det koncist (max 250 ord). Använd svensk sjöfartsterminologi. Börja ALDRIG med en mening som förklarar vad du är eller vad du gör.`,
           },
           {
             role: "user",
