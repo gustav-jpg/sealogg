@@ -1272,7 +1272,7 @@ export default function LogbookDetail() {
               <Button
                 onClick={async () => {
                   const engine = vesselEngineHours?.find(e => e.id === oljaGlykolEngine);
-                  const engineName = engine?.name || `${engine?.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${engine?.engine_number || 1}`;
+                  const engineName = engine?.name || `${engine?.engine_type === 'auxiliary' ? 'Hjälpmaskin' : engine?.engine_type === 'gearbox' ? 'Backslag' : 'Huvudmaskin'} ${engine?.engine_number || 1}`;
                   const timestamp = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
                   const typeLabel = oljaGlykolType === 'olja' ? 'Olja' : 'Glykol';
                   const text = `${typeLabel} ${oljaGlykolLiters}L – ${engineName}`;
