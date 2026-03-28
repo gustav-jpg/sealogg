@@ -416,34 +416,17 @@ export default function LogbookDetail() {
 
   useEffect(() => {
     if (engineHours && !engineHoursInitialized) {
-      const loadRefills = async () => {
-        const { data: refillsData } = await supabase
-          .from('engine_refills')
-          .select('*')
-          .eq('logbook_id', id!);
-        const refillsByEngine = new Map<string, EngineRefill[]>();
-        (refillsData || []).forEach((r: any) => {
-          const key = `${r.engine_type}-${r.engine_number}`;
-          if (!refillsByEngine.has(key)) refillsByEngine.set(key, []);
-          refillsByEngine.get(key)!.push({ tempId: r.id, id: r.id, refillType: r.refill_type, liters: Number(r.liters) });
-        });
-        setEditableEngineHours(engineHours.map(e => {
-          const key = `${e.engine_type}-${e.engine_number}`;
-          return {
-            id: e.id,
-            tempId: e.id,
-            engineType: (e.engine_type as 'main' | 'auxiliary') || 'main',
-            engineNumber: e.engine_number || 1,
-            engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${e.engine_number || 1}`,
-            startHours: e.start_hours || 0,
-            stopHours: e.stop_hours,
-            notes: e.notes || '',
-            refills: refillsByEngine.get(key) || [],
-          };
-        }));
-        setEngineHoursInitialized(true);
-      };
-      loadRefills();
+      setEditableEngineHours(engineHours.map(e => ({
+        id: e.id,
+        tempId: e.id,
+        engineType: (e.engine_type as 'main' | 'auxiliary') || 'main',
+        engineNumber: e.engine_number || 1,
+        engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${e.engine_number || 1}`,
+        startHours: e.start_hours || 0,
+        stopHours: e.stop_hours,
+        notes: e.notes || '',
+      })));
+      setEngineHoursInitialized(true);
     }
   }, [engineHours, engineHoursInitialized]);
 
