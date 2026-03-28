@@ -299,6 +299,22 @@ export default function LogbookDetail() {
       if ((logbook as any)?.septic_emptied) {
         entries.push({ id: crypto.randomUUID(), type: 'septik', text: 'Tömt septik', timestamp: '' });
       }
+      // Load existing engine refills
+      supabase
+        .from('engine_refills')
+        .select('*')
+        .eq('logbook_id', id!)
+        .then(({ data: refills }) => {
+          if (refills && refills.length > 0) {
+            const refillEntries = refills.map((r: any) => ({
+              id: crypto.randomUUID(),
+              type: 'olja_glykol' as const,
+              text: `${r.refill_type === 'olja' ? 'Olja' : 'Glykol'} ${r.liters}L – ${r.engine_name || 'Okänd maskin'}`,
+              timestamp: '',
+            }));
+            setQuickEntries(prev => [...prev, ...refillEntries]);
+          }
+        });
       if (entries.length > 0) {
         setQuickEntries(entries);
       }
