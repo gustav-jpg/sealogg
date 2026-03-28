@@ -1,12 +1,5 @@
 import { CrewRole } from '@/lib/types';
 
-export interface EngineRefill {
-  tempId: string;
-  id?: string;
-  refillType: 'olja' | 'glykol';
-  liters: number;
-}
-
 export interface EngineHourEntry {
   id?: string;
   tempId: string;
@@ -16,7 +9,6 @@ export interface EngineHourEntry {
   startHours: number;
   stopHours: number | null;
   notes: string;
-  refills: EngineRefill[];
 }
 
 export interface CrewMember {

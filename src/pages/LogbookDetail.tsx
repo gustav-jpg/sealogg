@@ -25,7 +25,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { LogbookStops, LogbookStopsDisplay, StopEntry } from '@/components/LogbookStops';
 import { useLogbookSignatures, useSignLogbook } from '@/hooks/useLogbookSignature';
 import { LOGBOOK_STATUS_LABELS, CREW_ROLE_LABELS, CrewRole } from '@/lib/types';
-import { EngineHourEntry, EngineRefill, CrewMember, QuickEntry } from '@/lib/logbook-types';
+import { EngineHourEntry, CrewMember, QuickEntry } from '@/lib/logbook-types';
 import { LogbookBasicInfo } from '@/components/logbook/LogbookBasicInfo';
 import { LogbookEngineHours } from '@/components/logbook/LogbookEngineHours';
 import { LogbookExercises } from '@/components/logbook/LogbookExercises';
@@ -416,34 +416,17 @@ export default function LogbookDetail() {
 
   useEffect(() => {
     if (engineHours && !engineHoursInitialized) {
-      const loadRefills = async () => {
-        const { data: refillsData } = await supabase
-          .from('engine_refills')
-          .select('*')
-          .eq('logbook_id', id!);
-        const refillsByEngine = new Map<string, EngineRefill[]>();
-        (refillsData || []).forEach((r: any) => {
-          const key = `${r.engine_type}-${r.engine_number}`;
-          if (!refillsByEngine.has(key)) refillsByEngine.set(key, []);
-          refillsByEngine.get(key)!.push({ tempId: r.id, id: r.id, refillType: r.refill_type, liters: Number(r.liters) });
-        });
-        setEditableEngineHours(engineHours.map(e => {
-          const key = `${e.engine_type}-${e.engine_number}`;
-          return {
-            id: e.id,
-            tempId: e.id,
-            engineType: (e.engine_type as 'main' | 'auxiliary') || 'main',
-            engineNumber: e.engine_number || 1,
-            engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${e.engine_number || 1}`,
-            startHours: e.start_hours || 0,
-            stopHours: e.stop_hours,
-            notes: e.notes || '',
-            refills: refillsByEngine.get(key) || [],
-          };
-        }));
-        setEngineHoursInitialized(true);
-      };
-      loadRefills();
+      setEditableEngineHours(engineHours.map(e => ({
+        id: e.id,
+        tempId: e.id,
+        engineType: (e.engine_type as 'main' | 'auxiliary') || 'main',
+        engineNumber: e.engine_number || 1,
+        engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${e.engine_number || 1}`,
+        startHours: e.start_hours || 0,
+        stopHours: e.stop_hours,
+        notes: e.notes || '',
+      })));
+      setEngineHoursInitialized(true);
     }
   }, [engineHours, engineHoursInitialized]);
 
@@ -453,11 +436,11 @@ export default function LogbookDetail() {
     const entries: EngineHourEntry[] = [];
     for (let i = 1; i <= (vessel.main_engine_count || 0); i++) {
       const existing = vesselEngineHours.find(h => h.engine_type === 'main' && h.engine_number === i);
-      entries.push({ tempId: crypto.randomUUID(), engineType: 'main', engineNumber: i, engineLabel: existing?.name || `Huvudmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '', refills: [] });
+      entries.push({ tempId: crypto.randomUUID(), engineType: 'main', engineNumber: i, engineLabel: existing?.name || `Huvudmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '' });
     }
     for (let i = 1; i <= (vessel.auxiliary_engine_count || 0); i++) {
       const existing = vesselEngineHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
-      entries.push({ tempId: crypto.randomUUID(), engineType: 'auxiliary', engineNumber: i, engineLabel: existing?.name || `Hjälpmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '', refills: [] });
+      entries.push({ tempId: crypto.randomUUID(), engineType: 'auxiliary', engineNumber: i, engineLabel: existing?.name || `Hjälpmaskin ${i}`, startHours: existing?.current_hours || 0, stopHours: null, notes: '' });
     }
     setEditableEngineHours(entries);
   };
@@ -516,22 +499,6 @@ export default function LogbookDetail() {
       if (engineError) throw engineError;
     }
 
-    // Engine refills
-    await supabase.from('engine_refills').delete().eq('logbook_id', id);
-    const allRefills = editableEngineHours.flatMap(e =>
-      e.refills.map(r => ({
-        logbook_id: id,
-        engine_type: e.engineType,
-        engine_number: e.engineNumber,
-        engine_name: e.engineLabel,
-        refill_type: r.refillType,
-        liters: r.liters,
-      }))
-    );
-    if (allRefills.length > 0) {
-      const { error: refillError } = await supabase.from('engine_refills').insert(allRefills);
-      if (refillError) throw refillError;
-    }
 
     // Exercises
     await supabase.from('logbook_exercises').delete().eq('logbook_id', id);
