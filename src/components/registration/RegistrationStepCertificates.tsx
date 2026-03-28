@@ -118,11 +118,17 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting 
         {certificates.map((cert) => (
           <div key={cert.id} className="border rounded-lg p-3 space-y-2">
             <div className="flex items-start gap-3">
-              <img
-                src={cert.previewUrl}
-                alt="Certifikat"
-                className="w-16 h-16 object-cover rounded border"
-              />
+              {cert.file.type === 'application/pdf' ? (
+                <div className="w-16 h-16 rounded border flex items-center justify-center bg-muted">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+              ) : (
+                <img
+                  src={cert.previewUrl}
+                  alt="Certifikat"
+                  className="w-16 h-16 object-cover rounded border"
+                />
+              )}
               <div className="flex-1 min-w-0">
                 {cert.isAnalyzing && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
