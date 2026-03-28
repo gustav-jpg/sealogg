@@ -106,16 +106,24 @@ ${vDeviations.map((d: any) => `  - [${d.severity}] "${d.title}" (${d.date})`).jo
 - Förfallna kontrollpunkter: ${vOverdue.length}`;
     }).join("\n\n");
 
+    // Pre-build the critical list so AI doesn't skip any
+    const allCriticalFaults = openFaults
+      .filter((f: any) => f.priority === "kritisk" || f.priority === "hog")
+      .map((f: any) => `- ${f.title} (${vesselNames[f.vessel_id]}) [${f.priority}]`);
+
     const dataContext = `
 Dagens datum: ${todayStr}
 ## Organisationsdata (senaste ${period_days} dagar)
 
 ### Sammanfattning
 - Fartyg: ${vessels?.length || 0}
-- Totalt öppna felärenden: ${openFaults.length} (varav ${openFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog").length} kritiska/höga)
+- Totalt öppna felärenden: ${openFaults.length} (varav ${allCriticalFaults.length} kritiska/höga)
 - Totalt öppna avvikelser: ${openDeviations.length}
 - Förfallna kontrollpunkter: ${overdue.length}
 - Loggboksanteckningar: ${logbooks?.length || 0}
+
+### ALLA kritiska/höga felärenden (MÅSTE inkluderas i rapporten under "Kritiska punkter"):
+${allCriticalFaults.length > 0 ? allCriticalFaults.join("\n") : "Inga kritiska/höga felärenden"}
 
 ### Per fartyg
 ${vesselSummaries}
