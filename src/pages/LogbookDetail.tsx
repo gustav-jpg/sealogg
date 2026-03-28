@@ -514,6 +514,23 @@ export default function LogbookDetail() {
       if (engineError) throw engineError;
     }
 
+    // Engine refills
+    await supabase.from('engine_refills').delete().eq('logbook_id', id);
+    const allRefills = editableEngineHours.flatMap(e =>
+      e.refills.map(r => ({
+        logbook_id: id,
+        engine_type: e.engineType,
+        engine_number: e.engineNumber,
+        engine_name: e.engineLabel,
+        refill_type: r.refillType,
+        liters: r.liters,
+      }))
+    );
+    if (allRefills.length > 0) {
+      const { error: refillError } = await supabase.from('engine_refills').insert(allRefills);
+      if (refillError) throw refillError;
+    }
+
     // Exercises
     await supabase.from('logbook_exercises').delete().eq('logbook_id', id);
     if (editableExercises.length > 0) {
