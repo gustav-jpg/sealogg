@@ -92,6 +92,29 @@ function LazyFallback() {
   );
 }
 
+function PendingApprovalPage() {
+  const { signOut } = useAuth();
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="p-4 rounded-full bg-muted inline-block mx-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <h1 className="text-2xl font-bold">Väntar på godkännande</h1>
+        <p className="text-muted-foreground">
+          Din registrering har tagits emot. En administratör behöver granska och godkänna ditt konto innan du kan använda portalen.
+        </p>
+        <button
+          onClick={() => signOut()}
+          className="text-sm text-primary hover:underline"
+        >
+          Logga ut
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, isLoading, isAdmin, isPendingRegistration } = useAuth();
   const location = useLocation();
