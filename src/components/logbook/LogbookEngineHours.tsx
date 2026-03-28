@@ -193,6 +193,7 @@ export function LogbookEngineHours({
                     <div className="col-span-1 sm:col-span-1 sm:w-auto space-y-1 flex flex-col justify-end">
                       <RefillButton entry={entry} canEdit={true} onUpdate={onUpdateEngineHour} />
                     </div>
+                  </div>
                 </div>
               ))}
             </div>
