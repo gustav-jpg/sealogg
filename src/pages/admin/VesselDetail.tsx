@@ -710,8 +710,8 @@ export default function VesselDetail() {
                 {engineHoursInputs.map((input, index) => (
                   <div key={`${input.engine_type}-${input.engine_number}-${index}`} className="py-3 first:pt-0 last:pb-0">
                     <div className="flex items-center justify-between mb-2">
-                      <Badge variant={input.engine_type === 'main' ? 'default' : 'secondary'} className="text-xs">
-                        {input.engine_type === 'main' ? 'Huvud' : 'Hjälp'} #{input.engine_number}
+                      <Badge variant={input.engine_type === 'main' ? 'default' : input.engine_type === 'gearbox' ? 'outline' : 'secondary'} className="text-xs">
+                        {input.engine_type === 'main' ? 'Huvud' : input.engine_type === 'gearbox' ? 'Backslag' : 'Hjälp'} #{input.engine_number}
                       </Badge>
                       <Button
                         variant="ghost"
