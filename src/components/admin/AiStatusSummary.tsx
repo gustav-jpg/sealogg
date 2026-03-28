@@ -100,7 +100,15 @@ export function AiStatusSummary({ organizationId, periodDays }: AiStatusSummaryP
         </Button>
       </CardHeader>
       <CardContent className="px-4 pb-4 pt-0">
-        <div className="prose prose-sm max-w-none dark:prose-invert [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold [&_p]:text-sm [&_li]:text-sm [&_strong]:font-bold [&_strong]:text-foreground text-muted-foreground">
+        <div className="prose prose-sm max-w-none dark:prose-invert
+          [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-4 [&_h2]:mb-1.5
+          [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-3 [&_h3]:mb-1
+          [&_p]:text-sm [&_p]:text-muted-foreground [&_p]:mb-2 [&_p]:leading-relaxed
+          [&_ul]:text-sm [&_ul]:text-muted-foreground [&_ul]:mb-2 [&_ul]:pl-4 [&_ul]:list-disc
+          [&_li]:text-sm [&_li]:text-muted-foreground [&_li]:mb-0.5
+          [&_strong]:font-bold [&_strong]:text-foreground
+          [&>p:first-child]:text-base [&>p:first-child]:font-bold [&>p:first-child]:text-foreground [&>p:first-child]:mb-3
+        ">
           <ReactMarkdown>{summary}</ReactMarkdown>
         </div>
       </CardContent>

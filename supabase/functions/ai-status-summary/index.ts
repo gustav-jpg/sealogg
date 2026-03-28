@@ -129,17 +129,33 @@ ${openDeviations.slice(0, 10).map((d: any) => `  - [${d.severity}/${d.type}] "${
         messages: [
           {
             role: "system",
-            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus baserat på data nedan. Gå rakt på sak utan inledande presentation.
+            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus baserat på data nedan. Gå rakt på sak.
 
-Börja ALLTID med dagens datum i formatet "**Statusrapport [datum]**".
+Använd EXAKT detta markdown-format:
 
-Strukturera sedan svaret med EXAKT dessa rubriker (använd markdown):
-1. **Övergripande lägesbild** — 2-3 meningar om nuläget
-2. **Kritiska punkter** — Lista med det som kräver omedelbar uppmärksamhet (hoppa över om inget är kritiskt)
-3. **Trender** — Kort analys av mönster (t.ex. återkommande fel, fartyg med flest problem)
-4. **Rekommendationer** — 2-3 konkreta åtgärdsförslag
+**Statusrapport [dagens datum]**
 
-Håll det koncist (max 250 ord). Använd svensk sjöfartsterminologi. Följ ALLTID denna struktur exakt.`,
+## Övergripande lägesbild
+[2-3 meningar om nuläget]
+
+## Kritiska punkter
+- [punkt 1]
+- [punkt 2]
+(hoppa över denna sektion helt om inget är kritiskt)
+
+## Trender
+[Kort analys av mönster, t.ex. återkommande fel, fartyg med flest problem]
+
+## Rekommendationer
+- [åtgärd 1]
+- [åtgärd 2]
+- [åtgärd 3]
+
+VIKTIGT:
+- Använd ## för rubriker, INTE **fetstil**
+- Använd - för listor
+- Max 250 ord
+- Svensk sjöfartsterminologi`,
           },
           {
             role: "user",
