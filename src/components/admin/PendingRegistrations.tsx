@@ -205,11 +205,11 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Namn:</span>
-                  <p className="font-medium">{(selectedRegistration as any).profiles?.full_name}</p>
+                  <p className="font-medium">{selectedRegistration?.profile?.full_name}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">E-post:</span>
-                  <p className="font-medium">{(selectedRegistration as any).profiles?.email}</p>
+                  <p className="font-medium">{selectedRegistration?.profile?.email}</p>
                 </div>
               </div>
 
