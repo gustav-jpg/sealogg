@@ -284,6 +284,16 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
                         certTypes={certTypes}
                         edit={certEdits[cert.id]}
                         onEditChange={(field, value) => updateCertEdit(cert.id, field, value)}
+                        onDelete={async () => {
+                          // Delete file from storage
+                          await supabase.storage.from('registration-certificates').remove([cert.file_url]);
+                          // Delete DB record
+                          await supabase.from('pending_certificates').delete().eq('id', cert.id);
+                          // Remove from local edits
+                          setCertEdits((prev) => { const next = { ...prev }; delete next[cert.id]; return next; });
+                          queryClient.invalidateQueries({ queryKey: ['pending-certificates', selectedRegistration?.id] });
+                          toast({ title: 'Borttaget', description: 'Certifikatet har tagits bort.' });
+                        }}
                       />
                     ))}
                   </div>
@@ -335,15 +345,17 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
   );
 }
 
-function CertificateReviewCard({ cert, certTypes, edit, onEditChange }: {
+function CertificateReviewCard({ cert, certTypes, edit, onEditChange, onDelete }: {
   cert: any;
   certTypes: CertType[];
   edit?: { typeId: string | null; expiry: string | null };
   onEditChange: (field: 'typeId' | 'expiry', value: string | null) => void;
+  onDelete: () => Promise<void>;
 }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isPdf = cert.file_name?.toLowerCase().endsWith('.pdf');
 
@@ -376,10 +388,21 @@ function CertificateReviewCard({ cert, certTypes, edit, onEditChange }: {
             </Badge>
           )}
         </div>
-        <Button size="sm" variant="outline" onClick={loadImage} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPdf ? <FileText className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-          {isPdf ? 'Öppna PDF' : 'Visa'}
-        </Button>
+        <div className="flex gap-1 shrink-0">
+          <Button size="sm" variant="outline" onClick={loadImage} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPdf ? <FileText className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+            {isPdf ? 'PDF' : 'Visa'}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            disabled={deleting}
+            onClick={async () => { setDeleting(true); await onDelete(); setDeleting(false); }}
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
       {showImage && imageUrl && (
