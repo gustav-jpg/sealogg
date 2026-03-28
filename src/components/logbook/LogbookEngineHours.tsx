@@ -118,6 +118,8 @@ export function LogbookEngineHours({
                     <span className="text-sm font-medium">
                       {entry.engine_name || (entry.engine_type === 'auxiliary' 
                         ? `Hjälpmaskin ${entry.engine_number}` 
+                        : entry.engine_type === 'gearbox'
+                        ? `Backslag ${entry.engine_number}`
                         : `Huvudmaskin ${entry.engine_number || 1}`)}
                     </span>
                     <Badge variant="outline">{(entry.stop_hours ?? 0) - (entry.start_hours ?? 0)}h</Badge>
