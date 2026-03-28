@@ -18,7 +18,7 @@ import { useOrgCertificateTypes } from '@/hooks/useOrgCertificateTypes';
 import { useQuery } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { WEATHER_STATIONS, UFS_CHARTS, getUFSChartsByRegion } from '@/lib/maritime-data';
-import { Plus, Trash2, Award, GraduationCap, Settings, Building2, Wind, AlertTriangle, Save, Home, X } from 'lucide-react';
+import { Plus, Trash2, Award, GraduationCap, Settings, Building2, Wind, AlertTriangle, Save, Home, X, KeyRound, Copy } from 'lucide-react';
 
 export default function SettingsAdmin() {
   const { toast } = useToast();
@@ -52,6 +52,22 @@ export default function SettingsAdmin() {
         .from('organizations')
         .select('*')
         .eq('id', selectedOrgId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrgId,
+  });
+
+  const { data: registrationCode } = useQuery({
+    queryKey: ['registration-code', selectedOrgId],
+    queryFn: async () => {
+      if (!selectedOrgId) return null;
+      const { data, error } = await supabase
+        .from('organization_registration_codes')
+        .select('code, is_active')
+        .eq('organization_id', selectedOrgId)
+        .eq('is_active', true)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -270,6 +286,40 @@ export default function SettingsAdmin() {
                     <p className="font-medium">{organization?.contact_phone || '–'}</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Registration code card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <KeyRound className="h-5 w-5" />
+                  Registreringskod
+                </CardTitle>
+                <CardDescription>
+                  Nya anställda anger denna kod på <span className="font-medium">sealogg.se/ny</span> för att registrera sig.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {registrationCode ? (
+                  <div className="flex items-center gap-3">
+                    <code className="text-3xl font-mono font-bold tracking-[0.3em] bg-muted px-4 py-2 rounded-lg">
+                      {registrationCode.code}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(registrationCode.code);
+                        toast({ title: 'Kopierad', description: 'Registreringskoden har kopierats.' });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Ingen registreringskod genererad.</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

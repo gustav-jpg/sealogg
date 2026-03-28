@@ -57,6 +57,21 @@ export default function OrganizationDetail() {
     },
   });
 
+  const { data: registrationCode } = useQuery({
+    queryKey: ['registration-code', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organization_registration_codes')
+        .select('code, is_active')
+        .eq('organization_id', id!)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
   const { data: features } = useQuery({
     queryKey: ['organization-features', id],
     queryFn: async () => {
@@ -751,6 +766,12 @@ export default function OrganizationDetail() {
                   <span className="text-sm text-muted-foreground">Skapad:</span>
                   <p className="font-medium">
                     {format(new Date(organization.created_at), 'd MMMM yyyy', { locale: sv })}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Registreringskod:</span>
+                  <p className="font-mono font-bold text-lg tracking-widest">
+                    {registrationCode?.code || '–'}
                   </p>
                 </div>
               </CardContent>
