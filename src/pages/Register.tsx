@@ -150,6 +150,7 @@ export default function Register() {
             onComplete={handleFinalSubmit}
             onBack={() => setStep(2)}
             isSubmitting={isSubmitting}
+            organizationId={organizationId}
           />
         )}
 

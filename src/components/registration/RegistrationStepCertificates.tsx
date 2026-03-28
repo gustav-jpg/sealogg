@@ -55,7 +55,7 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
       try {
         const base64 = await fileToBase64(file);
         const { data, error } = await supabase.functions.invoke('analyze-certificate', {
-          body: { imageBase64: base64 },
+          body: { imageBase64: base64, organizationId },
         });
 
         if (error || data?.error) {
