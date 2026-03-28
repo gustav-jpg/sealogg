@@ -88,7 +88,10 @@ serve(async (req) => {
       return new Date(c.next_due_date) < new Date();
     }) || [];
 
+    const todayStr = new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
     const dataContext = `
+Dagens datum: ${todayStr}
 ## Organisationsdata (senaste ${period_days} dagar)
 
 ### Fartyg
@@ -128,13 +131,15 @@ ${openDeviations.slice(0, 10).map((d: any) => `  - [${d.severity}/${d.type}] "${
             role: "system",
             content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus baserat på data nedan. Gå rakt på sak utan inledande presentation.
 
-Strukturera svaret med dessa rubriker (använd markdown):
+Börja ALLTID med dagens datum i formatet "**Statusrapport [datum]**".
+
+Strukturera sedan svaret med EXAKT dessa rubriker (använd markdown):
 1. **Övergripande lägesbild** — 2-3 meningar om nuläget
 2. **Kritiska punkter** — Lista med det som kräver omedelbar uppmärksamhet (hoppa över om inget är kritiskt)
 3. **Trender** — Kort analys av mönster (t.ex. återkommande fel, fartyg med flest problem)
 4. **Rekommendationer** — 2-3 konkreta åtgärdsförslag
 
-Håll det koncist (max 250 ord). Använd svensk sjöfartsterminologi. Börja ALDRIG med en mening som förklarar vad du är eller vad du gör.`,
+Håll det koncist (max 250 ord). Använd svensk sjöfartsterminologi. Följ ALLTID denna struktur exakt.`,
           },
           {
             role: "user",
