@@ -1,22 +1,101 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import sealoggLogo from '@/assets/sealog-logo.png';
 import { RegistrationStepPin } from '@/components/registration/RegistrationStepPin';
 import { RegistrationStepAccount } from '@/components/registration/RegistrationStepAccount';
-import { RegistrationStepCertificates } from '@/components/registration/RegistrationStepCertificates';
+import { RegistrationStepCertificates, CertificateUpload } from '@/components/registration/RegistrationStepCertificates';
 import { RegistrationStepComplete } from '@/components/registration/RegistrationStepComplete';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import sealoggLogo from '@/assets/sealog-logo.png';
 
 export default function Register() {
   const [step, setStep] = useState(1);
   const [organizationId, setOrganizationId] = useState('');
   const [organizationName, setOrganizationName] = useState('');
-  const [registrationId, setRegistrationId] = useState('');
+  const [accountData, setAccountData] = useState<{ fullName: string; email: string; password: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const stepDescriptions: Record<number, string> = {
     1: 'Ange din organisationskod för att börja',
     2: 'Fyll i dina uppgifter',
     3: 'Ladda upp dina certifikat',
     4: 'Registrering slutförd',
+  };
+
+  const handleFinalSubmit = async (certificates: CertificateUpload[]) => {
+    if (!accountData) return;
+    setIsSubmitting(true);
+
+    try {
+      // 1. Create the account
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: accountData.email,
+        password: accountData.password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: accountData.fullName },
+        },
+      });
+
+      if (signUpError) {
+        toast({ variant: 'destructive', title: 'Registrering misslyckades', description: signUpError.message });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const userId = signUpData.user?.id;
+      if (!userId) {
+        toast({ variant: 'destructive', title: 'Fel', description: 'Kunde inte skapa konto.' });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. Create pending registration
+      const { data: regData, error: regError } = await supabase
+        .from('pending_registrations')
+        .insert({ user_id: userId, organization_id: organizationId })
+        .select('id')
+        .single();
+
+      if (regError) {
+        console.error('Failed to create pending registration:', regError);
+        toast({ variant: 'destructive', title: 'Fel', description: 'Konto skapades men registrering kunde inte slutföras.' });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 3. Upload certificates and save records
+      for (const cert of certificates) {
+        const filePath = `${userId}/${cert.id}-${cert.file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('registration-certificates')
+          .upload(filePath, cert.file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          continue;
+        }
+
+        await supabase.from('pending_certificates').insert({
+          registration_id: regData.id,
+          file_url: filePath,
+          file_name: cert.file.name,
+          ai_suggested_type: cert.aiResult?.certificate_type || null,
+          ai_suggested_expiry: cert.aiResult?.expiry_date || null,
+          ai_confidence: cert.aiResult?.confidence || null,
+        });
+      }
+
+      // 4. Sign out so user can't access portal until approved
+      await supabase.auth.signOut();
+
+      setStep(4);
+    } catch {
+      toast({ variant: 'destructive', title: 'Fel', description: 'Ett oväntat fel uppstod.' });
+    }
+
+    setIsSubmitting(false);
   };
 
   return (
@@ -56,10 +135,10 @@ export default function Register() {
 
         {step === 2 && (
           <RegistrationStepAccount
-            organizationId={organizationId}
             organizationName={organizationName}
-            onAccountCreated={(regId) => {
-              setRegistrationId(regId);
+            initialData={accountData || undefined}
+            onNext={(data) => {
+              setAccountData(data);
               setStep(3);
             }}
             onBack={() => setStep(1)}
@@ -68,9 +147,9 @@ export default function Register() {
 
         {step === 3 && (
           <RegistrationStepCertificates
-            registrationId={registrationId}
-            onComplete={() => setStep(4)}
+            onComplete={handleFinalSubmit}
             onBack={() => setStep(2)}
+            isSubmitting={isSubmitting}
           />
         )}
 

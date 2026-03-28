@@ -6,7 +6,7 @@ import { Loader2, Upload, Camera, X, FileCheck, AlertCircle } from 'lucide-react
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 
-interface CertificateUpload {
+export interface CertificateUpload {
   id: string;
   file: File;
   previewUrl: string;
@@ -25,14 +25,13 @@ interface AiResult {
 }
 
 interface Props {
-  registrationId: string;
-  onComplete: () => void;
+  onComplete: (certificates: CertificateUpload[]) => void;
   onBack: () => void;
+  isSubmitting: boolean;
 }
 
-export function RegistrationStepCertificates({ registrationId, onComplete, onBack }: Props) {
+export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting }: Props) {
   const [certificates, setCertificates] = useState<CertificateUpload[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -83,50 +82,7 @@ export function RegistrationStepCertificates({ registrationId, onComplete, onBac
     });
   };
 
-  const handleSave = async () => {
-    if (certificates.length === 0) {
-      // Allow skipping certificates
-      onComplete();
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      for (const cert of certificates) {
-        // Upload file to storage
-        const filePath = `${user.id}/${cert.id}-${cert.file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('registration-certificates')
-          .upload(filePath, cert.file);
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          continue;
-        }
-
-        // Save pending certificate record
-        await supabase.from('pending_certificates').insert({
-          registration_id: registrationId,
-          file_url: filePath,
-          file_name: cert.file.name,
-          ai_suggested_type: cert.aiResult?.certificate_type || null,
-          ai_suggested_expiry: cert.aiResult?.expiry_date || null,
-          ai_confidence: cert.aiResult?.confidence || null,
-        });
-      }
-
-      onComplete();
-    } catch (e) {
-      console.error('Save error:', e);
-      toast({ variant: 'destructive', title: 'Fel', description: 'Kunde inte spara certifikaten.' });
-    }
-
-    setIsSaving(false);
-  };
+  const anyAnalyzing = certificates.some((c) => c.isAnalyzing);
 
   return (
     <>
@@ -205,11 +161,11 @@ export function RegistrationStepCertificates({ registrationId, onComplete, onBac
         ))}
       </CardContent>
       <CardFooter className="flex flex-col gap-3">
-        <Button className="w-full" onClick={handleSave} disabled={isSaving}>
-          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {certificates.length === 0 ? 'Hoppa över' : `Spara ${certificates.length} certifikat`}
+        <Button className="w-full" onClick={() => onComplete(certificates)} disabled={isSubmitting || anyAnalyzing}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSubmitting ? 'Skapar konto...' : certificates.length === 0 ? 'Hoppa över & skapa konto' : `Spara ${certificates.length} certifikat & skapa konto`}
         </Button>
-        <Button type="button" variant="ghost" className="w-full" onClick={onBack}>
+        <Button type="button" variant="ghost" className="w-full" onClick={onBack} disabled={isSubmitting}>
           Tillbaka
         </Button>
       </CardFooter>
