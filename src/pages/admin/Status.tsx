@@ -333,39 +333,6 @@ export default function AdminStatus() {
 
           {/* Overview tab - vessels & passengers only */}
           <TabsContent value="overview" className="space-y-4 mt-0">
-            {vessels && vessels.length > 0 && (
-              <Card>
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Ship className="h-4 w-4" />
-                    Fartyg ({vessels.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="divide-y">
-                    {vessels.map(v => {
-                      const paxCount = vesselPassengerCounts[v.id];
-                      const maxPax = (v as any).max_passengers;
-                      const hasActiveSession = paxCount !== undefined;
-                      return (
-                        <Link key={v.id} to={`/portal/admin/vessels/${v.id}`} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/50 transition-colors">
-                          <span className="text-sm font-medium">{v.name}</span>
-                          <div className="flex items-center gap-2">
-                            {hasActiveSession && (
-                              <Badge variant={maxPax && paxCount > maxPax ? 'destructive' : 'default'} className="text-xs gap-1">
-                                <Users className="h-3 w-3" />
-                                {paxCount}{maxPax ? `/${maxPax}` : ''}
-                              </Badge>
-                            )}
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             <AiStatusSummary organizationId={selectedOrgId} periodDays={parseInt(period)} />
           </TabsContent>
 
