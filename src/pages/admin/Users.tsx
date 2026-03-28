@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { APP_ROLE_LABELS, AppRole } from '@/lib/types';
 import { User, Shield, Award, Ship, Plus, Trash2, FileText, Upload, ExternalLink, UserPlus, AlertTriangle, RefreshCw, Mail, Pencil, Settings, Search, Users, X, Anchor } from 'lucide-react';
 import { SeaDaysTab } from '@/components/admin/SeaDaysTab';
+import { PendingRegistrations } from '@/components/admin/PendingRegistrations';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { useOrganization } from '@/contexts/OrganizationContext';
