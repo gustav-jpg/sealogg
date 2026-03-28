@@ -72,6 +72,7 @@ export default function OrganizationDetail() {
     enabled: !!id,
   });
 
+  const { data: features } = useQuery({
     queryKey: ['organization-features', id],
     queryFn: async () => {
       const { data, error } = await supabase
