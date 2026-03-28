@@ -34,7 +34,7 @@ export default function Register() {
         password: accountData.password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: accountData.fullName },
+          data: { full_name: accountData.fullName, organization_id: organizationId },
         },
       });
 
