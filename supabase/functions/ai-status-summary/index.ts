@@ -90,29 +90,35 @@ serve(async (req) => {
 
     const todayStr = new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+    // Group data per vessel for consistent reporting
+    const vesselSummaries = vessels?.map((v: any) => {
+      const vFaults = openFaults.filter((f: any) => f.vessel_id === v.id);
+      const vDeviations = openDeviations.filter((d: any) => d.vessel_id === v.id);
+      const vOverdue = overdue.filter((c: any) => c.vessel_id === v.id);
+      const kritiska = vFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog");
+      const normalFaults = vFaults.filter((f: any) => f.priority !== "kritisk" && f.priority !== "hog");
+      return `#### ${v.name}
+- Öppna felärenden: ${vFaults.length} (varav ${kritiska.length} kritiska/höga)
+${kritiska.map((f: any) => `  - [${f.priority}] "${f.title}"`).join("\n")}
+${normalFaults.map((f: any) => `  - [${f.priority}] "${f.title}"`).join("\n")}
+- Öppna avvikelser: ${vDeviations.length}
+${vDeviations.map((d: any) => `  - [${d.severity}] "${d.title}" (${d.date})`).join("\n")}
+- Förfallna kontrollpunkter: ${vOverdue.length}`;
+    }).join("\n\n");
+
     const dataContext = `
 Dagens datum: ${todayStr}
 ## Organisationsdata (senaste ${period_days} dagar)
 
-### Fartyg
-${vessels?.map((v: any) => `- ${v.name}`).join("\n")}
-
-### Felärenden
-- Totalt: ${faultCases?.length || 0} (${openFaults.length} öppna, ${closedFaults.length} stängda)
-- Kritiska/höga öppna: ${openFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog").length}
-${openFaults.slice(0, 10).map((f: any) => `  - [${f.priority}] "${f.title}" på ${vesselNames[f.vessel_id]} (status: ${f.status})`).join("\n")}
-
-### Avvikelser
-- Totalt: ${deviations?.length || 0} (${openDeviations.length} öppna, ${closedDeviations.length} stängda)
-- Allvarliga: ${openDeviations.filter((d: any) => d.severity === "hog").length}
-${openDeviations.slice(0, 10).map((d: any) => `  - [${d.severity}/${d.type}] "${d.title}" på ${vesselNames[d.vessel_id]} (${d.date})`).join("\n")}
-
-### Loggböcker
-- Totalt: ${logbooks?.length || 0} loggboksanteckningar
-- Genomsnittligt passagerarantal: ${logbooks?.length ? Math.round((logbooks.reduce((s: number, l: any) => s + (l.passenger_count || 0), 0)) / logbooks.length) : 0}
-
-### Underhåll
+### Sammanfattning
+- Fartyg: ${vessels?.length || 0}
+- Totalt öppna felärenden: ${openFaults.length} (varav ${openFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog").length} kritiska/höga)
+- Totalt öppna avvikelser: ${openDeviations.length}
 - Förfallna kontrollpunkter: ${overdue.length}
+- Loggboksanteckningar: ${logbooks?.length || 0}
+
+### Per fartyg
+${vesselSummaries}
 `;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -129,32 +135,33 @@ ${openDeviations.slice(0, 10).map((d: any) => `  - [${d.severity}/${d.type}] "${
         messages: [
           {
             role: "system",
-            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus baserat på data nedan. Gå rakt på sak.
+            content: `Ge en kort och tydlig sammanfattning på svenska av organisationens driftsstatus. Gå rakt på sak.
 
 Använd EXAKT detta markdown-format:
 
 **Statusrapport [dagens datum]**
 
 ## Övergripande lägesbild
-[2-3 meningar om nuläget]
+[2-3 meningar om nuläget med antal felärenden, avvikelser etc.]
 
 ## Kritiska punkter
-- [punkt 1]
-- [punkt 2]
-(hoppa över denna sektion helt om inget är kritiskt)
+- [Lista ALLA kritiska/höga felärenden från ALLA fartyg med fartygsnamn]
+(hoppa över om inga kritiska/höga finns)
 
 ## Trender
-[Kort analys av mönster, t.ex. återkommande fel, fartyg med flest problem]
+[Kort analys: vilket fartyg har flest problem? Återkommande mönster?]
 
 ## Rekommendationer
 - [åtgärd 1]
 - [åtgärd 2]
 - [åtgärd 3]
 
-VIKTIGT:
-- Använd ## för rubriker, INTE **fetstil**
+REGLER:
+- Använd ## för rubriker
 - Använd - för listor
-- Max 250 ord
+- I "Kritiska punkter": lista ALLA felärenden med prioritet kritisk eller hög, inkludera fartygsnamn för varje punkt
+- Utelämna ALDRIG ett fartyg som har kritiska/höga ärenden
+- Max 300 ord
 - Svensk sjöfartsterminologi`,
           },
           {
