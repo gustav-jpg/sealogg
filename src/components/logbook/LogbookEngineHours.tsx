@@ -57,7 +57,7 @@ function RefillButton({ entry, canEdit, onUpdate }: { entry: EngineHourEntry; ca
         {canEdit && (
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+              <Button variant="outline" className="h-10 px-3 text-xs">
                 <Droplets className="h-3 w-3 mr-1" />
                 Påfyllning
               </Button>
@@ -187,10 +187,10 @@ export function LogbookEngineHours({
                       <Input 
                         value={entry.notes} 
                         onChange={e => onUpdateEngineHour(entry.tempId, 'notes', e.target.value)}
-                        className="text-xs h-10"
+                        className="text-xs"
                       />
                     </div>
-                    <div className="col-span-1 sm:col-span-1 sm:w-auto space-y-1 flex flex-col justify-end">
+                    <div className="col-span-1 sm:col-span-1 sm:w-auto flex items-end">
                       <RefillButton entry={entry} canEdit={true} onUpdate={onUpdateEngineHour} />
                     </div>
                   </div>
