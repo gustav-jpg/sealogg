@@ -1,19 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Check, X, Eye, Loader2, UserPlus, Clock } from 'lucide-react';
+import { Check, X, Eye, Loader2, UserPlus, Clock, FileText, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Props {
   selectedOrgId: string | null;
+}
+
+interface CertType {
+  id: string;
+  name: string;
 }
 
 export function PendingRegistrations({ selectedOrgId }: Props) {
@@ -22,6 +28,22 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
   const queryClient = useQueryClient();
   const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
   const [selectedRole, setSelectedRole] = useState<string>('deckhand');
+  const [certTypes, setCertTypes] = useState<CertType[]>([]);
+  // Track admin edits: certId -> { typeId, expiry }
+  const [certEdits, setCertEdits] = useState<Record<string, { typeId: string | null; expiry: string | null }>>({});
+
+  // Load cert types when org changes
+  useEffect(() => {
+    if (!selectedOrgId) return;
+    supabase
+      .from('certificate_types')
+      .select('id, name')
+      .eq('organization_id', selectedOrgId)
+      .order('name')
+      .then(({ data }) => {
+        if (data) setCertTypes(data);
+      });
+  }, [selectedOrgId]);
 
   const { data: pendingRegs, isLoading } = useQuery({
     queryKey: ['pending-registrations', selectedOrgId],
@@ -35,7 +57,6 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      // Fetch profile info for each registration
       if (!regs || regs.length === 0) return [];
       const userIds = regs.map((r: any) => r.user_id);
       const { data: profiles } = await supabase
@@ -62,12 +83,48 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
     },
   });
 
+  // Initialize edits from certificate data when certificates load
+  useEffect(() => {
+    if (!certificates) return;
+    const edits: Record<string, { typeId: string | null; expiry: string | null }> = {};
+    for (const cert of certificates) {
+      edits[cert.id] = {
+        typeId: (cert as any).confirmed_type_id || null,
+        expiry: (cert as any).confirmed_expiry || (cert as any).ai_suggested_expiry || null,
+      };
+    }
+    setCertEdits(edits);
+  }, [certificates]);
+
+  const updateCertEdit = (certId: string, field: 'typeId' | 'expiry', value: string | null) => {
+    setCertEdits((prev) => ({
+      ...prev,
+      [certId]: { ...prev[certId], [field]: value },
+    }));
+  };
+
   const approveMutation = useMutation({
     mutationFn: async ({ registrationId, role }: { registrationId: string; role: string }) => {
       const reg = pendingRegs?.find((r: any) => r.id === registrationId);
       if (!reg) throw new Error('Registration not found');
 
-      // 1. Update pending_registration status
+      // 1. Save admin edits to pending_certificates
+      if (certificates) {
+        for (const cert of certificates) {
+          const edit = certEdits[cert.id];
+          if (edit) {
+            await supabase
+              .from('pending_certificates')
+              .update({
+                confirmed_type_id: edit.typeId,
+                confirmed_expiry: edit.expiry,
+              } as any)
+              .eq('id', cert.id);
+          }
+        }
+      }
+
+      // 2. Update pending_registration status
       const { error: updateError } = await supabase
         .from('pending_registrations')
         .update({
@@ -79,7 +136,7 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
         .eq('id', registrationId);
       if (updateError) throw updateError;
 
-      // 2. Add as organization member
+      // 3. Add as organization member
       const { error: memberError } = await supabase
         .from('organization_members')
         .insert({
@@ -89,8 +146,7 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
         });
       if (memberError) throw memberError;
 
-      // 3. Create user_certificates from confirmed pending_certificates
-      // Get profile_id for the user
+      // 4. Create user_certificates from edits
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
@@ -99,13 +155,15 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
 
       if (profile && certificates && certificates.length > 0) {
         const certInserts = certificates
-          .filter((c: any) => c.confirmed_type_id || c.ai_suggested_type)
-          .map((c: any) => ({
-            profile_id: profile.id,
-            certificate_type_id: c.confirmed_type_id,
-            expiry_date: c.confirmed_expiry || c.ai_suggested_expiry,
-          }))
-          .filter((c: any) => c.certificate_type_id && c.expiry_date);
+          .map((c: any) => {
+            const edit = certEdits[c.id];
+            return {
+              profile_id: profile.id,
+              certificate_type_id: edit?.typeId || c.confirmed_type_id,
+              expiry_date: edit?.expiry || c.confirmed_expiry || c.ai_suggested_expiry,
+            };
+          })
+          .filter((c: any) => c.certificate_type_id);
 
         if (certInserts.length > 0) {
           await supabase.from('user_certificates').insert(certInserts);
@@ -117,6 +175,7 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
       queryClient.invalidateQueries({ queryKey: ['pending-registrations'] });
       queryClient.invalidateQueries({ queryKey: ['org-profiles'] });
       setSelectedRegistration(null);
+      setCertEdits({});
     },
     onError: (e) => {
       toast({ variant: 'destructive', title: 'Fel', description: e.message });
@@ -194,7 +253,7 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
       )}
 
       {/* Review dialog */}
-      <Dialog open={!!selectedRegistration} onOpenChange={(open) => !open && setSelectedRegistration(null)}>
+      <Dialog open={!!selectedRegistration} onOpenChange={(open) => { if (!open) { setSelectedRegistration(null); setCertEdits({}); } }}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Granska registrering</DialogTitle>
@@ -219,7 +278,13 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
                 {certificates && certificates.length > 0 ? (
                   <div className="space-y-3">
                     {certificates.map((cert: any) => (
-                      <CertificateReviewCard key={cert.id} cert={cert} />
+                      <CertificateReviewCard
+                        key={cert.id}
+                        cert={cert}
+                        certTypes={certTypes}
+                        edit={certEdits[cert.id]}
+                        onEditChange={(field, value) => updateCertEdit(cert.id, field, value)}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -270,46 +335,94 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
   );
 }
 
-function CertificateReviewCard({ cert }: { cert: any }) {
+function CertificateReviewCard({ cert, certTypes, edit, onEditChange }: {
+  cert: any;
+  certTypes: CertType[];
+  edit?: { typeId: string | null; expiry: string | null };
+  onEditChange: (field: 'typeId' | 'expiry', value: string | null) => void;
+}) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const isPdf = cert.file_name?.toLowerCase().endsWith('.pdf');
 
   const loadImage = async () => {
     if (imageUrl) {
-      setShowImage(true);
+      setShowImage(!showImage);
       return;
     }
+    setLoading(true);
     const { data } = await supabase.storage
       .from('registration-certificates')
       .createSignedUrl(cert.file_url, 300);
+    setLoading(false);
     if (data?.signedUrl) {
       setImageUrl(data.signedUrl);
       setShowImage(true);
     }
   };
 
+  const matchedTypeName = certTypes.find((t) => t.id === edit?.typeId)?.name;
+
   return (
-    <div className="border rounded-lg p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium">{cert.ai_suggested_type || 'Okänt certifikat'}</p>
-          {cert.ai_suggested_expiry && (
-            <p className="text-xs text-muted-foreground">Utgår: {cert.ai_suggested_expiry}</p>
-          )}
+    <div className="border rounded-lg p-3 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{cert.ai_suggested_type || 'Okänt certifikat'}</p>
           {cert.ai_confidence != null && (
-            <Badge variant="outline" className="text-xs mt-1">
+            <Badge variant="outline" className="text-xs mt-0.5">
               AI: {Math.round(cert.ai_confidence * 100)}% säkerhet
             </Badge>
           )}
         </div>
-        <Button size="sm" variant="outline" onClick={loadImage}>
-          <Eye className="h-4 w-4 mr-1" />
-          Visa
+        <Button size="sm" variant="outline" onClick={loadImage} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isPdf ? <FileText className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+          {isPdf ? 'Öppna PDF' : 'Visa'}
         </Button>
       </div>
+
       {showImage && imageUrl && (
-        <img src={imageUrl} alt="Certifikat" className="w-full rounded border" />
+        isPdf ? (
+          <div className="text-center">
+            <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline">
+              Öppna PDF i nytt fönster
+            </a>
+          </div>
+        ) : (
+          <img src={imageUrl} alt="Certifikat" className="w-full rounded border" />
+        )
       )}
+
+      {/* Editable fields */}
+      <div className="space-y-2 pt-2 border-t">
+        <div>
+          <label className="text-xs text-muted-foreground">Certifikatstyp</label>
+          <Select
+            value={edit?.typeId || '__none'}
+            onValueChange={(val) => onEditChange('typeId', val === '__none' ? null : val)}
+          >
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Välj certifikatstyp" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">— Välj typ —</SelectItem>
+              {certTypes.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Utgångsdatum</label>
+          <Input
+            type="date"
+            className="h-9 text-sm"
+            value={edit?.expiry || ''}
+            onChange={(e) => onEditChange('expiry', e.target.value || null)}
+          />
+        </div>
+      </div>
     </div>
   );
 }

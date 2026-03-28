@@ -1,10 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Camera, X, FileCheck, AlertCircle, FileText } from 'lucide-react';
+import { Loader2, Upload, Camera, X, FileCheck, AlertCircle, FileText, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export interface CertificateUpload {
   id: string;
@@ -13,6 +15,10 @@ export interface CertificateUpload {
   isAnalyzing: boolean;
   aiResult: AiResult | null;
   error: string | null;
+  // User-editable overrides
+  selectedTypeId: string | null;
+  selectedTypeName: string | null;
+  selectedExpiry: string | null;
 }
 
 interface AiResult {
@@ -25,6 +31,11 @@ interface AiResult {
   notes: string | null;
 }
 
+interface CertType {
+  id: string;
+  name: string;
+}
+
 interface Props {
   onComplete: (certificates: CertificateUpload[]) => void;
   onBack: () => void;
@@ -34,8 +45,22 @@ interface Props {
 
 export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting, organizationId }: Props) {
   const [certificates, setCertificates] = useState<CertificateUpload[]>([]);
+  const [certTypes, setCertTypes] = useState<CertType[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Load org certificate types
+  useEffect(() => {
+    if (!organizationId) return;
+    supabase
+      .from('certificate_types')
+      .select('id, name')
+      .eq('organization_id', organizationId)
+      .order('name')
+      .then(({ data }) => {
+        if (data) setCertTypes(data);
+      });
+  }, [organizationId]);
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return;
@@ -48,11 +73,13 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
 
       const id = crypto.randomUUID();
       const previewUrl = URL.createObjectURL(file);
-      const newCert: CertificateUpload = { id, file, previewUrl, isAnalyzing: true, aiResult: null, error: null };
+      const newCert: CertificateUpload = {
+        id, file, previewUrl, isAnalyzing: true, aiResult: null, error: null,
+        selectedTypeId: null, selectedTypeName: null, selectedExpiry: null,
+      };
 
       setCertificates((prev) => [...prev, newCert]);
 
-      // Analyze with AI
       try {
         const base64 = await fileToBase64(file);
         const { data, error } = await supabase.functions.invoke('analyze-certificate', {
@@ -65,7 +92,14 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
           );
         } else {
           setCertificates((prev) =>
-            prev.map((c) => (c.id === id ? { ...c, isAnalyzing: false, aiResult: data } : c))
+            prev.map((c) => (c.id === id ? {
+              ...c,
+              isAnalyzing: false,
+              aiResult: data,
+              selectedTypeId: data.certificate_type_id || null,
+              selectedTypeName: data.certificate_type || null,
+              selectedExpiry: data.expiry_date || null,
+            } : c))
           );
         }
       } catch {
@@ -74,6 +108,10 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
         );
       }
     }
+  };
+
+  const updateCert = (id: string, updates: Partial<CertificateUpload>) => {
+    setCertificates((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
   };
 
   const removeCertificate = (id: string) => {
@@ -93,7 +131,6 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
           Ladda upp foton eller kopior på dina sjöfartscertifikat. AI:n analyserar dem automatiskt.
         </p>
 
-        {/* Upload area */}
         <div
           className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
           onClick={() => fileInputRef.current?.click()}
@@ -116,19 +153,18 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
           onChange={(e) => handleFileSelect(e.target.files)}
         />
 
-        {/* Certificate list */}
         {certificates.map((cert) => (
           <div key={cert.id} className="border rounded-lg p-3 space-y-2">
             <div className="flex items-start gap-3">
               {cert.file.type === 'application/pdf' ? (
-                <div className="w-16 h-16 rounded border flex items-center justify-center bg-muted">
+                <div className="w-16 h-16 rounded border flex items-center justify-center bg-muted shrink-0">
                   <FileText className="h-8 w-8 text-muted-foreground" />
                 </div>
               ) : (
                 <img
                   src={cert.previewUrl}
                   alt="Certifikat"
-                  className="w-16 h-16 object-cover rounded border"
+                  className="w-16 h-16 object-cover rounded border shrink-0"
                 />
               )}
               <div className="flex-1 min-w-0">
@@ -145,18 +181,10 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
                   </div>
                 )}
                 {cert.aiResult && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <FileCheck className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium">{cert.aiResult.certificate_type}</span>
-                    </div>
-                    {cert.aiResult.expiry_date && (
-                      <p className="text-xs text-muted-foreground">
-                        Utgår: {cert.aiResult.expiry_date}
-                      </p>
-                    )}
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileCheck className="h-4 w-4 text-green-600 shrink-0" />
                     <Badge variant="outline" className="text-xs">
-                      {Math.round((cert.aiResult.confidence || 0) * 100)}% säkerhet
+                      AI: {Math.round((cert.aiResult.confidence || 0) * 100)}%
                     </Badge>
                   </div>
                 )}
@@ -165,6 +193,44 @@ export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting,
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
+            {/* Editable fields - show after analysis or on error */}
+            {!cert.isAnalyzing && (
+              <div className="space-y-2 pt-1 border-t">
+                <div>
+                  <label className="text-xs text-muted-foreground">Certifikatstyp</label>
+                  <Select
+                    value={cert.selectedTypeId || '__none'}
+                    onValueChange={(val) => {
+                      const type = certTypes.find((t) => t.id === val);
+                      updateCert(cert.id, {
+                        selectedTypeId: val === '__none' ? null : val,
+                        selectedTypeName: type?.name || null,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Välj certifikatstyp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— Välj typ —</SelectItem>
+                      {certTypes.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Utgångsdatum</label>
+                  <Input
+                    type="date"
+                    className="h-9 text-sm"
+                    value={cert.selectedExpiry || ''}
+                    onChange={(e) => updateCert(cert.id, { selectedExpiry: e.target.value || null })}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </CardContent>
