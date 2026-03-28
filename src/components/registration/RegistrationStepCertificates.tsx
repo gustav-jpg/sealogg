@@ -31,7 +31,7 @@ interface Props {
   organizationId?: string;
 }
 
-export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting }: Props) {
+export function RegistrationStepCertificates({ onComplete, onBack, isSubmitting, organizationId }: Props) {
   const [certificates, setCertificates] = useState<CertificateUpload[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
