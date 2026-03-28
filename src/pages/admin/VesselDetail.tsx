@@ -260,7 +260,7 @@ export default function VesselDetail() {
       engine_type: h.engine_type,
       engine_number: h.engine_number,
       current_hours: h.current_hours,
-      name: h.name || `${h.engine_type === 'main' ? 'Huvudmaskin' : 'Hjälpmaskin'} ${h.engine_number}`,
+      name: h.name || `${h.engine_type === 'main' ? 'Huvudmaskin' : h.engine_type === 'gearbox' ? 'Backslag' : 'Hjälpmaskin'} ${h.engine_number}`,
     }));
     setEngineHoursInputs(inputs);
     setSelectedPrimaryEngineId(vessel.primary_engine_id || null);
