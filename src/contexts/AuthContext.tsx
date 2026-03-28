@@ -86,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTimeout(() => {
             fetchProfile(currentSession.user.id);
             fetchRoles(currentSession.user.id);
+            fetchPendingStatus(currentSession.user.id);
           }, 0);
         } else {
           setProfile(null);
