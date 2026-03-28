@@ -439,9 +439,9 @@ export default function LogbookDetail() {
       setEditableEngineHours(engineHours.map(e => ({
         id: e.id,
         tempId: e.id,
-        engineType: (e.engine_type as 'main' | 'auxiliary') || 'main',
+        engineType: (e.engine_type as 'main' | 'auxiliary' | 'gearbox') || 'main',
         engineNumber: e.engine_number || 1,
-        engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : 'Huvudmaskin'} ${e.engine_number || 1}`,
+        engineLabel: e.engine_name || `${e.engine_type === 'auxiliary' ? 'Hjälpmaskin' : e.engine_type === 'gearbox' ? 'Backslag' : 'Huvudmaskin'} ${e.engine_number || 1}`,
         startHours: e.start_hours || 0,
         stopHours: e.stop_hours,
         notes: e.notes || '',
