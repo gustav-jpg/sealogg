@@ -176,8 +176,8 @@ export function PendingRegistrations({ selectedOrgId }: Props) {
               <TableBody>
                 {pendingRegs?.map((reg: any) => (
                   <TableRow key={reg.id}>
-                    <TableCell className="font-medium">{(reg as any).profiles?.full_name || 'Okänd'}</TableCell>
-                    <TableCell>{(reg as any).profiles?.email || '—'}</TableCell>
+                    <TableCell className="font-medium">{reg.profile?.full_name || 'Okänd'}</TableCell>
+                    <TableCell>{reg.profile?.email || '—'}</TableCell>
                     <TableCell>{format(new Date(reg.created_at), 'yyyy-MM-dd')}</TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="outline" onClick={() => setSelectedRegistration(reg)}>
