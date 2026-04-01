@@ -202,7 +202,7 @@ serve(async (req) => {
         email,
         password: passwordToUse,
         email_confirm: true,
-        user_metadata: { full_name: fullName },
+        user_metadata: { full_name: fullName, organization_id: organizationId },
       });
 
       if (createError || !newUser.user) {
