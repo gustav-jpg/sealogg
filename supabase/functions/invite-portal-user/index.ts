@@ -73,9 +73,26 @@ serve(async (req) => {
       });
     }
 
-    // Check if user already exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email === email);
+    // Check if user already exists - search by email instead of listing all users
+    const { data: existingUsersList } = await supabaseAdmin.auth.admin.listUsers({ 
+      page: 1, 
+      perPage: 1 
+    });
+    // Use a more targeted approach - try to find the user by email
+    let existingUser = null;
+    {
+      // Search through users to find by email
+      let page = 1;
+      let found = false;
+      while (!found) {
+        const { data: pageData, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (listError || !pageData?.users?.length) break;
+        const match = pageData.users.find(u => u.email === email);
+        if (match) { existingUser = match; found = true; }
+        if (pageData.users.length < 1000) break;
+        page++;
+      }
+    }
 
     let userId: string;
     let isNewUser = false;
