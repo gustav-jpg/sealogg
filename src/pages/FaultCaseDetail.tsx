@@ -389,6 +389,21 @@ export default function FaultCaseDetail() {
     );
   }
 
+  if (faultCaseError) {
+    return (
+      <MainLayout>
+        <div className="text-center py-12">
+          <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          <p className="text-muted-foreground mb-2">Kunde inte ladda felärendet.</p>
+          <p className="text-xs text-muted-foreground mb-4">{faultCaseError.message}</p>
+          <Button variant="outline" onClick={() => navigate('/portal/fault-cases')}>
+            Tillbaka
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (!faultCase) {
     return (
       <MainLayout>
