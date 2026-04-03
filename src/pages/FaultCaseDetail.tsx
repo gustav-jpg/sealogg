@@ -60,7 +60,7 @@ export default function FaultCaseDetail() {
 
   const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
 
-  const { data: faultCase, isLoading } = useQuery({
+  const { data: faultCase, isLoading, error: faultCaseError } = useQuery({
     queryKey: ['fault-case', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -91,6 +91,7 @@ export default function FaultCaseDetail() {
       return { ...data, creator_profile: creatorProfile, assigned_profile: assignedProfile };
     },
     enabled: !!id,
+    retry: 1,
   });
 
   const { data: comments } = useQuery({
