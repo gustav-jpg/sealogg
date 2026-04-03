@@ -32,7 +32,7 @@ import {
 } from '@/lib/types';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User, ZoomIn } from 'lucide-react';
+import { ArrowLeft, FileText, MessageSquare, Image, Send, X, Printer, Trash2, CalendarIcon, User, ZoomIn, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,7 @@ export default function FaultCaseDetail() {
 
   const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
 
-  const { data: faultCase, isLoading } = useQuery({
+  const { data: faultCase, isLoading, error: faultCaseError } = useQuery({
     queryKey: ['fault-case', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -91,6 +91,7 @@ export default function FaultCaseDetail() {
       return { ...data, creator_profile: creatorProfile, assigned_profile: assignedProfile };
     },
     enabled: !!id,
+    retry: 1,
   });
 
   const { data: comments } = useQuery({
@@ -383,6 +384,21 @@ export default function FaultCaseDetail() {
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3" />
           <div className="h-64 bg-muted rounded" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (faultCaseError) {
+    return (
+      <MainLayout>
+        <div className="text-center py-12">
+          <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          <p className="text-muted-foreground mb-2">Kunde inte ladda felärendet.</p>
+          <p className="text-xs text-muted-foreground mb-4">{faultCaseError.message}</p>
+          <Button variant="outline" onClick={() => navigate('/portal/fault-cases')}>
+            Tillbaka
+          </Button>
         </div>
       </MainLayout>
     );
