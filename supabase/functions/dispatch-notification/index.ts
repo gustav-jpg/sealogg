@@ -266,26 +266,44 @@ function buildEmailHtml(payload: NotifyPayload, portalUrl: string): string {
 
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f5;">
-<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, ${meta.color} 0%, ${meta.color}dd 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="color: #ffffff; margin: 0; font-size: 24px;">${meta.emoji} ${meta.heading}</h1>
-  </div>
-  <div style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-    <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-      <h2 style="margin: 0 0 10px 0; color: #0f172a; font-size: 18px;">${payload.title}</h2>
-      <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.5;">${payload.body}</p>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; border-bottom: 2px solid #0077b6; }
+    .content { padding: 30px 0; }
+    .button { display: inline-block; padding: 14px 28px; background-color: #0077b6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+    .info-box { background-color: #f0f9ff; border-left: 4px solid #0077b6; padding: 15px; margin: 20px 0; }
+    .footer { padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://sealogg.se/sealog-logo.png" alt="SeaLogg" style="height: 50px; width: auto;" />
     </div>
-    ${detailTable}
-    <div style="text-align: center; margin-top: 25px;">
-      <a href="${portalUrl}" style="display: inline-block; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">Visa i SeaLogg</a>
+    <div class="content">
+      <h2>${meta.emoji} ${meta.heading}</h2>
+      
+      <div class="info-box">
+        <strong>${payload.title}</strong><br>
+        ${payload.body}
+        ${payload.vessel_name ? `<br><br><strong>Fartyg:</strong> ${payload.vessel_name}` : ""}
+        ${payload.commenter_name ? `<br><strong>${payload.event === "fault_assigned" ? "Tilldelad av" : "Av"}:</strong> ${payload.commenter_name}` : ""}
+      </div>
+      
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="${portalUrl}" class="button" style="color: white;">Visa i SeaLogg</a>
+      </p>
+    </div>
+    <div class="footer">
+      <p>Du kan ändra dina notifikationsinställningar i SeaLogg under Inställningar.</p>
+      <p>Med vänliga hälsningar,<br>SeaLogg-teamet</p>
+      <p>SeaLogg - Digital Fartygsloggbok<br>En del av AhrensGroup AB</p>
     </div>
   </div>
-  <div style="text-align: center; padding: 20px;">
-    <p style="color: #94a3b8; font-size: 12px; margin: 0;">Du kan ändra dina notifikationsinställningar i SeaLogg under Inställningar.</p>
-  </div>
-</div>
 </body>
 </html>`;
 }
