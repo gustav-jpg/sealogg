@@ -176,30 +176,21 @@ export default function Startsida() {
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      // Extract the file path from the URL
       const urlParts = fileUrl.split('/intranet-documents/');
       if (urlParts.length < 2) {
         throw new Error('Invalid file URL');
       }
-      const filePath = urlParts[1];
+      const filePath = decodeURIComponent(urlParts[1]);
       
-      // Use signed URL for private bucket
       const { data, error } = await supabase.storage
         .from('intranet-documents')
-        .createSignedUrl(filePath, 60);
+        .createSignedUrl(filePath, 300);
       
       if (error) throw error;
+      if (!data?.signedUrl) throw new Error('No signed URL returned');
       
-      const response = await fetch(data.signedUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Open in new tab — lets the browser handle PDF viewing / download
+      window.open(data.signedUrl, '_blank');
     } catch (error) {
       console.error('Download error:', error);
     }
