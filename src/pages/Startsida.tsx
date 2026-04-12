@@ -5,6 +5,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgSettings } from '@/hooks/useOrgSettings';
 import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink, Navigation, Gauge } from 'lucide-react';
@@ -46,7 +47,7 @@ export default function Startsida() {
   const { selectedOrgId } = useOrganization();
   const { data: orgSettings } = useOrgSettings();
   const [dateSelection, setDateSelection] = useState<DateSelection>('today');
-  
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const selectedDate = dateSelection === 'today' 
     ? format(new Date(), 'yyyy-MM-dd')
     : format(addDays(new Date(), 1), 'yyyy-MM-dd');
@@ -189,8 +190,7 @@ export default function Startsida() {
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('No signed URL returned');
       
-      // Open in new tab — lets the browser handle PDF viewing / download
-      window.open(data.signedUrl, '_blank');
+      setViewerUrl(data.signedUrl);
     } catch (error) {
       console.error('Download error:', error);
     }
@@ -443,6 +443,19 @@ export default function Startsida() {
           </Card>
         </div>
       </div>
+
+      {/* Document viewer dialog */}
+      <Dialog open={!!viewerUrl} onOpenChange={(open) => !open && setViewerUrl(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-[90vh] p-2 sm:p-4">
+          {viewerUrl && (
+            <iframe
+              src={viewerUrl}
+              title="Dokument"
+              className="w-full h-full rounded border-0"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
