@@ -190,8 +190,7 @@ export default function Startsida() {
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('No signed URL returned');
       
-      // Open in new tab — lets the browser handle PDF viewing / download
-      window.open(data.signedUrl, '_blank');
+      setViewerUrl(data.signedUrl);
     } catch (error) {
       console.error('Download error:', error);
     }
