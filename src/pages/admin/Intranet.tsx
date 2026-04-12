@@ -254,23 +254,15 @@ export default function IntranetAdmin() {
     try {
       const urlParts = doc.file_url.split('/intranet-documents/');
       if (urlParts.length < 2) throw new Error('Invalid file URL');
-      const filePath = urlParts[1];
+      const filePath = decodeURIComponent(urlParts[1]);
       
       const { data, error } = await supabase.storage
         .from('intranet-documents')
-        .createSignedUrl(filePath, 60);
+        .createSignedUrl(filePath, 300);
       if (error) throw error;
+      if (!data?.signedUrl) throw new Error('No signed URL returned');
       
-      const response = await fetch(data.signedUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = doc.file_name;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      window.open(data.signedUrl, '_blank');
     } catch (error) {
       console.error('Download error:', error);
       toast({ title: 'Fel', description: 'Kunde inte ladda ner filen', variant: 'destructive' });
