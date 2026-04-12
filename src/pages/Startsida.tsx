@@ -47,7 +47,7 @@ export default function Startsida() {
   const { selectedOrgId } = useOrganization();
   const { data: orgSettings } = useOrgSettings();
   const [dateSelection, setDateSelection] = useState<DateSelection>('today');
-  
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const selectedDate = dateSelection === 'today' 
     ? format(new Date(), 'yyyy-MM-dd')
     : format(addDays(new Date(), 1), 'yyyy-MM-dd');
