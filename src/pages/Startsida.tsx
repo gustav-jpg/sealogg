@@ -443,6 +443,19 @@ export default function Startsida() {
           </Card>
         </div>
       </div>
+
+      {/* Document viewer dialog */}
+      <Dialog open={!!viewerUrl} onOpenChange={(open) => !open && setViewerUrl(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-[90vh] p-2 sm:p-4">
+          {viewerUrl && (
+            <iframe
+              src={viewerUrl}
+              title="Dokument"
+              className="w-full h-full rounded border-0"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
