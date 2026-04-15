@@ -56,6 +56,26 @@ const features = [
     icon: UserCheck,
     title: "Mönstring",
     description: "Hantera besättning, behörigheter och certifikat digitalt"
+  },
+  {
+    icon: FolderOpen,
+    title: "Dokumentportal",
+    description: "Central lagring av manualer, ISM-dokument och instruktioner"
+  },
+  {
+    icon: Wrench,
+    title: "Rustning",
+    description: "Planera och dokumentera rustningsarbeten per fartyg"
+  },
+  {
+    icon: Bot,
+    title: "AI-sammanfattning",
+    description: "Automatiska statusrapporter med hjälp av AI"
+  },
+  {
+    icon: Megaphone,
+    title: "Intranät",
+    description: "Intern kommunikation med meddelanden och bekräftelser"
   }
 ];
 
