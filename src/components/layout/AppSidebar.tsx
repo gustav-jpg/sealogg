@@ -124,7 +124,7 @@ export function AppSidebar() {
   const currentSelectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
 
   // Filter nav items based on active modules and user role
-  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists', 'documents', 'rustning'];
+  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents'];
   const bookingModules: AppModule[] = ['bookings'];
 
   // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor
