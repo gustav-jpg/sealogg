@@ -694,6 +694,27 @@ export default function FaultCaseDetail() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Prioritet
+                  </label>
+                  <Select
+                    value={faultCase.priority}
+                    onValueChange={(v) => updateAssignment.mutate({ priority: v })}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(FAULT_PRIORITY_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
                     <User className="h-3.5 w-3.5" />
                     Ansvarig
                   </label>
