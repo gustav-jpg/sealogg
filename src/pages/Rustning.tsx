@@ -1,13 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -23,18 +23,28 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Plus,
   MoreHorizontal,
   Trash2,
   ChevronDown,
   ChevronRight,
   Circle,
-  Tag,
   Calendar,
-  StickyNote,
   Pencil,
   FolderPlus,
   Check,
+  Flag,
+  User,
+  Archive,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -48,6 +58,8 @@ type RustningCategory = {
   created_at: string;
 };
 
+type RustningPriority = 'low' | 'normal' | 'high';
+
 type RustningTask = {
   id: string;
   organization_id: string;
@@ -60,6 +72,7 @@ type RustningTask = {
   created_by: string;
   assigned_to: string | null;
   due_date: string | null;
+  priority: RustningPriority;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -70,10 +83,17 @@ const CATEGORY_COLORS = [
   '#ec4899', '#06b6d4', '#f97316',
 ];
 
+const PRIORITY_CONFIG: Record<RustningPriority, { label: string; color: string; icon: string }> = {
+  high: { label: 'Hög', color: 'text-red-500', icon: '🔴' },
+  normal: { label: 'Normal', color: 'text-yellow-500', icon: '🟡' },
+  low: { label: 'Låg', color: 'text-blue-400', icon: '🔵' },
+};
+
 function Rustning() {
   const { user, isAdmin } = useAuth();
   const { selectedOrgId } = useOrganization();
   const queryClient = useQueryClient();
+  const { data: orgProfiles = [] } = useOrgProfiles(selectedOrgId);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [addingInCategory, setAddingInCategory] = useState<string | null>(null);
@@ -122,7 +142,6 @@ function Rustning() {
     enabled: !!selectedOrgId,
   });
 
-  // Add task mutation
   const addTask = useMutation({
     mutationFn: async ({ title, categoryId }: { title: string; categoryId: string | null }) => {
       const { error } = await supabase.from('rustning_tasks').insert({
@@ -139,7 +158,6 @@ function Rustning() {
     },
   });
 
-  // Toggle completion
   const toggleTask = useMutation({
     mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
       const { error } = await supabase
@@ -155,19 +173,17 @@ function Rustning() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rustning-tasks'] }),
   });
 
-  // Update notes
-  const updateNotes = useMutation({
-    mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
+  const updateTask = useMutation({
+    mutationFn: async ({ id, ...fields }: { id: string; [key: string]: any }) => {
       const { error } = await supabase
         .from('rustning_tasks')
-        .update({ notes })
+        .update(fields)
         .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rustning-tasks'] }),
   });
 
-  // Delete task
   const deleteTask = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('rustning_tasks').delete().eq('id', id);
@@ -244,6 +260,15 @@ function Rustning() {
     setShowCategoryDialog(true);
   };
 
+  const getProfileName = (userId: string | null) => {
+    if (!userId) return null;
+    const p = orgProfiles.find(p => p.user_id === userId);
+    return p?.full_name || null;
+  };
+
+  const getInitials = (name: string) =>
+    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
   // Group tasks
   const uncategorizedTasks = tasks.filter(t => !t.category_id);
   const activeTasks = (list: RustningTask[]) => list.filter(t => !t.is_completed);
@@ -251,22 +276,26 @@ function Rustning() {
 
   const renderTaskItem = (task: RustningTask) => {
     const isExpanded = expandedTask === task.id;
+    const assigneeName = getProfileName(task.assigned_to);
+    const completedByName = getProfileName(task.completed_by);
+    const priorityCfg = PRIORITY_CONFIG[task.priority];
 
     return (
       <div
         key={task.id}
         className={cn(
-          "group border-b border-border last:border-b-0 transition-colors",
-          task.is_completed && "opacity-60"
+          "group border-b border-border last:border-b-0 transition-all",
+          task.is_completed && "bg-green-50 dark:bg-green-950/20"
         )}
       >
         <div className="flex items-start gap-3 px-3 py-2.5">
+          {/* Completion circle */}
           <button
             onClick={() => toggleTask.mutate({ id: task.id, completed: !task.is_completed })}
             className={cn(
               "mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
               task.is_completed
-                ? "bg-primary border-primary text-primary-foreground"
+                ? "bg-green-500 border-green-500 text-white"
                 : "border-muted-foreground/40 hover:border-primary"
             )}
           >
@@ -278,27 +307,106 @@ function Rustning() {
               onClick={() => setExpandedTask(isExpanded ? null : task.id)}
               className="w-full text-left"
             >
-              <span className={cn(
-                "text-sm block",
-                task.is_completed && "line-through text-muted-foreground"
-              )}>
-                {task.title}
-              </span>
-              {task.notes && !isExpanded && (
-                <span className="text-xs text-muted-foreground truncate block mt-0.5">
-                  {task.notes}
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-sm block",
+                  task.is_completed && "line-through text-muted-foreground"
+                )}>
+                  {task.title}
                 </span>
-              )}
-              {task.due_date && (
-                <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(task.due_date).toLocaleDateString('sv-SE')}
-                </span>
-              )}
+                {task.priority !== 'normal' && (
+                  <span className="text-xs">{priorityCfg.icon}</span>
+                )}
+              </div>
+              {/* Meta row */}
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {assigneeName && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {assigneeName}
+                  </span>
+                )}
+                {task.due_date && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(task.due_date).toLocaleDateString('sv-SE')}
+                  </span>
+                )}
+                {task.notes && !isExpanded && (
+                  <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                    💬 {task.notes}
+                  </span>
+                )}
+                {task.is_completed && completedByName && (
+                  <span className="text-xs text-green-600 dark:text-green-400">
+                    ✓ {completedByName}
+                  </span>
+                )}
+              </div>
             </button>
 
+            {/* Expanded detail panel */}
             {isExpanded && (
-              <div className="mt-2 space-y-2">
+              <div className="mt-3 space-y-3 pb-1">
+                {/* Priority */}
+                <div className="flex items-center gap-2">
+                  <Flag className="w-4 h-4 text-muted-foreground" />
+                  <Select
+                    value={task.priority}
+                    onValueChange={(val: RustningPriority) =>
+                      updateTask.mutate({ id: task.id, priority: val })
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-[140px] text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">🔴 Hög</SelectItem>
+                      <SelectItem value="normal">🟡 Normal</SelectItem>
+                      <SelectItem value="low">🔵 Låg</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Assigned to */}
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <Select
+                    value={task.assigned_to || '_none'}
+                    onValueChange={(val) =>
+                      updateTask.mutate({ id: task.id, assigned_to: val === '_none' ? null : val })
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-[200px] text-sm">
+                      <SelectValue placeholder="Ingen ansvarig" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Ingen ansvarig</SelectItem>
+                      {orgProfiles
+                        .filter(p => p.user_id && !p.is_external)
+                        .map(p => (
+                          <SelectItem key={p.user_id!} value={p.user_id!}>
+                            {p.full_name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Due date */}
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="date"
+                    value={task.due_date || ''}
+                    onChange={e =>
+                      updateTask.mutate({ id: task.id, due_date: e.target.value || null })
+                    }
+                    className="h-8 w-[160px] text-sm"
+                  />
+                </div>
+
+                {/* Notes */}
                 <Textarea
                   placeholder="Anteckningar..."
                   value={editingNotes[task.id] ?? task.notes ?? ''}
@@ -306,7 +414,7 @@ function Rustning() {
                   onBlur={() => {
                     const val = editingNotes[task.id];
                     if (val !== undefined && val !== (task.notes ?? '')) {
-                      updateNotes.mutate({ id: task.id, notes: val });
+                      updateTask.mutate({ id: task.id, notes: val });
                     }
                   }}
                   className="text-sm min-h-[60px]"
@@ -316,23 +424,40 @@ function Rustning() {
           </div>
 
           <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            {isAdmin && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {!task.is_completed && (
                   <DropdownMenuItem
-                    onClick={() => deleteTask.mutate(task.id)}
-                    className="text-destructive"
+                    onClick={() => toggleTask.mutate({ id: task.id, completed: true })}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> Ta bort
+                    <Check className="mr-2 h-4 w-4 text-green-500" /> Markera klar
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                )}
+                {task.is_completed && (
+                  <DropdownMenuItem
+                    onClick={() => toggleTask.mutate({ id: task.id, completed: false })}
+                  >
+                    <Archive className="mr-2 h-4 w-4" /> Återöppna
+                  </DropdownMenuItem>
+                )}
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => deleteTask.mutate(task.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Ta bort
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -413,7 +538,7 @@ function Rustning() {
           <div className="bg-card rounded-lg border border-border ml-2">
             {active.map(renderTaskItem)}
             {renderAddInput(cat.id)}
-            {completed.length > 0 && showCompleted && (
+            {showCompleted && completed.length > 0 && (
               <>
                 <div className="px-3 py-1.5 border-t border-border">
                   <span className="text-xs text-muted-foreground">
@@ -445,6 +570,15 @@ function Rustning() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="gap-1"
+            >
+              {showCompleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showCompleted ? 'Dölj klara' : `Klara (${totalCompleted})`}
+            </Button>
             {isAdmin && (
               <Button variant="outline" size="sm" onClick={openNewCategory}>
                 <FolderPlus className="w-4 h-4 mr-1" /> Kategori
@@ -466,20 +600,17 @@ function Rustning() {
         {/* Category sections */}
         {categories.map(renderCategorySection)}
 
-        {/* Show/hide completed */}
-        {totalCompleted > 0 && (
-          <button
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
-          >
-            {showCompleted ? 'Dölj' : 'Visa'} klara uppgifter ({totalCompleted})
-          </button>
-        )}
-
         {/* Uncategorized completed */}
         {showCompleted && uncategorizedCompleted.length > 0 && (
-          <div className="bg-card rounded-lg border border-border mt-2">
-            {uncategorizedCompleted.map(renderTaskItem)}
+          <div className="mb-4">
+            <div className="px-3 py-1.5">
+              <span className="text-xs text-muted-foreground font-medium">
+                Klara utan kategori ({uncategorizedCompleted.length})
+              </span>
+            </div>
+            <div className="bg-card rounded-lg border border-border">
+              {uncategorizedCompleted.map(renderTaskItem)}
+            </div>
           </div>
         )}
       </div>
