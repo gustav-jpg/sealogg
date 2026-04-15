@@ -2995,6 +2995,7 @@ export type Database = {
           is_completed: boolean
           notes: string | null
           organization_id: string
+          priority: Database["public"]["Enums"]["rustning_priority"]
           sort_order: number
           title: string
           updated_at: string
@@ -3011,6 +3012,7 @@ export type Database = {
           is_completed?: boolean
           notes?: string | null
           organization_id: string
+          priority?: Database["public"]["Enums"]["rustning_priority"]
           sort_order?: number
           title: string
           updated_at?: string
@@ -3027,6 +3029,7 @@ export type Database = {
           is_completed?: boolean
           notes?: string | null
           organization_id?: string
+          priority?: Database["public"]["Enums"]["rustning_priority"]
           sort_order?: number
           title?: string
           updated_at?: string
@@ -3691,6 +3694,7 @@ export type Database = {
       org_role: "org_admin" | "org_user" | "deckhand"
       pm_type: "besattning" | "servering" | "kok" | "bar"
       registration_status: "pending" | "approved" | "rejected"
+      rustning_priority: "low" | "normal" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3893,6 +3897,7 @@ export const Constants = {
       org_role: ["org_admin", "org_user", "deckhand"],
       pm_type: ["besattning", "servering", "kok", "bar"],
       registration_status: ["pending", "approved", "rejected"],
+      rustning_priority: ["low", "normal", "high"],
     },
   },
 } as const
