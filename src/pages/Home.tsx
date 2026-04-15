@@ -15,7 +15,8 @@ import {
   Cloud,
   Users,
   ListChecks,
-  UserCheck
+  UserCheck,
+  Mail
 } from "lucide-react";
 import { motion } from "framer-motion";
 import sealoggLogo from "@/assets/sealog-logo.png";
