@@ -306,26 +306,28 @@ function Rustning() {
               task.is_completed && "line-through text-muted-foreground"
             )}>
               {task.title}
-              {task.priority !== 'normal' && (
-                <span className="ml-1.5 text-xs">{PRIORITY_CONFIG[task.priority].icon}</span>
-              )}
             </span>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <Select
                 value={task.priority}
                 onValueChange={(val: RustningPriority) =>
                   updateTask.mutate({ id: task.id, priority: val })
                 }
               >
-                <SelectTrigger className="h-6 w-auto gap-1 border-0 shadow-none px-1 text-xs text-muted-foreground hover:text-foreground">
+                <SelectTrigger className={cn(
+                  "h-6 w-auto gap-1 border-0 shadow-none px-1 text-xs hover:bg-muted rounded",
+                  task.priority === 'high' ? 'text-red-500' : task.priority === 'low' ? 'text-blue-400' : 'text-muted-foreground'
+                )}>
                   <Flag className="w-3 h-3" />
-                  <SelectValue />
+                  <span className="hidden sm:inline">
+                    {PRIORITY_CONFIG[task.priority].label}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="high">🔴 Hög</SelectItem>
-                  <SelectItem value="normal">🟡 Normal</SelectItem>
-                  <SelectItem value="low">🔵 Låg</SelectItem>
+                  <SelectItem value="high">Hög prioritet</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="low">Låg prioritet</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -335,7 +337,7 @@ function Rustning() {
                   updateTask.mutate({ id: task.id, assigned_to: val === '_none' ? null : val })
                 }
               >
-                <SelectTrigger className="h-6 w-auto gap-1 border-0 shadow-none px-1 text-xs text-muted-foreground hover:text-foreground max-w-[140px]">
+                <SelectTrigger className="h-6 w-auto gap-1 border-0 shadow-none px-1 text-xs text-muted-foreground hover:bg-muted rounded max-w-[140px]">
                   <User className="w-3 h-3 flex-shrink-0" />
                   <span className="truncate">{assigneeName || 'Ansvarig'}</span>
                 </SelectTrigger>
@@ -350,18 +352,6 @@ function Rustning() {
                     ))}
                 </SelectContent>
               </Select>
-
-              <div className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                <Calendar className="w-3 h-3" />
-                <Input
-                  type="date"
-                  value={task.due_date || ''}
-                  onChange={e =>
-                    updateTask.mutate({ id: task.id, due_date: e.target.value || null })
-                  }
-                  className="h-6 w-[120px] border-0 shadow-none px-1 text-xs bg-transparent"
-                />
-              </div>
             </div>
 
             {isEditing ? (
