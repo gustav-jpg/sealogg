@@ -631,7 +631,7 @@ export default function IntranetAdmin() {
                   </p>
                   {confirmationDetails.map((conf) => (
                     <div key={conf.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted">
-                      <Check className="h-4 w-4 text-green-600 shrink-0" />
+                      <Check className="h-4 w-4 text-primary shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{getProfileName(conf.user_id)}</p>
                         <p className="text-xs text-muted-foreground">
