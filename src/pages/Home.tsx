@@ -321,6 +321,39 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Newsletter Section */}
+      <section className="py-12 md:py-20 bg-muted/30">
+        <div className="container">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="text-center max-w-2xl mx-auto"
+          >
+            <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Mail className="h-4 w-4" />
+              <span>Nyhetsbrev</span>
+            </motion.div>
+            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
+              Håll dig uppdaterad
+            </motion.h2>
+            <motion.p variants={fadeInUp} className="text-muted-foreground mb-8">
+              Prenumerera på vårt nyhetsbrev för att ta del av senaste nyheter, uppdateringar och erbjudanden.
+            </motion.p>
+            <motion.div variants={fadeInUp} className="rounded-xl overflow-hidden border border-border/50 bg-card">
+              <iframe
+                src="https://red-olive-babt.squarespace.com/d/forms/subscribe-2"
+                title="Prenumerera på nyhetsbrev"
+                className="w-full border-0"
+                style={{ height: '200px' }}
+                loading="lazy"
+              />
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Contact */}
       <section id="kontakt" className="py-12 md:py-28">
         <div className="container">
