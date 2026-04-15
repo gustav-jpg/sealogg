@@ -321,38 +321,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="py-12 md:py-20 bg-muted/30">
-        <div className="container">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-            className="text-center max-w-2xl mx-auto"
-          >
-            <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Mail className="h-4 w-4" />
-              <span>Nyhetsbrev</span>
-            </motion.div>
-            <motion.h2 variants={fadeInUp} className="font-display text-2xl md:text-4xl font-bold text-foreground mb-4">
-              Håll dig uppdaterad
-            </motion.h2>
-            <motion.p variants={fadeInUp} className="text-muted-foreground mb-8">
-              Prenumerera på vårt nyhetsbrev för att ta del av senaste nyheter, uppdateringar och erbjudanden.
-            </motion.p>
-            <motion.div variants={fadeInUp}>
-              <Button asChild size="lg" className="shadow-lg shadow-primary/20">
-                <a href="https://red-olive-babt.squarespace.com/d/forms/subscribe-2" target="_blank" rel="noopener noreferrer">
-                  Prenumerera
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </a>
-              </Button>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Contact */}
       <section id="kontakt" className="py-12 md:py-28">
         <div className="container">
@@ -369,7 +337,7 @@ export default function Home() {
             <motion.p variants={fadeInUp} className="text-muted-foreground mb-8">
               Vi hjälper dig gärna att komma igång. Kontakta oss för mer information eller en demonstration.
             </motion.p>
-            <motion.div variants={fadeInUp}>
+            <motion.div variants={fadeInUp} className="flex flex-col items-center gap-4">
               <a 
                 href="mailto:info@sealogg.se" 
                 className="inline-flex items-center gap-2 text-xl font-semibold text-primary hover:text-primary/80 transition-colors"
@@ -377,6 +345,15 @@ export default function Home() {
                 info@sealogg.se
                 <ArrowRight className="h-5 w-5" />
               </a>
+              <div className="flex items-center gap-3 text-muted-foreground text-sm">
+                <span>eller</span>
+              </div>
+              <Button asChild variant="outline" size="lg">
+                <a href="https://red-olive-babt.squarespace.com/d/forms/subscribe-2" target="_blank" rel="noopener noreferrer">
+                  <Mail className="mr-2 h-5 w-5" />
+                  Prenumerera på nyhetsbrev
+                </a>
+              </Button>
             </motion.div>
           </motion.div>
         </div>
