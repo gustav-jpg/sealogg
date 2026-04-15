@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.intranet_messages_org_date_unique;
