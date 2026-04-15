@@ -67,6 +67,7 @@ const Documents = lazy(() => import("./pages/Documents"));
 const Support = lazy(() => import("./pages/Support"));
 const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 const BroadcastPush = lazy(() => import("./pages/backoffice/BroadcastPush"));
+const Rustning = lazy(() => import("./pages/Rustning"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -201,7 +202,8 @@ function AppRoutes() {
           <Route path="/portal/qualifications" element={<ProtectedRoute><Qualifications /></ProtectedRoute>} />
           <Route path="/portal/checklists" element={<ProtectedRoute><Checklists /></ProtectedRoute>} />
           <Route path="/portal/kartvisaren" element={<ProtectedRoute><Kartvisaren /></ProtectedRoute>} />
-          <Route path="/portal/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+           <Route path="/portal/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+           <Route path="/portal/rustning" element={<ProtectedRoute><Rustning /></ProtectedRoute>} />
           <Route path="/portal/checklists/execute" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
           <Route path="/portal/checklists/execute/:executionId" element={<ProtectedRoute><ChecklistExecute /></ProtectedRoute>} />
         <Route path="/portal/admin/vessels" element={<ProtectedRoute adminOnly><AdminVessels /></ProtectedRoute>} />
