@@ -647,6 +647,106 @@ export default function Checklists() {
           {executionDetails && (
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4 pr-4">
+                {/* Export button */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!executionDetails) return;
+                      const exec = executionDetails.execution;
+                      const templateName = (exec.checklist_templates as any)?.name || 'Checklista';
+                      const vesselName = vessels?.find(v => v.id === exec.vessel_id)?.name || '';
+                      const completedDate = exec.completed_at 
+                        ? format(new Date(exec.completed_at), 'd MMM yyyy HH:mm', { locale: sv })
+                        : '-';
+                      const startedDate = format(new Date(exec.started_at), 'd MMM yyyy HH:mm', { locale: sv });
+                      const performer = getProfileName(exec.started_by);
+
+                      const stepsHtml = executionDetails.steps.map((step, index) => {
+                        const result = executionDetails.results.find((r) => r.checklist_step_id === step.id);
+                        const statusText = result 
+                          ? (result.value === 'deviation' ? 'Avvikelse' : result.value === 'no' ? 'Nej' : 'Godkänt')
+                          : 'Ej utförd';
+                        const statusColor = result 
+                          ? (result.value === 'deviation' || result.value === 'no' ? '#dc2626' : '#16a34a')
+                          : '#9ca3af';
+                        
+                        let checklistItemsHtml = '';
+                        if (step.checklist_items && step.checklist_items.length > 0) {
+                          checklistItemsHtml = `
+                            <div style="margin-top:8px;padding:8px 12px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">
+                              <p style="font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;">Kontrollpunkter:</p>
+                              ${step.checklist_items.map(item => `
+                                <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;">
+                                  <span style="color:${result ? '#16a34a' : '#9ca3af'};">&#10003;</span>
+                                  <span>${item}</span>
+                                </div>
+                              `).join('')}
+                            </div>
+                          `;
+                        }
+                        
+                        return `
+                          <div style="border:1px solid ${result ? '#bbf7d0' : '#e5e7eb'};border-radius:8px;padding:14px;margin-bottom:10px;background:#fff;">
+                            <div style="display:flex;align-items:flex-start;gap:10px;">
+                              <div style="width:24px;height:24px;border-radius:50%;background:${result ? '#22c55e' : '#e5e7eb'};color:${result ? '#fff' : '#6b7280'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">
+                                ${result ? '✓' : index + 1}
+                              </div>
+                              <div style="flex:1;">
+                                <p style="font-weight:600;font-size:13px;margin:0;">${step.title}</p>
+                                <p style="font-size:11px;color:#6b7280;margin:4px 0;">${step.instruction}</p>
+                                ${checklistItemsHtml}
+                                ${result ? `
+                                  <div style="margin-top:8px;">
+                                    <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:600;background:${statusColor}20;color:${statusColor};">${statusText}</span>
+                                    <span style="font-size:10px;color:#9ca3af;margin-left:8px;">${format(new Date(result.confirmed_at), 'd MMM yyyy HH:mm', { locale: sv })} av ${getProfileName(result.confirmed_by)}</span>
+                                  </div>
+                                  ${result.comment ? `<div style="margin-top:6px;padding:6px 10px;background:#f3f4f6;border-radius:6px;font-size:11px;"><strong>Kommentar:</strong> ${result.comment}</div>` : ''}
+                                ` : '<p style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:6px;">Ej utförd</p>'}
+                              </div>
+                            </div>
+                          </div>
+                        `;
+                      }).join('');
+
+                      const printWindow = window.open('', '_blank');
+                      if (!printWindow) {
+                        toast({ title: 'Popup-blockerare hindrade exporten', variant: 'destructive' });
+                        return;
+                      }
+                      printWindow.document.write(`<!DOCTYPE html><html lang="sv"><head><meta charset="UTF-8"><title>${templateName} - ${vesselName}</title>
+                        <style>
+                          * { box-sizing:border-box; margin:0; padding:0; }
+                          body { font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif; padding:24px 32px; max-width:210mm; margin:0 auto; color:#1a1a1a; font-size:11px; line-height:1.6; background:white; }
+                          @media print { body { padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+                        </style></head><body>
+                        <div style="border-bottom:3px solid #1e3a5f;padding-bottom:16px;margin-bottom:24px;">
+                          <h1 style="font-size:22px;font-weight:700;color:#1e3a5f;margin:0 0 4px 0;">${templateName}</h1>
+                          <p style="color:#4b5563;font-size:13px;font-weight:500;margin:0;">${vesselName}</p>
+                          <div style="font-size:10px;color:#6b7280;margin-top:8px;">Utskriven: ${new Date().toLocaleString('sv-SE')}</div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-bottom:20px;padding:12px 16px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+                          <div><span style="font-weight:600;color:#374151;">Status:</span> ${exec.status === 'completed' ? 'Slutförd' : 'Pågår'}</div>
+                          <div><span style="font-weight:600;color:#374151;">Utförd av:</span> ${performer}</div>
+                          <div><span style="font-weight:600;color:#374151;">Startad:</span> ${startedDate}</div>
+                          <div><span style="font-weight:600;color:#374151;">Slutförd:</span> ${completedDate}</div>
+                        </div>
+                        <h3 style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:12px;">Steg och resultat</h3>
+                        ${stepsHtml}
+                        <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:9px;color:#9ca3af;text-align:center;">
+                          Genererad från SeaLog • ${new Date().toLocaleDateString('sv-SE')}
+                        </div>
+                      </body></html>`);
+                      printWindow.document.close();
+                      printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+                    }}
+                  >
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Exportera / Skriv ut
+                  </Button>
+                </div>
+
                 {/* Execution info */}
                 <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div>
@@ -692,11 +792,24 @@ export default function Checklists() {
                               <p className="font-medium">{step.title}</p>
                               <p className="text-sm text-muted-foreground">{step.instruction}</p>
                               
+                              {/* Show checklist sub-items */}
+                              {(step as any).checklist_items && (step as any).checklist_items.length > 0 && (
+                                <div className="mt-2 p-2 bg-muted/30 rounded-lg border border-muted">
+                                  <p className="text-xs font-medium text-muted-foreground mb-1">Kontrollpunkter:</p>
+                                  {((step as any).checklist_items as string[]).map((item, i) => (
+                                    <div key={i} className="flex items-center gap-2 py-0.5 text-sm">
+                                      <Check className={`h-3.5 w-3.5 flex-shrink-0 ${result ? 'text-green-600' : 'text-muted-foreground'}`} />
+                                      <span className={result ? '' : 'text-muted-foreground'}>{item}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
                               {result && (
                                 <div className="mt-3 space-y-2">
                                   <div className="flex items-center gap-4 text-sm">
-                                    <Badge variant={result.value === 'no' ? 'destructive' : 'default'} className={result.value !== 'no' ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-100' : ''}>
-                                      {result.value === 'yes' ? 'Ja' : result.value === 'no' ? 'Nej' : 'Godkänt'}
+                                    <Badge variant={result.value === 'no' || result.value === 'deviation' ? 'destructive' : 'default'} className={result.value !== 'no' && result.value !== 'deviation' ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-100' : ''}>
+                                      {result.value === 'yes' ? 'Ja' : result.value === 'no' ? 'Nej' : result.value === 'deviation' ? 'Avvikelse' : 'Godkänt'}
                                     </Badge>
                                     <span className="text-muted-foreground">
                                       {format(new Date(result.confirmed_at), 'd MMM yyyy HH:mm', { locale: sv })}
