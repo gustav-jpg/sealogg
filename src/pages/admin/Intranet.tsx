@@ -56,7 +56,7 @@ export default function IntranetAdmin() {
   const { selectedOrgId } = useOrganization();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { data: orgProfiles } = useOrgProfiles();
+  const { data: orgProfiles } = useOrgProfiles(selectedOrgId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmationsDialogOpen, setConfirmationsDialogOpen] = useState(false);
