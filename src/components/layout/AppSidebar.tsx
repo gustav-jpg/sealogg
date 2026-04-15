@@ -35,6 +35,7 @@ import {
   Map,
   FileText,
   HelpCircle,
+  Hammer,
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo-white.png';
 import sealoggIcon from '@/assets/sealog-icon.png';
@@ -68,7 +69,7 @@ import { KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'bookings' | 'documents';
+type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'bookings' | 'documents' | 'rustning';
 
 // Map modules to nav items
 const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any }> = {
@@ -79,6 +80,7 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
   checklists: { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
   bookings: { href: '/bookings', label: 'Kalender', icon: CalendarDays },
   documents: { href: '/portal/documents', label: 'Dokument', icon: FileText },
+  rustning: { href: '/portal/rustning', label: 'Rustning', icon: Hammer },
 };
 
 export function AppSidebar() {
@@ -122,7 +124,7 @@ export function AppSidebar() {
   const currentSelectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
 
   // Filter nav items based on active modules and user role
-  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists', 'documents'];
+  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists', 'documents', 'rustning'];
   const bookingModules: AppModule[] = ['bookings'];
 
   // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor
