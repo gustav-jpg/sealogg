@@ -47,6 +47,9 @@ type DateSelection = 'today' | 'tomorrow';
 
 export default function Startsida() {
   const { selectedOrgId } = useOrganization();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: orgSettings } = useOrgSettings();
   const [dateSelection, setDateSelection] = useState<DateSelection>('today');
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
@@ -54,30 +57,69 @@ export default function Startsida() {
     ? format(new Date(), 'yyyy-MM-dd')
     : format(addDays(new Date(), 1), 'yyyy-MM-dd');
 
-  // Fetch message with documents for selected date
-  const { data: selectedMessage, isLoading: messageLoading } = useQuery({
-    queryKey: ['intranet-message', selectedOrgId, selectedDate],
+  // Fetch all messages active on the selected date (single-day + multi-day)
+  const { data: activeMessages, isLoading: messageLoading } = useQuery({
+    queryKey: ['intranet-messages-active', selectedOrgId, selectedDate],
     queryFn: async () => {
-      if (!selectedOrgId) return null;
-      const { data: message, error } = await supabase
+      if (!selectedOrgId) return [];
+      // Messages where: message_date <= selectedDate AND (end_date >= selectedDate OR end_date IS NULL AND message_date = selectedDate)
+      const { data, error } = await supabase
         .from('intranet_messages')
         .select('*')
         .eq('organization_id', selectedOrgId)
-        .eq('message_date', selectedDate)
-        .maybeSingle();
+        .lte('message_date', selectedDate)
+        .or(`end_date.gte.${selectedDate},and(end_date.is.null,message_date.eq.${selectedDate})`)
+        .order('requires_confirmation', { ascending: false })
+        .order('message_date');
       if (error) throw error;
-      if (!message) return null;
-      
-      // Fetch documents for this message
+
+      // Fetch documents for all messages
+      if (!data || data.length === 0) return [];
+      const messageIds = data.map(m => m.id);
       const { data: documents } = await supabase
         .from('intranet_documents')
-        .select('id, display_name, file_name, file_url')
-        .eq('message_id', message.id)
+        .select('id, display_name, file_name, file_url, message_id')
+        .in('message_id', messageIds)
         .order('created_at');
-      
-      return { ...message, documents: documents || [] };
+
+      return data.map(msg => ({
+        ...msg,
+        documents: documents?.filter(d => d.message_id === msg.id) || [],
+      }));
     },
     enabled: !!selectedOrgId,
+  });
+
+  // Fetch user's confirmations
+  const { data: userConfirmations } = useQuery({
+    queryKey: ['intranet-user-confirmations', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('intranet_confirmations')
+        .select('message_id')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data?.map(c => c.message_id) || [];
+    },
+    enabled: !!user,
+  });
+
+  const confirmMessage = useMutation({
+    mutationFn: async (messageId: string) => {
+      if (!user) throw new Error('Ej inloggad');
+      const { error } = await supabase
+        .from('intranet_confirmations')
+        .insert({ message_id: messageId, user_id: user.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['intranet-user-confirmations'] });
+      toast({ title: 'Bekräftat', description: 'Du har bekräftat meddelandet.' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
   });
 
   const smhiLon = orgSettings?.smhi_forecast_lon ?? 18.0686;
