@@ -337,7 +337,7 @@ export default function Home() {
             <motion.p variants={fadeInUp} className="text-muted-foreground mb-8">
               Vi hjälper dig gärna att komma igång. Kontakta oss för mer information eller en demonstration.
             </motion.p>
-            <motion.div variants={fadeInUp}>
+            <motion.div variants={fadeInUp} className="flex flex-col items-center gap-4">
               <a 
                 href="mailto:info@sealogg.se" 
                 className="inline-flex items-center gap-2 text-xl font-semibold text-primary hover:text-primary/80 transition-colors"
@@ -345,6 +345,15 @@ export default function Home() {
                 info@sealogg.se
                 <ArrowRight className="h-5 w-5" />
               </a>
+              <div className="flex items-center gap-3 text-muted-foreground text-sm">
+                <span>eller</span>
+              </div>
+              <Button asChild variant="outline" size="lg">
+                <a href="https://red-olive-babt.squarespace.com/d/forms/subscribe-2" target="_blank" rel="noopener noreferrer">
+                  <Mail className="mr-2 h-5 w-5" />
+                  Prenumerera på nyhetsbrev
+                </a>
+              </Button>
             </motion.div>
           </motion.div>
         </div>
