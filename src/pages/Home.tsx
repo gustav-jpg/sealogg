@@ -341,14 +341,13 @@ export default function Home() {
             <motion.p variants={fadeInUp} className="text-muted-foreground mb-8">
               Prenumerera på vårt nyhetsbrev för att ta del av senaste nyheter, uppdateringar och erbjudanden.
             </motion.p>
-            <motion.div variants={fadeInUp} className="rounded-xl overflow-hidden border border-border/50 bg-card">
-              <iframe
-                src="https://red-olive-babt.squarespace.com/d/forms/subscribe-2"
-                title="Prenumerera på nyhetsbrev"
-                className="w-full border-0"
-                style={{ height: '200px' }}
-                loading="lazy"
-              />
+            <motion.div variants={fadeInUp}>
+              <Button asChild size="lg" className="shadow-lg shadow-primary/20">
+                <a href="https://red-olive-babt.squarespace.com/d/forms/subscribe-2" target="_blank" rel="noopener noreferrer">
+                  Prenumerera
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </a>
+              </Button>
             </motion.div>
           </motion.div>
         </div>
