@@ -82,7 +82,8 @@ const features = [
 const benefits = [
   { icon: Smartphone, text: "Fungerar på mobil, surfplatta och dator" },
   { icon: Cloud, text: "Säker molnlagring av all data" },
-  { icon: Users, text: "Hantering av besättning och behörigheter" }
+  { icon: Users, text: "Hantering av besättning och behörigheter" },
+  { icon: Ship, text: "Betala per fartyg, inte per användare" }
 ];
 
 const fadeInUp = {
