@@ -16,7 +16,11 @@ import {
   Users,
   ListChecks,
   UserCheck,
-  Mail
+  Mail,
+  FolderOpen,
+  Wrench,
+  Bot,
+  Megaphone
 } from "lucide-react";
 import { motion } from "framer-motion";
 import sealoggLogo from "@/assets/sealog-logo.png";
