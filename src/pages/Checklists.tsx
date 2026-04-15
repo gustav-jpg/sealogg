@@ -35,7 +35,7 @@ import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
 import { format, differenceInDays, addDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { ClipboardList, Play, AlertTriangle, Clock, CheckCircle, Calendar, RefreshCw, History, Eye, Check, X, MessageSquare, Camera, Filter, Trash2 } from 'lucide-react';
+import { ClipboardList, Play, AlertTriangle, Clock, CheckCircle, Calendar, RefreshCw, History, Eye, Check, X, MessageSquare, Camera, Filter, Trash2, FileDown, Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
