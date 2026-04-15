@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useOrgSettings } from '@/hooks/useOrgSettings';
-import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink, Navigation, Gauge } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Home, FileText, Cloud, Download, Wind, AlertTriangle, ExternalLink, Navigation, Gauge, Check, CheckCheck } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -45,6 +47,9 @@ type DateSelection = 'today' | 'tomorrow';
 
 export default function Startsida() {
   const { selectedOrgId } = useOrganization();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: orgSettings } = useOrgSettings();
   const [dateSelection, setDateSelection] = useState<DateSelection>('today');
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
@@ -52,30 +57,69 @@ export default function Startsida() {
     ? format(new Date(), 'yyyy-MM-dd')
     : format(addDays(new Date(), 1), 'yyyy-MM-dd');
 
-  // Fetch message with documents for selected date
-  const { data: selectedMessage, isLoading: messageLoading } = useQuery({
-    queryKey: ['intranet-message', selectedOrgId, selectedDate],
+  // Fetch all messages active on the selected date (single-day + multi-day)
+  const { data: activeMessages, isLoading: messageLoading } = useQuery({
+    queryKey: ['intranet-messages-active', selectedOrgId, selectedDate],
     queryFn: async () => {
-      if (!selectedOrgId) return null;
-      const { data: message, error } = await supabase
+      if (!selectedOrgId) return [];
+      // Messages where: message_date <= selectedDate AND (end_date >= selectedDate OR end_date IS NULL AND message_date = selectedDate)
+      const { data, error } = await supabase
         .from('intranet_messages')
         .select('*')
         .eq('organization_id', selectedOrgId)
-        .eq('message_date', selectedDate)
-        .maybeSingle();
+        .lte('message_date', selectedDate)
+        .or(`end_date.gte.${selectedDate},and(end_date.is.null,message_date.eq.${selectedDate})`)
+        .order('requires_confirmation', { ascending: false })
+        .order('message_date');
       if (error) throw error;
-      if (!message) return null;
-      
-      // Fetch documents for this message
+
+      // Fetch documents for all messages
+      if (!data || data.length === 0) return [];
+      const messageIds = data.map(m => m.id);
       const { data: documents } = await supabase
         .from('intranet_documents')
-        .select('id, display_name, file_name, file_url')
-        .eq('message_id', message.id)
+        .select('id, display_name, file_name, file_url, message_id')
+        .in('message_id', messageIds)
         .order('created_at');
-      
-      return { ...message, documents: documents || [] };
+
+      return data.map(msg => ({
+        ...msg,
+        documents: documents?.filter(d => d.message_id === msg.id) || [],
+      }));
     },
     enabled: !!selectedOrgId,
+  });
+
+  // Fetch user's confirmations
+  const { data: userConfirmations } = useQuery({
+    queryKey: ['intranet-user-confirmations', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('intranet_confirmations')
+        .select('message_id')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data?.map(c => c.message_id) || [];
+    },
+    enabled: !!user,
+  });
+
+  const confirmMessage = useMutation({
+    mutationFn: async (messageId: string) => {
+      if (!user) throw new Error('Ej inloggad');
+      const { error } = await supabase
+        .from('intranet_confirmations')
+        .insert({ message_id: messageId, user_id: user.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['intranet-user-confirmations'] });
+      toast({ title: 'Bekräftat', description: 'Du har bekräftat meddelandet.' });
+    },
+    onError: (error) => {
+      toast({ title: 'Fel', description: error.message, variant: 'destructive' });
+    },
   });
 
   const smhiLon = orgSettings?.smhi_forecast_lon ?? 18.0686;
@@ -209,13 +253,13 @@ export default function Startsida() {
           </p>
         </div>
 
-        {/* Message with Day Toggle */}
+        {/* Messages with Day Toggle */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <FileText className="h-5 w-5" />
-                {dateSelection === 'today' ? 'Dagens meddelande' : 'Morgondagens meddelande'}
+                {dateSelection === 'today' ? 'Dagens meddelanden' : 'Morgondagens meddelanden'}
               </CardTitle>
               <div className="flex gap-1">
                 <Button
@@ -238,52 +282,80 @@ export default function Startsida() {
           <CardContent>
             {messageLoading ? (
               <p className="text-muted-foreground">Laddar...</p>
-            ) : selectedMessage ? (
-              <div className="space-y-3">
-                <div>
-                  <h3 className="font-semibold text-lg">{selectedMessage.title}</h3>
-                  {selectedMessage.content && (
-                    <p className="text-muted-foreground mt-1 whitespace-pre-wrap">
-                      {selectedMessage.content}
-                    </p>
-                  )}
-                </div>
-                
-                {/* New documents from intranet_documents table */}
-                {selectedMessage.documents && selectedMessage.documents.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Dokument:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedMessage.documents.map((doc: { id: string; display_name: string; file_name: string; file_url: string }) => (
+            ) : activeMessages && activeMessages.length > 0 ? (
+              <div className="space-y-4">
+                {activeMessages.map((msg) => {
+                  const isConfirmed = userConfirmations?.includes(msg.id);
+                  const isMultiDay = !!msg.end_date;
+                  return (
+                    <div key={msg.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-lg">{msg.title}</h3>
+                            {isMultiDay && (
+                              <Badge variant="secondary" className="text-xs">
+                                {format(new Date(msg.message_date + 'T00:00:00'), 'd MMM', { locale: sv })} – {format(new Date(msg.end_date + 'T00:00:00'), 'd MMM', { locale: sv })}
+                              </Badge>
+                            )}
+                          </div>
+                          {msg.content && (
+                            <p className="text-muted-foreground mt-1 whitespace-pre-wrap">{msg.content}</p>
+                          )}
+                        </div>
+                        {msg.requires_confirmation && (
+                          isConfirmed ? (
+                            <Badge variant="outline" className="shrink-0 gap-1 text-primary border-primary">
+                              <CheckCheck className="h-3.5 w-3.5" />
+                              Bekräftad
+                            </Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => confirmMessage.mutate(msg.id)}
+                              disabled={confirmMessage.isPending}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Bekräfta
+                            </Button>
+                          )
+                        )}
+                      </div>
+
+                      {msg.documents && msg.documents.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {msg.documents.map((doc: { id: string; display_name: string; file_name: string; file_url: string }) => (
+                            <Button
+                              key={doc.id}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownload(doc.file_url, doc.file_name)}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              {doc.display_name}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Legacy single document */}
+                      {msg.document_url && msg.document_name && (!msg.documents || msg.documents.length === 0) && (
                         <Button
-                          key={doc.id}
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownload(doc.file_url, doc.file_name)}
+                          onClick={() => handleDownload(msg.document_url!, msg.document_name!)}
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          {doc.display_name}
+                          {msg.document_name}
                         </Button>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                )}
-                
-                {/* Legacy: old single document field (for backwards compatibility) */}
-                {selectedMessage.document_url && selectedMessage.document_name && (!selectedMessage.documents || selectedMessage.documents.length === 0) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownload(selectedMessage.document_url!, selectedMessage.document_name!)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {selectedMessage.document_name}
-                  </Button>
-                )}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-4">
-                Inget meddelande för {dateSelection === 'today' ? 'idag' : 'imorgon'}
+                Inga meddelanden för {dateSelection === 'today' ? 'idag' : 'imorgon'}
               </p>
             )}
           </CardContent>

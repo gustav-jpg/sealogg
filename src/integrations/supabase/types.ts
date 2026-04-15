@@ -1646,6 +1646,35 @@ export type Database = {
           },
         ]
       }
+      intranet_confirmations: {
+        Row: {
+          confirmed_at: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          confirmed_at?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intranet_confirmations_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "intranet_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intranet_documents: {
         Row: {
           created_at: string
@@ -1701,9 +1730,11 @@ export type Database = {
           created_by: string
           document_name: string | null
           document_url: string | null
+          end_date: string | null
           id: string
           message_date: string
           organization_id: string
+          requires_confirmation: boolean
           title: string
           updated_at: string
         }
@@ -1713,9 +1744,11 @@ export type Database = {
           created_by: string
           document_name?: string | null
           document_url?: string | null
+          end_date?: string | null
           id?: string
           message_date: string
           organization_id: string
+          requires_confirmation?: boolean
           title: string
           updated_at?: string
         }
@@ -1725,9 +1758,11 @@ export type Database = {
           created_by?: string
           document_name?: string | null
           document_url?: string | null
+          end_date?: string | null
           id?: string
           message_date?: string
           organization_id?: string
+          requires_confirmation?: boolean
           title?: string
           updated_at?: string
         }
