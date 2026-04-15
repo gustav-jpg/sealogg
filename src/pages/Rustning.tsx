@@ -275,10 +275,9 @@ function Rustning() {
   const completedTasks = (list: RustningTask[]) => list.filter(t => t.is_completed);
 
   const renderTaskItem = (task: RustningTask) => {
-    const isExpanded = expandedTask === task.id;
     const assigneeName = getProfileName(task.assigned_to);
     const completedByName = getProfileName(task.completed_by);
-    const priorityCfg = PRIORITY_CONFIG[task.priority];
+    const isEditing = expandedTask === task.id;
 
     return (
       <div
@@ -289,7 +288,6 @@ function Rustning() {
         )}
       >
         <div className="flex items-start gap-3 px-3 py-2.5">
-          {/* Completion circle */}
           <button
             onClick={() => toggleTask.mutate({ id: task.id, completed: !task.is_completed })}
             className={cn(
@@ -302,124 +300,102 @@ function Rustning() {
             {task.is_completed && <Check className="w-3 h-3" />}
           </button>
 
-          <div className="flex-1 min-w-0">
-            <button
-              onClick={() => setExpandedTask(isExpanded ? null : task.id)}
-              className="w-full text-left"
-            >
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "text-sm block",
-                  task.is_completed && "line-through text-muted-foreground"
-                )}>
-                  {task.title}
-                </span>
-                {task.priority !== 'normal' && (
-                  <span className="text-xs">{priorityCfg.icon}</span>
-                )}
-              </div>
-              {/* Meta row */}
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                {assigneeName && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <User className="w-3 h-3" />
-                    {assigneeName}
-                  </span>
-                )}
-                {task.due_date && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(task.due_date).toLocaleDateString('sv-SE')}
-                  </span>
-                )}
-                {task.notes && !isExpanded && (
-                  <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                    💬 {task.notes}
-                  </span>
-                )}
-                {task.is_completed && completedByName && (
-                  <span className="text-xs text-green-600 dark:text-green-400">
-                    ✓ {completedByName}
-                  </span>
-                )}
-              </div>
-            </button>
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <span className={cn(
+              "text-sm block",
+              task.is_completed && "line-through text-muted-foreground"
+            )}>
+              {task.title}
+              {task.priority !== 'normal' && (
+                <span className="ml-1.5 text-xs">{PRIORITY_CONFIG[task.priority].icon}</span>
+              )}
+            </span>
 
-            {/* Expanded detail panel */}
-            {isExpanded && (
-              <div className="mt-3 space-y-3 pb-1">
-                {/* Priority */}
-                <div className="flex items-center gap-2">
-                  <Flag className="w-4 h-4 text-muted-foreground" />
-                  <Select
-                    value={task.priority}
-                    onValueChange={(val: RustningPriority) =>
-                      updateTask.mutate({ id: task.id, priority: val })
-                    }
-                  >
-                    <SelectTrigger className="h-8 w-[140px] text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high">🔴 Hög</SelectItem>
-                      <SelectItem value="normal">🟡 Normal</SelectItem>
-                      <SelectItem value="low">🔵 Låg</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Select
+                value={task.priority}
+                onValueChange={(val: RustningPriority) =>
+                  updateTask.mutate({ id: task.id, priority: val })
+                }
+              >
+                <SelectTrigger className="h-6 w-auto gap-1 border-0 shadow-none px-1 text-xs text-muted-foreground hover:text-foreground">
+                  <Flag className="w-3 h-3" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">🔴 Hög</SelectItem>
+                  <SelectItem value="normal">🟡 Normal</SelectItem>
+                  <SelectItem value="low">🔵 Låg</SelectItem>
+                </SelectContent>
+              </Select>
 
-                {/* Assigned to */}
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <Select
-                    value={task.assigned_to || '_none'}
-                    onValueChange={(val) =>
-                      updateTask.mutate({ id: task.id, assigned_to: val === '_none' ? null : val })
-                    }
-                  >
-                    <SelectTrigger className="h-8 w-[200px] text-sm">
-                      <SelectValue placeholder="Ingen ansvarig" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none">Ingen ansvarig</SelectItem>
-                      {orgProfiles
-                        .filter(p => p.user_id && !p.is_external)
-                        .map(p => (
-                          <SelectItem key={p.user_id!} value={p.user_id!}>
-                            {p.full_name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <Select
+                value={task.assigned_to || '_none'}
+                onValueChange={(val) =>
+                  updateTask.mutate({ id: task.id, assigned_to: val === '_none' ? null : val })
+                }
+              >
+                <SelectTrigger className="h-6 w-auto gap-1 border-0 shadow-none px-1 text-xs text-muted-foreground hover:text-foreground max-w-[140px]">
+                  <User className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{assigneeName || 'Ansvarig'}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Ingen ansvarig</SelectItem>
+                  {orgProfiles
+                    .filter(p => p.user_id && !p.is_external)
+                    .map(p => (
+                      <SelectItem key={p.user_id!} value={p.user_id!}>
+                        {p.full_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
 
-                {/* Due date */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="date"
-                    value={task.due_date || ''}
-                    onChange={e =>
-                      updateTask.mutate({ id: task.id, due_date: e.target.value || null })
-                    }
-                    className="h-8 w-[160px] text-sm"
-                  />
-                </div>
-
-                {/* Notes */}
-                <Textarea
-                  placeholder="Anteckningar..."
-                  value={editingNotes[task.id] ?? task.notes ?? ''}
-                  onChange={e => setEditingNotes(prev => ({ ...prev, [task.id]: e.target.value }))}
-                  onBlur={() => {
-                    const val = editingNotes[task.id];
-                    if (val !== undefined && val !== (task.notes ?? '')) {
-                      updateTask.mutate({ id: task.id, notes: val });
-                    }
-                  }}
-                  className="text-sm min-h-[60px]"
+              <div className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                <Calendar className="w-3 h-3" />
+                <Input
+                  type="date"
+                  value={task.due_date || ''}
+                  onChange={e =>
+                    updateTask.mutate({ id: task.id, due_date: e.target.value || null })
+                  }
+                  className="h-6 w-[120px] border-0 shadow-none px-1 text-xs bg-transparent"
                 />
               </div>
+            </div>
+
+            {isEditing ? (
+              <Textarea
+                autoFocus
+                placeholder="Anteckningar..."
+                value={editingNotes[task.id] ?? task.notes ?? ''}
+                onChange={e => setEditingNotes(prev => ({ ...prev, [task.id]: e.target.value }))}
+                onBlur={() => {
+                  const val = editingNotes[task.id];
+                  if (val !== undefined && val !== (task.notes ?? '')) {
+                    updateTask.mutate({ id: task.id, notes: val });
+                  }
+                  setExpandedTask(null);
+                }}
+                className="text-xs min-h-[48px] mt-1"
+              />
+            ) : (
+              <button
+                onClick={() => setExpandedTask(task.id)}
+                className="text-xs text-muted-foreground hover:text-foreground text-left w-full"
+              >
+                {task.notes ? (
+                  <span className="line-clamp-2">💬 {task.notes}</span>
+                ) : (
+                  <span className="opacity-0 group-hover:opacity-50 transition-opacity">+ Anteckning</span>
+                )}
+              </button>
+            )}
+
+            {task.is_completed && completedByName && (
+              <span className="text-xs text-green-600 dark:text-green-400">
+                ✓ {completedByName} · {task.completed_at && new Date(task.completed_at).toLocaleDateString('sv-SE')}
+              </span>
             )}
           </div>
 
