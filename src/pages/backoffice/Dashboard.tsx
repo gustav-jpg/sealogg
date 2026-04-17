@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
+import { AppVersionManager } from '@/components/backoffice/AppVersionManager';
 
 export default function BackofficeDashboard() {
   const { data: stats } = useQuery({
@@ -212,6 +213,9 @@ export default function BackofficeDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* App Version Management */}
+      <AppVersionManager />
 
       {/* Recent Organizations */}
       <Card>
