@@ -260,7 +260,13 @@ function Rustning() {
     setShowCategoryDialog(true);
   };
 
-  const getProfileName = (userId: string | null) => {
+  const getProfileName = (profileId: string | null) => {
+    if (!profileId) return null;
+    const p = orgProfiles.find(p => p.id === profileId);
+    return p?.full_name || null;
+  };
+
+  const getUserName = (userId: string | null) => {
     if (!userId) return null;
     const p = orgProfiles.find(p => p.user_id === userId);
     return p?.full_name || null;
