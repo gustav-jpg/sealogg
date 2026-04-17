@@ -127,8 +127,8 @@ export function AppSidebar() {
   const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents'];
   const bookingModules: AppModule[] = ['bookings'];
 
-  // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor
-  const deckhandAllowedModules: AppModule[] = ['fault_cases', 'checklists'];
+  // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor, Rustning
+  const deckhandAllowedModules: AppModule[] = ['fault_cases', 'checklists', 'rustning'];
 
   let activeVesselModules = vesselModules.filter(m => orgModules?.includes(m) || isSuperadmin);
   let activeBookingModules = bookingModules.filter(m => orgModules?.includes(m) || isSuperadmin);
