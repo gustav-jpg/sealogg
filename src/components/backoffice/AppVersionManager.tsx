@@ -64,8 +64,8 @@ export function AppVersionManager() {
           Mobilappens version
         </CardTitle>
         <CardDescription>
-          Tvinga eller rekommendera användare att uppdatera iOS/Android-appen. Sätt minimum-version till
-          den nya versionen efter en release så får alla med äldre version en popup.
+          Tvinga eller rekommendera användare att uppdatera iOS/Android-appen. Popupen visas bara för
+          användare som har en lägre installerad version än värdet nedan.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -82,7 +82,8 @@ export function AppVersionManager() {
                 placeholder="1.0.0"
               />
               <p className="text-xs text-muted-foreground">
-                Användare med en lägre version får en uppdaterings-popup.
+                Popupen visas bara om installerad version är lägre. Exempel: har användaren 1.0.0 måste
+                du sätta 1.0.1 för att trigga popupen.
               </p>
             </div>
 
