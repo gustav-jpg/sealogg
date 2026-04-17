@@ -282,7 +282,7 @@ function Rustning() {
 
   const renderTaskItem = (task: RustningTask) => {
     const assigneeName = getProfileName(task.assigned_to);
-    const completedByName = getProfileName(task.completed_by);
+    const completedByName = getUserName(task.completed_by);
     const isEditing = expandedTask === task.id;
 
     return (
@@ -352,7 +352,7 @@ function Rustning() {
                   {orgProfiles
                     .filter(p => p.user_id && !p.is_external)
                     .map(p => (
-                      <SelectItem key={p.user_id!} value={p.user_id!}>
+                      <SelectItem key={p.id} value={p.id}>
                         {p.full_name}
                       </SelectItem>
                     ))}
