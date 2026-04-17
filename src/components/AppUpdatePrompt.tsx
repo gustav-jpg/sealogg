@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { APP_VERSION, compareSemver } from '@/lib/app-version';
-import { isNativePlatform } from '@/lib/capacitor';
+import { getAppVersion, compareSemver } from '@/lib/app-version';
+import { isNativePlatform, getPlatform } from '@/lib/capacitor';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -13,28 +13,47 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Download } from 'lucide-react';
 
+const DEFAULT_IOS_URL = 'https://apps.apple.com/se/app/sealogg/id6753391916';
+const DEFAULT_ANDROID_URL = 'https://play.google.com/store/apps/details?id=app.lovable.ca12acbb7d5746d89d77109ee6b9dc68';
+
 export function AppUpdatePrompt() {
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [storeUrl, setStoreUrl] = useState<string>(DEFAULT_IOS_URL);
+  const [currentVersion, setCurrentVersion] = useState<string>('');
+  const [requiredVersion, setRequiredVersion] = useState<string>('');
 
   useEffect(() => {
-    // Only check on native platforms
     if (!isNativePlatform()) return;
 
     const checkVersion = async () => {
       try {
-        const { data } = await supabase
+        const version = await getAppVersion();
+        setCurrentVersion(version);
+
+        const { data, error } = await supabase
           .from('app_settings')
           .select('key, value')
-          .in('key', ['min_app_version', 'force_update']);
+          .in('key', ['min_app_version', 'force_update', 'ios_app_store_url', 'android_app_store_url']);
 
+        if (error) {
+          console.warn('[AppUpdate] DB error:', error);
+          return;
+        }
         if (!data) return;
 
         const minVersion = data.find(r => r.key === 'min_app_version')?.value;
         const force = data.find(r => r.key === 'force_update')?.value === 'true';
+        const platform = getPlatform();
+        const iosUrl = data.find(r => r.key === 'ios_app_store_url')?.value || DEFAULT_IOS_URL;
+        const androidUrl = data.find(r => r.key === 'android_app_store_url')?.value || DEFAULT_ANDROID_URL;
+        setStoreUrl(platform === 'android' ? androidUrl : iosUrl);
 
-        if (minVersion && compareSemver(APP_VERSION, minVersion) < 0) {
+        console.log('[AppUpdate] Current:', version, 'Required:', minVersion, 'Force:', force);
+
+        if (minVersion && compareSemver(version, minVersion) < 0) {
+          setRequiredVersion(minVersion);
           setNeedsUpdate(true);
           setForceUpdate(force);
         }
@@ -49,8 +68,7 @@ export function AppUpdatePrompt() {
   if (!needsUpdate || dismissed) return null;
 
   const handleOpenStore = () => {
-    // iOS App Store link — update with your actual App Store ID when available
-    window.open('https://apps.apple.com/app/sealogg/id0000000000', '_blank');
+    window.open(storeUrl, '_blank');
   };
 
   return (
@@ -63,8 +81,8 @@ export function AppUpdatePrompt() {
           </AlertDialogTitle>
           <AlertDialogDescription>
             {forceUpdate
-              ? 'En ny version av SeaLogg krävs för att fortsätta använda appen. Vänligen uppdatera via App Store.'
-              : 'En ny version av SeaLogg finns tillgänglig med förbättringar och buggfixar. Vi rekommenderar att du uppdaterar.'}
+              ? `En ny version av SeaLogg krävs för att fortsätta använda appen. Du har version ${currentVersion}, version ${requiredVersion} krävs. Vänligen uppdatera via App Store.`
+              : `En ny version av SeaLogg finns tillgänglig (${requiredVersion}). Du kör version ${currentVersion}. Vi rekommenderar att du uppdaterar.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
