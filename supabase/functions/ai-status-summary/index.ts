@@ -66,7 +66,7 @@ serve(async (req) => {
         .order("date", { ascending: false }),
       supabase
         .from("logbooks")
-        .select("id, date, status, vessel_id, general_notes, passenger_count")
+        .select("id, date, status, vessel_id, general_notes, passenger_count, logbook_stops(pax_on, pax_off, passenger_count)")
         .in("vessel_id", vesselIds)
         .gte("date", cutoffDate.toISOString().split("T")[0])
         .order("date", { ascending: false })
@@ -137,8 +137,19 @@ serve(async (req) => {
       )
       .join("\n");
 
-    const avgPassengers = logbooks?.length
-      ? Math.round(logbooks.reduce((sum: number, l: any) => sum + (l.passenger_count || 0), 0) / logbooks.length)
+    // Räkna passagerare från BÅDA källor: passenger_count på loggboken (passagerarmodulen)
+    // OCH summan av pax_on (eller passenger_count) från stopp i loggboken.
+    const passengerTotals = (logbooks || []).map((l: any) => {
+      const stops = Array.isArray(l.logbook_stops) ? l.logbook_stops : [];
+      const stopsPaxOn = stops.reduce((s: number, st: any) => s + (st.pax_on || 0), 0);
+      const stopsLegacy = stops.reduce((s: number, st: any) => s + (st.passenger_count || 0), 0);
+      const fromStops = stopsPaxOn > 0 ? stopsPaxOn : stopsLegacy;
+      return Math.max(l.passenger_count || 0, fromStops);
+    });
+    const logbooksWithPax = passengerTotals.filter((n: number) => n > 0).length;
+    const totalPassengers = passengerTotals.reduce((s: number, n: number) => s + n, 0);
+    const avgPassengers = logbooksWithPax
+      ? Math.round(totalPassengers / logbooksWithPax)
       : 0;
 
     const dataContext = `
@@ -151,8 +162,9 @@ Dagens datum: ${todayStr}
 - Kritiska/höga felärenden: ${openFaults.filter((f: any) => f.priority === "kritisk" || f.priority === "hog").length}
 - Öppna avvikelser: ${openDeviations.length}
 - Förfallna kontrollpunkter: ${overdue.length}
-- Loggböcker: ${logbooks?.length || 0}
-- Snitt passagerare (från loggböcker): ${avgPassengers}
+ - Loggböcker: ${logbooks?.length || 0}
+ - Totalt passagerare (från stopp + passagerarmodul): ${totalPassengers}
+ - Snitt passagerare per resa: ${avgPassengers}
 
 ### Kritiska per fartyg
 ${criticalLines}
