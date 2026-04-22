@@ -321,8 +321,10 @@ export default function AdminStatus() {
         {vessels && vessels.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {vessels.map(vessel => {
-              const hasActiveSession = vesselPassengerCounts[vessel.id] !== undefined;
-              const count = vesselPassengerCounts[vessel.id] || 0;
+              const entry = vesselPassengerCounts[vessel.id];
+              const hasActiveSession = entry !== undefined;
+              const count = entry?.onboard || 0;
+              const source = entry?.source;
               const maxPax = (vessel as any).max_passengers;
               const isOver = maxPax && count > maxPax;
               return (
@@ -341,6 +343,11 @@ export default function AdminStatus() {
                           <span className="text-xs text-muted-foreground">/ {maxPax}</span>
                         )}
                       </div>
+                      {source && (
+                        <p className="text-[10px] text-muted-foreground/80 truncate">
+                          {source === 'session' ? 'Passagerarmodul' : source === 'stops' ? 'Stopp' : 'Stopp + modul'}
+                        </p>
+                      )}
                     </div>
                     <div className="relative h-2 w-2 flex-shrink-0">
                       {hasActiveSession ? (
