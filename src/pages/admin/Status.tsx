@@ -80,10 +80,25 @@ export default function AdminStatus() {
     enabled: activeSessionIds.length > 0,
   });
 
+  // Dagens öppna loggböcker + deras stopp (för rederi som registrerar via Stopp istället för passagerarmodulen)
+  const { data: openLogbookStops = [] } = useQuery({
+    queryKey: ['status-open-logbook-stops', vesselIds, today],
+    queryFn: async () => {
+      if (vesselIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('logbooks')
+        .select('id, vessel_id, status, date, logbook_stops(pax_on, pax_off, passenger_count)')
+        .in('vessel_id', vesselIds)
+        .eq('date', today)
+        .eq('status', 'oppen');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: vesselIds.length > 0,
+  });
+
   // Realtime subscription for passenger entries changes
   useEffect(() => {
-    if (activeSessionIds.length === 0) return;
-    
     const channel = supabase
       .channel('status-passenger-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'passenger_entries' }, () => {
@@ -92,20 +107,45 @@ export default function AdminStatus() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'passenger_sessions' }, () => {
         queryClient.invalidateQueries({ queryKey: ['status-active-sessions'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'logbook_stops' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['status-open-logbook-stops'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'logbooks' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['status-open-logbook-stops'] });
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeSessionIds.length, queryClient]);
+  }, [queryClient]);
 
   const vesselPassengerCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
+    const counts: Record<string, { onboard: number; source: 'session' | 'stops' | 'both' }> = {};
+    // Källa 1: aktiva passagerarsessioner
     for (const session of activeSessions) {
       const sessionEntries = passengerEntries.filter(e => e.session_id === session.id);
       const onboard = sessionEntries.reduce((sum, e) => sum + e.pax_on - e.pax_off, 0);
-      counts[session.vessel_id] = (counts[session.vessel_id] || 0) + onboard;
+      const prev = counts[session.vessel_id];
+      counts[session.vessel_id] = {
+        onboard: (prev?.onboard || 0) + onboard,
+        source: 'session',
+      };
+    }
+    // Källa 2: dagens öppna loggböcker — summera pax_on - pax_off från stopp
+    for (const lb of openLogbookStops as any[]) {
+      const stops = Array.isArray(lb.logbook_stops) ? lb.logbook_stops : [];
+      if (stops.length === 0) continue;
+      const fromStops = stops.reduce(
+        (sum: number, st: any) => sum + (st.pax_on || st.passenger_count || 0) - (st.pax_off || 0),
+        0,
+      );
+      const prev = counts[lb.vessel_id];
+      counts[lb.vessel_id] = {
+        onboard: (prev?.onboard || 0) + Math.max(0, fromStops),
+        source: prev ? 'both' : 'stops',
+      };
     }
     return counts;
-  }, [activeSessions, passengerEntries]);
+  }, [activeSessions, passengerEntries, openLogbookStops]);
 
   const vesselsWithPassengers = vessels?.filter(v => vesselPassengerCounts[v.id] !== undefined) || [];
 
