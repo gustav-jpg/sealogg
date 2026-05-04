@@ -132,6 +132,10 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                     {dayDeps.slice(0, 3).map((d: any) => {
                       const isPrivate = d.trip_type === 'private';
                       const booked = (d.bookings || []).filter((b: any) => b.status !== 'avbokad').reduce((s: number, b: any) => s + (b.total_passengers || 0), 0);
+                      const cap = d.max_passengers || 0;
+                      const ratio = cap > 0 ? booked / cap : 0;
+                      const isFull = !isPrivate && booked >= cap;
+                      const nearlyFull = !isPrivate && !isFull && ratio >= 0.8;
                       return (
                         <div
                           key={d.id}
@@ -140,18 +144,26 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                             if (isPrivate) setEditing(d);
                             else navigate(`/portal/bookings/trip/${d.id}`);
                           }}
-                          className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer flex items-center gap-1 ${
+                          className={`text-[10px] px-1 py-0.5 rounded cursor-pointer flex items-center gap-1 ${
                             isPrivate
                               ? 'bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 dark:text-amber-300'
-                              : 'bg-primary/10 text-primary hover:bg-primary/20'
+                              : isFull
+                                ? 'bg-destructive/15 text-destructive hover:bg-destructive/25'
+                                : nearlyFull
+                                  ? 'bg-orange-500/15 text-orange-800 hover:bg-orange-500/25 dark:text-orange-300'
+                                  : 'bg-primary/10 text-primary hover:bg-primary/20'
                           }`}
                           title={`${format(parseISO(d.departure_at), 'HH:mm')} ${isPrivate ? '(Enskild)' : (d.title || d.booking_routes?.name)}`}
                         >
                           {isPrivate ? <User className="h-2.5 w-2.5 shrink-0" /> : <Users className="h-2.5 w-2.5 shrink-0" />}
-                          <span className="truncate">
+                          <span className="truncate flex-1 min-w-0">
                             {format(parseISO(d.departure_at), 'HH:mm')} {isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name)}
-                            {!isPrivate && ` (${booked}/${d.max_passengers})`}
                           </span>
+                          {!isPrivate && (
+                            <span className="shrink-0 font-semibold tabular-nums">
+                              {booked}/{cap}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
