@@ -338,6 +338,45 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
+        {/* Bookings Category */}
+        {hasBookings && (isAdmin || isSuperadmin) && (
+          <SidebarGroup>
+            <Collapsible defaultOpen={isBookingsActive} className="group/collapsible">
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between text-xs text-muted-foreground px-2 hover:text-foreground">
+                  <span className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {!isCollapsed && <span>Bokningar</span>}
+                  </span>
+                  {!isCollapsed && (
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                  )}
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {bookingsItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.href)}
+                          tooltip={item.label}
+                        >
+                          <Link to={item.href}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
+
         {/* Admin Settings */}
         {isAdmin && vesselNavItems.length > 0 && (
           <SidebarGroup>
