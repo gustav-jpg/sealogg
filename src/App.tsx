@@ -66,6 +66,7 @@ const Rustning = lazy(() => import("./pages/Rustning"));
 const BookingsAdmin = lazy(() => import("./pages/admin/bookings/Bookings"));
 const BookingsOverview = lazy(() => import("./pages/admin/bookings/Overview"));
 const BookingSettingsAdmin = lazy(() => import("./pages/admin/bookings/Settings"));
+const TripDetail = lazy(() => import("./pages/admin/bookings/TripDetail"));
 const PublicBooking = lazy(() => import("./pages/PublicBooking"));
 
 const queryClient = new QueryClient();
@@ -225,6 +226,7 @@ function AppRoutes() {
         <Route path="/portal/bookings" element={<ProtectedRoute adminOnly><BookingsOverview /></ProtectedRoute>} />
         <Route path="/portal/bookings/list" element={<ProtectedRoute adminOnly><BookingsAdmin /></ProtectedRoute>} />
         <Route path="/portal/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
+        <Route path="/portal/bookings/trip/:id" element={<ProtectedRoute adminOnly><TripDetail /></ProtectedRoute>} />
         {/* Legacy redirects */}
         <Route path="/portal/admin/bookings/routes" element={<Navigate to="/portal/bookings/settings" replace />} />
         <Route path="/portal/admin/bookings/departures" element={<Navigate to="/portal/bookings" replace />} />
