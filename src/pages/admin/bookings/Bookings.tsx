@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar } from 'lucide-react';
+import { Search, Calendar, Plus } from 'lucide-react';
 import { format } from 'date-fns';
+import { CreateTripDialog } from '@/components/bookings/CreateTripDialog';
 
 export default function BookingsAdmin() {
   const { selectedOrgId } = useOrganization();
@@ -21,6 +22,7 @@ export default function BookingsAdmin() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['admin-bookings', selectedOrgId, statusFilter],
@@ -74,6 +76,7 @@ export default function BookingsAdmin() {
             <h1 className="text-2xl font-bold flex items-center gap-2"><Calendar className="h-6 w-6" />Bokningar</h1>
             <p className="text-muted-foreground">Översikt över alla kundbokningar</p>
           </div>
+          <Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-2" />Skapa</Button>
         </div>
 
         <Card>
@@ -187,6 +190,13 @@ export default function BookingsAdmin() {
             )}
           </DialogContent>
         </Dialog>
+
+        <CreateTripDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          orgId={selectedOrgId}
+          onCreated={() => queryClient.invalidateQueries({ queryKey: ['admin-bookings'] })}
+        />
       </div>
     </MainLayout>
   );
