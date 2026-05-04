@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -55,6 +56,7 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
   const [seriesOpen, setSeriesOpen] = useState(false);
   const [defaultDate, setDefaultDate] = useState<Date | null>(null);
   const [editing, setEditing] = useState<any>(null);
+  const navigate = useNavigate();
 
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
@@ -133,7 +135,11 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                       return (
                         <div
                           key={d.id}
-                          onClick={(e) => { e.stopPropagation(); setEditing(d); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isPrivate) setEditing(d);
+                            else navigate(`/portal/bookings/trip/${d.id}`);
+                          }}
                           className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer flex items-center gap-1 ${
                             isPrivate
                               ? 'bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 dark:text-amber-300'
