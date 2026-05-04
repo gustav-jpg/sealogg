@@ -207,12 +207,9 @@ export function AppSidebar() {
   // Bookings group (shown in main nav as a collapsible category)
   const hasBookings = orgModules?.includes('bookings') || isSuperadmin;
   const bookingsItems = [
-    { href: '/portal/bookings', label: 'Bokningar', icon: Calendar },
-    { href: '/portal/admin/bookings/departures', label: 'Avgångar', icon: CalendarClock },
-    { href: '/portal/admin/bookings/schedules', label: 'Tidtabeller', icon: Calendar },
-    { href: '/portal/admin/bookings/routes', label: 'Bokningsrutter', icon: MapPin },
-    { href: '/portal/admin/bookings/taxi', label: 'Taxikö', icon: Car },
-    { href: '/portal/admin/bookings/settings', label: 'Bokningsinställningar', icon: Ticket },
+    { href: '/portal/bookings', label: 'Översikt', icon: CalendarClock },
+    { href: '/portal/bookings/list', label: 'Bokningar', icon: Ticket },
+    { href: '/portal/bookings/settings', label: 'Inställningar', icon: Settings },
   ];
   const isBookingsActive = location.pathname.startsWith('/portal/bookings') || location.pathname.startsWith('/portal/admin/bookings');
 
