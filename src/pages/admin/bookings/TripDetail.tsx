@@ -1,0 +1,309 @@
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Users, MapPin, Ship, Calendar, Plus, Trash2, Ticket, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { sv } from 'date-fns/locale';
+
+export default function TripDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: trip, isLoading } = useQuery({
+    queryKey: ['trip', id], enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('booking_departures')
+        .select('*, booking_routes(name, stops), vessels(name)')
+        .eq('id', id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: bookings } = useQuery({
+    queryKey: ['trip-bookings', id], enabled: !!id,
+    queryFn: async () => (await supabase.from('bookings').select('*').eq('departure_id', id!).order('created_at')).data || [],
+  });
+
+  const { data: ticketTypes } = useQuery({
+    queryKey: ['trip-ticket-types', id], enabled: !!id,
+    queryFn: async () => (await supabase.from('booking_ticket_types').select('*').eq('departure_id', id!).order('sort_order')).data || [],
+  });
+
+  const updateTrip = useMutation({
+    mutationFn: async (payload: any) => {
+      const { error } = await supabase.from('booking_departures').update(payload).eq('id', id!);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['trip', id] }); toast({ title: 'Sparat' }); },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+
+  const deleteTrip = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('booking_departures').delete().eq('id', id!);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast({ title: 'Tur raderad' }); navigate('/portal/bookings'); },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+
+  if (isLoading || !trip) {
+    return <MainLayout><div className="p-8 text-center text-muted-foreground">Laddar...</div></MainLayout>;
+  }
+
+  const isPrivate = (trip as any).trip_type === 'private';
+  const totalBooked = (bookings || []).filter(b => b.status !== 'avbokad').reduce((s, b) => s + (b.total_passengers || 0), 0);
+  const seatsLeft = trip.max_passengers - totalBooked;
+  const fillPct = Math.round((totalBooked / trip.max_passengers) * 100);
+
+  return (
+    <MainLayout>
+      <div className="container mx-auto p-4 space-y-4 max-w-5xl">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild><Link to="/portal/bookings"><ArrowLeft className="h-4 w-4 mr-1" />Tillbaka</Link></Button>
+        </div>
+
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant={isPrivate ? 'secondary' : 'default'}>
+                {isPrivate ? 'Enskild körning' : 'Delad körning'}
+              </Badge>
+              <Badge variant="outline">{trip.status}</Badge>
+            </div>
+            <h1 className="text-2xl font-bold">{(trip as any).title || (trip as any).booking_routes?.name || 'Tur'}</h1>
+            <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{format(parseISO(trip.departure_at), 'EEEE d MMM yyyy, HH:mm', { locale: sv })}</span>
+              <span className="flex items-center gap-1"><Ship className="h-3.5 w-3.5" />{(trip as any).vessels?.name}</span>
+              {(trip as any).booking_routes?.name && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{(trip as any).booking_routes.name}</span>}
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => { if (confirm('Radera hela turen och dess bokningar?')) deleteTrip.mutate(); }}><Trash2 className="h-4 w-4 mr-2 text-destructive" />Radera tur</Button>
+        </div>
+
+        {/* Capacity card */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 font-medium"><Users className="h-4 w-4" />Beläggning</div>
+              <div className="text-sm">
+                <span className="font-semibold">{totalBooked}</span> / {trip.max_passengers} platser
+                {seatsLeft > 0 ? <span className="text-muted-foreground ml-2">({seatsLeft} kvar)</span> : <Badge variant="destructive" className="ml-2">Fullbokad</Badge>}
+              </div>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(fillPct, 100)}%` }} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bookings list */}
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base">Bokningar ({bookings?.length || 0})</CardTitle>
+            <AddBookingDialog trip={trip} ticketTypes={ticketTypes || []} seatsLeft={seatsLeft} onCreated={() => {
+              queryClient.invalidateQueries({ queryKey: ['trip-bookings', id] });
+            }} />
+          </CardHeader>
+          <CardContent className="p-0">
+            {!bookings?.length ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">Inga bokningar än. Klicka "Lägg till bokning" för att registrera en kund manuellt, eller dela publika länken så kan kunder boka själva.</div>
+            ) : (
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Bokningsnr</TableHead><TableHead>Kund</TableHead><TableHead>Pers</TableHead><TableHead>Pris</TableHead><TableHead>Status</TableHead><TableHead>Betalning</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {bookings.map((b: any) => (
+                    <TableRow key={b.id}>
+                      <TableCell className="font-mono text-xs">{b.booking_number}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{b.customer_name}</div>
+                        <div className="text-xs text-muted-foreground">{b.customer_email}</div>
+                      </TableCell>
+                      <TableCell>{b.total_passengers}</TableCell>
+                      <TableCell>{Number(b.total_price_sek).toFixed(0)} kr</TableCell>
+                      <TableCell><Badge variant="outline">{b.status}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{b.payment_status}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Ticket types */}
+        {!isPrivate && <TicketTypesCard tripId={id!} orgId={trip.organization_id} ticketTypes={ticketTypes || []} />}
+
+        {/* Trip details / settings */}
+        <TripSettingsCard trip={trip} onSave={(p) => updateTrip.mutate(p)} isPrivate={isPrivate} />
+      </div>
+    </MainLayout>
+  );
+}
+
+function AddBookingDialog({ trip, ticketTypes, seatsLeft, onCreated }: any) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [pax, setPax] = useState('1');
+  const [price, setPrice] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const submit = async () => {
+    if (!name || !email) { toast({ title: 'Namn och e-post krävs', variant: 'destructive' }); return; }
+    if (Number(pax) > seatsLeft) { toast({ title: `Bara ${seatsLeft} platser kvar`, variant: 'destructive' }); return; }
+    const { error } = await supabase.from('bookings').insert({
+      organization_id: trip.organization_id,
+      departure_id: trip.id,
+      customer_name: name, customer_email: email, customer_phone: phone || null,
+      total_passengers: Number(pax),
+      total_price_sek: price ? Number(price) : 0,
+      status: 'bekraftad',
+      customer_notes: notes || null,
+    } as any);
+    if (error) { toast({ title: 'Fel', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Bokning tillagd' });
+    setOpen(false); setName(''); setEmail(''); setPhone(''); setPax('1'); setPrice(''); setNotes('');
+    onCreated();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><Button size="sm" disabled={seatsLeft <= 0}><Plus className="h-4 w-4 mr-2" />Lägg till bokning</Button></DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Manuell bokning</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Namn *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+            <div><Label>Antal *</Label><Input type="number" min="1" max={seatsLeft} value={pax} onChange={(e) => setPax(e.target.value)} /></div>
+            <div><Label>E-post *</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div><Label>Telefon</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+            <div><Label>Pris (kr)</Label><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} /></div>
+          </div>
+          <div><Label>Anteckning</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+          <Button className="w-full" onClick={submit}>Spara bokning</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TicketTypesCard({ tripId, orgId, ticketTypes }: any) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [maxCount, setMaxCount] = useState('');
+
+  const add = useMutation({
+    mutationFn: async () => {
+      if (!name || !price) throw new Error('Namn och pris krävs');
+      const { error } = await supabase.from('booking_ticket_types').insert({
+        organization_id: orgId, departure_id: tripId, name,
+        price_sek: Number(price), max_count: maxCount ? Number(maxCount) : null,
+        sort_order: ticketTypes.length,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['trip-ticket-types', tripId] }); setName(''); setPrice(''); setMaxCount(''); toast({ title: 'Biljett-typ tillagd' }); },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+  const remove = useMutation({
+    mutationFn: async (id: string) => { const { error } = await supabase.from('booking_ticket_types').delete().eq('id', id); if (error) throw error; },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip-ticket-types', tripId] }),
+  });
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base flex items-center gap-2"><Ticket className="h-4 w-4" />Biljett-typer</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        {!ticketTypes.length ? (
+          <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div>Inga biljett-typer. Kunder kan inte boka publikt utan minst en biljett-typ (t.ex. "Vuxen 250 kr").</div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {ticketTypes.map((t: any) => (
+              <div key={t.id} className="flex items-center justify-between border rounded p-2">
+                <div>
+                  <div className="font-medium">{t.name}</div>
+                  <div className="text-xs text-muted-foreground">{Number(t.price_sek).toFixed(0)} kr {t.max_count ? `• max ${t.max_count}` : ''}</div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => remove.mutate(t.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="border-t pt-3">
+          <Label className="text-xs">Lägg till biljett-typ</Label>
+          <div className="grid grid-cols-[1fr_120px_100px_auto] gap-2 mt-1">
+            <Input placeholder="Namn (Vuxen)" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input type="number" placeholder="Pris" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <Input type="number" placeholder="Max" value={maxCount} onChange={(e) => setMaxCount(e.target.value)} />
+            <Button onClick={() => add.mutate()} size="icon"><Plus className="h-4 w-4" /></Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TripSettingsCard({ trip, onSave, isPrivate }: any) {
+  const [title, setTitle] = useState(trip.title || '');
+  const [description, setDescription] = useState(trip.description || '');
+  const [maxPax, setMaxPax] = useState(trip.max_passengers.toString());
+  const [status, setStatus] = useState(trip.status);
+  const [notes, setNotes] = useState(trip.notes || '');
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Turinställningar</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        {!isPrivate && (
+          <>
+            <div><Label>Namn på tur</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+            <div><Label>Beskrivning (publik)</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} /></div>
+          </>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Max passagerare</Label><Input type="number" value={maxPax} onChange={(e) => setMaxPax(e.target.value)} /></div>
+          <div><Label>Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="planerad">Planerad</SelectItem>
+                <SelectItem value="fullbokad">Fullbokad</SelectItem>
+                <SelectItem value="installd">Inställd</SelectItem>
+                <SelectItem value="genomford">Genomförd</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div><Label>Intern anteckning</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+        <Button onClick={() => onSave({ title: title || null, description: description || null, max_passengers: Number(maxPax), status, notes: notes || null })} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Spara ändringar</Button>
+      </CardContent>
+    </Card>
+  );
+}
