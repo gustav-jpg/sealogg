@@ -69,6 +69,7 @@ const DeparturesAdmin = lazy(() => import("./pages/admin/bookings/Departures"));
 const SchedulesAdmin = lazy(() => import("./pages/admin/bookings/Schedules"));
 const TaxiAdmin = lazy(() => import("./pages/admin/bookings/Taxi"));
 const BookingSettingsAdmin = lazy(() => import("./pages/admin/bookings/Settings"));
+const PublicBooking = lazy(() => import("./pages/PublicBooking"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -230,6 +231,9 @@ function AppRoutes() {
         <Route path="/portal/admin/bookings/schedules" element={<ProtectedRoute adminOnly><SchedulesAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/bookings/taxi" element={<ProtectedRoute adminOnly><TaxiAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
+
+        {/* Public booking site */}
+        <Route path="/boka/:slug" element={<PublicBooking />} />
         
         
         {/* Passenger registration routes */}
