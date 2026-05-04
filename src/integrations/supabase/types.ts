@@ -65,6 +65,471 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_audit_logs: {
+        Row: {
+          action: string
+          booking_id: string | null
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          taxi_request_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          taxi_request_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          taxi_request_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_audit_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_audit_logs_taxi_request_id_fkey"
+            columns: ["taxi_request_id"]
+            isOneToOne: false
+            referencedRelation: "booking_taxi_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_departures: {
+        Row: {
+          arrival_at: string | null
+          created_at: string
+          departure_at: string
+          id: string
+          max_passengers: number
+          notes: string | null
+          organization_id: string
+          route_id: string
+          schedule_id: string | null
+          status: Database["public"]["Enums"]["departure_status"]
+          updated_at: string
+          vessel_id: string
+        }
+        Insert: {
+          arrival_at?: string | null
+          created_at?: string
+          departure_at: string
+          id?: string
+          max_passengers?: number
+          notes?: string | null
+          organization_id: string
+          route_id: string
+          schedule_id?: string | null
+          status?: Database["public"]["Enums"]["departure_status"]
+          updated_at?: string
+          vessel_id: string
+        }
+        Update: {
+          arrival_at?: string | null
+          created_at?: string
+          departure_at?: string
+          id?: string
+          max_passengers?: number
+          notes?: string | null
+          organization_id?: string
+          route_id?: string
+          schedule_id?: string | null
+          status?: Database["public"]["Enums"]["departure_status"]
+          updated_at?: string
+          vessel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_departures_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "booking_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_departures_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "booking_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_passengers: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          passenger_name: string | null
+          price_sek: number
+          ticket_type_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          passenger_name?: string | null
+          price_sek?: number
+          ticket_type_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          passenger_name?: string | null
+          price_sek?: number
+          ticket_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_passengers_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_passengers_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "booking_ticket_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_routes: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_active: boolean
+          is_public: boolean
+          name: string
+          organization_id: string
+          stops: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          name: string
+          organization_id: string
+          stops?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          name?: string
+          organization_id?: string
+          stops?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      booking_schedules: {
+        Row: {
+          created_at: string
+          departure_times: string[]
+          id: string
+          is_active: boolean
+          max_passengers: number
+          name: string
+          organization_id: string
+          route_id: string
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+          vessel_id: string
+          weekdays: number[]
+        }
+        Insert: {
+          created_at?: string
+          departure_times?: string[]
+          id?: string
+          is_active?: boolean
+          max_passengers?: number
+          name: string
+          organization_id: string
+          route_id: string
+          updated_at?: string
+          valid_from: string
+          valid_until?: string | null
+          vessel_id: string
+          weekdays?: number[]
+        }
+        Update: {
+          created_at?: string
+          departure_times?: string[]
+          id?: string
+          is_active?: boolean
+          max_passengers?: number
+          name?: string
+          organization_id?: string
+          route_id?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+          vessel_id?: string
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_schedules_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "booking_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_settings: {
+        Row: {
+          auto_confirm_bookings: boolean
+          booking_terms: string | null
+          brand_color: string | null
+          company_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          default_payment_method: string | null
+          email_confirmation_text: string | null
+          id: string
+          logo_url: string | null
+          organization_id: string
+          public_slug: string
+          taxi_requires_manual_confirmation: boolean
+          updated_at: string
+        }
+        Insert: {
+          auto_confirm_bookings?: boolean
+          booking_terms?: string | null
+          brand_color?: string | null
+          company_name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          default_payment_method?: string | null
+          email_confirmation_text?: string | null
+          id?: string
+          logo_url?: string | null
+          organization_id: string
+          public_slug: string
+          taxi_requires_manual_confirmation?: boolean
+          updated_at?: string
+        }
+        Update: {
+          auto_confirm_bookings?: boolean
+          booking_terms?: string | null
+          brand_color?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          default_payment_method?: string | null
+          email_confirmation_text?: string | null
+          id?: string
+          logo_url?: string | null
+          organization_id?: string
+          public_slug?: string
+          taxi_requires_manual_confirmation?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      booking_taxi_requests: {
+        Row: {
+          assigned_vessel_id: string | null
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          dropoff_location: string
+          id: string
+          internal_notes: string | null
+          notes: string | null
+          organization_id: string
+          passenger_count: number
+          pickup_location: string
+          quoted_price_sek: number | null
+          request_number: string
+          requested_at: string
+          status: Database["public"]["Enums"]["taxi_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_vessel_id?: string | null
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          dropoff_location: string
+          id?: string
+          internal_notes?: string | null
+          notes?: string | null
+          organization_id: string
+          passenger_count?: number
+          pickup_location: string
+          quoted_price_sek?: number | null
+          request_number?: string
+          requested_at: string
+          status?: Database["public"]["Enums"]["taxi_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_vessel_id?: string | null
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          dropoff_location?: string
+          id?: string
+          internal_notes?: string | null
+          notes?: string | null
+          organization_id?: string
+          passenger_count?: number
+          pickup_location?: string
+          quoted_price_sek?: number | null
+          request_number?: string
+          requested_at?: string
+          status?: Database["public"]["Enums"]["taxi_request_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      booking_ticket_types: {
+        Row: {
+          created_at: string
+          departure_id: string
+          id: string
+          max_count: number | null
+          name: string
+          organization_id: string
+          price_sek: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          departure_id: string
+          id?: string
+          max_count?: number | null
+          name: string
+          organization_id: string
+          price_sek?: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          departure_id?: string
+          id?: string
+          max_count?: number | null
+          name?: string
+          organization_id?: string
+          price_sek?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_ticket_types_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "booking_departures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          booking_number: string
+          cancelled_at: string | null
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_notes: string | null
+          customer_phone: string | null
+          departure_id: string
+          id: string
+          internal_notes: string | null
+          organization_id: string
+          payment_status: Database["public"]["Enums"]["booking_payment_status"]
+          status: Database["public"]["Enums"]["booking_status"]
+          total_passengers: number
+          total_price_sek: number
+          updated_at: string
+        }
+        Insert: {
+          booking_number?: string
+          cancelled_at?: string | null
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_notes?: string | null
+          customer_phone?: string | null
+          departure_id: string
+          id?: string
+          internal_notes?: string | null
+          organization_id: string
+          payment_status?: Database["public"]["Enums"]["booking_payment_status"]
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_passengers?: number
+          total_price_sek?: number
+          updated_at?: string
+        }
+        Update: {
+          booking_number?: string
+          cancelled_at?: string | null
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_notes?: string | null
+          customer_phone?: string | null
+          departure_id?: string
+          id?: string
+          internal_notes?: string | null
+          organization_id?: string
+          payment_status?: Database["public"]["Enums"]["booking_payment_status"]
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_passengers?: number
+          total_price_sek?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "booking_departures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bunker_events: {
         Row: {
           created_at: string
@@ -3119,6 +3584,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_org_id_by_booking_slug: { Args: { _slug: string }; Returns: string }
       get_page_view_stats: { Args: never; Returns: Json }
       get_profile_name_by_user_id: {
         Args: { _user_id: string }
@@ -3213,6 +3679,7 @@ export type Database = {
         | "checklists"
         | "documents"
         | "rustning"
+        | "bookings"
       app_role: "admin" | "skeppare" | "readonly" | "deckhand"
       billing_frequency: "monthly" | "yearly" | "quarterly"
       billing_status: "active" | "overdue" | "cancelled" | "trial"
@@ -3228,13 +3695,8 @@ export type Database = {
         | "serveringsansvarig"
         | "kock"
         | "bartender"
-      booking_status:
-        | "forfragen"
-        | "preliminar"
-        | "bekraftad"
-        | "avbokad"
-        | "genomford"
-        | "blockerad"
+      booking_payment_status: "obetald" | "betald" | "aterbetald"
+      booking_status: "avvaktar" | "bekraftad" | "avbokad" | "no_show"
       checklist_execution_status: "in_progress" | "completed" | "failed"
       control_status: "ok" | "kommande" | "forfallen"
       control_type: "calendar" | "engine_hours"
@@ -3244,6 +3706,7 @@ export type Database = {
         | "jungman"
         | "restaurangpersonal"
         | "styrman"
+      departure_status: "planerad" | "installd" | "fullbokad" | "genomford"
       deviation_severity: "lag" | "medel" | "hog"
       deviation_status:
         | "oppen"
@@ -3272,6 +3735,7 @@ export type Database = {
       pm_type: "besattning" | "servering" | "kok" | "bar"
       registration_status: "pending" | "approved" | "rejected"
       rustning_priority: "low" | "normal" | "high"
+      taxi_request_status: "ny" | "bekraftad" | "avbojd" | "genomford"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3407,6 +3871,7 @@ export const Constants = {
         "checklists",
         "documents",
         "rustning",
+        "bookings",
       ],
       app_role: ["admin", "skeppare", "readonly", "deckhand"],
       billing_frequency: ["monthly", "yearly", "quarterly"],
@@ -3425,14 +3890,8 @@ export const Constants = {
         "kock",
         "bartender",
       ],
-      booking_status: [
-        "forfragen",
-        "preliminar",
-        "bekraftad",
-        "avbokad",
-        "genomford",
-        "blockerad",
-      ],
+      booking_payment_status: ["obetald", "betald", "aterbetald"],
+      booking_status: ["avvaktar", "bekraftad", "avbokad", "no_show"],
       checklist_execution_status: ["in_progress", "completed", "failed"],
       control_status: ["ok", "kommande", "forfallen"],
       control_type: ["calendar", "engine_hours"],
@@ -3443,6 +3902,7 @@ export const Constants = {
         "restaurangpersonal",
         "styrman",
       ],
+      departure_status: ["planerad", "installd", "fullbokad", "genomford"],
       deviation_severity: ["lag", "medel", "hog"],
       deviation_status: [
         "oppen",
@@ -3474,6 +3934,7 @@ export const Constants = {
       pm_type: ["besattning", "servering", "kok", "bar"],
       registration_status: ["pending", "approved", "rejected"],
       rustning_priority: ["low", "normal", "high"],
+      taxi_request_status: ["ny", "bekraftad", "avbojd", "genomford"],
     },
   },
 } as const
