@@ -3211,7 +3211,6 @@ export type Database = {
         | "fault_cases"
         | "self_control"
         | "checklists"
-        | "bookings"
         | "documents"
         | "rustning"
       app_role: "admin" | "skeppare" | "readonly" | "deckhand"
@@ -3406,7 +3405,6 @@ export const Constants = {
         "fault_cases",
         "self_control",
         "checklists",
-        "bookings",
         "documents",
         "rustning",
       ],
