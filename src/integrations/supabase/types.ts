@@ -192,6 +192,13 @@ export type Database = {
             referencedRelation: "booking_schedules"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_departures_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
         ]
       }
       booking_passengers: {
