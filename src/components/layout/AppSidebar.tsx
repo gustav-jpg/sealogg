@@ -22,9 +22,6 @@ import {
   Building2,
   Activity,
   Anchor,
-  CalendarDays,
-  UtensilsCrossed,
-  Wine,
   GraduationCap,
   ChevronDown,
   ChevronsUpDown,
@@ -69,7 +66,7 @@ import { KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'bookings' | 'documents' | 'rustning';
+type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'documents' | 'rustning';
 
 // Map modules to nav items
 const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any }> = {
@@ -78,7 +75,6 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
   fault_cases: { href: '/portal/fault-cases', label: 'Felärenden', icon: Wrench },
   self_control: { href: '/portal/self-control', label: 'Underhåll', icon: ClipboardCheck },
   checklists: { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
-  bookings: { href: '/bookings', label: 'Kalender', icon: CalendarDays },
   documents: { href: '/portal/documents', label: 'Dokument', icon: FileText },
   rustning: { href: '/portal/rustning', label: 'Rustning', icon: Hammer },
 };
@@ -125,25 +121,20 @@ export function AppSidebar() {
 
   // Filter nav items based on active modules and user role
   const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents'];
-  const bookingModules: AppModule[] = ['bookings'];
 
   // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor, Rustning
   const deckhandAllowedModules: AppModule[] = ['fault_cases', 'checklists', 'rustning'];
 
   let activeVesselModules = vesselModules.filter(m => orgModules?.includes(m) || isSuperadmin);
-  let activeBookingModules = bookingModules.filter(m => orgModules?.includes(m) || isSuperadmin);
 
   // If user is deckhand (and not admin), filter to only allowed modules
   if (isDeckhand && !isAdmin) {
     activeVesselModules = activeVesselModules.filter(m => deckhandAllowedModules.includes(m));
-    activeBookingModules = []; // Deckhand has no access to bookings
   }
 
   const vesselNavItems = activeVesselModules.map(m => MODULE_NAV_MAP[m]);
   
   // Spare parts is now a tab within Self Control, no separate nav item needed
-
-  const bookingNavItems = activeBookingModules.map(m => MODULE_NAV_MAP[m]);
 
   // Always show Startsida first for all users
   if (vesselNavItems.length > 0 || isSuperadmin || isDeckhand) {
@@ -206,16 +197,10 @@ export function AppSidebar() {
 
   const vesselAdminItems = [...baseVesselAdminItems, ...filteredModuleAdminItems];
 
-  const bookingAdminItems = [
-    { href: '/bookings/admin/menus', label: 'Menyer', icon: UtensilsCrossed },
-    { href: '/bookings/admin/drinks', label: 'Dryckespaket', icon: Wine },
-  ];
-
   const isInVesselSection = location.pathname.startsWith('/portal');
-  const isInBookingSection = location.pathname.startsWith('/bookings');
 
   const isActive = (href: string) => {
-    if (href === '/portal' || href === '/bookings') {
+    if (href === '/portal') {
       return location.pathname === href;
     }
     return location.pathname.startsWith(href);
