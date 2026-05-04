@@ -274,7 +274,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
           total_passengers: Number(pPax),
           total_price_sek: pPrice ? Number(pPrice) : 0,
           customer_notes: pCustomerNotes || null,
-          status: pBookingStatus,
+          status: pBookingStatus as any,
         }).eq('id', privateBooking.id);
         if (bErr) throw bErr;
       }
@@ -398,8 +398,9 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="bekraftad">Bekräftad</SelectItem>
-                        <SelectItem value="vantar">Väntar</SelectItem>
+                        <SelectItem value="avvaktar">Avvaktar</SelectItem>
                         <SelectItem value="avbokad">Avbokad</SelectItem>
+                        <SelectItem value="no_show">No-show</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
