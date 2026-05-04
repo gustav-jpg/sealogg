@@ -31,7 +31,6 @@ const TABLE_NAMES: Record<string, string> = {
   vessels: 'Fartyg',
   profiles: 'Profiler',
   organizations: 'Organisationer',
-  bookings: 'Bokningar',
   control_points: 'Kontrollpunkter',
   checklist_templates: 'Checklistmallar',
   checklist_executions: 'Checklistkörningar',

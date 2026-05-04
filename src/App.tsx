@@ -50,11 +50,6 @@ const BackofficeDashboard = lazy(() => import("./pages/backoffice/Dashboard"));
 const Organizations = lazy(() => import("./pages/backoffice/Organizations"));
 const OrganizationDetail = lazy(() => import("./pages/backoffice/OrganizationDetail"));
 const AuditLogs = lazy(() => import("./pages/backoffice/AuditLogs"));
-const BookingCalendar = lazy(() => import("./pages/bookings/BookingCalendar"));
-const NewBooking = lazy(() => import("./pages/bookings/NewBooking"));
-const BookingDetail = lazy(() => import("./pages/bookings/BookingDetail"));
-const MenusAdmin = lazy(() => import("./pages/bookings/admin/MenusAdmin"));
-const DrinksAdmin = lazy(() => import("./pages/bookings/admin/DrinksAdmin"));
 const PassengerRegistration = lazy(() => import("./pages/PassengerRegistration"));
 const PassengerSession = lazy(() => import("./pages/PassengerSession"));
 const PassengerAdmin = lazy(() => import("./pages/admin/PassengerAdmin"));
@@ -226,13 +221,6 @@ function AppRoutes() {
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
         <Route path="/portal/passagerare/:sessionId" element={<ProtectedRoute><PassengerSession /></ProtectedRoute>} />
-        
-        {/* Booking routes */}
-        <Route path="/bookings" element={<ProtectedRoute><BookingCalendar /></ProtectedRoute>} />
-        <Route path="/bookings/new" element={<ProtectedRoute><NewBooking /></ProtectedRoute>} />
-        <Route path="/bookings/:id" element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
-        <Route path="/bookings/admin/menus" element={<ProtectedRoute adminOnly><MenusAdmin /></ProtectedRoute>} />
-        <Route path="/bookings/admin/drinks" element={<ProtectedRoute adminOnly><DrinksAdmin /></ProtectedRoute>} />
         
         {/* Backoffice routes (superadmin only) */}
         <Route path="/backoffice" element={<BackofficeLayout><BackofficeDashboard /></BackofficeLayout>} />
