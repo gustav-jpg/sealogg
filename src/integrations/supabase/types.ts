@@ -450,7 +450,15 @@ export type Database = {
           status?: Database["public"]["Enums"]["taxi_request_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "booking_taxi_requests_vessel_id_fkey"
+            columns: ["assigned_vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       booking_ticket_types: {
         Row: {
