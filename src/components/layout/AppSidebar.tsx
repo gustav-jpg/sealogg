@@ -194,11 +194,6 @@ export function AppSidebar() {
     { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
     { module: 'logbook', href: '/portal/admin/startsida', label: 'Intranät', icon: Home },
     { module: 'logbook', href: '/portal/admin/passagerare', label: 'Passagerarrutter', icon: Route },
-    { module: 'bookings', href: '/portal/admin/bookings/departures', label: 'Avgångar', icon: CalendarClock },
-    { module: 'bookings', href: '/portal/admin/bookings/schedules', label: 'Tidtabeller', icon: Calendar },
-    { module: 'bookings', href: '/portal/admin/bookings/routes', label: 'Bokningsrutter', icon: MapPin },
-    { module: 'bookings', href: '/portal/admin/bookings/taxi', label: 'Taxikö', icon: Car },
-    { module: 'bookings', href: '/portal/admin/bookings/settings', label: 'Bokningsinställningar', icon: Ticket },
   ];
 
   // Filter module-specific items based on active modules
@@ -207,6 +202,18 @@ export function AppSidebar() {
     .map(({ href, label, icon }) => ({ href, label, icon }));
 
   const vesselAdminItems = [...baseVesselAdminItems, ...filteredModuleAdminItems];
+
+  // Bookings group (shown in main nav as a collapsible category)
+  const hasBookings = orgModules?.includes('bookings') || isSuperadmin;
+  const bookingsItems = [
+    { href: '/portal/bookings', label: 'Bokningar', icon: Calendar },
+    { href: '/portal/admin/bookings/departures', label: 'Avgångar', icon: CalendarClock },
+    { href: '/portal/admin/bookings/schedules', label: 'Tidtabeller', icon: Calendar },
+    { href: '/portal/admin/bookings/routes', label: 'Bokningsrutter', icon: MapPin },
+    { href: '/portal/admin/bookings/taxi', label: 'Taxikö', icon: Car },
+    { href: '/portal/admin/bookings/settings', label: 'Bokningsinställningar', icon: Ticket },
+  ];
+  const isBookingsActive = location.pathname.startsWith('/portal/bookings') || location.pathname.startsWith('/portal/admin/bookings');
 
   const isInVesselSection = location.pathname.startsWith('/portal');
 
