@@ -116,43 +116,64 @@ export type Database = {
       booking_departures: {
         Row: {
           arrival_at: string | null
+          booking_deadline: string | null
           created_at: string
           departure_at: string
+          description: string | null
+          dropoff_location: string | null
           id: string
           max_passengers: number
           notes: string | null
           organization_id: string
-          route_id: string
+          pickup_location: string | null
+          route_id: string | null
           schedule_id: string | null
+          skipper_id: string | null
           status: Database["public"]["Enums"]["departure_status"]
+          title: string | null
+          trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at: string
           vessel_id: string
         }
         Insert: {
           arrival_at?: string | null
+          booking_deadline?: string | null
           created_at?: string
           departure_at: string
+          description?: string | null
+          dropoff_location?: string | null
           id?: string
           max_passengers?: number
           notes?: string | null
           organization_id: string
-          route_id: string
+          pickup_location?: string | null
+          route_id?: string | null
           schedule_id?: string | null
+          skipper_id?: string | null
           status?: Database["public"]["Enums"]["departure_status"]
+          title?: string | null
+          trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
           vessel_id: string
         }
         Update: {
           arrival_at?: string | null
+          booking_deadline?: string | null
           created_at?: string
           departure_at?: string
+          description?: string | null
+          dropoff_location?: string | null
           id?: string
           max_passengers?: number
           notes?: string | null
           organization_id?: string
-          route_id?: string
+          pickup_location?: string | null
+          route_id?: string | null
           schedule_id?: string | null
+          skipper_id?: string | null
           status?: Database["public"]["Enums"]["departure_status"]
+          title?: string | null
+          trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
           vessel_id?: string
         }
@@ -3736,6 +3757,7 @@ export type Database = {
       registration_status: "pending" | "approved" | "rejected"
       rustning_priority: "low" | "normal" | "high"
       taxi_request_status: "ny" | "bekraftad" | "avbojd" | "genomford"
+      trip_type: "private" | "shared"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3935,6 +3957,7 @@ export const Constants = {
       registration_status: ["pending", "approved", "rejected"],
       rustning_priority: ["low", "normal", "high"],
       taxi_request_status: ["ny", "bekraftad", "avbojd", "genomford"],
+      trip_type: ["private", "shared"],
     },
   },
 } as const
