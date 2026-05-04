@@ -211,6 +211,29 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
   const [notes, setNotes] = useState('');
   const [title, setTitle] = useState('');
   const [showTickets, setShowTickets] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  // Private booking edit fields
+  const [pCustomerName, setPCustomerName] = useState('');
+  const [pCustomerEmail, setPCustomerEmail] = useState('');
+  const [pCustomerPhone, setPCustomerPhone] = useState('');
+  const [pPax, setPPax] = useState('');
+  const [pPrice, setPPrice] = useState('');
+  const [pCustomerNotes, setPCustomerNotes] = useState('');
+  const [pBookingStatus, setPBookingStatus] = useState('bekraftad');
+
+  // Load full booking row for private trips
+  const { data: privateBooking } = useQuery({
+    queryKey: ['private-booking-for-departure', departure?.id],
+    enabled: !!departure?.id && departure?.trip_type === 'private',
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('departure_id', departure.id)
+        .maybeSingle();
+      return data;
+    },
+  });
 
   useMemo(() => {
     if (departure) {
@@ -219,8 +242,21 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       setNotes(departure.notes || '');
       setTitle(departure.title || '');
       setShowTickets(false);
+      setEditMode(false);
     }
   }, [departure?.id]);
+
+  useMemo(() => {
+    if (privateBooking) {
+      setPCustomerName(privateBooking.customer_name || '');
+      setPCustomerEmail(privateBooking.customer_email || '');
+      setPCustomerPhone(privateBooking.customer_phone || '');
+      setPPax(privateBooking.total_passengers?.toString() || '1');
+      setPPrice(privateBooking.total_price_sek?.toString() || '');
+      setPCustomerNotes(privateBooking.customer_notes || '');
+      setPBookingStatus(privateBooking.status || 'bekraftad');
+    }
+  }, [privateBooking?.id]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -228,9 +264,24 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       if (departure.trip_type === 'shared') payload.title = title || null;
       const { error } = await supabase.from('booking_departures').update(payload).eq('id', departure.id);
       if (error) throw error;
+
+      // Also update linked booking for private trips
+      if (departure.trip_type === 'private' && privateBooking?.id) {
+        const { error: bErr } = await supabase.from('bookings').update({
+          customer_name: pCustomerName,
+          customer_email: pCustomerEmail,
+          customer_phone: pCustomerPhone || null,
+          total_passengers: Number(pPax),
+          total_price_sek: pPrice ? Number(pPrice) : 0,
+          customer_notes: pCustomerNotes || null,
+          status: pBookingStatus,
+        }).eq('id', privateBooking.id);
+        if (bErr) throw bErr;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-departures-month'] });
+      queryClient.invalidateQueries({ queryKey: ['private-booking-for-departure'] });
       onClose();
       toast({ title: 'Sparat' });
     },
@@ -252,10 +303,11 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
 
   if (!departure) return null;
   const isPrivate = departure.trip_type === 'private';
+  const fmtDt = (s?: string | null) => s ? format(parseISO(s), 'yyyy-MM-dd HH:mm') : '–';
 
   return (
     <Dialog open={!!departure} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isPrivate ? <User className="h-5 w-5 text-amber-600" /> : <Users className="h-5 w-5 text-primary" />}
@@ -265,6 +317,114 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
 
         {showTickets ? (
           <TicketTypesPanel departure={departure} orgId={orgId} onBack={() => setShowTickets(false)} />
+        ) : isPrivate ? (
+          <div className="space-y-4">
+            {/* TRIP INFO CARD */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tur</div>
+              <div className="p-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div><div className="text-xs text-muted-foreground">Avgång</div><div className="font-medium">{fmtDt(departure.departure_at)}</div></div>
+                <div><div className="text-xs text-muted-foreground">Ankomst</div><div className="font-medium">{fmtDt(departure.arrival_at)}</div></div>
+                <div><div className="text-xs text-muted-foreground">Fartyg</div><div className="font-medium">{departure.vessels?.name || '–'}</div></div>
+                <div><div className="text-xs text-muted-foreground">Rutt</div><div className="font-medium">{departure.booking_routes?.name || '–'}</div></div>
+                {(departure.pickup_location || departure.dropoff_location) && (
+                  <div className="col-span-2"><div className="text-xs text-muted-foreground">Från → Till</div><div className="font-medium">{departure.pickup_location || '?'} → {departure.dropoff_location || '?'}</div></div>
+                )}
+                <div><div className="text-xs text-muted-foreground">Antal passagerare</div><div className="font-medium">{privateBooking?.total_passengers ?? '–'}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Status (tur)</div>
+                  <Badge variant={status === 'genomford' ? 'default' : status === 'installd' ? 'destructive' : 'secondary'} className="mt-0.5">{status}</Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* CUSTOMER CARD */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kund</div>
+              {!privateBooking ? (
+                <div className="p-3 text-sm text-muted-foreground italic">Ingen kopplad bokning hittades</div>
+              ) : (
+                <div className="p-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div><div className="text-xs text-muted-foreground">Namn</div><div className="font-medium">{privateBooking.customer_name || '–'}</div></div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Bokningsstatus</div>
+                    <Badge variant={privateBooking.status === 'bekraftad' ? 'default' : privateBooking.status === 'avbokad' ? 'destructive' : 'secondary'} className="mt-0.5">{privateBooking.status}</Badge>
+                  </div>
+                  <div><div className="text-xs text-muted-foreground">E-post</div><div className="font-medium break-all">{privateBooking.customer_email || '–'}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Telefon</div><div className="font-medium">{privateBooking.customer_phone || '–'}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Pris</div><div className="font-medium">{privateBooking.total_price_sek ? `${Number(privateBooking.total_price_sek).toFixed(0)} kr` : '–'}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Bokningsref.</div><div className="font-mono text-xs">{(privateBooking.id || '').slice(0, 8)}</div></div>
+                  {privateBooking.customer_notes && (
+                    <div className="col-span-2"><div className="text-xs text-muted-foreground">Kommentar från kund</div><div className="italic">{privateBooking.customer_notes}</div></div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* INTERNAL NOTE */}
+            {departure.notes && !editMode && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Intern anteckning</div>
+                <div className="p-3 text-sm whitespace-pre-wrap">{departure.notes}</div>
+              </div>
+            )}
+
+            {/* EDIT FORM */}
+            {editMode && (
+              <div className="border rounded-lg p-3 space-y-3 bg-muted/20">
+                <div className="text-sm font-semibold">Redigera</div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div><Label>Kundnamn</Label><Input value={pCustomerName} onChange={(e) => setPCustomerName(e.target.value)} /></div>
+                  <div><Label>Antal passagerare</Label><Input type="number" min="1" value={pPax} onChange={(e) => setPPax(e.target.value)} /></div>
+                  <div><Label>E-post</Label><Input type="email" value={pCustomerEmail} onChange={(e) => setPCustomerEmail(e.target.value)} /></div>
+                  <div><Label>Telefon</Label><Input value={pCustomerPhone} onChange={(e) => setPCustomerPhone(e.target.value)} /></div>
+                  <div><Label>Pris (kr)</Label><Input type="number" value={pPrice} onChange={(e) => setPPrice(e.target.value)} /></div>
+                  <div><Label>Max passagerare (tur)</Label><Input type="number" value={maxPax} onChange={(e) => setMaxPax(e.target.value)} /></div>
+                  <div>
+                    <Label>Status (tur)</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="planerad">Planerad</SelectItem>
+                        <SelectItem value="fullbokad">Fullbokad</SelectItem>
+                        <SelectItem value="installd">Inställd</SelectItem>
+                        <SelectItem value="genomford">Genomförd</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Bokningsstatus</Label>
+                    <Select value={pBookingStatus} onValueChange={setPBookingStatus}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bekraftad">Bekräftad</SelectItem>
+                        <SelectItem value="vantar">Väntar</SelectItem>
+                        <SelectItem value="avbokad">Avbokad</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div><Label>Kommentar från kund</Label><Textarea value={pCustomerNotes} onChange={(e) => setPCustomerNotes(e.target.value)} rows={2} /></div>
+                <div><Label>Intern anteckning</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              {editMode ? (
+                <>
+                  <Button onClick={() => save.mutate()} disabled={save.isPending} className="flex-1">Spara ändringar</Button>
+                  <Button variant="outline" onClick={() => setEditMode(false)}>Avbryt</Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => setEditMode(true)} className="flex-1">Redigera</Button>
+                  <Button variant="ghost" size="icon" onClick={() => { if (confirm('Radera tur (och dess bokning)?')) remove.mutate(); }}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="space-y-3">
             <div className="text-sm space-y-1">
