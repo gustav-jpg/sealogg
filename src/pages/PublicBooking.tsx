@@ -92,7 +92,24 @@ function BookingFlow({ orgId, settings, brandColor }: { orgId: string; settings:
 
   const { data: departures } = useQuery({
     queryKey: ['public-departures', orgId, routeId], enabled: !!orgId && !!routeId,
-    queryFn: async () => (await supabase.from('booking_departures').select('*, vessels(name)').eq('organization_id', orgId).eq('route_id', routeId!).in('status', ['planerad', 'fullbokad']).gt('departure_at', new Date().toISOString()).order('departure_at')).data || [],
+    queryFn: async () => {
+      const { data: deps } = await supabase
+        .from('booking_departures')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('route_id', routeId!)
+        .in('status', ['planerad', 'fullbokad'])
+        .gt('departure_at', new Date().toISOString())
+        .order('departure_at');
+      const list = deps || [];
+      const vesselIds = Array.from(new Set(list.map(d => d.vessel_id).filter(Boolean)));
+      let vesselMap: Record<string, string> = {};
+      if (vesselIds.length) {
+        const { data: vs } = await supabase.from('vessels').select('id, name').in('id', vesselIds);
+        vesselMap = Object.fromEntries((vs || []).map(v => [v.id, v.name]));
+      }
+      return list.map(d => ({ ...d, vessel_name: vesselMap[d.vessel_id] || '' }));
+    },
   });
 
   const { data: ticketTypes } = useQuery({
@@ -224,7 +241,7 @@ function BookingFlow({ orgId, settings, brandColor }: { orgId: string; settings:
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <div className="font-semibold">{format(new Date(d.departure_at), 'EEE d MMM, HH:mm', { locale: sv })}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1"><Ship className="h-3 w-3" />{d.vessels?.name}</div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-1"><Ship className="h-3 w-3" />{d.vessel_name}</div>
                     </div>
                     {d.status === 'fullbokad' ? <Badge variant="destructive">Fullbokad</Badge> : <Badge variant="secondary">{d.max_passengers} platser</Badge>}
                   </CardContent>
@@ -284,7 +301,7 @@ function BookingFlow({ orgId, settings, brandColor }: { orgId: string; settings:
               <h1 className="text-2xl font-bold">Bekräfta bokning</h1>
               <Card><CardContent className="p-4 space-y-2 text-sm">
                 <div><b>Avgång:</b> {format(new Date(selectedDeparture.departure_at), 'EEEE d MMMM yyyy, HH:mm', { locale: sv })}</div>
-                <div><b>Fartyg:</b> {selectedDeparture.vessels?.name}</div>
+                <div><b>Fartyg:</b> {(selectedDeparture as any).vessel_name}</div>
                 <Separator />
                 {(ticketTypes || []).filter(t => ticketCounts[t.id]).map((t: any) => (
                   <div key={t.id} className="flex justify-between"><span>{ticketCounts[t.id]} × {t.name}</span><span>{(ticketCounts[t.id] * Number(t.price_sek)).toFixed(0)} kr</span></div>
