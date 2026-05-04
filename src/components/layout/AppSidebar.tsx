@@ -126,7 +126,8 @@ export function AppSidebar() {
   const currentSelectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
 
   // Filter nav items based on active modules and user role
-  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents', 'bookings'];
+  // Note: 'bookings' is rendered as its own collapsible group, not as a flat nav item
+  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents'];
 
   // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor, Rustning
   const deckhandAllowedModules: AppModule[] = ['fault_cases', 'checklists', 'rustning'];
@@ -194,11 +195,6 @@ export function AppSidebar() {
     { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
     { module: 'logbook', href: '/portal/admin/startsida', label: 'Intranät', icon: Home },
     { module: 'logbook', href: '/portal/admin/passagerare', label: 'Passagerarrutter', icon: Route },
-    { module: 'bookings', href: '/portal/admin/bookings/departures', label: 'Avgångar', icon: CalendarClock },
-    { module: 'bookings', href: '/portal/admin/bookings/schedules', label: 'Tidtabeller', icon: Calendar },
-    { module: 'bookings', href: '/portal/admin/bookings/routes', label: 'Bokningsrutter', icon: MapPin },
-    { module: 'bookings', href: '/portal/admin/bookings/taxi', label: 'Taxikö', icon: Car },
-    { module: 'bookings', href: '/portal/admin/bookings/settings', label: 'Bokningsinställningar', icon: Ticket },
   ];
 
   // Filter module-specific items based on active modules
@@ -207,6 +203,18 @@ export function AppSidebar() {
     .map(({ href, label, icon }) => ({ href, label, icon }));
 
   const vesselAdminItems = [...baseVesselAdminItems, ...filteredModuleAdminItems];
+
+  // Bookings group (shown in main nav as a collapsible category)
+  const hasBookings = orgModules?.includes('bookings') || isSuperadmin;
+  const bookingsItems = [
+    { href: '/portal/bookings', label: 'Bokningar', icon: Calendar },
+    { href: '/portal/admin/bookings/departures', label: 'Avgångar', icon: CalendarClock },
+    { href: '/portal/admin/bookings/schedules', label: 'Tidtabeller', icon: Calendar },
+    { href: '/portal/admin/bookings/routes', label: 'Bokningsrutter', icon: MapPin },
+    { href: '/portal/admin/bookings/taxi', label: 'Taxikö', icon: Car },
+    { href: '/portal/admin/bookings/settings', label: 'Bokningsinställningar', icon: Ticket },
+  ];
+  const isBookingsActive = location.pathname.startsWith('/portal/bookings') || location.pathname.startsWith('/portal/admin/bookings');
 
   const isInVesselSection = location.pathname.startsWith('/portal');
 
@@ -327,6 +335,45 @@ export function AppSidebar() {
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Bookings Category */}
+        {hasBookings && (isAdmin || isSuperadmin) && (
+          <SidebarGroup>
+            <Collapsible defaultOpen={isBookingsActive} className="group/collapsible">
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between text-xs text-muted-foreground px-2 hover:text-foreground">
+                  <span className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {!isCollapsed && <span>Bokningar</span>}
+                  </span>
+                  {!isCollapsed && (
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                  )}
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {bookingsItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.href)}
+                          tooltip={item.label}
+                        >
+                          <Link to={item.href}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         )}
 
