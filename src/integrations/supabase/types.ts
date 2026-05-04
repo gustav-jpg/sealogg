@@ -3213,6 +3213,7 @@ export type Database = {
         | "checklists"
         | "documents"
         | "rustning"
+        | "bookings"
       app_role: "admin" | "skeppare" | "readonly" | "deckhand"
       billing_frequency: "monthly" | "yearly" | "quarterly"
       billing_status: "active" | "overdue" | "cancelled" | "trial"
@@ -3407,6 +3408,7 @@ export const Constants = {
         "checklists",
         "documents",
         "rustning",
+        "bookings",
       ],
       app_role: ["admin", "skeppare", "readonly", "deckhand"],
       billing_frequency: ["monthly", "yearly", "quarterly"],
