@@ -12,11 +12,11 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, CalendarDays, Plus, Trash2, Send, Loader2, Search, FileText, HardDrive } from 'lucide-react';
+import { ArrowLeft, Mail, User, Building2, Package, Users, Ship, BookOpen, AlertTriangle, Wrench, ClipboardCheck, ClipboardList, Plus, Trash2, Send, Loader2, Search, FileText, HardDrive } from 'lucide-react';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
-type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'bookings' | 'documents';
+type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'documents';
 
 const MODULE_INFO: Record<AppModule, { label: string; icon: any; description: string }> = {
   logbook: { label: 'Loggbok', icon: BookOpen, description: 'Digital skeppsloggbok' },
@@ -24,11 +24,10 @@ const MODULE_INFO: Record<AppModule, { label: string; icon: any; description: st
   fault_cases: { label: 'Felärenden', icon: Wrench, description: 'Spårning av fel och reparationer' },
   self_control: { label: 'Egenkontroll', icon: ClipboardCheck, description: 'Kontrollpunkter och underhåll' },
   checklists: { label: 'Checklistor', icon: ClipboardList, description: 'Återkommande checklistor' },
-  bookings: { label: 'Bokningar', icon: CalendarDays, description: 'Bokningssystem för charter' },
   documents: { label: 'Dokument', icon: FileText, description: 'Dokumentportal med mappar och filer' },
 };
 
-const ALL_MODULES: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists', 'bookings', 'documents'];
+const ALL_MODULES: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'checklists', 'documents'];
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
