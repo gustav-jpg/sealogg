@@ -378,64 +378,6 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {vesselNavItems.length > 0 && bookingNavItems.length > 0 && (
-          <SidebarSeparator />
-        )}
-
-        {/* Bokningar Section */}
-        {bookingNavItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs text-muted-foreground px-2">
-              Bokningar
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {bookingNavItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.href)}
-                      tooltip={item.label}
-                    >
-                      <Link to={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Bokningar Admin */}
-        {isAdmin && bookingNavItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs text-muted-foreground px-2">
-              Bokningsinställningar
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {bookingAdminItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.href)}
-                      tooltip={item.label}
-                    >
-                      <Link to={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
         {/* Superadmin */}
         {isSuperadmin && (
           <>
