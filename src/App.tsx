@@ -64,10 +64,7 @@ const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 const BroadcastPush = lazy(() => import("./pages/backoffice/BroadcastPush"));
 const Rustning = lazy(() => import("./pages/Rustning"));
 const BookingsAdmin = lazy(() => import("./pages/admin/bookings/Bookings"));
-const BookingRoutesAdmin = lazy(() => import("./pages/admin/bookings/Routes"));
-const DeparturesAdmin = lazy(() => import("./pages/admin/bookings/Departures"));
-const SchedulesAdmin = lazy(() => import("./pages/admin/bookings/Schedules"));
-const TaxiAdmin = lazy(() => import("./pages/admin/bookings/Taxi"));
+const BookingsOverview = lazy(() => import("./pages/admin/bookings/Overview"));
 const BookingSettingsAdmin = lazy(() => import("./pages/admin/bookings/Settings"));
 const PublicBooking = lazy(() => import("./pages/PublicBooking"));
 
@@ -225,12 +222,15 @@ function AppRoutes() {
         <Route path="/portal/admin/notifications" element={<ProtectedRoute adminOnly><NotificationSettingsPage /></ProtectedRoute>} />
 
         {/* Bookings module */}
-        <Route path="/portal/bookings" element={<ProtectedRoute adminOnly><BookingsAdmin /></ProtectedRoute>} />
-        <Route path="/portal/admin/bookings/routes" element={<ProtectedRoute adminOnly><BookingRoutesAdmin /></ProtectedRoute>} />
-        <Route path="/portal/admin/bookings/departures" element={<ProtectedRoute adminOnly><DeparturesAdmin /></ProtectedRoute>} />
-        <Route path="/portal/admin/bookings/schedules" element={<ProtectedRoute adminOnly><SchedulesAdmin /></ProtectedRoute>} />
-        <Route path="/portal/admin/bookings/taxi" element={<ProtectedRoute adminOnly><TaxiAdmin /></ProtectedRoute>} />
-        <Route path="/portal/admin/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
+        <Route path="/portal/bookings" element={<ProtectedRoute adminOnly><BookingsOverview /></ProtectedRoute>} />
+        <Route path="/portal/bookings/list" element={<ProtectedRoute adminOnly><BookingsAdmin /></ProtectedRoute>} />
+        <Route path="/portal/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
+        {/* Legacy redirects */}
+        <Route path="/portal/admin/bookings/routes" element={<Navigate to="/portal/bookings/settings" replace />} />
+        <Route path="/portal/admin/bookings/departures" element={<Navigate to="/portal/bookings" replace />} />
+        <Route path="/portal/admin/bookings/schedules" element={<Navigate to="/portal/bookings" replace />} />
+        <Route path="/portal/admin/bookings/taxi" element={<Navigate to="/portal/bookings" replace />} />
+        <Route path="/portal/admin/bookings/settings" element={<Navigate to="/portal/bookings/settings" replace />} />
 
         {/* Public booking site */}
         <Route path="/boka/:slug" element={<PublicBooking />} />
