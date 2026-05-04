@@ -63,6 +63,12 @@ const Support = lazy(() => import("./pages/Support"));
 const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 const BroadcastPush = lazy(() => import("./pages/backoffice/BroadcastPush"));
 const Rustning = lazy(() => import("./pages/Rustning"));
+const BookingsAdmin = lazy(() => import("./pages/admin/bookings/Bookings"));
+const BookingRoutesAdmin = lazy(() => import("./pages/admin/bookings/Routes"));
+const DeparturesAdmin = lazy(() => import("./pages/admin/bookings/Departures"));
+const SchedulesAdmin = lazy(() => import("./pages/admin/bookings/Schedules"));
+const TaxiAdmin = lazy(() => import("./pages/admin/bookings/Taxi"));
+const BookingSettingsAdmin = lazy(() => import("./pages/admin/bookings/Settings"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -216,6 +222,14 @@ function AppRoutes() {
         <Route path="/portal/admin/startsida" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/notifications" element={<ProtectedRoute adminOnly><NotificationSettingsPage /></ProtectedRoute>} />
+
+        {/* Bookings module */}
+        <Route path="/portal/bookings" element={<ProtectedRoute adminOnly><BookingsAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/bookings/routes" element={<ProtectedRoute adminOnly><BookingRoutesAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/bookings/departures" element={<ProtectedRoute adminOnly><DeparturesAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/bookings/schedules" element={<ProtectedRoute adminOnly><SchedulesAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/bookings/taxi" element={<ProtectedRoute adminOnly><TaxiAdmin /></ProtectedRoute>} />
+        <Route path="/portal/admin/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
         
         
         {/* Passenger registration routes */}
