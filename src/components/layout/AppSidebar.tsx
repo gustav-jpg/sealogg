@@ -216,7 +216,7 @@ export function AppSidebar() {
   const isInVesselSection = location.pathname.startsWith('/portal');
 
   const isActive = (href: string) => {
-    if (href === '/portal') {
+    if (href === '/portal' || href === '/portal/bookings') {
       return location.pathname === href;
     }
     return location.pathname.startsWith(href);
