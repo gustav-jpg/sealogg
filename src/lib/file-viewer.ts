@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { useSyncExternalStore } from 'react';
 
 export type ViewerFile = {
   url: string;
@@ -7,17 +7,33 @@ export type ViewerFile = {
   kind?: 'image' | 'pdf' | 'other';
 };
 
-type State = {
-  file: ViewerFile | null;
-  open: (file: ViewerFile) => void;
-  close: () => void;
-};
+let current: ViewerFile | null = null;
+const listeners = new Set<() => void>();
 
-export const useFileViewer = create<State>((set) => ({
-  file: null,
-  open: (file) => set({ file }),
-  close: () => set({ file: null }),
-}));
+function emit() {
+  listeners.forEach((l) => l());
+}
+
+export function openFileViewer(file: ViewerFile) {
+  current = file;
+  emit();
+}
+
+export function closeFileViewer() {
+  current = null;
+  emit();
+}
+
+export function useFileViewer(): ViewerFile | null {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => current,
+    () => null,
+  );
+}
 
 export function detectKind(url: string, fileName?: string): 'image' | 'pdf' | 'other' {
   const candidate = (fileName || url).toLowerCase().split('?')[0];
