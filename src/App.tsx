@@ -6,6 +6,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { AutoPushPrompt } from "@/components/AutoPushPrompt";
 import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { FileViewerDialog } from "@/components/FileViewerDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -276,6 +277,7 @@ const App = () => (
               <AppUpdatePrompt />
               <AutoPushPrompt />
               <CookieConsent />
+              <FileViewerDialog />
             </OrganizationProvider>
           </AuthProvider>
         </BrowserRouter>
