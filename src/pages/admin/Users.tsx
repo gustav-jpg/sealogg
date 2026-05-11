@@ -977,7 +977,8 @@ function CertificateItem({
         .createSignedUrl(cert.file_url, 3600); // 1 hour expiry
       
       if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        const fileName = cert.file_url.split('/').pop() || undefined;
+        openFileViewer({ url: data.signedUrl, fileName });
       }
     }
   };
@@ -1373,7 +1374,8 @@ function InductionItem({
         .createSignedUrl(induction.document_url, 3600);
       
       if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        const fileName = induction.document_url.split('/').pop() || undefined;
+        openFileViewer({ url: data.signedUrl, fileName });
       }
     }
   };
