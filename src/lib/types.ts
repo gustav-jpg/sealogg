@@ -1,6 +1,15 @@
 // Enums matching database
 export type AppRole = 'admin' | 'skeppare' | 'deckhand' | 'readonly';
-export type CrewRole = 'befalhavare' | 'styrman' | 'matros' | 'jungman' | 'restaurangpersonal';
+export type CrewRole =
+  | 'befalhavare'
+  | 'styrman'
+  | 'matros'
+  | 'lattmatros'
+  | 'jungman'
+  | 'praktikant'
+  | 'intendent'
+  | 'ovrig'
+  | 'restaurangpersonal';
 export type LogbookStatus = 'oppen' | 'stangd';
 export type DeviationType = 'incident' | 'tillbud' | 'avvikelse' | 'ovrigt';
 export type DeviationSeverity = 'lag' | 'medel' | 'hog';
@@ -16,7 +25,11 @@ export const CREW_ROLE_LABELS: Record<CrewRole, string> = {
   befalhavare: 'Befälhavare',
   styrman: 'Styrman',
   matros: 'Matros',
+  lattmatros: 'Lättmatros',
   jungman: 'Jungman',
+  praktikant: 'Praktikant',
+  intendent: 'Intendent',
+  ovrig: 'Övrig (ej mönstrad, ej säkerhetspersonal)',
   restaurangpersonal: 'Restaurangpersonal',
 };
 
