@@ -84,10 +84,7 @@ export default function ExercisesAdmin() {
     enabled: !!selectedOrgId,
   });
 
-  const getCategoryLabel = (value: string) => {
-    const category = categories?.find(c => c.name.toLowerCase().replace(/\s+/g, '_').replace(/ö/g, 'o').replace(/ä/g, 'a').replace(/å/g, 'a') === value);
-    return category?.name || value;
-  };
+  const getCategoryLabel = (value: string) => value;
 
   // Build vessel → category → dates matrix
   const vesselCategoryMatrix = (() => {
@@ -95,10 +92,9 @@ export default function ExercisesAdmin() {
 
     const filteredVessels = selectedVessel === 'all' ? vessels : vessels.filter(v => v.id === selectedVessel);
 
-    // All unique category keys from exercises
+    // Exercise_type is stored as the raw category name; match by name directly.
     const allCategoryKeys = [...new Set(exerciseData.map((ex: any) => ex.exercise_type))];
-    // Also include categories from admin settings that may not have been exercised
-    const adminCategoryKeys = (categories || []).map(c => c.name.toLowerCase().replace(/\s+/g, '_').replace(/ö/g, 'o').replace(/ä/g, 'a').replace(/å/g, 'a'));
+    const adminCategoryKeys = (categories || []).map(c => c.name);
     const mergedKeys = [...new Set([...allCategoryKeys, ...adminCategoryKeys])];
 
     return filteredVessels.map(vessel => {
@@ -134,7 +130,7 @@ export default function ExercisesAdmin() {
   const allCategoryLabels = (() => {
     const allCategoryKeys = [...new Set([
       ...(exerciseData || []).map((ex: any) => ex.exercise_type),
-      ...(categories || []).map(c => c.name.toLowerCase().replace(/\s+/g, '_').replace(/ö/g, 'o').replace(/ä/g, 'a').replace(/å/g, 'a')),
+      ...(categories || []).map(c => c.name),
     ])];
     return allCategoryKeys.map(key => ({
       key,
