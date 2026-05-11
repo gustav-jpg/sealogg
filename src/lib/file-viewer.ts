@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from 'react';
+import { Browser } from '@capacitor/browser';
+import { isNativePlatform } from '@/lib/capacitor';
 
 export type ViewerFile = {
   url: string;
@@ -14,8 +16,22 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
-export function openFileViewer(file: ViewerFile) {
-  current = file;
+export async function openFileViewer(file: ViewerFile) {
+  const kind = file.kind ?? detectKind(file.url, file.fileName);
+
+  // On native iOS/Android, PDFs render badly inside a WKWebView iframe
+  // (zoomed in, no controls). Use the in-app system browser
+  // (SFSafariViewController on iOS) which handles PDFs properly.
+  if (isNativePlatform() && kind === 'pdf') {
+    try {
+      await Browser.open({ url: file.url, presentationStyle: 'fullscreen' });
+      return;
+    } catch (err) {
+      console.warn('Browser.open failed, falling back to in-app viewer', err);
+    }
+  }
+
+  current = { ...file, kind };
   emit();
 }
 
