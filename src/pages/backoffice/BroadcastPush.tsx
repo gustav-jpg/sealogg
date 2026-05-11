@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bell, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,8 +13,19 @@ export default function BroadcastPush() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('/portal');
+  const [orgId, setOrgId] = useState<string>('all');
+  const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [lastResult, setLastResult] = useState<{ sent: number; recipients: number } | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name')
+      .then(({ data }) => setOrgs(data || []));
+  }, []);
 
   const handleSend = async () => {
     if (!title.trim() || !body.trim()) {
@@ -26,7 +38,12 @@ export default function BroadcastPush() {
 
     try {
       const { data, error } = await supabase.functions.invoke('broadcast-push', {
-        body: { title: title.trim(), body: body.trim(), url: url.trim() || '/portal' },
+        body: {
+          title: title.trim(),
+          body: body.trim(),
+          url: url.trim() || '/portal',
+          organization_id: orgId === 'all' ? null : orgId,
+        },
       });
 
       if (error) throw error;
@@ -60,6 +77,22 @@ export default function BroadcastPush() {
           <CardDescription>Notisen skickas direkt till alla enheter med push aktiverat</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="org">Mottagare</Label>
+            <Select value={orgId} onValueChange={setOrgId} disabled={isSending}>
+              <SelectTrigger id="org">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla organisationer</SelectItem>
+                {orgs.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Välj en specifik organisation eller skicka till alla</p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="title">Titel</Label>
             <Input
