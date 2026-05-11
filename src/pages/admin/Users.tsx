@@ -23,6 +23,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePendingRegistrationCount } from '@/hooks/usePendingRegistrationCount';
+import { openFileViewer } from '@/lib/file-viewer';
 
 export default function AdminUsers() {
   const { toast } = useToast();
