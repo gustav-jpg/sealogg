@@ -21,6 +21,7 @@ import { Home, Plus, Trash2, CalendarIcon, FileText, Download, X, Check, Users }
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isPast, isSameDay, isWithinInterval, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { openFileViewer } from '@/lib/file-viewer';
 
 interface DocumentToUpload {
   id: string;
@@ -315,7 +316,7 @@ export default function IntranetAdmin() {
         .createSignedUrl(filePath, 300);
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('No signed URL returned');
-      window.open(data.signedUrl, '_blank');
+      openFileViewer({ url: data.signedUrl, fileName: doc.file_name || doc.display_name });
     } catch (error) {
       console.error('Download error:', error);
       toast({ title: 'Fel', description: 'Kunde inte ladda ner filen', variant: 'destructive' });
