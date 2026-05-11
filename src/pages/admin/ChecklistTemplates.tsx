@@ -432,11 +432,22 @@ export default function ChecklistTemplates() {
   };
 
   const removeStep = (index: number) => {
-    setSteps(steps.filter((_, i) => i !== index));
+    setSteps((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateStep = (index: number, updates: Partial<ChecklistStep>) => {
-    setSteps(steps.map((step, i) => i === index ? { ...step, ...updates } : step));
+    setSteps((prev) => prev.map((step, i) => i === index ? { ...step, ...updates } : step));
+  };
+
+  const updateChecklistItems = (
+    index: number,
+    updater: (items: string[]) => string[],
+  ) => {
+    setSteps((prev) => prev.map((step, i) => {
+      if (i !== index) return step;
+      const next = updater(step.checklist_items || []);
+      return { ...step, checklist_items: next };
+    }));
   };
 
   const moveStep = (index: number, direction: 'up' | 'down') => {
