@@ -3742,6 +3742,10 @@ export type Database = {
         | "jungman"
         | "restaurangpersonal"
         | "styrman"
+        | "lattmatros"
+        | "praktikant"
+        | "intendent"
+        | "ovrig"
       departure_status: "planerad" | "installd" | "fullbokad" | "genomford"
       deviation_severity: "lag" | "medel" | "hog"
       deviation_status:
@@ -3938,6 +3942,10 @@ export const Constants = {
         "jungman",
         "restaurangpersonal",
         "styrman",
+        "lattmatros",
+        "praktikant",
+        "intendent",
+        "ovrig",
       ],
       departure_status: ["planerad", "installd", "fullbokad", "genomford"],
       deviation_severity: ["lag", "medel", "hog"],
