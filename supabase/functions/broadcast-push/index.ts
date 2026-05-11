@@ -58,7 +58,7 @@ serve(async (req) => {
       );
     }
 
-    const { title, body, url } = await req.json();
+    const { title, body, url, organization_id } = await req.json();
 
     if (!title || !body) {
       return new Response(
@@ -70,10 +70,28 @@ serve(async (req) => {
       );
     }
 
-    // Get all unique user_ids with active push subscriptions
-    const { data: subs, error: subError } = await serviceClient
-      .from("push_subscriptions")
-      .select("user_id");
+    // Get all unique user_ids with active push subscriptions, optionally filtered by org
+    let allowedUserIds: string[] | null = null;
+    if (organization_id) {
+      const { data: members, error: memErr } = await serviceClient
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", organization_id);
+      if (memErr) throw memErr;
+      allowedUserIds = [...new Set((members || []).map((m: { user_id: string }) => m.user_id))];
+      if (allowedUserIds.length === 0) {
+        return new Response(
+          JSON.stringify({ message: "No members in organization", sent: 0, recipients: 0 }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    let subQuery = serviceClient.from("push_subscriptions").select("user_id");
+    if (allowedUserIds) {
+      subQuery = subQuery.in("user_id", allowedUserIds);
+    }
+    const { data: subs, error: subError } = await subQuery;
 
     if (subError) throw subError;
 
