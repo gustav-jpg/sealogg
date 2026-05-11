@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -49,14 +49,33 @@ export default function FaultCases() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [filterVessel, setFilterVessel] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
-  const [searchText, setSearchText] = useState('');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'active' | 'archive'>('active');
-  const [page, setPage] = useState(0);
+  const FILTER_STORAGE_KEY = 'fault-cases-filters';
+  const persisted = (() => {
+    try {
+      const raw = sessionStorage.getItem(FILTER_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  })();
+  const [filterVessel, setFilterVessel] = useState<string>(persisted.filterVessel ?? 'all');
+  const [filterStatus, setFilterStatus] = useState<string>(persisted.filterStatus ?? 'all');
+  const [filterPriority, setFilterPriority] = useState<string>(persisted.filterPriority ?? 'all');
+  const [searchText, setSearchText] = useState<string>(persisted.searchText ?? '');
+  const [filterCategory, setFilterCategory] = useState<string>(persisted.filterCategory ?? 'all');
+  const [activeTab, setActiveTab] = useState<'active' | 'archive'>(persisted.activeTab ?? 'active');
+  const [page, setPage] = useState<number>(persisted.page ?? 0);
   const PAGE_SIZE = 25;
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({
+        filterVessel, filterStatus, filterPriority, searchText, filterCategory, activeTab, page,
+      }));
+    } catch {
+      // ignore
+    }
+  }, [filterVessel, filterStatus, filterPriority, searchText, filterCategory, activeTab, page]);
 
   // Form state
   const [vesselId, setVesselId] = useState('');
