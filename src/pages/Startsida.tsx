@@ -234,7 +234,8 @@ export default function Startsida() {
       if (error) throw error;
       if (!data?.signedUrl) throw new Error('No signed URL returned');
       
-      setViewerUrl(data.signedUrl);
+      const { openFileViewer } = await import('@/lib/file-viewer');
+      openFileViewer({ url: data.signedUrl, fileName });
     } catch (error) {
       console.error('Download error:', error);
     }

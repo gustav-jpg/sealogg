@@ -23,6 +23,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePendingRegistrationCount } from '@/hooks/usePendingRegistrationCount';
+import { openFileViewer } from '@/lib/file-viewer';
 
 export default function AdminUsers() {
   const { toast } = useToast();
@@ -976,7 +977,8 @@ function CertificateItem({
         .createSignedUrl(cert.file_url, 3600); // 1 hour expiry
       
       if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        const fileName = cert.file_url.split('/').pop() || undefined;
+        openFileViewer({ url: data.signedUrl, fileName });
       }
     }
   };
@@ -1372,7 +1374,8 @@ function InductionItem({
         .createSignedUrl(induction.document_url, 3600);
       
       if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        const fileName = induction.document_url.split('/').pop() || undefined;
+        openFileViewer({ url: data.signedUrl, fileName });
       }
     }
   };

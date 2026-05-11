@@ -14,6 +14,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
 import { useOrgProfiles } from '@/hooks/useOrgProfiles';
 import { useToast } from '@/hooks/use-toast';
+import { openFileViewer } from '@/lib/file-viewer';
 import {
   Table,
   TableBody,
@@ -139,7 +140,8 @@ export default function Qualifications() {
         ? data.signedUrl
         : `${supabaseUrl}/storage/v1${data.signedUrl}`;
 
-      window.open(fullUrl, '_blank');
+      const fileName = fileUrl.split('/').pop() || undefined;
+      openFileViewer({ url: fullUrl, fileName });
     } catch (error: any) {
       toast({ title: 'Fel', description: error.message, variant: 'destructive' });
     }
