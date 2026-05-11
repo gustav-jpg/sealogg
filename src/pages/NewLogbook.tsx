@@ -124,6 +124,32 @@ export default function NewLogbook() {
     enabled: !!vesselId,
   });
 
+  // Också hämta senaste avslutade loggbokens motortimmar för att garantera
+  // att start_hours är de faktiska sluttimmarna från föregående tur.
+  const { data: lastLogbookEngineHours } = useQuery({
+    queryKey: ['last-logbook-engine-hours', vesselId],
+    queryFn: async () => {
+      if (!vesselId) return [];
+      const { data: lastLogbook, error: lbErr } = await supabase
+        .from('logbooks')
+        .select('id')
+        .eq('vessel_id', vesselId)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lbErr) throw lbErr;
+      if (!lastLogbook) return [];
+      const { data, error } = await supabase
+        .from('logbook_engine_hours')
+        .select('engine_type, engine_number, start_hours, stop_hours')
+        .eq('logbook_id', lastLogbook.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!vesselId,
+  });
+
   // Automatiskt skapa engine hour entries när fartyg väljs
   const selectedVessel = vessels?.find(v => v.id === vesselId);
   
@@ -131,29 +157,46 @@ export default function NewLogbook() {
     if (!selectedVessel || !vesselEngineHours) return;
     
     const entries: EngineHourEntry[] = [];
-    
+
+    // Hjälpare: räkna ut bästa starttimme för en given motor genom att
+    // jämföra fartygets registrerade current_hours med sluttimmarna från
+    // senaste loggboken — den högsta vinner (skyddar mot stale data).
+    const resolveStartHours = (
+      engineType: 'main' | 'auxiliary' | 'gearbox',
+      engineNumber: number,
+      registered: number,
+    ) => {
+      const lastEntry = (lastLogbookEngineHours || []).find(
+        (h: any) => h.engine_type === engineType && h.engine_number === engineNumber,
+      );
+      const lastStop = lastEntry?.stop_hours ?? lastEntry?.start_hours ?? 0;
+      return Math.max(registered || 0, lastStop || 0);
+    };
+
     for (let i = 1; i <= selectedVessel.main_engine_count; i++) {
       const existing = vesselEngineHours.find(h => h.engine_type === 'main' && h.engine_number === i);
+      const startHours = resolveStartHours('main', i, existing?.current_hours || 0);
       entries.push({
         tempId: crypto.randomUUID(),
         engineType: 'main',
         engineNumber: i,
         engineLabel: existing?.name || `Huvudmaskin ${i}`,
-        startHours: existing?.current_hours || 0,
-        stopHours: existing?.current_hours || 0,
+        startHours,
+        stopHours: startHours,
         notes: ''
       });
     }
     
     for (let i = 1; i <= selectedVessel.auxiliary_engine_count; i++) {
       const existing = vesselEngineHours.find(h => h.engine_type === 'auxiliary' && h.engine_number === i);
+      const startHours = resolveStartHours('auxiliary', i, existing?.current_hours || 0);
       entries.push({
         tempId: crypto.randomUUID(),
         engineType: 'auxiliary',
         engineNumber: i,
         engineLabel: existing?.name || `Hjälpmaskin ${i}`,
-        startHours: existing?.current_hours || 0,
-        stopHours: existing?.current_hours || 0,
+        startHours,
+        stopHours: startHours,
         notes: ''
       });
     }
