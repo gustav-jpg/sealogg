@@ -13,8 +13,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Download } from 'lucide-react';
 
-const DEFAULT_IOS_URL = 'https://apps.apple.com/se/app/sealogg/id6760594581';
+const DEFAULT_IOS_APP_ID = '6760594581';
+const DEFAULT_IOS_URL = `https://apps.apple.com/app/id${DEFAULT_IOS_APP_ID}`;
 const DEFAULT_ANDROID_URL = 'https://play.google.com/store/apps/details?id=app.lovable.ca12acbb7d5746d89d77109ee6b9dc68';
+
+const toIosAppStoreUrl = (url: string) => {
+  const appId = url.match(/id(\d+)/)?.[1] || DEFAULT_IOS_APP_ID;
+  return `itms-apps://itunes.apple.com/app/id${appId}`;
+};
 
 export function AppUpdatePrompt() {
   const [needsUpdate, setNeedsUpdate] = useState(false);
@@ -48,7 +54,7 @@ export function AppUpdatePrompt() {
       const androidUrl = data.find(r => r.key === 'android_app_store_url')?.value || DEFAULT_ANDROID_URL;
       const comparison = minVersion ? compareSemver(version, minVersion) : 0;
 
-      setStoreUrl(platform === 'android' ? androidUrl : iosUrl);
+      setStoreUrl(platform === 'android' ? androidUrl : toIosAppStoreUrl(iosUrl));
 
       console.log('[AppUpdate] Current:', version, 'Required:', minVersion, 'Compare:', comparison, 'Force:', force);
 
@@ -119,7 +125,7 @@ export function AppUpdatePrompt() {
   if (!needsUpdate || dismissed) return null;
 
   const handleOpenStore = () => {
-    window.open(storeUrl, '_blank');
+    window.location.href = storeUrl;
   };
 
   const handleDismiss = () => {
