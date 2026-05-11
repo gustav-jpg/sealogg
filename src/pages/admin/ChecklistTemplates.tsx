@@ -416,8 +416,8 @@ export default function ChecklistTemplates() {
   };
 
   const addStep = () => {
-    setSteps([...steps, {
-      step_order: steps.length + 1,
+    setSteps((prev) => [...prev, {
+      step_order: prev.length + 1,
       title: '',
       instruction: '',
       help_text: '',
@@ -432,11 +432,22 @@ export default function ChecklistTemplates() {
   };
 
   const removeStep = (index: number) => {
-    setSteps(steps.filter((_, i) => i !== index));
+    setSteps((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateStep = (index: number, updates: Partial<ChecklistStep>) => {
-    setSteps(steps.map((step, i) => i === index ? { ...step, ...updates } : step));
+    setSteps((prev) => prev.map((step, i) => i === index ? { ...step, ...updates } : step));
+  };
+
+  const updateChecklistItems = (
+    index: number,
+    updater: (items: string[]) => string[],
+  ) => {
+    setSteps((prev) => prev.map((step, i) => {
+      if (i !== index) return step;
+      const next = updater(step.checklist_items || []);
+      return { ...step, checklist_items: next };
+    }));
   };
 
   const moveStep = (index: number, direction: 'up' | 'down') => {
@@ -617,9 +628,12 @@ export default function ChecklistTemplates() {
                               <Input
                                 value={item}
                                 onChange={(e) => {
-                                  const newItems = [...(step.checklist_items || [])];
-                                  newItems[itemIndex] = e.target.value;
-                                  updateStep(index, { checklist_items: newItems });
+                                  const value = e.target.value;
+                                  updateChecklistItems(index, (items) => {
+                                    const next = [...items];
+                                    next[itemIndex] = value;
+                                    return next;
+                                  });
                                 }}
                                 placeholder="Beskriv vad som ska kontrolleras..."
                                 className="flex-1"
@@ -630,8 +644,10 @@ export default function ChecklistTemplates() {
                                 size="icon"
                                 className="h-8 w-8"
                                 onClick={() => {
-                                  const newItems = (step.checklist_items || []).filter((_, i) => i !== itemIndex);
-                                  updateStep(index, { checklist_items: newItems.length > 0 ? newItems : [''] });
+                                  updateChecklistItems(index, (items) => {
+                                    const filtered = items.filter((_, i) => i !== itemIndex);
+                                    return filtered.length > 0 ? filtered : [''];
+                                  });
                                 }}
                                 disabled={(step.checklist_items || []).length <= 1}
                               >
@@ -644,8 +660,7 @@ export default function ChecklistTemplates() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const newItems = [...(step.checklist_items || []), ''];
-                              updateStep(index, { checklist_items: newItems });
+                              updateChecklistItems(index, (items) => [...items, '']);
                             }}
                           >
                             <Plus className="h-4 w-4 mr-1" />
