@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Download } from 'lucide-react';
 
-const DEFAULT_IOS_URL = 'https://apps.apple.com/se/app/sealogg/id6753391916';
+const DEFAULT_IOS_URL = 'https://apps.apple.com/se/app/sealogg/id6760594581';
 const DEFAULT_ANDROID_URL = 'https://play.google.com/store/apps/details?id=app.lovable.ca12acbb7d5746d89d77109ee6b9dc68';
 
 export function AppUpdatePrompt() {
