@@ -416,8 +416,8 @@ export default function ChecklistTemplates() {
   };
 
   const addStep = () => {
-    setSteps([...steps, {
-      step_order: steps.length + 1,
+    setSteps((prev) => [...prev, {
+      step_order: prev.length + 1,
       title: '',
       instruction: '',
       help_text: '',
