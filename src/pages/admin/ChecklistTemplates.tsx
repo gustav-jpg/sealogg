@@ -628,9 +628,12 @@ export default function ChecklistTemplates() {
                               <Input
                                 value={item}
                                 onChange={(e) => {
-                                  const newItems = [...(step.checklist_items || [])];
-                                  newItems[itemIndex] = e.target.value;
-                                  updateStep(index, { checklist_items: newItems });
+                                  const value = e.target.value;
+                                  updateChecklistItems(index, (items) => {
+                                    const next = [...items];
+                                    next[itemIndex] = value;
+                                    return next;
+                                  });
                                 }}
                                 placeholder="Beskriv vad som ska kontrolleras..."
                                 className="flex-1"
@@ -641,8 +644,10 @@ export default function ChecklistTemplates() {
                                 size="icon"
                                 className="h-8 w-8"
                                 onClick={() => {
-                                  const newItems = (step.checklist_items || []).filter((_, i) => i !== itemIndex);
-                                  updateStep(index, { checklist_items: newItems.length > 0 ? newItems : [''] });
+                                  updateChecklistItems(index, (items) => {
+                                    const filtered = items.filter((_, i) => i !== itemIndex);
+                                    return filtered.length > 0 ? filtered : [''];
+                                  });
                                 }}
                                 disabled={(step.checklist_items || []).length <= 1}
                               >
@@ -655,8 +660,7 @@ export default function ChecklistTemplates() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const newItems = [...(step.checklist_items || []), ''];
-                              updateStep(index, { checklist_items: newItems });
+                              updateChecklistItems(index, (items) => [...items, '']);
                             }}
                           >
                             <Plus className="h-4 w-4 mr-1" />
