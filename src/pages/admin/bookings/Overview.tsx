@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Calendar as CalendarIcon, Ticket, ChevronLeft, ChevronRight, Repeat, Zap, User, Users, Ship, TrendingUp, Wallet, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, Calendar as CalendarIcon, Ticket, ChevronLeft, ChevronRight, Repeat, Zap, User, Users, Ship, TrendingUp, Wallet, LayoutGrid, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, isSameMonth, parseISO, addDays, addWeeks, subWeeks, isToday as isTodayFn } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { CreateTripDialog } from '@/components/bookings/CreateTripDialog';
