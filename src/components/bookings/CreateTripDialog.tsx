@@ -130,7 +130,6 @@ function PrivateForm({ orgId, defaultDate, onBack, onDone }: any) {
     mutationFn: async () => {
       if (!orgId) throw new Error('Ingen organisation vald');
       if (!customerName || !customerEmail) throw new Error('Kundens namn och e-post krävs');
-      if (!vesselId) throw new Error('Välj fartyg');
       if (!departureAt) throw new Error('Avgångstid krävs');
       if (!routeId && (!pickup || !dropoff)) throw new Error('Ange rutt eller från/till');
 
@@ -140,7 +139,7 @@ function PrivateForm({ orgId, defaultDate, onBack, onDone }: any) {
           organization_id: orgId,
           trip_type: 'private',
           route_id: routeId || null,
-          vessel_id: vesselId,
+          vessel_id: vesselId || null,
           pickup_location: routeId ? null : pickup,
           dropoff_location: routeId ? null : dropoff,
           departure_at: new Date(departureAt).toISOString(),
