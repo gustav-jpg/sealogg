@@ -637,6 +637,8 @@ function TripSettingsCard({ trip, onSave, isPrivate }: any) {
   const [maxPax, setMaxPax] = useState(trip.max_passengers.toString());
   const [status, setStatus] = useState(trip.status);
   const [notes, setNotes] = useState(trip.notes || '');
+  const [vesselId, setVesselId] = useState<string>(trip.vessel_id || 'none');
+  const { data: vessels } = useOrgVessels(trip.organization_id);
 
   return (
     <Card>
@@ -648,6 +650,16 @@ function TripSettingsCard({ trip, onSave, isPrivate }: any) {
             <div><Label>Beskrivning (publik)</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} /></div>
           </>
         )}
+        <div>
+          <Label>Fartyg</Label>
+          <Select value={vesselId} onValueChange={setVesselId}>
+            <SelectTrigger><SelectValue placeholder="Välj fartyg" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">– Ej tilldelad (resursplanering) –</SelectItem>
+              {vessels?.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div><Label>Max passagerare</Label><Input type="number" value={maxPax} onChange={(e) => setMaxPax(e.target.value)} /></div>
           <div><Label>Status</Label>
@@ -663,8 +675,203 @@ function TripSettingsCard({ trip, onSave, isPrivate }: any) {
           </div>
         </div>
         <div><Label>Intern anteckning</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
-        <Button onClick={() => onSave({ title: title || null, description: description || null, max_passengers: Number(maxPax), status, notes: notes || null })} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Spara ändringar</Button>
+        <Button onClick={() => onSave({ title: title || null, description: description || null, max_passengers: Number(maxPax), status, notes: notes || null, vessel_id: vesselId === 'none' ? null : vesselId })} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Spara ändringar</Button>
       </CardContent>
     </Card>
+  );
+}
+
+// ============================================================
+// EDIT BOOKING DIALOG
+// ============================================================
+function EditBookingDialog({ booking, tripId, open, onOpenChange }: { booking: any; tripId: string; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [name, setName] = useState(booking.customer_name || '');
+  const [email, setEmail] = useState(booking.customer_email || '');
+  const [phone, setPhone] = useState(booking.customer_phone || '');
+  const [pax, setPax] = useState(String(booking.total_passengers || 1));
+  const [price, setPrice] = useState(booking.total_price_sek?.toString() || '');
+  const [deposit, setDeposit] = useState(booking.deposit_paid_sek?.toString() || '');
+  const [notes, setNotes] = useState(booking.customer_notes || '');
+  const [internalNotes, setInternalNotes] = useState(booking.internal_notes || '');
+  const [dietary, setDietary] = useState(booking.dietary_requirements || '');
+  const [accessibility, setAccessibility] = useState(booking.accessibility_needs || '');
+  const [language, setLanguage] = useState(booking.language || 'sv');
+  const [country, setCountry] = useState(booking.country || 'SE');
+  const [source, setSource] = useState(booking.source || 'phone');
+  const [paymentStatus, setPaymentStatus] = useState(booking.payment_status || 'obetald');
+  const [bookingStatus, setBookingStatus] = useState(booking.status || 'bekraftad');
+  const [priority, setPriority] = useState(booking.priority || 'normal');
+  const [invoice, setInvoice] = useState(booking.invoice_number || '');
+  const [tags, setTags] = useState<string[]>(booking.tags || []);
+  const [tagInput, setTagInput] = useState('');
+
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput('');
+  };
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!name || !email) throw new Error('Namn och e-post krävs');
+      const { error } = await supabase.from('bookings').update({
+        customer_name: name,
+        customer_email: email,
+        customer_phone: phone || null,
+        total_passengers: Number(pax),
+        total_price_sek: price ? Number(price) : 0,
+        deposit_paid_sek: deposit ? Number(deposit) : 0,
+        status: bookingStatus as any,
+        payment_status: paymentStatus as any,
+        customer_notes: notes || null,
+        internal_notes: internalNotes || null,
+        dietary_requirements: dietary || null,
+        accessibility_needs: accessibility || null,
+        language: language || null,
+        country: country || null,
+        source: source || null,
+        tags,
+        priority,
+        invoice_number: invoice || null,
+      } as any).eq('id', booking.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] });
+      toast({ title: 'Bokning uppdaterad' });
+      onOpenChange(false);
+    },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Redigera bokning · <span className="font-mono text-sm text-muted-foreground">{booking.booking_number}</span></DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kund</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div><Label>Namn *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+              <div><Label>Antal passagerare *</Label><Input type="number" min="1" value={pax} onChange={(e) => setPax(e.target.value)} /></div>
+              <div><Label>E-post *</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <div><Label>Telefon</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+              <div>
+                <Label>Språk</Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sv">Svenska</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="de">Deutsch</SelectItem>
+                    <SelectItem value="no">Norsk</SelectItem>
+                    <SelectItem value="da">Dansk</SelectItem>
+                    <SelectItem value="fi">Suomi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Land</Label><Input value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} maxLength={2} /></div>
+            </div>
+          </div>
+
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bokning</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div>
+                <Label>Status</Label>
+                <Select value={bookingStatus} onValueChange={setBookingStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="avvaktar">Avvaktar</SelectItem>
+                    <SelectItem value="bekraftad">Bekräftad</SelectItem>
+                    <SelectItem value="avbokad">Avbokad</SelectItem>
+                    <SelectItem value="no_show">No-show</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Källa</Label>
+                <Select value={source} onValueChange={setSource}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="web">Webb</SelectItem>
+                    <SelectItem value="phone">Telefon</SelectItem>
+                    <SelectItem value="email">E-post</SelectItem>
+                    <SelectItem value="walk_in">Drop-in</SelectItem>
+                    <SelectItem value="partner">Partner / Återförsäljare</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Prioritet</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Låg</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">Hög (VIP)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Fakturanummer</Label><Input value={invoice} onChange={(e) => setInvoice(e.target.value)} /></div>
+            </div>
+          </div>
+
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Betalning</div>
+            <div className="p-3 grid grid-cols-3 gap-3">
+              <div><Label>Pris totalt (kr)</Label><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} /></div>
+              <div><Label>Erlagd handpenning (kr)</Label><Input type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} /></div>
+              <div>
+                <Label>Betalningsstatus</Label>
+                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="obetald">Obetald</SelectItem>
+                    <SelectItem value="delbetald">Delbetald</SelectItem>
+                    <SelectItem value="betald">Betald</SelectItem>
+                    <SelectItem value="aterbetald">Återbetald</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Specialbehov & övrigt</div>
+            <div className="p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="flex items-center gap-1"><UtensilsCrossed className="h-3.5 w-3.5" />Specialkost</Label><Input value={dietary} onChange={(e) => setDietary(e.target.value)} /></div>
+                <div><Label className="flex items-center gap-1"><Accessibility className="h-3.5 w-3.5" />Tillgänglighet</Label><Input value={accessibility} onChange={(e) => setAccessibility(e.target.value)} /></div>
+              </div>
+              <div>
+                <Label className="flex items-center gap-1"><Tag className="h-3.5 w-3.5" />Etiketter</Label>
+                <div className="flex flex-wrap gap-1 mb-1 mt-1">
+                  {tags.map(t => (
+                    <Badge key={t} variant="secondary" className="cursor-pointer" onClick={() => setTags(tags.filter(x => x !== t))}>
+                      {t} ×
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }} placeholder="Skriv etikett och tryck Enter" />
+                  <Button type="button" variant="outline" size="sm" onClick={addTag}>Lägg till</Button>
+                </div>
+              </div>
+              <div><Label>Kommentar från kund</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+              <div><Label>Intern anteckning</Label><Textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={2} /></div>
+            </div>
+          </div>
+
+          <Button className="w-full" onClick={() => save.mutate()} disabled={save.isPending}>
+            {save.isPending ? 'Sparar...' : 'Spara ändringar'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
