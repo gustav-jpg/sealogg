@@ -68,6 +68,7 @@ const BookingsAdmin = lazy(() => import("./pages/admin/bookings/Bookings"));
 const BookingsOverview = lazy(() => import("./pages/admin/bookings/Overview"));
 const BookingSettingsAdmin = lazy(() => import("./pages/admin/bookings/Settings"));
 const TripDetail = lazy(() => import("./pages/admin/bookings/TripDetail"));
+const TodayRuns = lazy(() => import("./pages/admin/bookings/TodayRuns"));
 const PublicBooking = lazy(() => import("./pages/PublicBooking"));
 
 const queryClient = new QueryClient();
