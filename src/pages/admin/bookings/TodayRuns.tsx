@@ -157,10 +157,37 @@ function ScheduleRow({ trip }: any) {
   const isPrivate = trip.trip_type === 'private';
   const isCanceled = trip.status === 'installd';
   const allCheckedIn = pax > 0 && checked === pax;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const toggle = useMutation({
+    mutationFn: async (b: any) => {
+      const payload = b.checked_in_at
+        ? { checked_in_at: null, checked_in_count: 0 }
+        : { checked_in_at: new Date().toISOString(), checked_in_count: b.total_passengers };
+      const { error } = await supabase.from('bookings').update(payload as any).eq('id', b.id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['today-runs'] }),
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+
+  const checkInAll = useMutation({
+    mutationFn: async () => {
+      const ids = bookings.filter((b: any) => !b.checked_in_at).map((b: any) => b.id);
+      if (ids.length === 0) return;
+      const now = new Date().toISOString();
+      // Update each (need per-row count)
+      await Promise.all(bookings.filter((b: any) => !b.checked_in_at).map((b: any) =>
+        supabase.from('bookings').update({ checked_in_at: now, checked_in_count: b.total_passengers } as any).eq('id', b.id)
+      ));
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['today-runs'] }); toast({ title: 'Alla incheckade' }); },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
 
   return (
-    <Link to={`/portal/bookings/trip/${trip.id}`} className="block">
-      <Card className={cn('hover:border-primary transition', isCanceled && 'opacity-60')}>
+    <Card className={cn('transition', isCanceled && 'opacity-60')}>
         <CardContent className="p-3">
           <div className="flex items-start gap-3">
             <div className="text-center shrink-0 w-16">
@@ -194,26 +221,50 @@ function ScheduleRow({ trip }: any) {
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-muted-foreground"><Users className="h-3 w-3 inline mr-1" />{pax} / {trip.max_passengers} pers · {bookings.length} bokningar</span>
-                    <span className="text-muted-foreground">{checked} incheckade</span>
+                    <span className={cn('font-medium', allCheckedIn ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>{checked} / {pax} incheckade</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className={cn('h-full transition-all', fillPct >= 100 ? 'bg-destructive' : 'bg-primary')} style={{ width: `${Math.min(fillPct, 100)}%` }} />
+                    <div className={cn('h-full transition-all', allCheckedIn ? 'bg-emerald-500' : 'bg-primary')} style={{ width: `${pax > 0 ? (checked / pax) * 100 : 0}%` }} />
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {bookings.slice(0, 6).map((b: any) => (
-                      <Badge key={b.id} variant="outline" className={cn('text-[10px] font-normal', b.checked_in_at && 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800')}>
-                        {b.customer_name} ({b.total_passengers})
-                      </Badge>
-                    ))}
-                    {bookings.length > 6 && <Badge variant="outline" className="text-[10px]">+{bookings.length - 6}</Badge>}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {bookings.map((b: any) => {
+                      const ok = !!b.checked_in_at;
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => toggle.mutate(b)}
+                          disabled={toggle.isPending}
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition active:scale-95',
+                            ok
+                              ? 'bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600'
+                              : 'bg-background border-input hover:bg-muted'
+                          )}
+                          title={ok ? 'Tryck för att ångra incheckning' : 'Tryck för att checka in'}
+                        >
+                          {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                          <span className="font-medium">{b.customer_name}</span>
+                          <span className={cn('tabular-nums', ok ? 'text-white/80' : 'text-muted-foreground')}>×{b.total_passengers}</span>
+                        </button>
+                      );
+                    })}
                   </div>
+                  {!allCheckedIn && bookings.length > 1 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => checkInAll.mutate()} disabled={checkInAll.isPending}>
+                        <UserCheck className="h-3.5 w-3.5 mr-1" />Checka in alla
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
+            <Link to={`/portal/bookings/trip/${trip.id}`} className="shrink-0 text-muted-foreground hover:text-primary p-1" title="Öppna tur">
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </CardContent>
       </Card>
-    </Link>
   );
 }
