@@ -389,3 +389,126 @@ function SharedForm({ orgId, defaultDate, onBack, onDone }: any) {
     </>
   );
 }
+
+// ============================================================
+// Draft / incomplete booking form (reserve a slot, fill in later)
+// ============================================================
+function DraftForm({ orgId, defaultDate, onBack, onDone }: any) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [label, setLabel] = useState('');
+  const [departureAt, setDepartureAt] = useState(
+    defaultDate ? format(defaultDate, "yyyy-MM-dd'T'10:00") : format(new Date(), "yyyy-MM-dd'T'10:00")
+  );
+  const [arrivalAt, setArrivalAt] = useState('');
+  const [pax, setPax] = useState('');
+  const [vesselId, setVesselId] = useState('');
+  const [pickup, setPickup] = useState('');
+  const [dropoff, setDropoff] = useState('');
+  const [internalNotes, setInternalNotes] = useState('');
+
+  const { data: vessels } = useQuery({
+    queryKey: ['vessels-list', orgId], enabled: !!orgId,
+    queryFn: async () => (await supabase.from('vessels').select('id, name').eq('organization_id', orgId)).data || [],
+  });
+
+  const create = useMutation({
+    mutationFn: async () => {
+      if (!orgId) throw new Error('Ingen organisation vald');
+      if (!departureAt) throw new Error('Avgångstid krävs');
+
+      const { data: dep, error: e1 } = await supabase
+        .from('booking_departures')
+        .insert({
+          organization_id: orgId,
+          trip_type: 'private',
+          vessel_id: vesselId || null,
+          pickup_location: pickup || null,
+          dropoff_location: dropoff || null,
+          departure_at: new Date(departureAt).toISOString(),
+          arrival_at: arrivalAt ? new Date(arrivalAt).toISOString() : null,
+          max_passengers: pax ? Number(pax) : 12,
+          status: 'planerad',
+          title: label || null,
+          notes: internalNotes || null,
+        } as any)
+        .select()
+        .single();
+      if (e1) throw e1;
+
+      const { error: e2 } = await supabase.from('bookings').insert({
+        organization_id: orgId,
+        departure_id: dep.id,
+        customer_name: label || null,
+        customer_email: null,
+        total_passengers: pax ? Number(pax) : 1,
+        total_price_sek: 0,
+        status: 'avvaktar',
+        is_draft: true,
+        internal_notes: internalNotes || null,
+      } as any);
+      if (e2) throw e2;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['booking-departures-month'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      toast({ title: 'Utkast skapat', description: 'Komplettera bokningen senare via kalendern' });
+      onDone();
+    },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+
+  return (
+    <>
+      <DialogHeader>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-4 w-4" /></Button>
+          <DialogTitle>Nytt utkast</DialogTitle>
+        </div>
+        <DialogDescription>
+          Reservera en tid i kalendern. Endast datum/tid krävs – komplettera resten senare.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4 pt-2">
+        <div>
+          <Label>Etikett (valfritt)</Label>
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="t.ex. 'Företagskund – återkommer'" />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-3">
+          <div><Label>Avgång *</Label><Input type="datetime-local" value={departureAt} onChange={(e) => setDepartureAt(e.target.value)} /></div>
+          <div><Label>Ankomst (valfritt)</Label><Input type="datetime-local" value={arrivalAt} onChange={(e) => setArrivalAt(e.target.value)} /></div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-3">
+          <div><Label>Antal passagerare</Label><Input type="number" min="1" value={pax} onChange={(e) => setPax(e.target.value)} placeholder="?" /></div>
+          <div><Label>Från</Label><Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="?" /></div>
+          <div><Label>Till</Label><Input value={dropoff} onChange={(e) => setDropoff(e.target.value)} placeholder="?" /></div>
+        </div>
+
+        <div>
+          <Label>Fartyg (valfritt)</Label>
+          <Select value={vesselId || 'none'} onValueChange={(v) => setVesselId(v === 'none' ? '' : v)}>
+            <SelectTrigger><SelectValue placeholder="Välj fartyg" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">– Ej tilldelad –</SelectItem>
+              {vessels?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div><Label>Intern anteckning</Label><Textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={2} /></div>
+
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
+          Bokningen sparas som <b>utkast</b> och markeras tydligt i översikten tills den kompletteras.
+        </div>
+
+        <Button onClick={() => create.mutate()} disabled={create.isPending} className="w-full">
+          {create.isPending ? 'Sparar...' : 'Spara utkast'}
+        </Button>
+      </div>
+    </>
+  );
+}
