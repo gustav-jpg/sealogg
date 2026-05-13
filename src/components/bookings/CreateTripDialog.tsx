@@ -9,10 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { User, Users, ArrowLeft } from 'lucide-react';
+import { User, Users, ArrowLeft, FileEdit } from 'lucide-react';
 import { format } from 'date-fns';
 
-type Mode = 'choose' | 'private' | 'shared';
+type Mode = 'choose' | 'private' | 'shared' | 'draft';
 
 interface Props {
   open: boolean;
@@ -38,7 +38,7 @@ export function CreateTripDialog({ open, onOpenChange, orgId, defaultDate, onCre
               <DialogTitle>Skapa körning</DialogTitle>
               <DialogDescription>Välj typ av körning du vill skapa</DialogDescription>
             </DialogHeader>
-            <div className="grid md:grid-cols-2 gap-3 pt-2">
+            <div className="grid md:grid-cols-3 gap-3 pt-2">
               <button
                 onClick={() => setMode('private')}
                 className="border rounded-lg p-5 text-left hover:border-primary hover:bg-primary/5 transition group"
@@ -68,6 +68,21 @@ export function CreateTripDialog({ open, onOpenChange, orgId, defaultDate, onCre
                   Publik tur som flera kunder kan boka platser på.
                 </p>
               </button>
+
+              <button
+                onClick={() => setMode('draft')}
+                className="border rounded-lg p-5 text-left hover:border-amber-500 hover:bg-amber-500/5 transition group"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 group-hover:bg-amber-500/20">
+                    <FileEdit className="h-5 w-5" />
+                  </div>
+                  <div className="font-semibold">Utkast / ofullständig</div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Reservera en tid – fyll i kund, fartyg och detaljer senare.
+                </p>
+              </button>
             </div>
           </>
         )}
@@ -83,6 +98,15 @@ export function CreateTripDialog({ open, onOpenChange, orgId, defaultDate, onCre
 
         {mode === 'shared' && (
           <SharedForm
+            orgId={orgId}
+            defaultDate={defaultDate}
+            onBack={() => setMode('choose')}
+            onDone={() => { onOpenChange(false); onCreated?.(); }}
+          />
+        )}
+
+        {mode === 'draft' && (
+          <DraftForm
             orgId={orgId}
             defaultDate={defaultDate}
             onBack={() => setMode('choose')}
