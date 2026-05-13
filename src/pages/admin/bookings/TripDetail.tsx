@@ -13,7 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, MapPin, Ship, Calendar, Plus, Trash2, Ticket, AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Mail, Phone, Tag, FileText, CreditCard, Languages, UtensilsCrossed, Accessibility, UserCheck, Download, Ban, Pencil } from 'lucide-react';
+import { ArrowLeft, Users, MapPin, Ship, Calendar, Plus, Trash2, Ticket, AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Mail, Phone, Tag, FileText, CreditCard, Languages, UtensilsCrossed, Accessibility, UserCheck, Download, Ban, Pencil, ScanLine } from 'lucide-react';
+import { BookingQrButton } from '@/components/bookings/BookingQrButton';
+import { ScanCheckInDialog } from '@/components/bookings/ScanCheckInDialog';
 import { format, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -22,6 +24,7 @@ export default function TripDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [scanOpen, setScanOpen] = useState(false);
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', id], enabled: !!id,
@@ -127,6 +130,11 @@ export default function TripDetail() {
             </div>
             <div className="flex items-center gap-2">
               {bookings && bookings.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setScanOpen(true)}>
+                  <ScanLine className="h-4 w-4 mr-1" />Skanna
+                </Button>
+              )}
+              {bookings && bookings.length > 0 && (
                 <Button size="sm" variant="outline" onClick={() => exportBookingsCsv(bookings, trip)}>
                   <Download className="h-4 w-4 mr-1" />CSV
                 </Button>
@@ -155,6 +163,18 @@ export default function TripDetail() {
         {/* Trip details / settings */}
         <TripSettingsCard trip={trip} onSave={(p) => updateTrip.mutate(p)} isPrivate={isPrivate} />
       </div>
+      <ScanCheckInDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        candidates={(bookings || []).filter((b: any) => b.status !== 'avbokad').map((b: any) => ({
+          id: b.id,
+          booking_number: b.booking_number,
+          customer_name: b.customer_name,
+          total_passengers: b.total_passengers,
+          checked_in_at: b.checked_in_at,
+        }))}
+        invalidateKey="trip-bookings"
+      />
     </MainLayout>
   );
 }
@@ -450,7 +470,10 @@ function BookingRow({ booking, tripId }: { booking: any; tripId: string }) {
               {booking.priority === 'high' && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">VIP</Badge>}
               <span className="truncate">{booking.customer_name}</span>
             </div>
-            <div className="text-xs text-muted-foreground font-mono">{booking.booking_number}</div>
+            <div className="text-xs text-muted-foreground font-mono flex items-center gap-1">
+              <span>{booking.booking_number}</span>
+              <BookingQrButton bookingNumber={booking.booking_number} customerName={booking.customer_name} />
+            </div>
           </div>
           <div className="col-span-3 text-xs text-muted-foreground truncate hidden md:block">
             <div className="flex items-center gap-1"><Mail className="h-3 w-3" />{booking.customer_email}</div>

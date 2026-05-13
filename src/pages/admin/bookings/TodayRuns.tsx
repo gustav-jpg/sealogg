@@ -14,14 +14,17 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, parseISO, addDays, startOfDay, endOfDay, isToday } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, Calendar as CalIcon, ChevronLeft, ChevronRight, Users, MapPin, Clock, ArrowRight, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react';
+import { Ship, Calendar as CalIcon, ChevronLeft, ChevronRight, Users, MapPin, Clock, ArrowRight, AlertCircle, CheckCircle2, UserCheck, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScanCheckInDialog } from '@/components/bookings/ScanCheckInDialog';
+import { BookingQrButton } from '@/components/bookings/BookingQrButton';
 
 export default function TodayRuns() {
   const { selectedOrgId } = useOrganization();
   const { data: vessels } = useOrgVessels(selectedOrgId);
   const [vesselId, setVesselId] = useState<string>('all');
   const [date, setDate] = useState<Date>(new Date());
+  const [scanOpen, setScanOpen] = useState(false);
 
   const { data: trips, isLoading } = useQuery({
     queryKey: ['today-runs', selectedOrgId, format(date, 'yyyy-MM-dd')],
@@ -31,7 +34,7 @@ export default function TodayRuns() {
       const to = endOfDay(date).toISOString();
       const { data, error } = await supabase
         .from('booking_departures')
-        .select('*, booking_routes(name), vessels(name), bookings(id, customer_name, total_passengers, status, customer_phone, checked_in_at)')
+        .select('*, booking_routes(name), vessels(name), bookings(id, booking_number, customer_name, total_passengers, status, customer_phone, checked_in_at)')
         .eq('organization_id', selectedOrgId!)
         .gte('departure_at', from)
         .lte('departure_at', to)
@@ -61,12 +64,26 @@ export default function TodayRuns() {
     return { departures, pax, checked };
   }, [filtered]);
 
+  const scanCandidates = useMemo(() => {
+    const out: any[] = [];
+    filtered.forEach((t: any) => (t.bookings || []).forEach((b: any) => {
+      if (b.status === 'avbokad') return;
+      out.push({ id: b.id, booking_number: b.booking_number, customer_name: b.customer_name, total_passengers: b.total_passengers, checked_in_at: b.checked_in_at });
+    }));
+    return out;
+  }, [filtered]);
+
   return (
     <MainLayout>
       <div className="container mx-auto p-4 space-y-4 max-w-5xl">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Ship className="h-6 w-6" />Dagens körningar</h1>
-          <p className="text-sm text-muted-foreground">Körschema för befälhavare — välj fartyg och dag.</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2"><Ship className="h-6 w-6" />Dagens körningar</h1>
+            <p className="text-sm text-muted-foreground">Körschema för befälhavare — välj fartyg och dag.</p>
+          </div>
+          <Button onClick={() => setScanOpen(true)} disabled={scanCandidates.length === 0}>
+            <ScanLine className="h-4 w-4 mr-2" />Skanna QR
+          </Button>
         </div>
 
         {/* Filters */}
@@ -129,6 +146,13 @@ export default function TodayRuns() {
           </div>
         )}
       </div>
+
+      <ScanCheckInDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        candidates={scanCandidates}
+        invalidateKey="today-runs"
+      />
     </MainLayout>
   );
 }
@@ -230,23 +254,28 @@ function ScheduleRow({ trip }: any) {
                     {bookings.map((b: any) => {
                       const ok = !!b.checked_in_at;
                       return (
-                        <button
+                        <div
                           key={b.id}
-                          type="button"
-                          onClick={() => toggle.mutate(b)}
-                          disabled={toggle.isPending}
                           className={cn(
-                            'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition active:scale-95',
-                            ok
-                              ? 'bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600'
-                              : 'bg-background border-input hover:bg-muted'
+                            'inline-flex items-stretch rounded-md border overflow-hidden text-xs transition',
+                            ok ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-background border-input'
                           )}
-                          title={ok ? 'Tryck för att ångra incheckning' : 'Tryck för att checka in'}
                         >
-                          {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                          <span className="font-medium">{b.customer_name}</span>
-                          <span className={cn('tabular-nums', ok ? 'text-white/80' : 'text-muted-foreground')}>×{b.total_passengers}</span>
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => toggle.mutate(b)}
+                            disabled={toggle.isPending}
+                            className={cn('inline-flex items-center gap-1 px-2 py-1 active:scale-95', ok ? 'hover:bg-emerald-600' : 'hover:bg-muted')}
+                            title={ok ? 'Tryck för att ångra incheckning' : 'Tryck för att checka in'}
+                          >
+                            {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                            <span className="font-medium">{b.customer_name}</span>
+                            <span className={cn('tabular-nums', ok ? 'text-white/80' : 'text-muted-foreground')}>×{b.total_passengers}</span>
+                          </button>
+                          <div className={cn('border-l flex items-center', ok ? 'border-emerald-600' : 'border-input')}>
+                            <BookingQrButton bookingNumber={b.booking_number} customerName={b.customer_name} className={cn('px-1.5', ok && 'text-white/80 hover:text-white hover:bg-emerald-700')} />
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
