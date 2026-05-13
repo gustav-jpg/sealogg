@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgVessels } from '@/hooks/useOrgVessels';
@@ -13,7 +14,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, parseISO, addDays, startOfDay, endOfDay, isToday } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { Ship, Calendar as CalIcon, ChevronLeft, ChevronRight, Users, MapPin, Clock, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Ship, Calendar as CalIcon, ChevronLeft, ChevronRight, Users, MapPin, Clock, ArrowRight, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function TodayRuns() {
