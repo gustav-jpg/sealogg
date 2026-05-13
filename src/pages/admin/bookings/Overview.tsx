@@ -119,8 +119,12 @@ function KpiStrip({ orgId }: { orgId: string | null }) {
 // ============================================================
 function ResourceTab({ orgId }: { orgId: string | null }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const days = useMemo(() => eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) }), [weekStart]);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   const { data: vessels } = useQuery({
     queryKey: ['vessels-list', orgId], enabled: !!orgId,
@@ -151,6 +155,82 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
     return map;
   }, [departures]);
 
+  // ---- Conflict detection: per vessel, overlapping time windows
+  const conflicts = useMemo(() => {
+    const byVessel = new Map<string, any[]>();
+    (departures || []).forEach((d: any) => {
+      if (!d.vessel_id || d.status === 'installd') return;
+      if (!byVessel.has(d.vessel_id)) byVessel.set(d.vessel_id, []);
+      byVessel.get(d.vessel_id)!.push(d);
+    });
+    const conflictIds = new Set<string>();
+    byVessel.forEach((list) => {
+      const sorted = [...list].sort((a, b) => a.departure_at.localeCompare(b.departure_at));
+      for (let i = 0; i < sorted.length; i++) {
+        const a = sorted[i];
+        const aStart = +parseISO(a.departure_at);
+        const aEnd = a.arrival_at ? +parseISO(a.arrival_at) : aStart + 60 * 60 * 1000;
+        for (let j = i + 1; j < sorted.length; j++) {
+          const b = sorted[j];
+          const bStart = +parseISO(b.departure_at);
+          if (bStart >= aEnd) break;
+          const bEnd = b.arrival_at ? +parseISO(b.arrival_at) : bStart + 60 * 60 * 1000;
+          if (aStart < bEnd && bStart < aEnd) {
+            conflictIds.add(a.id);
+            conflictIds.add(b.id);
+          }
+        }
+      }
+    });
+    return conflictIds;
+  }, [departures]);
+
+  const unassignedCount = useMemo(
+    () => (departures || []).filter((d: any) => !d.vessel_id && d.status !== 'installd').length,
+    [departures]
+  );
+
+  const moveTrip = useMutation({
+    mutationFn: async ({ id, vesselId, newDate }: { id: string; vesselId: string | null; newDate: Date }) => {
+      const trip = (departures || []).find((d: any) => d.id === id);
+      if (!trip) throw new Error('Tur saknas');
+      const oldDep = parseISO(trip.departure_at);
+      const newDep = new Date(newDate);
+      newDep.setHours(oldDep.getHours(), oldDep.getMinutes(), 0, 0);
+      let newArr: Date | null = null;
+      if (trip.arrival_at) {
+        const oldArr = parseISO(trip.arrival_at);
+        const deltaMs = +newDep - +oldDep;
+        newArr = new Date(+oldArr + deltaMs);
+      }
+      const { error } = await supabase
+        .from('booking_departures')
+        .update({
+          vessel_id: vesselId,
+          departure_at: newDep.toISOString(),
+          arrival_at: newArr ? newArr.toISOString() : null,
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['booking-departures-week'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-departures-month'] });
+      toast({ title: 'Turen flyttades' });
+    },
+    onError: (e: any) => toast({ title: 'Kunde inte flytta tur', description: e.message, variant: 'destructive' }),
+  });
+
+  const handleDrop = (vesselId: string | null, day: Date) => {
+    if (!dragId) return;
+    const trip = (departures || []).find((d: any) => d.id === dragId);
+    setDragId(null); setDropTarget(null);
+    if (!trip) return;
+    const sameDay = format(parseISO(trip.departure_at), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
+    if (trip.vessel_id === vesselId && sameDay) return;
+    moveTrip.mutate({ id: dragId, vesselId, newDate: day });
+  };
+
   const vesselDayStats = (vesselId: string, day: Date) => {
     const list = byVesselDay.get(`${vesselId}|${format(day, 'yyyy-MM-dd')}`) || [];
     let booked = 0, capacity = 0;
@@ -173,8 +253,25 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
           <Button variant="outline" size="icon" onClick={() => setWeekStart(addWeeks(weekStart, 1))}><ChevronRight className="h-4 w-4" /></Button>
           <Button variant="ghost" size="sm" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>Idag</Button>
         </div>
-        <div className="text-xs text-muted-foreground hidden md:block">Klicka på en avgång för att öppna</div>
+        <div className="text-xs text-muted-foreground hidden md:block">Dra för att flytta · klicka för att öppna</div>
       </div>
+
+      {(conflicts.size > 0 || unassignedCount > 0) && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {conflicts.size > 0 && (
+            <div className="flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{conflicts.size / 2} fartygskonflikt{conflicts.size / 2 === 1 ? '' : 'er'} – samma fartyg dubbelbokat</span>
+            </div>
+          )}
+          {unassignedCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-amber-700 dark:text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{unassignedCount} tur{unassignedCount === 1 ? '' : 'er'} utan tilldelat fartyg</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -196,19 +293,32 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
             {(vessels || []).length === 0 && (
               <div className="p-6 text-center text-sm text-muted-foreground">Inga fartyg</div>
             )}
-            {(vessels || []).map((v: any) => (
+            {[
+              ...(vessels || []).map((v: any) => ({ id: v.id as string | null, name: v.name as string })),
+              { id: null as string | null, name: 'Ej tilldelat' },
+            ].map((v) => (
               <div key={v.id} className="grid border-b" style={{ gridTemplateColumns: '180px repeat(7, minmax(0, 1fr))' }}>
                 <div className="p-2 text-sm font-medium flex items-center gap-2 bg-muted/20">
-                  <Ship className="h-4 w-4 text-primary shrink-0" />
+                  {v.id ? <Ship className="h-4 w-4 text-primary shrink-0" /> : <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />}
                   <span className="truncate">{v.name}</span>
                 </div>
                 {days.map((day) => {
-                  const { list, booked, capacity } = vesselDayStats(v.id, day);
+                  const { list, booked, capacity } = vesselDayStats(v.id ?? 'null', day);
+                  const dropKey = `${v.id ?? 'null'}|${format(day, 'yyyy-MM-dd')}`;
+                  const isDropOver = dropTarget === dropKey;
                   const ratio = capacity > 0 ? booked / capacity : 0;
                   return (
-                    <div key={day.toISOString()} className={`border-l p-1 min-h-[110px] ${isTodayFn(day) ? 'bg-primary/[0.03]' : ''}`}>
+                    <div
+                      key={day.toISOString()}
+                      onDragOver={(e) => { if (dragId) { e.preventDefault(); setDropTarget(dropKey); } }}
+                      onDragLeave={() => { if (dropTarget === dropKey) setDropTarget(null); }}
+                      onDrop={(e) => { e.preventDefault(); handleDrop(v.id, day); }}
+                      className={`border-l p-1 min-h-[110px] transition-colors ${
+                        isDropOver ? 'bg-primary/15 ring-2 ring-primary ring-inset' : isTodayFn(day) ? 'bg-primary/[0.03]' : ''
+                      }`}
+                    >
                       {list.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground/40">–</div>
+                        <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground/40">{isDropOver ? 'Släpp här' : '–'}</div>
                       ) : (
                         <div className="space-y-1">
                           {list.map((d: any) => {
@@ -217,21 +327,31 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
                             const cap = d.max_passengers || 0;
                             const r = cap > 0 ? Math.min(100, (pax / cap) * 100) : 0;
                             const isFull = !isPrivate && pax >= cap;
+                            const hasConflict = conflicts.has(d.id);
                             const fromTo = d.booking_routes?.name || (d.pickup_location && d.dropoff_location ? `${d.pickup_location} → ${d.dropoff_location}` : null);
                             const customerName = isPrivate ? (d.bookings?.[0]?.customer_name || null) : null;
                             return (
                               <button
                                 key={d.id}
+                                draggable
+                                onDragStart={(e) => { setDragId(d.id); e.dataTransfer.effectAllowed = 'move'; }}
+                                onDragEnd={() => { setDragId(null); setDropTarget(null); }}
                                 onClick={() => navigate(`/portal/bookings/trip/${d.id}`)}
-                                className={`w-full text-left rounded border px-1.5 py-1 transition hover:shadow-sm ${
-                                  isPrivate
+                                className={`w-full text-left rounded border px-1.5 py-1 transition hover:shadow-sm cursor-grab active:cursor-grabbing ${
+                                  dragId === d.id ? 'opacity-40' : ''
+                                } ${
+                                  hasConflict
+                                    ? 'bg-destructive/15 border-destructive ring-1 ring-destructive/40 hover:bg-destructive/25'
+                                  : isPrivate
                                     ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'
                                     : isFull
                                       ? 'bg-destructive/10 border-destructive/30 hover:bg-destructive/20'
                                       : 'bg-primary/5 border-primary/20 hover:bg-primary/10'
                                 }`}
+                                title={hasConflict ? '⚠ Konflikt: detta fartyg har överlappande turer' : undefined}
                               >
                                 <div className="flex items-center gap-1 text-[10px] font-semibold">
+                                  {hasConflict && <AlertCircle className="h-2.5 w-2.5 text-destructive shrink-0" />}
                                   {isPrivate ? <User className="h-2.5 w-2.5" /> : <Users className="h-2.5 w-2.5" />}
                                   <span className="tabular-nums">
                                     {format(parseISO(d.departure_at), 'HH:mm')}
