@@ -836,6 +836,15 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
                     </Select>
                   </div>
                 </div>
+                <label className="flex items-center gap-2 text-sm border rounded-md p-2 cursor-pointer hover:bg-muted/40">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={pIsDraft}
+                    onChange={(e) => setPIsDraft(e.target.checked)}
+                  />
+                  <span>Markera som utkast (ofullständig bokning)</span>
+                </label>
                 <div><Label>Kommentar från kund</Label><Textarea value={pCustomerNotes} onChange={(e) => setPCustomerNotes(e.target.value)} rows={2} /></div>
                 <div><Label>Intern anteckning</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
               </div>
