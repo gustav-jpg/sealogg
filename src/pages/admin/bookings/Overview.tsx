@@ -787,6 +787,16 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
                   <div><Label>Pris (kr)</Label><Input type="number" value={pPrice} onChange={(e) => setPPrice(e.target.value)} /></div>
                   <div><Label>Max passagerare (tur)</Label><Input type="number" value={maxPax} onChange={(e) => setMaxPax(e.target.value)} /></div>
                   <div>
+                    <Label>Fartyg</Label>
+                    <Select value={vesselId} onValueChange={setVesselId}>
+                      <SelectTrigger><SelectValue placeholder="Välj fartyg" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">– Ej tilldelad –</SelectItem>
+                        {(orgVessels || []).map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
                     <Label>Status (tur)</Label>
                     <Select value={status} onValueChange={setStatus}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
