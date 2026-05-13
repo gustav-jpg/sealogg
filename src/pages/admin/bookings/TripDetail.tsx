@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, MapPin, Ship, Calendar, Plus, Trash2, Ticket, AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Mail, Phone, Tag, FileText, CreditCard, Languages, UtensilsCrossed, Accessibility, UserCheck, Download } from 'lucide-react';
+import { ArrowLeft, Users, MapPin, Ship, Calendar, Plus, Trash2, Ticket, AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Mail, Phone, Tag, FileText, CreditCard, Languages, UtensilsCrossed, Accessibility, UserCheck, Download, Ban, Pencil } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
