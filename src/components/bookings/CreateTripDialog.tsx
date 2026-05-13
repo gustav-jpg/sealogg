@@ -218,10 +218,13 @@ function PrivateForm({ orgId, defaultDate, onBack, onDone }: any) {
             </div>
           )}
           <div>
-            <Label>Fartyg *</Label>
-            <Select value={vesselId} onValueChange={setVesselId}>
+            <Label>Fartyg</Label>
+            <Select value={vesselId || 'none'} onValueChange={(v) => setVesselId(v === 'none' ? '' : v)}>
               <SelectTrigger><SelectValue placeholder="Välj fartyg" /></SelectTrigger>
-              <SelectContent>{vessels?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="none">– Ej tilldelad (resursplanering) –</SelectItem>
+                {vessels?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
         </div>
@@ -275,7 +278,6 @@ function SharedForm({ orgId, defaultDate, onBack, onDone }: any) {
       if (!orgId) throw new Error('Ingen organisation vald');
       if (!title) throw new Error('Namn på tur krävs');
       if (!routeId) throw new Error('Välj rutt');
-      if (!vesselId) throw new Error('Välj fartyg');
       if (!departureAt) throw new Error('Avgångstid krävs');
 
       const { error } = await supabase.from('booking_departures').insert({
@@ -284,7 +286,7 @@ function SharedForm({ orgId, defaultDate, onBack, onDone }: any) {
         title,
         description: description || null,
         route_id: routeId,
-        vessel_id: vesselId,
+        vessel_id: vesselId || null,
         departure_at: new Date(departureAt).toISOString(),
         arrival_at: arrivalAt ? new Date(arrivalAt).toISOString() : null,
         max_passengers: Number(maxPax),
@@ -325,10 +327,13 @@ function SharedForm({ orgId, defaultDate, onBack, onDone }: any) {
             </Select>
           </div>
           <div>
-            <Label>Fartyg *</Label>
-            <Select value={vesselId} onValueChange={setVesselId}>
+            <Label>Fartyg</Label>
+            <Select value={vesselId || 'none'} onValueChange={(v) => setVesselId(v === 'none' ? '' : v)}>
               <SelectTrigger><SelectValue placeholder="Välj fartyg" /></SelectTrigger>
-              <SelectContent>{vessels?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="none">– Ej tilldelad (resursplanering) –</SelectItem>
+                {vessels?.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
         </div>
