@@ -452,7 +452,10 @@ function BookingRow({ booking, tripId }: { booking: any; tripId: string }) {
               {booking.priority === 'high' && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">VIP</Badge>}
               <span className="truncate">{booking.customer_name}</span>
             </div>
-            <div className="text-xs text-muted-foreground font-mono">{booking.booking_number}</div>
+            <div className="text-xs text-muted-foreground font-mono flex items-center gap-1">
+              <span>{booking.booking_number}</span>
+              <BookingQrButton bookingNumber={booking.booking_number} customerName={booking.customer_name} />
+            </div>
           </div>
           <div className="col-span-3 text-xs text-muted-foreground truncate hidden md:block">
             <div className="flex items-center gap-1"><Mail className="h-3 w-3" />{booking.customer_email}</div>
