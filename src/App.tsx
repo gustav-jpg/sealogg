@@ -65,6 +65,10 @@ const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 const BroadcastPush = lazy(() => import("./pages/backoffice/BroadcastPush"));
 const Rustning = lazy(() => import("./pages/Rustning"));
 const BookingsHome = lazy(() => import("./pages/bookings/BookingsHome"));
+const BookingsPiers = lazy(() => import("./pages/bookings/admin/Piers"));
+const BookingsLines = lazy(() => import("./pages/bookings/admin/Lines"));
+const BookingsRoutes = lazy(() => import("./pages/bookings/admin/Routes"));
+const BookingsTicketTypes = lazy(() => import("./pages/bookings/admin/TicketTypes"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -221,6 +225,10 @@ function AppRoutes() {
 
         {/* Bookings module (phase 1 placeholder) */}
         <Route path="/portal/bookings" element={<ProtectedRoute><BookingsHome /></ProtectedRoute>} />
+        <Route path="/portal/bookings/admin/piers" element={<ProtectedRoute adminOnly><BookingsPiers /></ProtectedRoute>} />
+        <Route path="/portal/bookings/admin/lines" element={<ProtectedRoute adminOnly><BookingsLines /></ProtectedRoute>} />
+        <Route path="/portal/bookings/admin/lines/:lineId/routes" element={<ProtectedRoute adminOnly><BookingsRoutes /></ProtectedRoute>} />
+        <Route path="/portal/bookings/admin/ticket-types" element={<ProtectedRoute adminOnly><BookingsTicketTypes /></ProtectedRoute>} />
 
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />

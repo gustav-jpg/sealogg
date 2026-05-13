@@ -194,6 +194,9 @@ export function AppSidebar() {
     { module: 'logbook', href: '/portal/admin/exercises', label: 'Övningar', icon: GraduationCap },
     { module: 'logbook', href: '/portal/admin/startsida', label: 'Intranät', icon: Home },
     { module: 'logbook', href: '/portal/admin/passagerare', label: 'Passagerarrutter', icon: Route },
+    { module: 'bookings', href: '/portal/bookings/admin/piers', label: 'Bryggor', icon: MapPin },
+    { module: 'bookings', href: '/portal/bookings/admin/lines', label: 'Linjer & rutter', icon: Route },
+    { module: 'bookings', href: '/portal/bookings/admin/ticket-types', label: 'Biljettyper', icon: Ticket },
   ];
 
   // Filter module-specific items based on active modules
