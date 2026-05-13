@@ -68,6 +68,7 @@ const BookingsAdmin = lazy(() => import("./pages/admin/bookings/Bookings"));
 const BookingsOverview = lazy(() => import("./pages/admin/bookings/Overview"));
 const BookingSettingsAdmin = lazy(() => import("./pages/admin/bookings/Settings"));
 const TripDetail = lazy(() => import("./pages/admin/bookings/TripDetail"));
+const TodayRuns = lazy(() => import("./pages/admin/bookings/TodayRuns"));
 const PublicBooking = lazy(() => import("./pages/PublicBooking"));
 
 const queryClient = new QueryClient();
@@ -225,6 +226,7 @@ function AppRoutes() {
 
         {/* Bookings module */}
         <Route path="/portal/bookings" element={<ProtectedRoute adminOnly><BookingsOverview /></ProtectedRoute>} />
+        <Route path="/portal/bookings/today" element={<ProtectedRoute adminOnly><TodayRuns /></ProtectedRoute>} />
         <Route path="/portal/bookings/list" element={<ProtectedRoute adminOnly><BookingsAdmin /></ProtectedRoute>} />
         <Route path="/portal/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
         <Route path="/portal/bookings/trip/:id" element={<ProtectedRoute adminOnly><TripDetail /></ProtectedRoute>} />

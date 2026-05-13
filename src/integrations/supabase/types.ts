@@ -133,7 +133,7 @@ export type Database = {
           title: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at: string
-          vessel_id: string
+          vessel_id: string | null
         }
         Insert: {
           arrival_at?: string | null
@@ -154,7 +154,7 @@ export type Database = {
           title?: string | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
-          vessel_id: string
+          vessel_id?: string | null
         }
         Update: {
           arrival_at?: string | null
@@ -175,7 +175,7 @@ export type Database = {
           title?: string | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
-          vessel_id?: string
+          vessel_id?: string | null
         }
         Relationships: [
           {

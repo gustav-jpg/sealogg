@@ -208,6 +208,7 @@ export function AppSidebar() {
   const hasBookings = orgModules?.includes('bookings') || isSuperadmin;
   const bookingsItems = [
     { href: '/portal/bookings', label: 'Översikt', icon: CalendarClock },
+    { href: '/portal/bookings/today', label: 'Dagens körningar', icon: Ship },
     { href: '/portal/bookings/list', label: 'Bokningar', icon: Ticket },
     { href: '/portal/bookings/settings', label: 'Inställningar', icon: Settings },
   ];

@@ -1,0 +1,1 @@
+ALTER TABLE public.booking_departures ALTER COLUMN vessel_id DROP NOT NULL;
