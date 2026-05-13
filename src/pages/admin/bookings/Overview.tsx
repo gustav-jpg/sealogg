@@ -734,6 +734,12 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
           <TicketTypesPanel departure={departure} orgId={orgId} onBack={() => setShowTickets(false)} />
         ) : isPrivate ? (
           <div className="space-y-4">
+            {privateBooking?.is_draft && (
+              <div className="rounded-lg border border-dashed border-amber-500/60 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                <span>Detta är ett <b>utkast</b>. Komplettera kunduppgifterna och bocka av "Markera som klar" när bokningen är komplett.</span>
+              </div>
+            )}
             {/* TRIP INFO CARD */}
             <div className="border rounded-lg overflow-hidden">
               <div className="bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tur</div>
