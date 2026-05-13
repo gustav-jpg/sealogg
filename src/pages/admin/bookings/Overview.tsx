@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Calendar as CalendarIcon, Ticket, ChevronLeft, ChevronRight, Repeat, Zap, User, Users, Ship, TrendingUp, Wallet, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, Calendar as CalendarIcon, Ticket, ChevronLeft, ChevronRight, Repeat, Zap, User, Users, Ship, TrendingUp, Wallet, LayoutGrid, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, isSameMonth, parseISO, addDays, addWeeks, subWeeks, isToday as isTodayFn } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { CreateTripDialog } from '@/components/bookings/CreateTripDialog';
@@ -132,7 +132,7 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
     enabled: !!orgId,
     queryFn: async () => {
       const { data } = await supabase.from('booking_departures')
-        .select('id, departure_at, arrival_at, vessel_id, max_passengers, trip_type, title, status, pickup_location, dropoff_location, booking_routes(name), bookings(customer_name, total_passengers, status)')
+        .select('id, departure_at, arrival_at, vessel_id, max_passengers, trip_type, title, status, pickup_location, dropoff_location, booking_routes(name), bookings(customer_name, total_passengers, status, is_draft)')
         .eq('organization_id', orgId!)
         .gte('departure_at', weekStart.toISOString())
         .lte('departure_at', addDays(weekStart, 7).toISOString())
@@ -309,7 +309,7 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
     enabled: !!orgId,
     queryFn: async () => {
       const { data } = await supabase.from('booking_departures')
-        .select('*, booking_routes(name), vessels(name), bookings(total_passengers, status)')
+        .select('*, booking_routes(name), vessels(name), bookings(total_passengers, status, is_draft)')
         .eq('organization_id', orgId!)
         .gte('departure_at', calStart.toISOString())
         .lte('departure_at', calEnd.toISOString())
@@ -443,6 +443,7 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                       const nearlyFull = !isPrivate && !isFull && ratio >= 0.8;
                       const isCancelled = d.status === 'installd';
                       const vColor = vesselColors[d.vessel_id] || 'bg-muted';
+                      const isDraft = (d.bookings || []).some((b: any) => b.is_draft);
                       return (
                         <div
                           key={d.id}
@@ -452,7 +453,9 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                             else navigate(`/portal/bookings/trip/${d.id}`);
                           }}
                           className={`text-[10px] px-1 py-0.5 rounded cursor-pointer flex items-center gap-1 ${
-                            isPrivate
+                            isDraft
+                              ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-dashed border-amber-500/60 hover:bg-amber-500/20'
+                              : isPrivate
                               ? 'bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 dark:text-amber-300'
                               : isCancelled
                                 ? 'bg-muted text-muted-foreground line-through hover:bg-muted/80'
@@ -468,8 +471,9 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                           {isPrivate ? <User className="h-2.5 w-2.5 shrink-0" /> : <Users className="h-2.5 w-2.5 shrink-0" />}
                           <span className="truncate flex-1 min-w-0">
                             <span className="font-semibold tabular-nums">{format(parseISO(d.departure_at), 'HH:mm')}</span>
-                            {' '}{isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name)}
+                            {' '}{isDraft ? (d.title || 'Utkast') : (isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name))}
                           </span>
+                          {isDraft && <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide">Utkast</span>}
                           {!isPrivate && (
                             <span className="shrink-0 font-semibold tabular-nums">{booked}/{cap}</span>
                           )}
@@ -553,11 +557,12 @@ function DayDetailDialog({ day, onClose, departures, onPickPrivate, onCreate, ve
             const cap = d.max_passengers || 0;
             const ratio = cap > 0 ? Math.min(100, (booked / cap) * 100) : 0;
             const isFull = !isPrivate && booked >= cap;
+            const isDraft = (d.bookings || []).some((b: any) => b.is_draft);
             return (
               <div
                 key={d.id}
                 onClick={() => isPrivate ? onPickPrivate(d) : navigate(`/portal/bookings/trip/${d.id}`)}
-                className="border rounded-lg p-3 hover:bg-muted/40 cursor-pointer transition"
+                className={`border rounded-lg p-3 hover:bg-muted/40 cursor-pointer transition ${isDraft ? 'border-dashed border-amber-500/60 bg-amber-500/5' : ''}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -567,6 +572,7 @@ function DayDetailDialog({ day, onClose, departures, onPickPrivate, onCreate, ve
                       <div className="font-medium text-sm flex items-center gap-1.5">
                         {isPrivate ? <User className="h-3.5 w-3.5 text-amber-600" /> : <Users className="h-3.5 w-3.5 text-primary" />}
                         <span className="truncate">{isPrivate ? 'Enskild körning' : (d.title || d.booking_routes?.name || 'Reguljär')}</span>
+                        {isDraft && <Badge variant="outline" className="text-[9px] uppercase tracking-wide border-amber-500 text-amber-700 dark:text-amber-400">Utkast</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2">
                         <span>{d.vessels?.name}</span>
@@ -615,6 +621,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
   const [pPrice, setPPrice] = useState('');
   const [pCustomerNotes, setPCustomerNotes] = useState('');
   const [pBookingStatus, setPBookingStatus] = useState('bekraftad');
+  const [pIsDraft, setPIsDraft] = useState(false);
 
   // Load full booking row for private trips
   const { data: privateBooking } = useQuery({
@@ -651,6 +658,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       setPPrice(privateBooking.total_price_sek?.toString() || '');
       setPCustomerNotes(privateBooking.customer_notes || '');
       setPBookingStatus(privateBooking.status || 'bekraftad');
+      setPIsDraft(!!privateBooking.is_draft);
     }
   }, [privateBooking?.id]);
 
@@ -669,13 +677,14 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       // Also update linked booking for private trips
       if (departure.trip_type === 'private' && privateBooking?.id) {
         const { error: bErr } = await supabase.from('bookings').update({
-          customer_name: pCustomerName,
-          customer_email: pCustomerEmail,
+          customer_name: pCustomerName || null,
+          customer_email: pCustomerEmail || null,
           customer_phone: pCustomerPhone || null,
           total_passengers: Number(pPax),
           total_price_sek: pPrice ? Number(pPrice) : 0,
           customer_notes: pCustomerNotes || null,
           status: pBookingStatus as any,
+          is_draft: pIsDraft,
         }).eq('id', privateBooking.id);
         if (bErr) throw bErr;
       }
@@ -725,6 +734,12 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
           <TicketTypesPanel departure={departure} orgId={orgId} onBack={() => setShowTickets(false)} />
         ) : isPrivate ? (
           <div className="space-y-4">
+            {privateBooking?.is_draft && (
+              <div className="rounded-lg border border-dashed border-amber-500/60 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                <span>Detta är ett <b>utkast</b>. Komplettera kunduppgifterna och bocka av "Markera som klar" när bokningen är komplett.</span>
+              </div>
+            )}
             {/* TRIP INFO CARD */}
             <div className="border rounded-lg overflow-hidden">
               <div className="bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tur</div>
@@ -821,6 +836,15 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
                     </Select>
                   </div>
                 </div>
+                <label className="flex items-center gap-2 text-sm border rounded-md p-2 cursor-pointer hover:bg-muted/40">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={pIsDraft}
+                    onChange={(e) => setPIsDraft(e.target.checked)}
+                  />
+                  <span>Markera som utkast (ofullständig bokning)</span>
+                </label>
                 <div><Label>Kommentar från kund</Label><Textarea value={pCustomerNotes} onChange={(e) => setPCustomerNotes(e.target.value)} rows={2} /></div>
                 <div><Label>Intern anteckning</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
               </div>
