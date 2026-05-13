@@ -254,24 +254,28 @@ function ScheduleRow({ trip }: any) {
                     {bookings.map((b: any) => {
                       const ok = !!b.checked_in_at;
                       return (
-                        <button
+                        <div
                           key={b.id}
-                          type="button"
-                          onClick={() => toggle.mutate(b)}
-                          disabled={toggle.isPending}
                           className={cn(
-                            'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition active:scale-95',
-                            ok
-                              ? 'bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600'
-                              : 'bg-background border-input hover:bg-muted'
+                            'inline-flex items-stretch rounded-md border overflow-hidden text-xs transition',
+                            ok ? 'bg-emerald-500 border-emerald-600 text-white' : 'bg-background border-input'
                           )}
-                          title={ok ? 'Tryck för att ångra incheckning' : 'Tryck för att checka in'}
                         >
-                          {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-                          <span className="font-medium">{b.customer_name}</span>
-                          <span className={cn('tabular-nums', ok ? 'text-white/80' : 'text-muted-foreground')}>×{b.total_passengers}</span>
-                          <BookingQrButton bookingNumber={b.booking_number} customerName={b.customer_name} className={ok ? 'text-white/80 hover:text-white hover:bg-emerald-700' : ''} />
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => toggle.mutate(b)}
+                            disabled={toggle.isPending}
+                            className={cn('inline-flex items-center gap-1 px-2 py-1 active:scale-95', ok ? 'hover:bg-emerald-600' : 'hover:bg-muted')}
+                            title={ok ? 'Tryck för att ångra incheckning' : 'Tryck för att checka in'}
+                          >
+                            {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                            <span className="font-medium">{b.customer_name}</span>
+                            <span className={cn('tabular-nums', ok ? 'text-white/80' : 'text-muted-foreground')}>×{b.total_passengers}</span>
+                          </button>
+                          <div className={cn('border-l flex items-center', ok ? 'border-emerald-600' : 'border-input')}>
+                            <BookingQrButton bookingNumber={b.booking_number} customerName={b.customer_name} className={cn('px-1.5', ok && 'text-white/80 hover:text-white hover:bg-emerald-700')} />
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
