@@ -382,6 +382,7 @@ function AddBookingDialog({ trip, ticketTypes, seatsLeft, onCreated }: any) {
 // ============================================================
 function BookingRow({ booking, tripId }: { booking: any; tripId: string }) {
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -423,6 +424,14 @@ function BookingRow({ booking, tripId }: { booking: any; tripId: string }) {
       if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] }); toast({ title: 'Bokning raderad' }); },
+  });
+  const cancelBooking = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('bookings').update({ status: 'avbokad' as any }).eq('id', booking.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] }); toast({ title: 'Bokning avbokad' }); },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
   });
 
   const isCheckedIn = !!booking.checked_in_at;
@@ -515,6 +524,14 @@ function BookingRow({ booking, tripId }: { booking: any; tripId: string }) {
             ) : (
               <Button size="sm" variant="outline" onClick={() => undoCheckIn.mutate()}>Ångra incheckning</Button>
             )}
+            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}>
+              <Pencil className="h-4 w-4 mr-1" />Redigera
+            </Button>
+            {booking.status !== 'avbokad' && (
+              <Button size="sm" variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => { if (confirm('Avboka denna bokning? Status sätts till avbokad och platserna frigörs.')) cancelBooking.mutate(); }}>
+                <Ban className="h-4 w-4 mr-1" />Avboka
+              </Button>
+            )}
             <Select value={booking.status} onValueChange={(v) => setStatus.mutate(v)}>
               <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -548,6 +565,7 @@ function BookingRow({ booking, tripId }: { booking: any; tripId: string }) {
           </div>
         </div>
       )}
+      <EditBookingDialog booking={booking} tripId={tripId} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 }
