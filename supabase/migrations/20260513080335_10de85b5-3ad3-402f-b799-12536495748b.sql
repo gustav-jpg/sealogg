@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS public.booking_audit_logs CASCADE;
+DROP TABLE IF EXISTS public.booking_passengers CASCADE;
+DROP TABLE IF EXISTS public.booking_taxi_requests CASCADE;
+DROP TABLE IF EXISTS public.bookings CASCADE;
+DROP TABLE IF EXISTS public.booking_departures CASCADE;
+DROP TABLE IF EXISTS public.booking_schedules CASCADE;
+DROP TABLE IF EXISTS public.booking_ticket_types CASCADE;
+DROP TABLE IF EXISTS public.booking_routes CASCADE;
+DROP TABLE IF EXISTS public.booking_settings CASCADE;
+DROP FUNCTION IF EXISTS public.log_booking_change() CASCADE;
+DROP FUNCTION IF EXISTS public.is_booking_org_admin(uuid, uuid) CASCADE;
+DROP FUNCTION IF EXISTS public.get_org_id_by_booking_slug(text) CASCADE;
