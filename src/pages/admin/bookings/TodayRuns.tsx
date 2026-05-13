@@ -270,6 +270,7 @@ function ScheduleRow({ trip }: any) {
                           {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
                           <span className="font-medium">{b.customer_name}</span>
                           <span className={cn('tabular-nums', ok ? 'text-white/80' : 'text-muted-foreground')}>×{b.total_passengers}</span>
+                          <BookingQrButton bookingNumber={b.booking_number} customerName={b.customer_name} className={ok ? 'text-white/80 hover:text-white hover:bg-emerald-700' : ''} />
                         </button>
                       );
                     })}
