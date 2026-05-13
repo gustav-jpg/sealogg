@@ -604,6 +604,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
   const [status, setStatus] = useState('planerad');
   const [notes, setNotes] = useState('');
   const [title, setTitle] = useState('');
+  const [vesselId, setVesselId] = useState<string>('none');
   const [showTickets, setShowTickets] = useState(false);
   const [editMode, setEditMode] = useState(false);
   // Private booking edit fields
@@ -635,6 +636,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       setStatus(departure.status || 'planerad');
       setNotes(departure.notes || '');
       setTitle(departure.title || '');
+      setVesselId(departure.vessel_id || 'none');
       setShowTickets(false);
       setEditMode(false);
     }
@@ -654,7 +656,12 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload: any = { max_passengers: Number(maxPax), status, notes: notes || null };
+      const payload: any = {
+        max_passengers: Number(maxPax),
+        status,
+        notes: notes || null,
+        vessel_id: vesselId === 'none' ? null : vesselId,
+      };
       if (departure.trip_type === 'shared') payload.title = title || null;
       const { error } = await supabase.from('booking_departures').update(payload).eq('id', departure.id);
       if (error) throw error;
@@ -680,6 +687,11 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       toast({ title: 'Sparat' });
     },
     onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+
+  const { data: orgVessels } = useQuery({
+    queryKey: ['vessels-list', orgId], enabled: !!orgId,
+    queryFn: async () => (await supabase.from('vessels').select('id, name').eq('organization_id', orgId!).order('name')).data || [],
   });
 
   const remove = useMutation({
