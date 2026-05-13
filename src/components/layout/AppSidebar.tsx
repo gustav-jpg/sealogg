@@ -197,6 +197,10 @@ export function AppSidebar() {
     { module: 'bookings', href: '/portal/bookings/admin/piers', label: 'Bryggor', icon: MapPin },
     { module: 'bookings', href: '/portal/bookings/admin/lines', label: 'Linjer & rutter', icon: Route },
     { module: 'bookings', href: '/portal/bookings/admin/ticket-types', label: 'Biljettyper', icon: Ticket },
+    { module: 'bookings', href: '/portal/bookings/admin/schedules', label: 'Tidtabeller', icon: CalendarClock },
+    { module: 'bookings', href: '/portal/bookings/admin/departures', label: 'Avgångar', icon: Calendar },
+    { module: 'bookings', href: '/portal/bookings/admin/fares', label: 'Priser', icon: Car },
+    { module: 'bookings', href: '/portal/bookings/admin/settings', label: 'Bokningsinställningar', icon: Settings },
   ];
 
   // Filter module-specific items based on active modules
