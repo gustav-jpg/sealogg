@@ -226,6 +226,7 @@ function AppRoutes() {
 
         {/* Bookings module */}
         <Route path="/portal/bookings" element={<ProtectedRoute adminOnly><BookingsOverview /></ProtectedRoute>} />
+        <Route path="/portal/bookings/today" element={<ProtectedRoute adminOnly><TodayRuns /></ProtectedRoute>} />
         <Route path="/portal/bookings/list" element={<ProtectedRoute adminOnly><BookingsAdmin /></ProtectedRoute>} />
         <Route path="/portal/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
         <Route path="/portal/bookings/trip/:id" element={<ProtectedRoute adminOnly><TripDetail /></ProtectedRoute>} />
