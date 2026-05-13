@@ -31,7 +31,7 @@ export default function BookingsOverview() {
       <div className="container mx-auto p-4 space-y-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><CalendarIcon className="h-6 w-6" />Översikt</h1>
-          <p className="text-muted-foreground">Alla turer – enskilda och delade</p>
+          <p className="text-muted-foreground">Alla turer – enskilda och reguljära</p>
         </div>
 
         <KpiStrip orgId={selectedOrgId} />
@@ -247,7 +247,7 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
                                   </>
                                 ) : (
                                   <div className="text-[10px] truncate text-muted-foreground">
-                                    {d.title || fromTo || 'Delad'}
+                                    {d.title || fromTo || 'Reguljär'}
                                   </div>
                                 )}
                                 {!isPrivate && cap > 0 && (
@@ -275,7 +275,7 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
       </Card>
 
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20 border border-primary/30" />Delad</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20 border border-primary/30" />Reguljär</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/30" />Enskild</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/30" />Fullbokad</div>
       </div>
@@ -382,7 +382,7 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
           <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alla typer</SelectItem>
-            <SelectItem value="shared">Delade</SelectItem>
+            <SelectItem value="shared">Reguljära</SelectItem>
             <SelectItem value="private">Enskilda</SelectItem>
           </SelectContent>
         </Select>
@@ -501,7 +501,7 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
       </Card>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20" /><Users className="h-3 w-3" />Delad</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20" /><Users className="h-3 w-3" />Reguljär</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/20" /><User className="h-3 w-3" />Enskild</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-orange-500/20" />80%+</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-destructive/20" />Fullbokad</div>
@@ -566,7 +566,7 @@ function DayDetailDialog({ day, onClose, departures, onPickPrivate, onCreate, ve
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-sm flex items-center gap-1.5">
                         {isPrivate ? <User className="h-3.5 w-3.5 text-amber-600" /> : <Users className="h-3.5 w-3.5 text-primary" />}
-                        <span className="truncate">{isPrivate ? 'Enskild körning' : (d.title || d.booking_routes?.name || 'Delad')}</span>
+                        <span className="truncate">{isPrivate ? 'Enskild körning' : (d.title || d.booking_routes?.name || 'Reguljär')}</span>
                       </div>
                       <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2">
                         <span>{d.vessels?.name}</span>
@@ -717,7 +717,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isPrivate ? <User className="h-5 w-5 text-amber-600" /> : <Users className="h-5 w-5 text-primary" />}
-            {isPrivate ? 'Enskild körning' : (departure.title || 'Delad körning')}
+            {isPrivate ? 'Enskild körning' : (departure.title || 'Reguljärtur')}
           </DialogTitle>
         </DialogHeader>
 
@@ -1008,7 +1008,7 @@ function SeriesDialog({ open, onOpenChange, orgId }: any) {
       queryClient.invalidateQueries({ queryKey: ['booking-schedules'] });
       onOpenChange(false);
       reset();
-      toast({ title: 'Serie skapad', description: 'Genererar delade körningar enligt schemat' });
+      toast({ title: 'Serie skapad', description: 'Genererar reguljärturer enligt schemat' });
     },
     onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
   });
@@ -1020,7 +1020,7 @@ function SeriesDialog({ open, onOpenChange, orgId }: any) {
           <DialogTitle className="flex items-center gap-2"><Repeat className="h-5 w-5" />Skapa serie (regulärturer)</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">Återkommande delade körningar enligt veckoschema</p>
+          <p className="text-sm text-muted-foreground">Återkommande reguljärturer enligt veckoschema</p>
           <div><Label>Namn *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="t.ex. Sommarsäsong 2026" /></div>
           <div><Label>Rutt *</Label>
             <Select value={routeId} onValueChange={setRouteId}><SelectTrigger><SelectValue placeholder="Välj rutt" /></SelectTrigger>
