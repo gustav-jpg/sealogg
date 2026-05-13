@@ -71,7 +71,7 @@ import { KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'documents' | 'rustning' | 'bookings';
+type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'documents' | 'rustning';
 
 // Map modules to nav items
 const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any }> = {
@@ -82,7 +82,6 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
   checklists: { href: '/portal/checklists', label: 'Checklistor', icon: ClipboardList },
   documents: { href: '/portal/documents', label: 'Dokument', icon: FileText },
   rustning: { href: '/portal/rustning', label: 'Rustning', icon: Hammer },
-  bookings: { href: '/portal/bookings', label: 'Bokningar', icon: Calendar },
 };
 
 export function AppSidebar() {
@@ -126,7 +125,6 @@ export function AppSidebar() {
   const currentSelectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
 
   // Filter nav items based on active modules and user role
-  // Note: 'bookings' is rendered as its own collapsible group, not as a flat nav item
   const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents'];
 
   // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor, Rustning
@@ -204,20 +202,10 @@ export function AppSidebar() {
 
   const vesselAdminItems = [...baseVesselAdminItems, ...filteredModuleAdminItems];
 
-  // Bookings group (shown in main nav as a collapsible category)
-  const hasBookings = orgModules?.includes('bookings') || isSuperadmin;
-  const bookingsItems = [
-    { href: '/portal/bookings', label: 'Översikt', icon: CalendarClock },
-    { href: '/portal/bookings/today', label: 'Dagens körningar', icon: Ship },
-    { href: '/portal/bookings/list', label: 'Bokningar', icon: Ticket },
-    { href: '/portal/bookings/settings', label: 'Inställningar', icon: Settings },
-  ];
-  const isBookingsActive = location.pathname.startsWith('/portal/bookings') || location.pathname.startsWith('/portal/admin/bookings');
-
   const isInVesselSection = location.pathname.startsWith('/portal');
 
   const isActive = (href: string) => {
-    if (href === '/portal' || href === '/portal/bookings') {
+    if (href === '/portal') {
       return location.pathname === href;
     }
     return location.pathname.startsWith(href);
@@ -333,45 +321,6 @@ export function AppSidebar() {
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* Bookings Category */}
-        {hasBookings && (isAdmin || isSuperadmin) && (
-          <SidebarGroup>
-            <Collapsible defaultOpen={isBookingsActive} className="group/collapsible">
-              <SidebarGroupLabel asChild>
-                <CollapsibleTrigger className="flex w-full items-center justify-between text-xs text-muted-foreground px-2 hover:text-foreground">
-                  <span className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {!isCollapsed && <span>Bokningar</span>}
-                  </span>
-                  {!isCollapsed && (
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  )}
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {bookingsItems.map((item) => (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.href)}
-                          tooltip={item.label}
-                        >
-                          <Link to={item.href}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
           </SidebarGroup>
         )}
 

@@ -64,12 +64,6 @@ const Support = lazy(() => import("./pages/Support"));
 const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 const BroadcastPush = lazy(() => import("./pages/backoffice/BroadcastPush"));
 const Rustning = lazy(() => import("./pages/Rustning"));
-const BookingsAdmin = lazy(() => import("./pages/admin/bookings/Bookings"));
-const BookingsOverview = lazy(() => import("./pages/admin/bookings/Overview"));
-const BookingSettingsAdmin = lazy(() => import("./pages/admin/bookings/Settings"));
-const TripDetail = lazy(() => import("./pages/admin/bookings/TripDetail"));
-const TodayRuns = lazy(() => import("./pages/admin/bookings/TodayRuns"));
-const PublicBooking = lazy(() => import("./pages/PublicBooking"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -224,23 +218,6 @@ function AppRoutes() {
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/notifications" element={<ProtectedRoute adminOnly><NotificationSettingsPage /></ProtectedRoute>} />
 
-        {/* Bookings module */}
-        <Route path="/portal/bookings" element={<ProtectedRoute adminOnly><BookingsOverview /></ProtectedRoute>} />
-        <Route path="/portal/bookings/today" element={<ProtectedRoute adminOnly><TodayRuns /></ProtectedRoute>} />
-        <Route path="/portal/bookings/list" element={<ProtectedRoute adminOnly><BookingsAdmin /></ProtectedRoute>} />
-        <Route path="/portal/bookings/settings" element={<ProtectedRoute adminOnly><BookingSettingsAdmin /></ProtectedRoute>} />
-        <Route path="/portal/bookings/trip/:id" element={<ProtectedRoute adminOnly><TripDetail /></ProtectedRoute>} />
-        {/* Legacy redirects */}
-        <Route path="/portal/admin/bookings/routes" element={<Navigate to="/portal/bookings/settings" replace />} />
-        <Route path="/portal/admin/bookings/departures" element={<Navigate to="/portal/bookings" replace />} />
-        <Route path="/portal/admin/bookings/schedules" element={<Navigate to="/portal/bookings" replace />} />
-        <Route path="/portal/admin/bookings/taxi" element={<Navigate to="/portal/bookings" replace />} />
-        <Route path="/portal/admin/bookings/settings" element={<Navigate to="/portal/bookings/settings" replace />} />
-
-        {/* Public booking site */}
-        <Route path="/boka/:slug" element={<PublicBooking />} />
-        
-        
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
         <Route path="/portal/passagerare/:sessionId" element={<ProtectedRoute><PassengerSession /></ProtectedRoute>} />
