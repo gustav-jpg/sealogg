@@ -621,6 +621,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
   const [pPrice, setPPrice] = useState('');
   const [pCustomerNotes, setPCustomerNotes] = useState('');
   const [pBookingStatus, setPBookingStatus] = useState('bekraftad');
+  const [pIsDraft, setPIsDraft] = useState(false);
 
   // Load full booking row for private trips
   const { data: privateBooking } = useQuery({
@@ -657,6 +658,7 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       setPPrice(privateBooking.total_price_sek?.toString() || '');
       setPCustomerNotes(privateBooking.customer_notes || '');
       setPBookingStatus(privateBooking.status || 'bekraftad');
+      setPIsDraft(!!privateBooking.is_draft);
     }
   }, [privateBooking?.id]);
 
@@ -675,13 +677,14 @@ function EditDepartureDialog({ departure, onClose, orgId }: any) {
       // Also update linked booking for private trips
       if (departure.trip_type === 'private' && privateBooking?.id) {
         const { error: bErr } = await supabase.from('bookings').update({
-          customer_name: pCustomerName,
-          customer_email: pCustomerEmail,
+          customer_name: pCustomerName || null,
+          customer_email: pCustomerEmail || null,
           customer_phone: pCustomerPhone || null,
           total_passengers: Number(pPax),
           total_price_sek: pPrice ? Number(pPrice) : 0,
           customer_notes: pCustomerNotes || null,
           status: pBookingStatus as any,
+          is_draft: pIsDraft,
         }).eq('id', privateBooking.id);
         if (bErr) throw bErr;
       }
