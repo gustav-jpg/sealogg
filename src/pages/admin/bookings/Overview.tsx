@@ -132,7 +132,7 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
     enabled: !!orgId,
     queryFn: async () => {
       const { data } = await supabase.from('booking_departures')
-        .select('id, departure_at, arrival_at, vessel_id, max_passengers, trip_type, title, status, booking_routes(name), bookings(total_passengers, status)')
+        .select('id, departure_at, arrival_at, vessel_id, max_passengers, trip_type, title, status, pickup_location, dropoff_location, booking_routes(name), bookings(customer_name, total_passengers, status)')
         .eq('organization_id', orgId!)
         .gte('departure_at', weekStart.toISOString())
         .lte('departure_at', addDays(weekStart, 7).toISOString())
@@ -217,10 +217,12 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
                             const cap = d.max_passengers || 0;
                             const r = cap > 0 ? Math.min(100, (pax / cap) * 100) : 0;
                             const isFull = !isPrivate && pax >= cap;
+                            const fromTo = d.booking_routes?.name || (d.pickup_location && d.dropoff_location ? `${d.pickup_location} → ${d.dropoff_location}` : null);
+                            const customerName = isPrivate ? (d.bookings?.[0]?.customer_name || null) : null;
                             return (
                               <button
                                 key={d.id}
-                                onClick={() => isPrivate ? null : navigate(`/portal/bookings/trip/${d.id}`)}
+                                onClick={() => navigate(`/portal/bookings/trip/${d.id}`)}
                                 className={`w-full text-left rounded border px-1.5 py-1 transition hover:shadow-sm ${
                                   isPrivate
                                     ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'
@@ -231,12 +233,23 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
                               >
                                 <div className="flex items-center gap-1 text-[10px] font-semibold">
                                   {isPrivate ? <User className="h-2.5 w-2.5" /> : <Users className="h-2.5 w-2.5" />}
-                                  <span className="tabular-nums">{format(parseISO(d.departure_at), 'HH:mm')}</span>
+                                  <span className="tabular-nums">
+                                    {format(parseISO(d.departure_at), 'HH:mm')}
+                                    {d.arrival_at && <span className="text-muted-foreground font-normal">–{format(parseISO(d.arrival_at), 'HH:mm')}</span>}
+                                  </span>
                                   {!isPrivate && <span className="ml-auto tabular-nums">{pax}/{cap}</span>}
+                                  {isPrivate && pax > 0 && <span className="ml-auto tabular-nums">{pax} p</span>}
                                 </div>
-                                <div className="text-[10px] truncate text-muted-foreground">
-                                  {isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name || 'Delad')}
-                                </div>
+                                {isPrivate ? (
+                                  <>
+                                    {customerName && <div className="text-[10px] font-medium truncate">{customerName}</div>}
+                                    {fromTo && <div className="text-[10px] truncate text-muted-foreground">{fromTo}</div>}
+                                  </>
+                                ) : (
+                                  <div className="text-[10px] truncate text-muted-foreground">
+                                    {d.title || fromTo || 'Delad'}
+                                  </div>
+                                )}
                                 {!isPrivate && cap > 0 && (
                                   <div className="mt-1 h-1 w-full bg-muted rounded-full overflow-hidden">
                                     <div className={`h-full ${isFull ? 'bg-destructive' : r >= 80 ? 'bg-orange-500' : 'bg-primary'}`} style={{ width: `${r}%` }} />
