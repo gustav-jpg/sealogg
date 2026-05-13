@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Users, MapPin, Ship, Calendar, Plus, Trash2, Ticket, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Users, MapPin, Ship, Calendar, Plus, Trash2, Ticket, AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Mail, Phone, Tag, FileText, CreditCard, Languages, UtensilsCrossed, Accessibility, UserCheck, Download } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
@@ -117,35 +117,34 @@ export default function TripDetail() {
         {/* Bookings list */}
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base">Bokningar ({bookings?.length || 0})</CardTitle>
-            <AddBookingDialog trip={trip} ticketTypes={ticketTypes || []} seatsLeft={seatsLeft} onCreated={() => {
-              queryClient.invalidateQueries({ queryKey: ['trip-bookings', id] });
-            }} />
+            <div>
+              <CardTitle className="text-base">Bokningar ({bookings?.length || 0})</CardTitle>
+              {bookings && bookings.length > 0 && (
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {bookings.filter((b: any) => b.checked_in_at).length} incheckade · {bookings.reduce((s: number, b: any) => s + Number(b.total_price_sek || 0), 0).toLocaleString('sv-SE')} kr
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {bookings && bookings.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => exportBookingsCsv(bookings, trip)}>
+                  <Download className="h-4 w-4 mr-1" />CSV
+                </Button>
+              )}
+              <AddBookingDialog trip={trip} ticketTypes={ticketTypes || []} seatsLeft={seatsLeft} onCreated={() => {
+                queryClient.invalidateQueries({ queryKey: ['trip-bookings', id] });
+              }} />
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {!bookings?.length ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Inga bokningar än. Klicka "Lägg till bokning" för att registrera en kund manuellt, eller dela publika länken så kan kunder boka själva.</div>
             ) : (
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Bokningsnr</TableHead><TableHead>Kund</TableHead><TableHead>Pers</TableHead><TableHead>Pris</TableHead><TableHead>Status</TableHead><TableHead>Betalning</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {bookings.map((b: any) => (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-mono text-xs">{b.booking_number}</TableCell>
-                      <TableCell>
-                        <div className="font-medium">{b.customer_name}</div>
-                        <div className="text-xs text-muted-foreground">{b.customer_email}</div>
-                      </TableCell>
-                      <TableCell>{b.total_passengers}</TableCell>
-                      <TableCell>{Number(b.total_price_sek).toFixed(0)} kr</TableCell>
-                      <TableCell><Badge variant="outline">{b.status}</Badge></TableCell>
-                      <TableCell><Badge variant="outline">{b.payment_status}</Badge></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="divide-y">
+                {bookings.map((b: any) => (
+                  <BookingRow key={b.id} booking={b} tripId={id!} />
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -160,6 +159,28 @@ export default function TripDetail() {
   );
 }
 
+function exportBookingsCsv(bookings: any[], trip: any) {
+  const headers = ['Bokningsnr','Namn','E-post','Telefon','Antal','Pris','Status','Betalning','Källa','Etiketter','Specialkost','Tillgänglighet','Skapad'];
+  const rows = bookings.map((b: any) => [
+    b.booking_number, b.customer_name, b.customer_email, b.customer_phone || '',
+    b.total_passengers, b.total_price_sek, b.status, b.payment_status,
+    b.source || '', (b.tags || []).join('|'),
+    b.dietary_requirements || '', b.accessibility_needs || '',
+    new Date(b.created_at).toISOString(),
+  ]);
+  const csv = [headers, ...rows].map(r => r.map((v: any) => {
+    const s = String(v ?? '').replace(/"/g, '""');
+    return /[",\n;]/.test(s) ? `"${s}"` : s;
+  }).join(';')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bokningar_${(trip?.title || 'tur').replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function AddBookingDialog({ trip, ticketTypes, seatsLeft, onCreated }: any) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -168,7 +189,33 @@ function AddBookingDialog({ trip, ticketTypes, seatsLeft, onCreated }: any) {
   const [phone, setPhone] = useState('');
   const [pax, setPax] = useState('1');
   const [price, setPrice] = useState('');
+  const [deposit, setDeposit] = useState('');
   const [notes, setNotes] = useState('');
+  const [internalNotes, setInternalNotes] = useState('');
+  const [dietary, setDietary] = useState('');
+  const [accessibility, setAccessibility] = useState('');
+  const [language, setLanguage] = useState('sv');
+  const [country, setCountry] = useState('SE');
+  const [source, setSource] = useState('phone');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('obetald');
+  const [bookingStatus, setBookingStatus] = useState('bekraftad');
+  const [priority, setPriority] = useState('normal');
+  const [invoice, setInvoice] = useState('');
+
+  const reset = () => {
+    setName(''); setEmail(''); setPhone(''); setPax('1'); setPrice(''); setDeposit('');
+    setNotes(''); setInternalNotes(''); setDietary(''); setAccessibility('');
+    setLanguage('sv'); setCountry('SE'); setSource('phone'); setTags([]); setTagInput('');
+    setPaymentStatus('obetald'); setBookingStatus('bekraftad'); setPriority('normal'); setInvoice('');
+  };
+
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput('');
+  };
 
   const submit = async () => {
     if (!name || !email) { toast({ title: 'Namn och e-post krävs', variant: 'destructive' }); return; }
@@ -179,33 +226,329 @@ function AddBookingDialog({ trip, ticketTypes, seatsLeft, onCreated }: any) {
       customer_name: name, customer_email: email, customer_phone: phone || null,
       total_passengers: Number(pax),
       total_price_sek: price ? Number(price) : 0,
-      status: 'bekraftad',
+      deposit_paid_sek: deposit ? Number(deposit) : 0,
+      status: bookingStatus as any,
+      payment_status: paymentStatus as any,
       customer_notes: notes || null,
+      internal_notes: internalNotes || null,
+      dietary_requirements: dietary || null,
+      accessibility_needs: accessibility || null,
+      language: language || null,
+      country: country || null,
+      source: source || null,
+      tags,
+      priority,
+      invoice_number: invoice || null,
     } as any);
     if (error) { toast({ title: 'Fel', description: error.message, variant: 'destructive' }); return; }
     toast({ title: 'Bokning tillagd' });
-    setOpen(false); setName(''); setEmail(''); setPhone(''); setPax('1'); setPrice(''); setNotes('');
+    setOpen(false); reset();
     onCreated();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
       <DialogTrigger asChild><Button size="sm" disabled={seatsLeft <= 0}><Plus className="h-4 w-4 mr-2" />Lägg till bokning</Button></DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Manuell bokning</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Namn *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-            <div><Label>Antal *</Label><Input type="number" min="1" max={seatsLeft} value={pax} onChange={(e) => setPax(e.target.value)} /></div>
-            <div><Label>E-post *</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <div><Label>Telefon</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-            <div><Label>Pris (kr)</Label><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} /></div>
+        <div className="space-y-4">
+          {/* KUND */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kund</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div><Label>Namn *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+              <div><Label>Antal passagerare *</Label><Input type="number" min="1" max={seatsLeft} value={pax} onChange={(e) => setPax(e.target.value)} /></div>
+              <div><Label>E-post *</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <div><Label>Telefon</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+              <div>
+                <Label>Språk</Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sv">Svenska</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="de">Deutsch</SelectItem>
+                    <SelectItem value="no">Norsk</SelectItem>
+                    <SelectItem value="da">Dansk</SelectItem>
+                    <SelectItem value="fi">Suomi</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Land</Label><Input value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} maxLength={2} placeholder="SE" /></div>
+            </div>
           </div>
-          <div><Label>Anteckning</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+
+          {/* BOKNING */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bokning</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div>
+                <Label>Bokningsstatus</Label>
+                <Select value={bookingStatus} onValueChange={setBookingStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="avvaktar">Avvaktar</SelectItem>
+                    <SelectItem value="bekraftad">Bekräftad</SelectItem>
+                    <SelectItem value="avbokad">Avbokad</SelectItem>
+                    <SelectItem value="no_show">No-show</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Källa</Label>
+                <Select value={source} onValueChange={setSource}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="web">Webb</SelectItem>
+                    <SelectItem value="phone">Telefon</SelectItem>
+                    <SelectItem value="email">E-post</SelectItem>
+                    <SelectItem value="walk_in">Drop-in</SelectItem>
+                    <SelectItem value="partner">Partner / Återförsäljare</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Prioritet</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Låg</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">Hög (VIP)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Fakturanummer</Label><Input value={invoice} onChange={(e) => setInvoice(e.target.value)} placeholder="t.ex. F-2026-0123" /></div>
+            </div>
+          </div>
+
+          {/* BETALNING */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Betalning</div>
+            <div className="p-3 grid grid-cols-3 gap-3">
+              <div><Label>Pris totalt (kr)</Label><Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} /></div>
+              <div><Label>Erlagd handpenning (kr)</Label><Input type="number" value={deposit} onChange={(e) => setDeposit(e.target.value)} /></div>
+              <div>
+                <Label>Betalningsstatus</Label>
+                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="obetald">Obetald</SelectItem>
+                    <SelectItem value="delbetald">Delbetald</SelectItem>
+                    <SelectItem value="betald">Betald</SelectItem>
+                    <SelectItem value="aterbetald">Återbetald</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* SPECIALBEHOV */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-muted/40 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Specialbehov & övrigt</div>
+            <div className="p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="flex items-center gap-1"><UtensilsCrossed className="h-3.5 w-3.5" />Specialkost</Label><Input value={dietary} onChange={(e) => setDietary(e.target.value)} placeholder="t.ex. Glutenfri, vegan" /></div>
+                <div><Label className="flex items-center gap-1"><Accessibility className="h-3.5 w-3.5" />Tillgänglighet</Label><Input value={accessibility} onChange={(e) => setAccessibility(e.target.value)} placeholder="t.ex. Rullstol, hörselslinga" /></div>
+              </div>
+              <div>
+                <Label className="flex items-center gap-1"><Tag className="h-3.5 w-3.5" />Etiketter</Label>
+                <div className="flex flex-wrap gap-1 mb-1 mt-1">
+                  {tags.map(t => (
+                    <Badge key={t} variant="secondary" className="cursor-pointer" onClick={() => setTags(tags.filter(x => x !== t))}>
+                      {t} ×
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }} placeholder="Skriv etikett och tryck Enter" />
+                  <Button type="button" variant="outline" size="sm" onClick={addTag}>Lägg till</Button>
+                </div>
+              </div>
+              <div><Label>Kommentar från kund</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
+              <div><Label>Intern anteckning</Label><Textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={2} placeholder="Syns ej för kund" /></div>
+            </div>
+          </div>
+
           <Button className="w-full" onClick={submit}>Spara bokning</Button>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============================================================
+// BOOKING ROW – expanderbar rad med detaljer + check-in
+// ============================================================
+function BookingRow({ booking, tripId }: { booking: any; tripId: string }) {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const checkIn = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('bookings').update({
+        checked_in_at: new Date().toISOString(),
+        checked_in_count: booking.total_passengers,
+      } as any).eq('id', booking.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] }); toast({ title: 'Incheckad' }); },
+    onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
+  });
+  const undoCheckIn = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('bookings').update({ checked_in_at: null, checked_in_count: 0 } as any).eq('id', booking.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] }); toast({ title: 'Incheckning ångrad' }); },
+  });
+  const setStatus = useMutation({
+    mutationFn: async (status: string) => {
+      const { error } = await supabase.from('bookings').update({ status: status as any }).eq('id', booking.id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] }),
+  });
+  const setPayment = useMutation({
+    mutationFn: async (s: string) => {
+      const { error } = await supabase.from('bookings').update({ payment_status: s as any }).eq('id', booking.id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] }),
+  });
+  const removeBooking = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('bookings').delete().eq('id', booking.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['trip-bookings', tripId] }); toast({ title: 'Bokning raderad' }); },
+  });
+
+  const isCheckedIn = !!booking.checked_in_at;
+  const statusColor = booking.status === 'bekraftad' ? 'default' : booking.status === 'avbokad' ? 'destructive' : 'secondary';
+  const payColor = booking.payment_status === 'betald' ? 'default' : booking.payment_status === 'obetald' ? 'secondary' : 'outline';
+
+  return (
+    <div className="hover:bg-muted/30 transition">
+      <div className="flex items-center gap-2 p-3 cursor-pointer" onClick={() => setOpen(!open)}>
+        <button className="text-muted-foreground shrink-0">
+          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+        <div className="flex-1 min-w-0 grid grid-cols-12 gap-2 items-center">
+          <div className="col-span-3 min-w-0">
+            <div className="font-medium text-sm flex items-center gap-1.5">
+              {booking.priority === 'high' && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">VIP</Badge>}
+              <span className="truncate">{booking.customer_name}</span>
+            </div>
+            <div className="text-xs text-muted-foreground font-mono">{booking.booking_number}</div>
+          </div>
+          <div className="col-span-3 text-xs text-muted-foreground truncate hidden md:block">
+            <div className="flex items-center gap-1"><Mail className="h-3 w-3" />{booking.customer_email}</div>
+            {booking.customer_phone && <div className="flex items-center gap-1"><Phone className="h-3 w-3" />{booking.customer_phone}</div>}
+          </div>
+          <div className="col-span-1 text-sm font-semibold tabular-nums text-center">{booking.total_passengers}</div>
+          <div className="col-span-2 text-sm tabular-nums text-right">{Number(booking.total_price_sek).toFixed(0)} kr</div>
+          <div className="col-span-3 flex items-center justify-end gap-1 flex-wrap">
+            <Badge variant={statusColor as any} className="text-[10px]">{booking.status}</Badge>
+            <Badge variant={payColor as any} className="text-[10px]">{booking.payment_status}</Badge>
+            {isCheckedIn && <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-700"><UserCheck className="h-3 w-3 mr-0.5" />Inne</Badge>}
+          </div>
+        </div>
+      </div>
+
+      {open && (
+        <div className="px-10 pb-3 space-y-3 bg-muted/10 border-t">
+          {/* Tags */}
+          {booking.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-3">
+              {booking.tags.map((t: string) => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-2 gap-3 pt-2 text-sm">
+            {booking.dietary_requirements && (
+              <div><div className="text-xs text-muted-foreground flex items-center gap-1"><UtensilsCrossed className="h-3 w-3" />Specialkost</div><div>{booking.dietary_requirements}</div></div>
+            )}
+            {booking.accessibility_needs && (
+              <div><div className="text-xs text-muted-foreground flex items-center gap-1"><Accessibility className="h-3 w-3" />Tillgänglighet</div><div>{booking.accessibility_needs}</div></div>
+            )}
+            {booking.language && (
+              <div><div className="text-xs text-muted-foreground flex items-center gap-1"><Languages className="h-3 w-3" />Språk</div><div className="uppercase">{booking.language}{booking.country ? ` · ${booking.country}` : ''}</div></div>
+            )}
+            {booking.source && (
+              <div><div className="text-xs text-muted-foreground">Källa</div><div className="capitalize">{booking.source.replace('_', ' ')}</div></div>
+            )}
+            {Number(booking.deposit_paid_sek) > 0 && (
+              <div><div className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="h-3 w-3" />Erlagd handpenning</div><div>{Number(booking.deposit_paid_sek).toFixed(0)} kr</div></div>
+            )}
+            {booking.invoice_number && (
+              <div><div className="text-xs text-muted-foreground flex items-center gap-1"><FileText className="h-3 w-3" />Faktura</div><div className="font-mono text-xs">{booking.invoice_number}</div></div>
+            )}
+            {isCheckedIn && (
+              <div><div className="text-xs text-muted-foreground">Incheckad</div><div>{format(parseISO(booking.checked_in_at), 'yyyy-MM-dd HH:mm')} ({booking.checked_in_count} pers)</div></div>
+            )}
+          </div>
+
+          {(booking.customer_notes || booking.internal_notes) && (
+            <div className="space-y-2">
+              {booking.customer_notes && (
+                <div className="rounded border-l-2 border-primary bg-primary/5 p-2 text-xs">
+                  <div className="font-semibold text-muted-foreground mb-0.5">Kommentar från kund</div>
+                  {booking.customer_notes}
+                </div>
+              )}
+              {booking.internal_notes && (
+                <div className="rounded border-l-2 border-amber-500 bg-amber-500/5 p-2 text-xs">
+                  <div className="font-semibold text-muted-foreground mb-0.5">Intern anteckning</div>
+                  {booking.internal_notes}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+            {!isCheckedIn ? (
+              <Button size="sm" onClick={() => checkIn.mutate()} disabled={checkIn.isPending || booking.status === 'avbokad'}>
+                <UserCheck className="h-4 w-4 mr-1" />Checka in
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => undoCheckIn.mutate()}>Ångra incheckning</Button>
+            )}
+            <Select value={booking.status} onValueChange={(v) => setStatus.mutate(v)}>
+              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="avvaktar">Avvaktar</SelectItem>
+                <SelectItem value="bekraftad">Bekräftad</SelectItem>
+                <SelectItem value="avbokad">Avbokad</SelectItem>
+                <SelectItem value="no_show">No-show</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={booking.payment_status} onValueChange={(v) => setPayment.mutate(v)}>
+              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="obetald">Obetald</SelectItem>
+                <SelectItem value="delbetald">Delbetald</SelectItem>
+                <SelectItem value="betald">Betald</SelectItem>
+                <SelectItem value="aterbetald">Återbetald</SelectItem>
+              </SelectContent>
+            </Select>
+            <a
+              href={`mailto:${booking.customer_email}?subject=Din bokning ${booking.booking_number}`}
+              className="inline-flex items-center text-xs text-primary hover:underline"
+            ><Mail className="h-3.5 w-3.5 mr-1" />E-posta</a>
+            {booking.customer_phone && (
+              <a href={`tel:${booking.customer_phone}`} className="inline-flex items-center text-xs text-primary hover:underline">
+                <Phone className="h-3.5 w-3.5 mr-1" />Ring
+              </a>
+            )}
+            <Button size="sm" variant="ghost" className="ml-auto text-destructive hover:text-destructive" onClick={() => { if (confirm('Radera bokning?')) removeBooking.mutate(); }}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
