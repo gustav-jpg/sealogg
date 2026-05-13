@@ -510,8 +510,8 @@ export type Database = {
           checked_in_count: number
           country: string | null
           created_at: string
-          customer_email: string
-          customer_name: string
+          customer_email: string | null
+          customer_name: string | null
           customer_notes: string | null
           customer_phone: string | null
           departure_id: string
@@ -520,6 +520,7 @@ export type Database = {
           id: string
           internal_notes: string | null
           invoice_number: string | null
+          is_draft: boolean
           language: string | null
           organization_id: string
           payment_status: Database["public"]["Enums"]["booking_payment_status"]
@@ -539,8 +540,8 @@ export type Database = {
           checked_in_count?: number
           country?: string | null
           created_at?: string
-          customer_email: string
-          customer_name: string
+          customer_email?: string | null
+          customer_name?: string | null
           customer_notes?: string | null
           customer_phone?: string | null
           departure_id: string
@@ -549,6 +550,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           invoice_number?: string | null
+          is_draft?: boolean
           language?: string | null
           organization_id: string
           payment_status?: Database["public"]["Enums"]["booking_payment_status"]
@@ -568,8 +570,8 @@ export type Database = {
           checked_in_count?: number
           country?: string | null
           created_at?: string
-          customer_email?: string
-          customer_name?: string
+          customer_email?: string | null
+          customer_name?: string | null
           customer_notes?: string | null
           customer_phone?: string | null
           departure_id?: string
@@ -578,6 +580,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           invoice_number?: string | null
+          is_draft?: boolean
           language?: string | null
           organization_id?: string
           payment_status?: Database["public"]["Enums"]["booking_payment_status"]
