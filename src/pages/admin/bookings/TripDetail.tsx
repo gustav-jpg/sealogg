@@ -24,6 +24,7 @@ export default function TripDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [scanOpen, setScanOpen] = useState(false);
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', id], enabled: !!id,
@@ -129,6 +130,11 @@ export default function TripDetail() {
             </div>
             <div className="flex items-center gap-2">
               {bookings && bookings.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setScanOpen(true)}>
+                  <ScanLine className="h-4 w-4 mr-1" />Skanna
+                </Button>
+              )}
+              {bookings && bookings.length > 0 && (
                 <Button size="sm" variant="outline" onClick={() => exportBookingsCsv(bookings, trip)}>
                   <Download className="h-4 w-4 mr-1" />CSV
                 </Button>
@@ -157,6 +163,18 @@ export default function TripDetail() {
         {/* Trip details / settings */}
         <TripSettingsCard trip={trip} onSave={(p) => updateTrip.mutate(p)} isPrivate={isPrivate} />
       </div>
+      <ScanCheckInDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        candidates={(bookings || []).filter((b: any) => b.status !== 'avbokad').map((b: any) => ({
+          id: b.id,
+          booking_number: b.booking_number,
+          customer_name: b.customer_name,
+          total_passengers: b.total_passengers,
+          checked_in_at: b.checked_in_at,
+        }))}
+        invalidateKey="trip-bookings"
+      />
     </MainLayout>
   );
 }
