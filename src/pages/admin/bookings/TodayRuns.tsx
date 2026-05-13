@@ -201,7 +201,7 @@ function ScheduleRow({ trip }: any) {
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 mb-1">
                 <Badge variant={isPrivate ? 'secondary' : 'default'} className="text-[10px]">
-                  {isPrivate ? 'Enskild' : 'Delad'}
+                  {isPrivate ? 'Enskild' : 'Reguljär'}
                 </Badge>
                 {isCanceled && <Badge variant="destructive" className="text-[10px]">Inställd</Badge>}
                 {allCheckedIn && !isCanceled && <Badge className="text-[10px] bg-emerald-600">Alla incheckade</Badge>}

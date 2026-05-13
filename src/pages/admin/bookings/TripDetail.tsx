@@ -84,7 +84,7 @@ export default function TripDetail() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Badge variant={isPrivate ? 'secondary' : 'default'}>
-                {isPrivate ? 'Enskild körning' : 'Delad körning'}
+                {isPrivate ? 'Enskild körning' : 'Reguljärtur'}
               </Badge>
               <Badge variant="outline">{trip.status}</Badge>
             </div>

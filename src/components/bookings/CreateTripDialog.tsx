@@ -62,7 +62,7 @@ export function CreateTripDialog({ open, onOpenChange, orgId, defaultDate, onCre
                   <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20">
                     <Users className="h-5 w-5" />
                   </div>
-                  <div className="font-semibold">Delad körning</div>
+                  <div className="font-semibold">Reguljärtur</div>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Publik tur som flera kunder kan boka platser på.
@@ -298,7 +298,7 @@ function SharedForm({ orgId, defaultDate, onBack, onDone }: any) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['booking-departures-month'] });
-      toast({ title: 'Delad körning skapad', description: 'Turen är nu bokningsbar publikt' });
+      toast({ title: 'Reguljärtur skapad', description: 'Turen är nu bokningsbar publikt' });
       onDone();
     },
     onError: (e: any) => toast({ title: 'Fel', description: e.message, variant: 'destructive' }),
@@ -309,7 +309,7 @@ function SharedForm({ orgId, defaultDate, onBack, onDone }: any) {
       <DialogHeader>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="h-4 w-4" /></Button>
-          <DialogTitle>Ny delad körning</DialogTitle>
+          <DialogTitle>Ny reguljärtur</DialogTitle>
         </div>
         <DialogDescription>Publik tur som kunder kan boka platser på</DialogDescription>
       </DialogHeader>
@@ -359,7 +359,7 @@ function SharedForm({ orgId, defaultDate, onBack, onDone }: any) {
         <div><Label>Intern anteckning</Label><Textarea value={internalNotes} onChange={(e) => setInternalNotes(e.target.value)} rows={2} /></div>
 
         <Button onClick={() => create.mutate()} disabled={create.isPending} className="w-full">
-          {create.isPending ? 'Sparar...' : 'Skapa delad körning'}
+          {create.isPending ? 'Sparar...' : 'Skapa reguljärtur'}
         </Button>
       </div>
     </>
