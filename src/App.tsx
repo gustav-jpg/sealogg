@@ -64,6 +64,7 @@ const Support = lazy(() => import("./pages/Support"));
 const FaqAdmin = lazy(() => import("./pages/admin/FaqAdmin"));
 const BroadcastPush = lazy(() => import("./pages/backoffice/BroadcastPush"));
 const Rustning = lazy(() => import("./pages/Rustning"));
+const BookingsHome = lazy(() => import("./pages/bookings/BookingsHome"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -217,6 +218,9 @@ function AppRoutes() {
         <Route path="/portal/admin/startsida" element={<ProtectedRoute adminOnly><IntranetAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/passagerare" element={<ProtectedRoute adminOnly><PassengerAdmin /></ProtectedRoute>} />
         <Route path="/portal/admin/notifications" element={<ProtectedRoute adminOnly><NotificationSettingsPage /></ProtectedRoute>} />
+
+        {/* Bookings module (phase 1 placeholder) */}
+        <Route path="/portal/bookings" element={<ProtectedRoute><BookingsHome /></ProtectedRoute>} />
 
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />

@@ -65,6 +65,941 @@ export type Database = {
         }
         Relationships: []
       }
+      bk_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          organization_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          organization_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          organization_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_booking_legs: {
+        Row: {
+          booking_id: string
+          created_at: string
+          departure_id: string
+          from_route_stop_id: string
+          id: string
+          return_of_leg_id: string | null
+          to_route_stop_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          departure_id: string
+          from_route_stop_id: string
+          id?: string
+          return_of_leg_id?: string | null
+          to_route_stop_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          departure_id?: string
+          from_route_stop_id?: string
+          id?: string
+          return_of_leg_id?: string | null
+          to_route_stop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_booking_legs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bk_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_booking_legs_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bk_departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_booking_legs_from_route_stop_id_fkey"
+            columns: ["from_route_stop_id"]
+            isOneToOne: false
+            referencedRelation: "bk_route_stops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_booking_legs_return_of_leg_id_fkey"
+            columns: ["return_of_leg_id"]
+            isOneToOne: false
+            referencedRelation: "bk_booking_legs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_booking_legs_to_route_stop_id_fkey"
+            columns: ["to_route_stop_id"]
+            isOneToOne: false
+            referencedRelation: "bk_route_stops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_booking_passengers: {
+        Row: {
+          id: string
+          leg_id: string
+          qty: number
+          ticket_type_id: string
+          unit_price_sek: number
+        }
+        Insert: {
+          id?: string
+          leg_id: string
+          qty: number
+          ticket_type_id: string
+          unit_price_sek?: number
+        }
+        Update: {
+          id?: string
+          leg_id?: string
+          qty?: number
+          ticket_type_id?: string
+          unit_price_sek?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_booking_passengers_leg_id_fkey"
+            columns: ["leg_id"]
+            isOneToOne: false
+            referencedRelation: "bk_booking_legs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_booking_passengers_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "bk_ticket_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_bookings: {
+        Row: {
+          booking_number: string
+          cancelled_at: string | null
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          reservation_expires_at: string | null
+          status: Database["public"]["Enums"]["bk_booking_status"]
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          total_sek: number
+          updated_at: string
+        }
+        Insert: {
+          booking_number: string
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          reservation_expires_at?: string | null
+          status?: Database["public"]["Enums"]["bk_booking_status"]
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_sek?: number
+          updated_at?: string
+        }
+        Update: {
+          booking_number?: string
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          reservation_expires_at?: string | null
+          status?: Database["public"]["Enums"]["bk_booking_status"]
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_sek?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_bookings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_check_ins: {
+        Row: {
+          checked_in_by: string | null
+          created_at: string
+          departure_id: string
+          id: string
+          method: Database["public"]["Enums"]["bk_check_in_method"]
+          notes: string | null
+          route_stop_id: string | null
+          ticket_id: string
+        }
+        Insert: {
+          checked_in_by?: string | null
+          created_at?: string
+          departure_id: string
+          id?: string
+          method?: Database["public"]["Enums"]["bk_check_in_method"]
+          notes?: string | null
+          route_stop_id?: string | null
+          ticket_id: string
+        }
+        Update: {
+          checked_in_by?: string | null
+          created_at?: string
+          departure_id?: string
+          id?: string
+          method?: Database["public"]["Enums"]["bk_check_in_method"]
+          notes?: string | null
+          route_stop_id?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_check_ins_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bk_departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_check_ins_route_stop_id_fkey"
+            columns: ["route_stop_id"]
+            isOneToOne: false
+            referencedRelation: "bk_route_stops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_check_ins_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "bk_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_departure_stop_times: {
+        Row: {
+          arrive_at: string | null
+          depart_at: string | null
+          departure_id: string
+          id: string
+          route_stop_id: string
+          stop_order: number
+        }
+        Insert: {
+          arrive_at?: string | null
+          depart_at?: string | null
+          departure_id: string
+          id?: string
+          route_stop_id: string
+          stop_order: number
+        }
+        Update: {
+          arrive_at?: string | null
+          depart_at?: string | null
+          departure_id?: string
+          id?: string
+          route_stop_id?: string
+          stop_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_departure_stop_times_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "bk_departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_departure_stop_times_route_stop_id_fkey"
+            columns: ["route_stop_id"]
+            isOneToOne: false
+            referencedRelation: "bk_route_stops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_departures: {
+        Row: {
+          capacity_override: number | null
+          created_at: string
+          departure_at: string
+          id: string
+          notes: string | null
+          organization_id: string
+          route_id: string
+          schedule_id: string | null
+          status: Database["public"]["Enums"]["bk_departure_status"]
+          updated_at: string
+          vessel_id: string | null
+        }
+        Insert: {
+          capacity_override?: number | null
+          created_at?: string
+          departure_at: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          route_id: string
+          schedule_id?: string | null
+          status?: Database["public"]["Enums"]["bk_departure_status"]
+          updated_at?: string
+          vessel_id?: string | null
+        }
+        Update: {
+          capacity_override?: number | null
+          created_at?: string
+          departure_at?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          route_id?: string
+          schedule_id?: string | null
+          status?: Database["public"]["Enums"]["bk_departure_status"]
+          updated_at?: string
+          vessel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_departures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_departures_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "bk_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_departures_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "bk_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_departures_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_fare_rules: {
+        Row: {
+          created_at: string
+          from_pier_id: string | null
+          id: string
+          line_id: string | null
+          organization_id: string
+          price_sek: number
+          priority: number
+          return_discount_pct: number
+          route_id: string | null
+          ticket_type_id: string
+          to_pier_id: string | null
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+          weekday_mask: number
+        }
+        Insert: {
+          created_at?: string
+          from_pier_id?: string | null
+          id?: string
+          line_id?: string | null
+          organization_id: string
+          price_sek: number
+          priority?: number
+          return_discount_pct?: number
+          route_id?: string | null
+          ticket_type_id: string
+          to_pier_id?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          weekday_mask?: number
+        }
+        Update: {
+          created_at?: string
+          from_pier_id?: string | null
+          id?: string
+          line_id?: string | null
+          organization_id?: string
+          price_sek?: number
+          priority?: number
+          return_discount_pct?: number
+          route_id?: string | null
+          ticket_type_id?: string
+          to_pier_id?: string | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          weekday_mask?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_fare_rules_from_pier_id_fkey"
+            columns: ["from_pier_id"]
+            isOneToOne: false
+            referencedRelation: "bk_piers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_fare_rules_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "bk_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_fare_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_fare_rules_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "bk_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_fare_rules_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "bk_ticket_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_fare_rules_to_pier_id_fkey"
+            columns: ["to_pier_id"]
+            isOneToOne: false
+            referencedRelation: "bk_piers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_lines: {
+        Row: {
+          code: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_lines_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_piers: {
+        Row: {
+          created_at: string
+          id: string
+          info: string | null
+          is_active: boolean
+          lat: number | null
+          lng: number | null
+          name: string
+          organization_id: string
+          short_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          info?: string | null
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
+          name: string
+          organization_id: string
+          short_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          info?: string | null
+          is_active?: boolean
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          organization_id?: string
+          short_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_piers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_refunds: {
+        Row: {
+          amount_sek: number
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+          stripe_refund_id: string | null
+        }
+        Insert: {
+          amount_sek: number
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          stripe_refund_id?: string | null
+        }
+        Update: {
+          amount_sek?: number
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          stripe_refund_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_refunds_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bk_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_route_stops: {
+        Row: {
+          alighting_allowed: boolean
+          arrival_offset_min: number
+          boarding_allowed: boolean
+          created_at: string
+          departure_offset_min: number
+          dwell_min: number
+          id: string
+          pier_id: string
+          route_id: string
+          stop_order: number
+        }
+        Insert: {
+          alighting_allowed?: boolean
+          arrival_offset_min?: number
+          boarding_allowed?: boolean
+          created_at?: string
+          departure_offset_min?: number
+          dwell_min?: number
+          id?: string
+          pier_id: string
+          route_id: string
+          stop_order: number
+        }
+        Update: {
+          alighting_allowed?: boolean
+          arrival_offset_min?: number
+          boarding_allowed?: boolean
+          created_at?: string
+          departure_offset_min?: number
+          dwell_min?: number
+          id?: string
+          pier_id?: string
+          route_id?: string
+          stop_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_route_stops_pier_id_fkey"
+            columns: ["pier_id"]
+            isOneToOne: false
+            referencedRelation: "bk_piers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "bk_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_routes: {
+        Row: {
+          created_at: string
+          direction: string | null
+          id: string
+          is_active: boolean
+          line_id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string | null
+          id?: string
+          is_active?: boolean
+          line_id: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string | null
+          id?: string
+          is_active?: boolean
+          line_id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_routes_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "bk_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_routes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_schedules: {
+        Row: {
+          created_at: string
+          depart_time: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          route_id: string
+          start_date: string
+          updated_at: string
+          vessel_id: string | null
+          weekday_mask: number
+        }
+        Insert: {
+          created_at?: string
+          depart_time: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          route_id: string
+          start_date: string
+          updated_at?: string
+          vessel_id?: string | null
+          weekday_mask?: number
+        }
+        Update: {
+          created_at?: string
+          depart_time?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          route_id?: string
+          start_date?: string
+          updated_at?: string
+          vessel_id?: string | null
+          weekday_mask?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_schedules_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "bk_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_schedules_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_settings: {
+        Row: {
+          brand_color: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          currency: string
+          is_public_active: boolean
+          logo_url: string | null
+          organization_id: string
+          public_slug: string | null
+          reservation_ttl_minutes: number
+          terms_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_color?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          is_public_active?: boolean
+          logo_url?: string | null
+          organization_id: string
+          public_slug?: string | null
+          reservation_ttl_minutes?: number
+          terms_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_color?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          is_public_active?: boolean
+          logo_url?: string | null
+          organization_id?: string
+          public_slug?: string | null
+          reservation_ttl_minutes?: number
+          terms_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_ticket_types: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          occupies_seat: boolean
+          organization_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          occupies_seat?: boolean
+          organization_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          occupies_seat?: boolean
+          organization_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_ticket_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bk_tickets: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          leg_id: string
+          passenger_name: string | null
+          qr_token: string
+          status: Database["public"]["Enums"]["bk_ticket_status"]
+          ticket_type_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          leg_id: string
+          passenger_name?: string | null
+          qr_token: string
+          status?: Database["public"]["Enums"]["bk_ticket_status"]
+          ticket_type_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          leg_id?: string
+          passenger_name?: string | null
+          qr_token?: string
+          status?: Database["public"]["Enums"]["bk_ticket_status"]
+          ticket_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bk_tickets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bk_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_tickets_leg_id_fkey"
+            columns: ["leg_id"]
+            isOneToOne: false
+            referencedRelation: "bk_booking_legs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bk_tickets_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "bk_ticket_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bunker_events: {
         Row: {
           created_at: string
@@ -3119,6 +4054,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bk_get_org_by_public_slug: { Args: { _slug: string }; Returns: string }
+      bk_is_org_member: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      bk_segment_availability: {
+        Args: {
+          _departure_id: string
+          _from_stop_id: string
+          _to_stop_id: string
+        }
+        Returns: number
+      }
       get_page_view_stats: { Args: never; Returns: Json }
       get_profile_name_by_user_id: {
         Args: { _user_id: string }
@@ -3213,6 +4161,16 @@ export type Database = {
       app_role: "admin" | "skeppare" | "readonly" | "deckhand"
       billing_frequency: "monthly" | "yearly" | "quarterly"
       billing_status: "active" | "overdue" | "cancelled" | "trial"
+      bk_booking_status:
+        | "pending"
+        | "reserved"
+        | "paid"
+        | "cancelled"
+        | "refunded"
+        | "expired"
+      bk_check_in_method: "scan" | "manual"
+      bk_departure_status: "scheduled" | "open" | "closed" | "cancelled"
+      bk_ticket_status: "valid" | "used" | "void"
       blocking_reason:
         | "service"
         | "privat"
@@ -3411,6 +4369,17 @@ export const Constants = {
       app_role: ["admin", "skeppare", "readonly", "deckhand"],
       billing_frequency: ["monthly", "yearly", "quarterly"],
       billing_status: ["active", "overdue", "cancelled", "trial"],
+      bk_booking_status: [
+        "pending",
+        "reserved",
+        "paid",
+        "cancelled",
+        "refunded",
+        "expired",
+      ],
+      bk_check_in_method: ["scan", "manual"],
+      bk_departure_status: ["scheduled", "open", "closed", "cancelled"],
+      bk_ticket_status: ["valid", "used", "void"],
       blocking_reason: [
         "service",
         "privat",
