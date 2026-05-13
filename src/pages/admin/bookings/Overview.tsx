@@ -15,8 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Calendar as CalendarIcon, Ticket, ChevronLeft, ChevronRight, Repeat, Zap, User, Users } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, isSameMonth, parseISO } from 'date-fns';
+import { Plus, Trash2, Calendar as CalendarIcon, Ticket, ChevronLeft, ChevronRight, Repeat, Zap, User, Users, Ship, TrendingUp, Wallet, LayoutGrid } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, isSameMonth, parseISO, addDays, addWeeks, subWeeks, isToday as isTodayFn } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { CreateTripDialog } from '@/components/bookings/CreateTripDialog';
 
@@ -34,16 +34,239 @@ export default function BookingsOverview() {
           <p className="text-muted-foreground">Alla turer – enskilda och delade</p>
         </div>
 
+        <KpiStrip orgId={selectedOrgId} />
+
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="calendar"><CalendarIcon className="h-4 w-4 mr-2" />Kalender</TabsTrigger>
+            <TabsTrigger value="resource"><LayoutGrid className="h-4 w-4 mr-2" />Resursplan</TabsTrigger>
             <TabsTrigger value="taxi"><Zap className="h-4 w-4 mr-2" />Förfrågningar</TabsTrigger>
           </TabsList>
           <TabsContent value="calendar" className="mt-4"><CalendarTab orgId={selectedOrgId} /></TabsContent>
+          <TabsContent value="resource" className="mt-4"><ResourceTab orgId={selectedOrgId} /></TabsContent>
           <TabsContent value="taxi" className="mt-4"><TaxiTab orgId={selectedOrgId} /></TabsContent>
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+// ============================================================
+// KPI STRIP – snabb sammanfattning kommande 30 dagar
+// ============================================================
+function KpiStrip({ orgId }: { orgId: string | null }) {
+  const from = useMemo(() => new Date(), []);
+  const to = useMemo(() => addDays(new Date(), 30), []);
+
+  const { data } = useQuery({
+    queryKey: ['booking-kpis', orgId, format(from, 'yyyy-MM-dd')],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data: deps } = await supabase.from('booking_departures')
+        .select('id, departure_at, max_passengers, trip_type, status, bookings(total_passengers, total_price_sek, status)')
+        .eq('organization_id', orgId!)
+        .gte('departure_at', from.toISOString())
+        .lte('departure_at', to.toISOString());
+      return deps || [];
+    },
+  });
+
+  const stats = useMemo(() => {
+    const deps = data || [];
+    let booked = 0, capacity = 0, revenue = 0, bookings = 0, today = 0;
+    deps.forEach((d: any) => {
+      const active = (d.bookings || []).filter((b: any) => b.status !== 'avbokad');
+      const pax = active.reduce((s: number, b: any) => s + (b.total_passengers || 0), 0);
+      const rev = active.reduce((s: number, b: any) => s + Number(b.total_price_sek || 0), 0);
+      booked += pax;
+      revenue += rev;
+      bookings += active.length;
+      if (d.trip_type === 'shared') capacity += d.max_passengers || 0;
+      if (isTodayFn(parseISO(d.departure_at))) today += 1;
+    });
+    const occ = capacity > 0 ? Math.round((booked / capacity) * 100) : 0;
+    return { departures: deps.length, today, bookings, booked, occ, revenue };
+  }, [data]);
+
+  const items = [
+    { label: 'Turer idag', value: stats.today, icon: CalendarIcon, tone: 'text-primary' },
+    { label: 'Avgångar (30d)', value: stats.departures, icon: Ship, tone: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Bokningar', value: stats.bookings, icon: Ticket, tone: 'text-violet-600 dark:text-violet-400' },
+    { label: 'Bokade platser', value: stats.booked, icon: Users, tone: 'text-emerald-600 dark:text-emerald-400' },
+    { label: 'Beläggning', value: `${stats.occ}%`, icon: TrendingUp, tone: stats.occ >= 70 ? 'text-emerald-600 dark:text-emerald-400' : stats.occ >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground' },
+    { label: 'Intäkt (kr)', value: stats.revenue.toLocaleString('sv-SE'), icon: Wallet, tone: 'text-foreground' },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+      {items.map((it) => (
+        <Card key={it.label}>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs text-muted-foreground">{it.label}</div>
+              <it.icon className={`h-4 w-4 ${it.tone}`} />
+            </div>
+            <div className={`text-xl font-bold tabular-nums mt-0.5 ${it.tone}`}>{it.value}</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// RESURSPLAN – fartyg × dag (vecka)
+// ============================================================
+function ResourceTab({ orgId }: { orgId: string | null }) {
+  const navigate = useNavigate();
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const days = useMemo(() => eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) }), [weekStart]);
+
+  const { data: vessels } = useQuery({
+    queryKey: ['vessels-list', orgId], enabled: !!orgId,
+    queryFn: async () => (await supabase.from('vessels').select('id, name').eq('organization_id', orgId!).order('name')).data || [],
+  });
+
+  const { data: departures } = useQuery({
+    queryKey: ['booking-departures-week', orgId, format(weekStart, 'yyyy-MM-dd')],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data } = await supabase.from('booking_departures')
+        .select('id, departure_at, arrival_at, vessel_id, max_passengers, trip_type, title, status, booking_routes(name), bookings(total_passengers, status)')
+        .eq('organization_id', orgId!)
+        .gte('departure_at', weekStart.toISOString())
+        .lte('departure_at', addDays(weekStart, 7).toISOString())
+        .order('departure_at');
+      return data || [];
+    },
+  });
+
+  const byVesselDay = useMemo(() => {
+    const map = new Map<string, any[]>();
+    (departures || []).forEach((d: any) => {
+      const key = `${d.vessel_id}|${format(parseISO(d.departure_at), 'yyyy-MM-dd')}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(d);
+    });
+    return map;
+  }, [departures]);
+
+  const vesselDayStats = (vesselId: string, day: Date) => {
+    const list = byVesselDay.get(`${vesselId}|${format(day, 'yyyy-MM-dd')}`) || [];
+    let booked = 0, capacity = 0;
+    list.forEach((d: any) => {
+      const pax = (d.bookings || []).filter((b: any) => b.status !== 'avbokad').reduce((s: number, b: any) => s + (b.total_passengers || 0), 0);
+      booked += pax;
+      if (d.trip_type === 'shared') capacity += d.max_passengers || 0;
+    });
+    return { list, booked, capacity };
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setWeekStart(subWeeks(weekStart, 1))}><ChevronLeft className="h-4 w-4" /></Button>
+          <div className="text-sm font-semibold w-56 text-center">
+            v.{format(weekStart, 'I')} · {format(weekStart, 'd MMM', { locale: sv })} – {format(addDays(weekStart, 6), 'd MMM yyyy', { locale: sv })}
+          </div>
+          <Button variant="outline" size="icon" onClick={() => setWeekStart(addWeeks(weekStart, 1))}><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="sm" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>Idag</Button>
+        </div>
+        <div className="text-xs text-muted-foreground hidden md:block">Klicka på en avgång för att öppna</div>
+      </div>
+
+      <Card>
+        <CardContent className="p-0 overflow-x-auto">
+          <div className="min-w-[900px]">
+            {/* Header row */}
+            <div className="grid border-b" style={{ gridTemplateColumns: '180px repeat(7, minmax(0, 1fr))' }}>
+              <div className="p-2 text-xs font-semibold text-muted-foreground flex items-center gap-1.5 bg-muted/30">
+                <Ship className="h-3.5 w-3.5" />Fartyg
+              </div>
+              {days.map((d) => (
+                <div key={d.toISOString()} className={`p-2 text-center border-l ${isTodayFn(d) ? 'bg-primary/10' : 'bg-muted/30'}`}>
+                  <div className="text-[10px] uppercase text-muted-foreground">{format(d, 'EEE', { locale: sv })}</div>
+                  <div className={`text-sm font-semibold ${isTodayFn(d) ? 'text-primary' : ''}`}>{format(d, 'd MMM', { locale: sv })}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Vessel rows */}
+            {(vessels || []).length === 0 && (
+              <div className="p-6 text-center text-sm text-muted-foreground">Inga fartyg</div>
+            )}
+            {(vessels || []).map((v: any) => (
+              <div key={v.id} className="grid border-b" style={{ gridTemplateColumns: '180px repeat(7, minmax(0, 1fr))' }}>
+                <div className="p-2 text-sm font-medium flex items-center gap-2 bg-muted/20">
+                  <Ship className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate">{v.name}</span>
+                </div>
+                {days.map((day) => {
+                  const { list, booked, capacity } = vesselDayStats(v.id, day);
+                  const ratio = capacity > 0 ? booked / capacity : 0;
+                  return (
+                    <div key={day.toISOString()} className={`border-l p-1 min-h-[110px] ${isTodayFn(day) ? 'bg-primary/[0.03]' : ''}`}>
+                      {list.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground/40">–</div>
+                      ) : (
+                        <div className="space-y-1">
+                          {list.map((d: any) => {
+                            const isPrivate = d.trip_type === 'private';
+                            const pax = (d.bookings || []).filter((b: any) => b.status !== 'avbokad').reduce((s: number, b: any) => s + (b.total_passengers || 0), 0);
+                            const cap = d.max_passengers || 0;
+                            const r = cap > 0 ? Math.min(100, (pax / cap) * 100) : 0;
+                            const isFull = !isPrivate && pax >= cap;
+                            return (
+                              <button
+                                key={d.id}
+                                onClick={() => isPrivate ? null : navigate(`/portal/bookings/trip/${d.id}`)}
+                                className={`w-full text-left rounded border px-1.5 py-1 transition hover:shadow-sm ${
+                                  isPrivate
+                                    ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20'
+                                    : isFull
+                                      ? 'bg-destructive/10 border-destructive/30 hover:bg-destructive/20'
+                                      : 'bg-primary/5 border-primary/20 hover:bg-primary/10'
+                                }`}
+                              >
+                                <div className="flex items-center gap-1 text-[10px] font-semibold">
+                                  {isPrivate ? <User className="h-2.5 w-2.5" /> : <Users className="h-2.5 w-2.5" />}
+                                  <span className="tabular-nums">{format(parseISO(d.departure_at), 'HH:mm')}</span>
+                                  {!isPrivate && <span className="ml-auto tabular-nums">{pax}/{cap}</span>}
+                                </div>
+                                <div className="text-[10px] truncate text-muted-foreground">
+                                  {isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name || 'Delad')}
+                                </div>
+                                {!isPrivate && cap > 0 && (
+                                  <div className="mt-1 h-1 w-full bg-muted rounded-full overflow-hidden">
+                                    <div className={`h-full ${isFull ? 'bg-destructive' : r >= 80 ? 'bg-orange-500' : 'bg-primary'}`} style={{ width: `${r}%` }} />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                          {capacity > 0 && (
+                            <div className="text-[9px] text-muted-foreground text-right pt-0.5">
+                              {booked}/{capacity} ({Math.round(ratio * 100)}%)
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20 border border-primary/30" />Delad</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/30" />Enskild</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/30" />Fullbokad</div>
+      </div>
+    </div>
   );
 }
 
