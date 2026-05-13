@@ -279,6 +279,10 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
   const [seriesOpen, setSeriesOpen] = useState(false);
   const [defaultDate, setDefaultDate] = useState<Date | null>(null);
   const [editing, setEditing] = useState<any>(null);
+  const [dayOpen, setDayOpen] = useState<Date | null>(null);
+  const [vesselFilter, setVesselFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const navigate = useNavigate();
 
   const monthStart = startOfMonth(month);
@@ -301,15 +305,36 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
     },
   });
 
+  const { data: vesselList } = useQuery({
+    queryKey: ['vessels-list', orgId], enabled: !!orgId,
+    queryFn: async () => (await supabase.from('vessels').select('id, name').eq('organization_id', orgId!).order('name')).data || [],
+  });
+
+  const filteredDepartures = useMemo(() => {
+    return (departures || []).filter((d: any) => {
+      if (vesselFilter !== 'all' && d.vessel_id !== vesselFilter) return false;
+      if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+      if (typeFilter !== 'all' && d.trip_type !== typeFilter) return false;
+      return true;
+    });
+  }, [departures, vesselFilter, statusFilter, typeFilter]);
+
   const departuresByDay = useMemo(() => {
     const map = new Map<string, any[]>();
-    (departures || []).forEach(d => {
+    filteredDepartures.forEach((d: any) => {
       const key = format(parseISO(d.departure_at), 'yyyy-MM-dd');
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(d);
     });
     return map;
-  }, [departures]);
+  }, [filteredDepartures]);
+
+  const vesselColors = useMemo(() => {
+    const palette = ['bg-sky-500', 'bg-emerald-500', 'bg-violet-500', 'bg-pink-500', 'bg-orange-500', 'bg-cyan-500', 'bg-rose-500', 'bg-indigo-500'];
+    const map: Record<string, string> = {};
+    (vesselList || []).forEach((v: any, i: number) => { map[v.id] = palette[i % palette.length]; });
+    return map;
+  }, [vesselList]);
 
   const openCreate = (date?: Date) => {
     setDefaultDate(date || null);
@@ -331,6 +356,39 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 p-2 border rounded-lg bg-muted/20">
+        <span className="text-xs font-semibold text-muted-foreground px-1">Filter:</span>
+        <Select value={vesselFilter} onValueChange={setVesselFilter}>
+          <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alla fartyg</SelectItem>
+            {(vesselList || []).map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alla typer</SelectItem>
+            <SelectItem value="shared">Delade</SelectItem>
+            <SelectItem value="private">Enskilda</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alla status</SelectItem>
+            <SelectItem value="planerad">Planerad</SelectItem>
+            <SelectItem value="fullbokad">Fullbokad</SelectItem>
+            <SelectItem value="installd">Inställd</SelectItem>
+            <SelectItem value="genomford">Genomförd</SelectItem>
+          </SelectContent>
+        </Select>
+        {(vesselFilter !== 'all' || statusFilter !== 'all' || typeFilter !== 'all') && (
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setVesselFilter('all'); setStatusFilter('all'); setTypeFilter('all'); }}>Rensa</Button>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">{filteredDepartures.length} avgångar</span>
+      </div>
+
       <Card>
         <CardContent className="p-2">
           <div className="grid grid-cols-7 gap-1 text-xs font-medium text-muted-foreground mb-1">
@@ -342,23 +400,36 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
               const dayDeps = departuresByDay.get(key) || [];
               const isCurMonth = isSameMonth(day, month);
               const isToday = isSameDay(day, new Date());
+              const dayBooked = dayDeps.reduce((s: number, d: any) => s + (d.bookings || []).filter((b: any) => b.status !== 'avbokad').reduce((ss: number, b: any) => ss + (b.total_passengers || 0), 0), 0);
               return (
-                <button
+                <div
                   key={key}
-                  onClick={() => openCreate(day)}
-                  className={`min-h-[90px] p-1 border rounded text-left hover:bg-muted/50 transition ${
+                  className={`min-h-[140px] p-1 border rounded text-left transition flex flex-col ${
                     !isCurMonth ? 'opacity-40' : ''
                   } ${isToday ? 'border-primary border-2' : 'border-border'}`}
                 >
-                  <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : ''}`}>{format(day, 'd')}</div>
-                  <div className="space-y-0.5">
-                    {dayDeps.slice(0, 3).map((d: any) => {
+                  <div className="flex items-center justify-between mb-1">
+                    <button
+                      onClick={() => openCreate(day)}
+                      className={`text-xs font-medium hover:text-primary px-1 ${isToday ? 'text-primary' : ''}`}
+                      title="Skapa körning denna dag"
+                    >
+                      {format(day, 'd')}
+                    </button>
+                    {dayBooked > 0 && (
+                      <span className="text-[9px] text-muted-foreground tabular-nums px-1">{dayBooked} pax</span>
+                    )}
+                  </div>
+                  <div className="space-y-0.5 flex-1">
+                    {dayDeps.slice(0, 4).map((d: any) => {
                       const isPrivate = d.trip_type === 'private';
                       const booked = (d.bookings || []).filter((b: any) => b.status !== 'avbokad').reduce((s: number, b: any) => s + (b.total_passengers || 0), 0);
                       const cap = d.max_passengers || 0;
                       const ratio = cap > 0 ? booked / cap : 0;
                       const isFull = !isPrivate && booked >= cap;
                       const nearlyFull = !isPrivate && !isFull && ratio >= 0.8;
+                      const isCancelled = d.status === 'installd';
+                      const vColor = vesselColors[d.vessel_id] || 'bg-muted';
                       return (
                         <div
                           key={d.id}
@@ -370,56 +441,143 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                           className={`text-[10px] px-1 py-0.5 rounded cursor-pointer flex items-center gap-1 ${
                             isPrivate
                               ? 'bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 dark:text-amber-300'
-                              : isFull
-                                ? 'bg-destructive/15 text-destructive hover:bg-destructive/25'
-                                : nearlyFull
-                                  ? 'bg-orange-500/15 text-orange-800 hover:bg-orange-500/25 dark:text-orange-300'
-                                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+                              : isCancelled
+                                ? 'bg-muted text-muted-foreground line-through hover:bg-muted/80'
+                                : isFull
+                                  ? 'bg-destructive/15 text-destructive hover:bg-destructive/25'
+                                  : nearlyFull
+                                    ? 'bg-orange-500/15 text-orange-800 hover:bg-orange-500/25 dark:text-orange-300'
+                                    : 'bg-primary/10 text-primary hover:bg-primary/20'
                           }`}
-                          title={`${format(parseISO(d.departure_at), 'HH:mm')} ${isPrivate ? '(Enskild)' : (d.title || d.booking_routes?.name)}`}
+                          title={`${format(parseISO(d.departure_at), 'HH:mm')} ${isPrivate ? '(Enskild)' : (d.title || d.booking_routes?.name)} • ${d.vessels?.name || ''}`}
                         >
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${vColor}`} />
                           {isPrivate ? <User className="h-2.5 w-2.5 shrink-0" /> : <Users className="h-2.5 w-2.5 shrink-0" />}
                           <span className="truncate flex-1 min-w-0">
-                            {format(parseISO(d.departure_at), 'HH:mm')} {isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name)}
+                            <span className="font-semibold tabular-nums">{format(parseISO(d.departure_at), 'HH:mm')}</span>
+                            {' '}{isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name)}
                           </span>
                           {!isPrivate && (
-                            <span className="shrink-0 font-semibold tabular-nums">
-                              {booked}/{cap}
-                            </span>
+                            <span className="shrink-0 font-semibold tabular-nums">{booked}/{cap}</span>
                           )}
                         </div>
                       );
                     })}
-                    {dayDeps.length > 3 && <div className="text-[10px] text-muted-foreground">+{dayDeps.length - 3} till</div>}
+                    {dayDeps.length > 4 && (
+                      <button
+                        onClick={() => setDayOpen(day)}
+                        className="text-[10px] text-primary hover:underline font-medium w-full text-left px-1"
+                      >
+                        +{dayDeps.length - 4} till →
+                      </button>
+                    )}
                   </div>
-                </button>
+                  {dayDeps.length > 0 && (
+                    <button
+                      onClick={() => setDayOpen(day)}
+                      className="text-[9px] text-muted-foreground hover:text-foreground mt-1 text-center border-t pt-0.5"
+                    >
+                      Visa dag
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
         </CardContent>
       </Card>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20" /><Users className="h-3 w-3" />Delad körning</div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/20" /><User className="h-3 w-3" />Enskild körning</div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20" /><Users className="h-3 w-3" />Delad</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/20" /><User className="h-3 w-3" />Enskild</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-orange-500/20" />80%+</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-destructive/20" />Fullbokad</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-muted" />Inställd</div>
+        <span className="ml-2">Färgprick = fartyg</span>
       </div>
 
-      <CreateTripDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        orgId={orgId}
-        defaultDate={defaultDate}
-      />
-
+      <CreateTripDialog open={createOpen} onOpenChange={setCreateOpen} orgId={orgId} defaultDate={defaultDate} />
       <SeriesDialog open={seriesOpen} onOpenChange={setSeriesOpen} orgId={orgId} />
-
-      <EditDepartureDialog
-        departure={editing}
-        onClose={() => setEditing(null)}
-        orgId={orgId}
+      <EditDepartureDialog departure={editing} onClose={() => setEditing(null)} orgId={orgId} />
+      <DayDetailDialog
+        day={dayOpen}
+        onClose={() => setDayOpen(null)}
+        departures={dayOpen ? (departuresByDay.get(format(dayOpen, 'yyyy-MM-dd')) || []) : []}
+        onPickPrivate={(d: any) => { setDayOpen(null); setEditing(d); }}
+        onCreate={(d: Date) => { setDayOpen(null); openCreate(d); }}
+        vesselColors={vesselColors}
       />
     </div>
+  );
+}
+
+// ============================================================
+// DAY DETAIL DIALOG – full lista över avgångar för en dag
+// ============================================================
+function DayDetailDialog({ day, onClose, departures, onPickPrivate, onCreate, vesselColors }: any) {
+  const navigate = useNavigate();
+  if (!day) return null;
+  const totalBooked = departures.reduce((s: number, d: any) => s + (d.bookings || []).filter((b: any) => b.status !== 'avbokad').reduce((ss: number, b: any) => ss + (b.total_passengers || 0), 0), 0);
+  const totalCap = departures.filter((d: any) => d.trip_type === 'shared').reduce((s: number, d: any) => s + (d.max_passengers || 0), 0);
+  return (
+    <Dialog open={!!day} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 capitalize">
+            <CalendarIcon className="h-5 w-5 text-primary" />
+            {format(day, 'EEEE d MMMM yyyy', { locale: sv })}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex items-center justify-between text-sm">
+          <div className="text-muted-foreground">{departures.length} avgångar · {totalBooked}{totalCap > 0 ? `/${totalCap}` : ''} pax</div>
+          <Button size="sm" onClick={() => onCreate(day)}><Plus className="h-4 w-4 mr-1" />Ny körning</Button>
+        </div>
+        <div className="space-y-2">
+          {departures.length === 0 && <div className="text-sm text-muted-foreground text-center py-6">Inga avgångar denna dag</div>}
+          {departures.map((d: any) => {
+            const isPrivate = d.trip_type === 'private';
+            const booked = (d.bookings || []).filter((b: any) => b.status !== 'avbokad').reduce((s: number, b: any) => s + (b.total_passengers || 0), 0);
+            const cap = d.max_passengers || 0;
+            const ratio = cap > 0 ? Math.min(100, (booked / cap) * 100) : 0;
+            const isFull = !isPrivate && booked >= cap;
+            return (
+              <div
+                key={d.id}
+                onClick={() => isPrivate ? onPickPrivate(d) : navigate(`/portal/bookings/trip/${d.id}`)}
+                className="border rounded-lg p-3 hover:bg-muted/40 cursor-pointer transition"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${vesselColors[d.vessel_id] || 'bg-muted'}`} />
+                    <div className="text-sm font-bold tabular-nums w-12 shrink-0">{format(parseISO(d.departure_at), 'HH:mm')}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm flex items-center gap-1.5">
+                        {isPrivate ? <User className="h-3.5 w-3.5 text-amber-600" /> : <Users className="h-3.5 w-3.5 text-primary" />}
+                        <span className="truncate">{isPrivate ? 'Enskild körning' : (d.title || d.booking_routes?.name || 'Delad')}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2">
+                        <span>{d.vessels?.name}</span>
+                        {d.booking_routes?.name && !isPrivate && <span>· {d.booking_routes.name}</span>}
+                        {d.pickup_location && <span>· {d.pickup_location} → {d.dropoff_location}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <Badge variant={d.status === 'installd' ? 'destructive' : d.status === 'genomford' ? 'secondary' : 'outline'} className="text-[10px]">{d.status}</Badge>
+                    {!isPrivate && <div className="text-xs font-semibold mt-1 tabular-nums">{booked}/{cap}</div>}
+                  </div>
+                </div>
+                {!isPrivate && cap > 0 && (
+                  <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full ${isFull ? 'bg-destructive' : ratio >= 80 ? 'bg-orange-500' : 'bg-primary'}`} style={{ width: `${ratio}%` }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
