@@ -443,6 +443,7 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                       const nearlyFull = !isPrivate && !isFull && ratio >= 0.8;
                       const isCancelled = d.status === 'installd';
                       const vColor = vesselColors[d.vessel_id] || 'bg-muted';
+                      const isDraft = (d.bookings || []).some((b: any) => b.is_draft);
                       return (
                         <div
                           key={d.id}
@@ -452,7 +453,9 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                             else navigate(`/portal/bookings/trip/${d.id}`);
                           }}
                           className={`text-[10px] px-1 py-0.5 rounded cursor-pointer flex items-center gap-1 ${
-                            isPrivate
+                            isDraft
+                              ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-dashed border-amber-500/60 hover:bg-amber-500/20'
+                              : isPrivate
                               ? 'bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 dark:text-amber-300'
                               : isCancelled
                                 ? 'bg-muted text-muted-foreground line-through hover:bg-muted/80'
@@ -468,8 +471,9 @@ function CalendarTab({ orgId }: { orgId: string | null }) {
                           {isPrivate ? <User className="h-2.5 w-2.5 shrink-0" /> : <Users className="h-2.5 w-2.5 shrink-0" />}
                           <span className="truncate flex-1 min-w-0">
                             <span className="font-semibold tabular-nums">{format(parseISO(d.departure_at), 'HH:mm')}</span>
-                            {' '}{isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name)}
+                            {' '}{isDraft ? (d.title || 'Utkast') : (isPrivate ? 'Enskild' : (d.title || d.booking_routes?.name))}
                           </span>
+                          {isDraft && <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide">Utkast</span>}
                           {!isPrivate && (
                             <span className="shrink-0 font-semibold tabular-nums">{booked}/{cap}</span>
                           )}
