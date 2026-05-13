@@ -132,7 +132,7 @@ function ResourceTab({ orgId }: { orgId: string | null }) {
     enabled: !!orgId,
     queryFn: async () => {
       const { data } = await supabase.from('booking_departures')
-        .select('id, departure_at, arrival_at, vessel_id, max_passengers, trip_type, title, status, booking_routes(name), bookings(total_passengers, status)')
+        .select('id, departure_at, arrival_at, vessel_id, max_passengers, trip_type, title, status, pickup_location, dropoff_location, booking_routes(name), bookings(customer_name, total_passengers, status)')
         .eq('organization_id', orgId!)
         .gte('departure_at', weekStart.toISOString())
         .lte('departure_at', addDays(weekStart, 7).toISOString())
