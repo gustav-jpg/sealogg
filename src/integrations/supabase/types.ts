@@ -503,55 +503,88 @@ export type Database = {
       }
       bookings: {
         Row: {
+          accessibility_needs: string | null
           booking_number: string
           cancelled_at: string | null
+          checked_in_at: string | null
+          checked_in_count: number
+          country: string | null
           created_at: string
           customer_email: string
           customer_name: string
           customer_notes: string | null
           customer_phone: string | null
           departure_id: string
+          deposit_paid_sek: number
+          dietary_requirements: string | null
           id: string
           internal_notes: string | null
+          invoice_number: string | null
+          language: string | null
           organization_id: string
           payment_status: Database["public"]["Enums"]["booking_payment_status"]
+          priority: string
+          source: string | null
           status: Database["public"]["Enums"]["booking_status"]
+          tags: string[]
           total_passengers: number
           total_price_sek: number
           updated_at: string
         }
         Insert: {
+          accessibility_needs?: string | null
           booking_number?: string
           cancelled_at?: string | null
+          checked_in_at?: string | null
+          checked_in_count?: number
+          country?: string | null
           created_at?: string
           customer_email: string
           customer_name: string
           customer_notes?: string | null
           customer_phone?: string | null
           departure_id: string
+          deposit_paid_sek?: number
+          dietary_requirements?: string | null
           id?: string
           internal_notes?: string | null
+          invoice_number?: string | null
+          language?: string | null
           organization_id: string
           payment_status?: Database["public"]["Enums"]["booking_payment_status"]
+          priority?: string
+          source?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
+          tags?: string[]
           total_passengers?: number
           total_price_sek?: number
           updated_at?: string
         }
         Update: {
+          accessibility_needs?: string | null
           booking_number?: string
           cancelled_at?: string | null
+          checked_in_at?: string | null
+          checked_in_count?: number
+          country?: string | null
           created_at?: string
           customer_email?: string
           customer_name?: string
           customer_notes?: string | null
           customer_phone?: string | null
           departure_id?: string
+          deposit_paid_sek?: number
+          dietary_requirements?: string | null
           id?: string
           internal_notes?: string | null
+          invoice_number?: string | null
+          language?: string | null
           organization_id?: string
           payment_status?: Database["public"]["Enums"]["booking_payment_status"]
+          priority?: string
+          source?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
+          tags?: string[]
           total_passengers?: number
           total_price_sek?: number
           updated_at?: string
