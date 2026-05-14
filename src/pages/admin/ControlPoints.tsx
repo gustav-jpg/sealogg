@@ -153,10 +153,11 @@ export default function ControlPoints() {
       if (error) throw error;
 
       // Add vessel association
-      await supabase.from('control_point_vessels').insert({
+      const { error: linkError } = await supabase.from('control_point_vessels').insert({
         control_point_id: cp.id,
         vessel_id: selectedVessel,
       });
+      if (linkError) throw new Error(`Kunde inte koppla punkten till fartyget: ${linkError.message}`);
 
       return cp;
     },
@@ -195,15 +196,17 @@ export default function ControlPoints() {
       if (error) throw error;
 
       // Update vessel association
-      await supabase
+      const { error: delErr } = await supabase
         .from('control_point_vessels')
         .delete()
         .eq('control_point_id', editingControlPoint.id);
+      if (delErr) throw new Error(`Kunde inte uppdatera fartygskoppling: ${delErr.message}`);
 
-      await supabase.from('control_point_vessels').insert({
+      const { error: insErr } = await supabase.from('control_point_vessels').insert({
         control_point_id: editingControlPoint.id,
         vessel_id: selectedVessel,
       });
+      if (insErr) throw new Error(`Kunde inte koppla punkten till fartyget: ${insErr.message}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['control-points-admin'] });
