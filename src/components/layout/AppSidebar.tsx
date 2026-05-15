@@ -44,6 +44,7 @@ import {
   Warehouse as WarehouseIcon,
   Receipt,
   Truck,
+  Boxes,
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo-white.png';
 import sealoggIcon from '@/assets/sealog-icon.png';
@@ -212,6 +213,7 @@ export function AppSidebar() {
     { module: 'eshop', href: '/portal/eshop/admin/categories', label: 'Kategorier', icon: Tag },
     { module: 'eshop', href: '/portal/eshop/admin/suppliers', label: 'Leverantörer', icon: Users },
     { module: 'eshop', href: '/portal/eshop/admin/warehouses', label: 'Lager', icon: WarehouseIcon },
+    { module: 'eshop', href: '/portal/eshop/admin/inventory', label: 'Lagersaldo', icon: Boxes },
     { module: 'eshop', href: '/portal/eshop/admin/orders', label: 'Order', icon: Truck },
     { module: 'eshop', href: '/portal/eshop/admin/invoices', label: 'Fakturor', icon: Receipt },
   ];

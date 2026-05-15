@@ -78,6 +78,7 @@ const EshopProducts = lazy(() => import("./pages/eshop/admin/Products"));
 const EshopCategories = lazy(() => import("./pages/eshop/admin/Categories"));
 const EshopSuppliers = lazy(() => import("./pages/eshop/admin/Suppliers"));
 const EshopWarehouses = lazy(() => import("./pages/eshop/admin/Warehouses"));
+const EshopInventory = lazy(() => import("./pages/eshop/admin/Inventory"));
 const EshopOrders = lazy(() => import("./pages/eshop/admin/Orders"));
 const EshopInvoices = lazy(() => import("./pages/eshop/admin/Invoices"));
 
@@ -251,6 +252,7 @@ function AppRoutes() {
         <Route path="/portal/eshop/admin/categories" element={<ProtectedRoute adminOnly><EshopCategories /></ProtectedRoute>} />
         <Route path="/portal/eshop/admin/suppliers" element={<ProtectedRoute adminOnly><EshopSuppliers /></ProtectedRoute>} />
         <Route path="/portal/eshop/admin/warehouses" element={<ProtectedRoute adminOnly><EshopWarehouses /></ProtectedRoute>} />
+        <Route path="/portal/eshop/admin/inventory" element={<ProtectedRoute adminOnly><EshopInventory /></ProtectedRoute>} />
         <Route path="/portal/eshop/admin/orders" element={<ProtectedRoute adminOnly><EshopOrders /></ProtectedRoute>} />
         <Route path="/portal/eshop/admin/invoices" element={<ProtectedRoute adminOnly><EshopInvoices /></ProtectedRoute>} />
 
