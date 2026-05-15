@@ -73,6 +73,13 @@ const BookingsSchedules = lazy(() => import("./pages/bookings/admin/Schedules"))
 const BookingsDepartures = lazy(() => import("./pages/bookings/admin/Departures"));
 const BookingsFares = lazy(() => import("./pages/bookings/admin/Fares"));
 const BookingsSettings = lazy(() => import("./pages/bookings/admin/Settings"));
+const EshopHome = lazy(() => import("./pages/eshop/EshopHome"));
+const EshopProducts = lazy(() => import("./pages/eshop/admin/Products"));
+const EshopCategories = lazy(() => import("./pages/eshop/admin/Categories"));
+const EshopSuppliers = lazy(() => import("./pages/eshop/admin/Suppliers"));
+const EshopWarehouses = lazy(() => import("./pages/eshop/admin/Warehouses"));
+const EshopOrders = lazy(() => import("./pages/eshop/admin/Orders"));
+const EshopInvoices = lazy(() => import("./pages/eshop/admin/Invoices"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -237,6 +244,15 @@ function AppRoutes() {
         <Route path="/portal/bookings/admin/departures" element={<ProtectedRoute adminOnly><BookingsDepartures /></ProtectedRoute>} />
         <Route path="/portal/bookings/admin/fares" element={<ProtectedRoute adminOnly><BookingsFares /></ProtectedRoute>} />
         <Route path="/portal/bookings/admin/settings" element={<ProtectedRoute adminOnly><BookingsSettings /></ProtectedRoute>} />
+
+        {/* e-Skeppshandel module */}
+        <Route path="/portal/eshop" element={<ProtectedRoute><EshopHome /></ProtectedRoute>} />
+        <Route path="/portal/eshop/admin/products" element={<ProtectedRoute adminOnly><EshopProducts /></ProtectedRoute>} />
+        <Route path="/portal/eshop/admin/categories" element={<ProtectedRoute adminOnly><EshopCategories /></ProtectedRoute>} />
+        <Route path="/portal/eshop/admin/suppliers" element={<ProtectedRoute adminOnly><EshopSuppliers /></ProtectedRoute>} />
+        <Route path="/portal/eshop/admin/warehouses" element={<ProtectedRoute adminOnly><EshopWarehouses /></ProtectedRoute>} />
+        <Route path="/portal/eshop/admin/orders" element={<ProtectedRoute adminOnly><EshopOrders /></ProtectedRoute>} />
+        <Route path="/portal/eshop/admin/invoices" element={<ProtectedRoute adminOnly><EshopInvoices /></ProtectedRoute>} />
 
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
