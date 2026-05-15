@@ -414,39 +414,6 @@ export function AppSidebar() {
           </Collapsible>
         )}
 
-        {/* Eshop admin (collapsible) */}
-        {isAdmin && eshopAdminItems.length > 0 && (
-          <Collapsible defaultOpen={isEshopAdminActive} className="group/eshop-admin">
-            <SidebarGroup>
-              <SidebarGroupLabel asChild>
-                <CollapsibleTrigger className="flex w-full items-center justify-between px-2 text-xs text-muted-foreground hover:text-foreground">
-                  <span className="flex items-center gap-2">
-                    <ShoppingCart className="h-3.5 w-3.5" />
-                    e-Skeppshandel – inställningar
-                  </span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=closed]/eshop-admin:-rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {eshopAdminItems.map((item) => (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
-                          <Link to={item.href}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        )}
-
         {/* Skeppare-only Settings (when not admin) */}
         {!isAdmin && isSkeppare && vesselNavItems.length > 0 && (
           <SidebarGroup>
