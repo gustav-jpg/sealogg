@@ -13,13 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Package, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Search, Upload, X } from 'lucide-react';
 
 const empty: any = {
   id: '', sku: '', name: '', description: '',
   category_id: null, primary_supplier_id: null, brand: '',
   weight_g: '', price_excl_vat: 0, purchase_price: '', vat_rate: 25,
-  lead_time_days: '', is_active: true, dropship: false,
+  lead_time_days: '', is_active: true, dropship: false, image_url: '',
 };
 
 export default function EshopProducts() {
@@ -28,6 +28,7 @@ export default function EshopProducts() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
   const [search, setSearch] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['es_products', selectedOrgId],
@@ -81,6 +82,7 @@ export default function EshopProducts() {
         lead_time_days: p.lead_time_days === '' ? null : Number(p.lead_time_days),
         is_active: !!p.is_active,
         dropship: !!p.dropship,
+        image_url: p.image_url || null,
       };
       if (p.id) { const { error } = await supabase.from('es_products').update(row).eq('id', p.id); if (error) throw error; }
       else { const { error } = await supabase.from('es_products').insert(row); if (error) throw error; }
@@ -97,6 +99,26 @@ export default function EshopProducts() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['es_products'] }); toast.success('Borttagen'); },
     onError: (e: any) => toast.error(e.message),
   });
+
+  async function handleImageUpload(file: File) {
+    if (!selectedOrgId) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${selectedOrgId}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('eshop-products')
+        .upload(path, file, { upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from('eshop-products').getPublicUrl(path);
+      setForm((f: any) => ({ ...f, image_url: data.publicUrl }));
+      toast.success('Bild uppladdad');
+    } catch (e: any) {
+      toast.error(e.message ?? 'Uppladdning misslyckades');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const filtered = rows.filter((r: any) => {
     if (!search) return true;
@@ -123,6 +145,46 @@ export default function EshopProducts() {
                 </div>
                 <div className="space-y-1"><Label>Namn *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                 <div className="space-y-1"><Label>Beskrivning</Label><Textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+                <div className="space-y-1">
+                  <Label>Produktbild</Label>
+                  <div className="flex items-center gap-3">
+                    {form.image_url ? (
+                      <div className="relative">
+                        <img src={form.image_url} alt="" className="h-20 w-20 object-cover rounded border" />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                          onClick={() => setForm({ ...form, image_url: '' })}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="h-20 w-20 rounded border border-dashed flex items-center justify-center bg-muted">
+                        <Package className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleImageUpload(f);
+                          e.target.value = '';
+                        }}
+                      />
+                      <span className="inline-flex items-center gap-2 text-sm border rounded-md px-3 py-2 hover:bg-muted">
+                        <Upload className="h-4 w-4" />
+                        {uploading ? 'Laddar upp…' : form.image_url ? 'Byt bild' : 'Ladda upp bild'}
+                      </span>
+                    </label>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1"><Label>Kategori</Label>
                     <Select value={form.category_id || ''} onValueChange={(v) => setForm({ ...form, category_id: v })}>
@@ -175,11 +237,20 @@ export default function EshopProducts() {
             ) : (
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead>SKU</TableHead><TableHead>Namn</TableHead><TableHead>Kategori</TableHead><TableHead>Leverantör</TableHead><TableHead className="text-right">Pris</TableHead><TableHead>Status</TableHead><TableHead className="w-24"></TableHead>
+                  <TableHead className="w-14"></TableHead><TableHead>SKU</TableHead><TableHead>Namn</TableHead><TableHead>Kategori</TableHead><TableHead>Leverantör</TableHead><TableHead className="text-right">Pris</TableHead><TableHead>Status</TableHead><TableHead className="w-24"></TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {filtered.map((r: any) => (
                     <TableRow key={r.id}>
+                      <TableCell>
+                        {r.image_url ? (
+                          <img src={r.image_url} alt="" className="h-10 w-10 object-cover rounded" />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{r.sku}</TableCell>
                       <TableCell className="font-medium">{r.name}{r.brand ? <span className="text-muted-foreground text-xs"> · {r.brand}</span> : null}</TableCell>
                       <TableCell className="text-muted-foreground">{r.es_categories?.name || '–'}</TableCell>
