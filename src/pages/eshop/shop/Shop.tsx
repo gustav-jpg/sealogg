@@ -39,7 +39,7 @@ export default function EshopShop() {
     queryFn: async () => {
       let q = supabase
         .from('es_products')
-        .select('id,sku,name,description,brand,price_excl_vat,vat_rate,category_id,es_categories(name)')
+        .select('id,sku,name,description,brand,price_excl_vat,vat_rate,category_id,image_url,es_categories(name)')
         .eq('organization_id', selectedOrgId!)
         .eq('is_active', true)
         .order('name');
@@ -145,6 +145,20 @@ export default function EshopShop() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((p: any) => (
                   <Card key={p.id} className="flex flex-col">
+                    <Link to={`/portal/eshop/product/${p.id}`} className="block">
+                      <div className="aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt={p.name}
+                            loading="lazy"
+                            className="w-full h-full object-cover hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <Package className="h-12 w-12 text-muted-foreground/40" />
+                        )}
+                      </div>
+                    </Link>
                     <CardContent className="p-4 flex-1 flex flex-col gap-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
