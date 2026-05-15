@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useOrganization } from '@/contexts/OrganizationContext';
+import BackofficeLayout from '@/components/layout/BackofficeLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +22,6 @@ const empty: any = {
 };
 
 export default function EshopProducts() {
-  const { selectedOrgId } = useOrganization();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
@@ -31,13 +29,11 @@ export default function EshopProducts() {
   const [uploading, setUploading] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['es_products', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_products'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('es_products')
         .select('*, es_categories(name), es_suppliers(name)')
-        .eq('organization_id', selectedOrgId!)
         .order('name');
       if (error) throw error;
       return data as any[];
@@ -45,20 +41,18 @@ export default function EshopProducts() {
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ['es_categories_select', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_categories_select'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('es_categories').select('id,name').eq('organization_id', selectedOrgId!).eq('is_active', true).order('name');
+      const { data, error } = await supabase.from('es_categories').select('id,name').eq('is_active', true).order('name');
       if (error) throw error;
       return data as any[];
     },
   });
 
   const { data: suppliers = [] } = useQuery({
-    queryKey: ['es_suppliers_psel', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_suppliers_psel'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('es_suppliers').select('id,name').eq('organization_id', selectedOrgId!).eq('is_active', true).order('name');
+      const { data, error } = await supabase.from('es_suppliers').select('id,name').eq('is_active', true).order('name');
       if (error) throw error;
       return data as any[];
     },
@@ -66,9 +60,7 @@ export default function EshopProducts() {
 
   const save = useMutation({
     mutationFn: async (p: any) => {
-      if (!selectedOrgId) throw new Error('Ingen organisation');
       const row = {
-        organization_id: selectedOrgId,
         sku: p.sku.trim(),
         name: p.name.trim(),
         description: p.description || null,
@@ -101,11 +93,10 @@ export default function EshopProducts() {
   });
 
   async function handleImageUpload(file: File) {
-    if (!selectedOrgId) return;
     setUploading(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const path = `${selectedOrgId}/${crypto.randomUUID()}.${ext}`;
+      const path = `global/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from('eshop-products')
         .upload(path, file, { upsert: false, contentType: file.type });
@@ -127,7 +118,7 @@ export default function EshopProducts() {
   });
 
   return (
-    <MainLayout>
+    <BackofficeLayout>
       <div className="container mx-auto p-4 md:p-6 max-w-6xl space-y-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
@@ -269,6 +260,6 @@ export default function EshopProducts() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </BackofficeLayout>
   );
 }

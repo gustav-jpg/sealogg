@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useOrganization } from '@/contexts/OrganizationContext';
+import BackofficeLayout from '@/components/layout/BackofficeLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -38,7 +37,6 @@ const REASONS = [
 ];
 
 export default function EshopInventory() {
-  const { selectedOrgId } = useOrganization();
   const { user } = useAuth();
   const qc = useQueryClient();
   const [warehouseId, setWarehouseId] = useState<string>('');
@@ -47,10 +45,9 @@ export default function EshopInventory() {
   const [adjustForm, setAdjustForm] = useState<any>({ product_id: '', name: '', qty: '', direction: 'in', reason: 'inleverans', note: '' });
 
   const { data: warehouses = [] } = useQuery({
-    queryKey: ['es_warehouses_inv', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_warehouses_inv'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('es_warehouses').select('id,name').eq('organization_id', selectedOrgId!).eq('is_active', true).order('name');
+      const { data, error } = await supabase.from('es_warehouses').select('id,name').eq('is_active', true).order('name');
       if (error) throw error;
       if (data && data.length > 0 && !warehouseId) setWarehouseId(data[0].id);
       return data as any[];
@@ -58,10 +55,9 @@ export default function EshopInventory() {
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['es_products_inv', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_products_inv'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('es_products').select('id,sku,name,brand').eq('organization_id', selectedOrgId!).eq('is_active', true).order('name');
+      const { data, error } = await supabase.from('es_products').select('id,sku,name,brand').eq('is_active', true).order('name');
       if (error) throw error;
       return data as any[];
     },
@@ -97,12 +93,11 @@ export default function EshopInventory() {
 
   const move = useMutation({
     mutationFn: async (p: any) => {
-      if (!selectedOrgId || !warehouseId) throw new Error('Välj lager');
+      if (!warehouseId) throw new Error('Välj lager');
       const qtyAbs = Math.abs(Number(p.qty));
       if (!qtyAbs) throw new Error('Antal saknas');
       const signedQty = p.direction === 'out' ? -qtyAbs : qtyAbs;
       const { error } = await supabase.from('es_inventory_moves').insert({
-        organization_id: selectedOrgId,
         warehouse_id: warehouseId,
         product_id: p.product_id,
         qty: signedQty,
@@ -172,7 +167,7 @@ export default function EshopInventory() {
   const lowCount = rows.filter(r => r.warning_level > 0 && r.on_hand <= r.warning_level).length;
 
   return (
-    <MainLayout>
+    <BackofficeLayout>
       <div className="container mx-auto p-4 md:p-6 max-w-6xl space-y-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
@@ -334,7 +329,7 @@ export default function EshopInventory() {
           </DialogContent>
         </Dialog>
       </div>
-    </MainLayout>
+    </BackofficeLayout>
   );
 }
 

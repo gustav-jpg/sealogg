@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useOrganization } from '@/contexts/OrganizationContext';
+import BackofficeLayout from '@/components/layout/BackofficeLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,16 +19,14 @@ function slugify(s: string) {
 }
 
 export default function EshopCategories() {
-  const { selectedOrgId } = useOrganization();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['es_categories', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_categories'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('es_categories').select('*').eq('organization_id', selectedOrgId!).order('sort_order').order('name');
+      const { data, error } = await supabase.from('es_categories').select('*').order('sort_order').order('name');
       if (error) throw error;
       return data as any[];
     },
@@ -37,9 +34,7 @@ export default function EshopCategories() {
 
   const save = useMutation({
     mutationFn: async (p: any) => {
-      if (!selectedOrgId) throw new Error('Ingen organisation');
       const row = {
-        organization_id: selectedOrgId,
         name: p.name,
         slug: p.slug || slugify(p.name),
         sort_order: Number(p.sort_order) || 0,
@@ -67,7 +62,7 @@ export default function EshopCategories() {
   });
 
   return (
-    <MainLayout>
+    <BackofficeLayout>
       <div className="container mx-auto p-4 md:p-6 max-w-5xl space-y-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
@@ -119,6 +114,6 @@ export default function EshopCategories() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </BackofficeLayout>
   );
 }

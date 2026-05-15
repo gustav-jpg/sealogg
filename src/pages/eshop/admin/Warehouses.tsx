@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { useOrganization } from '@/contexts/OrganizationContext';
+import BackofficeLayout from '@/components/layout/BackofficeLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,26 +16,23 @@ import { Plus, Pencil, Trash2, Warehouse } from 'lucide-react';
 const empty: any = { id: '', name: '', is_external: false, supplier_id: null, is_active: true };
 
 export default function EshopWarehouses() {
-  const { selectedOrgId } = useOrganization();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['es_warehouses', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_warehouses'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('es_warehouses').select('*, es_suppliers(name)').eq('organization_id', selectedOrgId!).order('name');
+      const { data, error } = await supabase.from('es_warehouses').select('*, es_suppliers(name)').order('name');
       if (error) throw error;
       return data as any[];
     },
   });
 
   const { data: suppliers = [] } = useQuery({
-    queryKey: ['es_suppliers_select', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['es_suppliers_select'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('es_suppliers').select('id,name').eq('organization_id', selectedOrgId!).eq('is_active', true).order('name');
+      const { data, error } = await supabase.from('es_suppliers').select('id,name').eq('is_active', true).order('name');
       if (error) throw error;
       return data as any[];
     },
@@ -44,9 +40,7 @@ export default function EshopWarehouses() {
 
   const save = useMutation({
     mutationFn: async (p: any) => {
-      if (!selectedOrgId) throw new Error('Ingen organisation');
       const row = {
-        organization_id: selectedOrgId,
         name: p.name,
         is_external: !!p.is_external,
         supplier_id: p.supplier_id || null,
@@ -69,7 +63,7 @@ export default function EshopWarehouses() {
   });
 
   return (
-    <MainLayout>
+    <BackofficeLayout>
       <div className="container mx-auto p-4 md:p-6 max-w-5xl space-y-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
@@ -130,6 +124,6 @@ export default function EshopWarehouses() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </BackofficeLayout>
   );
 }
