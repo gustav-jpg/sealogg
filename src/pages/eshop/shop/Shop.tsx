@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useEshopCart } from '@/hooks/useEshopCart';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +12,6 @@ import { ShoppingCart, Search, Package, Plus, Minus, ListOrdered } from 'lucide-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function EshopShop() {
-  const { selectedOrgId } = useOrganization();
   const cart = useEshopCart();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
