@@ -219,11 +219,24 @@ export function AppSidebar() {
   ];
 
   // Filter module-specific items based on active modules
-  const filteredModuleAdminItems = moduleAdminItems
-    .filter(item => orgModules?.includes(item.module) || isSuperadmin)
+  const visibleModuleAdminItems = moduleAdminItems.filter(
+    item => orgModules?.includes(item.module) || isSuperadmin
+  );
+
+  const bookingsAdminItems = visibleModuleAdminItems
+    .filter(i => i.module === 'bookings')
+    .map(({ href, label, icon }) => ({ href, label, icon }));
+  const eshopAdminItems = visibleModuleAdminItems
+    .filter(i => i.module === 'eshop')
+    .map(({ href, label, icon }) => ({ href, label, icon }));
+  const otherModuleAdminItems = visibleModuleAdminItems
+    .filter(i => i.module !== 'bookings' && i.module !== 'eshop')
     .map(({ href, label, icon }) => ({ href, label, icon }));
 
-  const vesselAdminItems = [...baseVesselAdminItems, ...filteredModuleAdminItems];
+  const vesselAdminItems = [...baseVesselAdminItems, ...otherModuleAdminItems];
+
+  const isBookingsAdminActive = bookingsAdminItems.some(i => isActiveStartsWith(i.href, location.pathname));
+  const isEshopAdminActive = eshopAdminItems.some(i => isActiveStartsWith(i.href, location.pathname));
 
   const isInVesselSection = location.pathname.startsWith('/portal');
 
