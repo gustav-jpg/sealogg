@@ -38,6 +38,11 @@ import {
   MapPin,
   CalendarClock,
   Car,
+  ShoppingCart,
+  Package,
+  Tag,
+  Warehouse as WarehouseIcon,
+  Receipt,
 } from 'lucide-react';
 import sealoggLogo from '@/assets/sealog-logo-white.png';
 import sealoggIcon from '@/assets/sealog-icon.png';
@@ -71,7 +76,7 @@ import { KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'documents' | 'rustning' | 'bookings';
+type AppModule = 'logbook' | 'deviations' | 'fault_cases' | 'self_control' | 'checklists' | 'documents' | 'rustning' | 'bookings' | 'eshop';
 
 // Map modules to nav items
 const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any }> = {
@@ -83,6 +88,7 @@ const MODULE_NAV_MAP: Record<AppModule, { href: string; label: string; icon: any
   documents: { href: '/portal/documents', label: 'Dokument', icon: FileText },
   rustning: { href: '/portal/rustning', label: 'Rustning', icon: Hammer },
   bookings: { href: '/portal/bookings', label: 'Bokningar', icon: Ticket },
+  eshop: { href: '/portal/eshop', label: 'e-Skeppshandel', icon: ShoppingCart },
 };
 
 export function AppSidebar() {
@@ -126,7 +132,7 @@ export function AppSidebar() {
   const currentSelectedOrg = userOrgs?.find(o => o.organization_id === selectedOrgId);
 
   // Filter nav items based on active modules and user role
-  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents', 'bookings'];
+  const vesselModules: AppModule[] = ['logbook', 'deviations', 'fault_cases', 'self_control', 'rustning', 'checklists', 'documents', 'bookings', 'eshop'];
 
   // Deckhand only sees: Startsida, Passagerare, Felärenden, Checklistor, Rustning
   const deckhandAllowedModules: AppModule[] = ['fault_cases', 'checklists', 'rustning'];
@@ -201,6 +207,12 @@ export function AppSidebar() {
     { module: 'bookings', href: '/portal/bookings/admin/departures', label: 'Avgångar', icon: Calendar },
     { module: 'bookings', href: '/portal/bookings/admin/fares', label: 'Priser', icon: Car },
     { module: 'bookings', href: '/portal/bookings/admin/settings', label: 'Bokningsinställningar', icon: Settings },
+    { module: 'eshop', href: '/portal/eshop/admin/products', label: 'Produkter', icon: Package },
+    { module: 'eshop', href: '/portal/eshop/admin/categories', label: 'Kategorier', icon: Tag },
+    { module: 'eshop', href: '/portal/eshop/admin/suppliers', label: 'Leverantörer', icon: Users },
+    { module: 'eshop', href: '/portal/eshop/admin/warehouses', label: 'Lager', icon: WarehouseIcon },
+    { module: 'eshop', href: '/portal/eshop/admin/orders', label: 'Order', icon: Truck },
+    { module: 'eshop', href: '/portal/eshop/admin/invoices', label: 'Fakturor', icon: Receipt },
   ];
 
   // Filter module-specific items based on active modules
