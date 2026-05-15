@@ -235,8 +235,8 @@ export function AppSidebar() {
 
   const vesselAdminItems = [...baseVesselAdminItems, ...otherModuleAdminItems];
 
-  const isBookingsAdminActive = bookingsAdminItems.some(i => isActiveStartsWith(i.href, location.pathname));
-  const isEshopAdminActive = eshopAdminItems.some(i => isActiveStartsWith(i.href, location.pathname));
+  const isBookingsAdminActive = bookingsAdminItems.some(i => location.pathname.startsWith(i.href));
+  const isEshopAdminActive = eshopAdminItems.some(i => location.pathname.startsWith(i.href));
 
   const isInVesselSection = location.pathname.startsWith('/portal');
 
