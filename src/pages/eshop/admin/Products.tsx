@@ -100,8 +100,6 @@ export default function EshopProducts() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const filtered = rows.filter((r: any) => {
-
   async function handleImageUpload(file: File) {
     if (!selectedOrgId) return;
     setUploading(true);
@@ -122,13 +120,11 @@ export default function EshopProducts() {
     }
   }
 
-  const _f = rows.filter((r: any) => {
+  const filtered = rows.filter((r: any) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return r.name?.toLowerCase().includes(q) || r.sku?.toLowerCase().includes(q) || r.brand?.toLowerCase().includes(q);
   });
-  void _f;
-  const filteredFinal = _f;
 
   return (
     <MainLayout>
