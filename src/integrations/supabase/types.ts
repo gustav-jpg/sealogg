@@ -2166,7 +2166,7 @@ export type Database = {
           reorder_level: number
           reserved: number
           updated_at: string
-          variant_id: string
+          variant_id: string | null
           warehouse_id: string
           warning_level: number
         }
@@ -2176,7 +2176,7 @@ export type Database = {
           reorder_level?: number
           reserved?: number
           updated_at?: string
-          variant_id: string
+          variant_id?: string | null
           warehouse_id: string
           warning_level?: number
         }
@@ -2186,7 +2186,7 @@ export type Database = {
           reorder_level?: number
           reserved?: number
           updated_at?: string
-          variant_id?: string
+          variant_id?: string | null
           warehouse_id?: string
           warning_level?: number
         }
