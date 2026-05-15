@@ -33,7 +33,7 @@ export default function EshopProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('es_products')
-        .select('*, es_categories(name), es_suppliers(name)')
+        .select('*, es_categories(name), es_suppliers!es_products_primary_supplier_id_fkey(name)')
         .order('name');
       if (error) throw error;
       return data as any[];
