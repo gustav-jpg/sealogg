@@ -74,7 +74,7 @@ export default function EshopCart() {
           organization_id: selectedOrgId,
           ordered_by: cart.userId,
           vessel_id: vesselId !== 'none' ? vesselId : null,
-          status: 'pending',
+          status: 'mottagen',
           sub_total: sub,
           vat_total: vat,
           grand_total: grand,
