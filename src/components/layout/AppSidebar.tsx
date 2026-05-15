@@ -219,11 +219,24 @@ export function AppSidebar() {
   ];
 
   // Filter module-specific items based on active modules
-  const filteredModuleAdminItems = moduleAdminItems
-    .filter(item => orgModules?.includes(item.module) || isSuperadmin)
+  const visibleModuleAdminItems = moduleAdminItems.filter(
+    item => orgModules?.includes(item.module) || isSuperadmin
+  );
+
+  const bookingsAdminItems = visibleModuleAdminItems
+    .filter(i => i.module === 'bookings')
+    .map(({ href, label, icon }) => ({ href, label, icon }));
+  const eshopAdminItems = visibleModuleAdminItems
+    .filter(i => i.module === 'eshop')
+    .map(({ href, label, icon }) => ({ href, label, icon }));
+  const otherModuleAdminItems = visibleModuleAdminItems
+    .filter(i => i.module !== 'bookings' && i.module !== 'eshop')
     .map(({ href, label, icon }) => ({ href, label, icon }));
 
-  const vesselAdminItems = [...baseVesselAdminItems, ...filteredModuleAdminItems];
+  const vesselAdminItems = [...baseVesselAdminItems, ...otherModuleAdminItems];
+
+  const isBookingsAdminActive = bookingsAdminItems.some(i => location.pathname.startsWith(i.href));
+  const isEshopAdminActive = eshopAdminItems.some(i => location.pathname.startsWith(i.href));
 
   const isInVesselSection = location.pathname.startsWith('/portal');
 
@@ -377,6 +390,72 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+        )}
+
+        {/* Bookings admin (collapsible) */}
+        {isAdmin && bookingsAdminItems.length > 0 && (
+          <Collapsible defaultOpen={isBookingsAdminActive} className="group/bookings-admin">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between px-2 text-xs text-muted-foreground hover:text-foreground">
+                  <span className="flex items-center gap-2">
+                    <Ticket className="h-3.5 w-3.5" />
+                    Bokningar – inställningar
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=closed]/bookings-admin:-rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {bookingsAdminItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
+                          <Link to={item.href}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
+
+        {/* Eshop admin (collapsible) */}
+        {isAdmin && eshopAdminItems.length > 0 && (
+          <Collapsible defaultOpen={isEshopAdminActive} className="group/eshop-admin">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between px-2 text-xs text-muted-foreground hover:text-foreground">
+                  <span className="flex items-center gap-2">
+                    <ShoppingCart className="h-3.5 w-3.5" />
+                    e-Skeppshandel – inställningar
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=closed]/eshop-admin:-rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {eshopAdminItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
+                          <Link to={item.href}>
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         )}
 
         {/* Skeppare-only Settings (when not admin) */}
