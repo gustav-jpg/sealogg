@@ -9,13 +9,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Search, Package, Plus, ListOrdered } from 'lucide-react';
+import { ShoppingCart, Search, Package, Plus, Minus, ListOrdered } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function EshopShop() {
   const { selectedOrgId } = useOrganization();
   const cart = useEshopCart();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [qty, setQty] = useState(1);
+
+  const openProduct = (p: any) => {
+    setSelected(p);
+    setQty(1);
+  };
 
   const { data: categories = [] } = useQuery({
     queryKey: ['shop_categories', selectedOrgId],
@@ -145,7 +153,11 @@ export default function EshopShop() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((p: any) => (
                   <Card key={p.id} className="flex flex-col">
-                    <Link to={`/portal/eshop/product/${p.id}`} className="block">
+                    <button
+                      type="button"
+                      onClick={() => openProduct(p)}
+                      className="block text-left"
+                    >
                       <div className="aspect-square bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
                         {p.image_url ? (
                           <img
@@ -158,48 +170,43 @@ export default function EshopShop() {
                           <Package className="h-12 w-12 text-muted-foreground/40" />
                         )}
                       </div>
-                    </Link>
+                    </button>
                     <CardContent className="p-4 flex-1 flex flex-col gap-2">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <Link
-                            to={`/portal/eshop/product/${p.id}`}
-                            className="font-medium hover:underline line-clamp-2"
-                          >
-                            {p.name}
-                          </Link>
-                          <p className="text-xs text-muted-foreground">{p.sku}</p>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openProduct(p)}
+                          className="font-medium hover:underline line-clamp-2 text-left min-w-0"
+                        >
+                          {p.name}
+                        </button>
                         {p.brand && (
                           <Badge variant="outline" className="shrink-0">
                             {p.brand}
                           </Badge>
                         )}
                       </div>
-                      {p.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {p.description}
-                        </p>
-                      )}
-                      <div className="mt-auto flex items-center justify-between pt-2">
-                        <div>
-                          <div className="text-lg font-semibold">
+                      <p className="text-xs text-muted-foreground">{p.sku}</p>
+                      <div className="mt-auto pt-2 space-y-2">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-lg font-semibold">
                             {Number(p.price_excl_vat).toLocaleString('sv-SE', {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}{' '}
                             kr
-                          </div>
-                          <div className="text-[10px] text-muted-foreground">
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
                             exkl. moms ({p.vat_rate}%)
-                          </div>
+                          </span>
                         </div>
                         <Button
                           size="sm"
+                          className="w-full"
                           onClick={() => cart.addItem.mutate({ productId: p.id })}
                           disabled={cart.addItem.isPending}
                         >
-                          <Plus className="h-4 w-4 mr-1" /> Köp
+                          <Plus className="h-4 w-4 mr-1" /> Lägg i varukorg
                         </Button>
                       </div>
                     </CardContent>
@@ -210,6 +217,80 @@ export default function EshopShop() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-2xl">
+          {selected && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="pr-6">{selected.name}</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 sm:grid-cols-[200px,1fr]">
+                <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                  {selected.image_url ? (
+                    <img
+                      src={selected.image_url}
+                      alt={selected.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Package className="h-12 w-12 text-muted-foreground/40" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-3 min-w-0">
+                  <div className="flex flex-wrap gap-2">
+                    {selected.brand && <Badge variant="outline">{selected.brand}</Badge>}
+                    {selected.es_categories?.name && (
+                      <Badge variant="secondary">{selected.es_categories.name}</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">SKU: {selected.sku}</p>
+                  {selected.description && (
+                    <p className="text-sm whitespace-pre-wrap">{selected.description}</p>
+                  )}
+                  <div className="border-t pt-3">
+                    <div className="text-2xl font-bold">
+                      {Number(selected.price_excl_vat).toLocaleString('sv-SE', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{' '}
+                      kr
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      exkl. moms ({selected.vat_rate}%)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setQty(Math.max(1, qty - 1))}>
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={qty}
+                      onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-20 text-center"
+                    />
+                    <Button variant="outline" size="icon" onClick={() => setQty(qty + 1)}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      className="ml-auto"
+                      onClick={() => {
+                        cart.addItem.mutate({ productId: selected.id, qty });
+                        setSelected(null);
+                      }}
+                      disabled={cart.addItem.isPending}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" /> Lägg i varukorg
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
