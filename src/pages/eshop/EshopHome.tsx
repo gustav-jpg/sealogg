@@ -1,10 +1,28 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShoppingCart, Package, Truck, Tag, Warehouse, Users, FileText, Receipt, Boxes } from 'lucide-react';
+import {
+  ShoppingCart,
+  Package,
+  Truck,
+  Tag,
+  Warehouse,
+  Users,
+  Receipt,
+  Boxes,
+  Store,
+  ListOrdered,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
-const tiles = [
+const shopTiles = [
+  { href: '/portal/eshop/shop', label: 'Butik', icon: Store, desc: 'Bläddra och beställ produkter' },
+  { href: '/portal/eshop/cart', label: 'Varukorg', icon: ShoppingCart, desc: 'Aktuell beställning' },
+  { href: '/portal/eshop/orders', label: 'Mina ordrar', icon: ListOrdered, desc: 'Tidigare beställningar' },
+];
+
+const adminTiles = [
   { href: '/portal/eshop/admin/products', label: 'Produkter', icon: Package },
   { href: '/portal/eshop/admin/categories', label: 'Kategorier', icon: Tag },
   { href: '/portal/eshop/admin/suppliers', label: 'Leverantörer', icon: Users },
@@ -15,6 +33,7 @@ const tiles = [
 ];
 
 export default function EshopHome() {
+  const { isAdmin } = useAuth();
   return (
     <MainLayout>
       <div className="container mx-auto p-4 md:p-6 max-w-5xl">
@@ -26,16 +45,20 @@ export default function EshopHome() {
           Maritim B2B-handel. Allt faktureras – ingen kortbetalning krävs.
         </p>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {tiles.map(t => (
-            <Card key={t.href}>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Köp
+        </h2>
+        <div className="grid gap-4 md:grid-cols-3 mb-8">
+          {shopTiles.map((t) => (
+            <Card key={t.href} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <t.icon className="h-4 w-4" /> {t.label}
+                  <t.icon className="h-4 w-4 text-primary" /> {t.label}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <Button asChild size="sm" variant="outline">
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">{t.desc}</p>
+                <Button asChild size="sm">
                   <Link to={t.href}>Öppna</Link>
                 </Button>
               </CardContent>
@@ -43,22 +66,29 @@ export default function EshopHome() {
           ))}
         </div>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileText className="h-4 w-4" /> Nästa fas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>Kommande funktioner:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Publik butik på <code>/portal/eshop</code> med varukorg</li>
-              <li>Lagerflöden, plock & frakt per leverans</li>
-              <li>Automatisk inköpsorder till leverantör (PO via e-post)</li>
-              <li>PDF-faktura och statistik / dashboard</li>
-            </ul>
-          </CardContent>
-        </Card>
+        {isAdmin && (
+          <>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Administration
+            </h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              {adminTiles.map((t) => (
+                <Card key={t.href}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <t.icon className="h-4 w-4" /> {t.label}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={t.href}>Öppna</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </MainLayout>
   );
