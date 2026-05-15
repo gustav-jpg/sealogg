@@ -13,13 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Package, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Search, Upload, X } from 'lucide-react';
 
 const empty: any = {
   id: '', sku: '', name: '', description: '',
   category_id: null, primary_supplier_id: null, brand: '',
   weight_g: '', price_excl_vat: 0, purchase_price: '', vat_rate: 25,
-  lead_time_days: '', is_active: true, dropship: false,
+  lead_time_days: '', is_active: true, dropship: false, image_url: '',
 };
 
 export default function EshopProducts() {
@@ -28,6 +28,7 @@ export default function EshopProducts() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>(empty);
   const [search, setSearch] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['es_products', selectedOrgId],
@@ -81,6 +82,7 @@ export default function EshopProducts() {
         lead_time_days: p.lead_time_days === '' ? null : Number(p.lead_time_days),
         is_active: !!p.is_active,
         dropship: !!p.dropship,
+        image_url: p.image_url || null,
       };
       if (p.id) { const { error } = await supabase.from('es_products').update(row).eq('id', p.id); if (error) throw error; }
       else { const { error } = await supabase.from('es_products').insert(row); if (error) throw error; }
@@ -99,10 +101,34 @@ export default function EshopProducts() {
   });
 
   const filtered = rows.filter((r: any) => {
+
+  async function handleImageUpload(file: File) {
+    if (!selectedOrgId) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${selectedOrgId}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('eshop-products')
+        .upload(path, file, { upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from('eshop-products').getPublicUrl(path);
+      setForm((f: any) => ({ ...f, image_url: data.publicUrl }));
+      toast.success('Bild uppladdad');
+    } catch (e: any) {
+      toast.error(e.message ?? 'Uppladdning misslyckades');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const _f = rows.filter((r: any) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return r.name?.toLowerCase().includes(q) || r.sku?.toLowerCase().includes(q) || r.brand?.toLowerCase().includes(q);
   });
+  void _f;
+  const filteredFinal = _f;
 
   return (
     <MainLayout>
