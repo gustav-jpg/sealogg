@@ -81,6 +81,11 @@ const EshopWarehouses = lazy(() => import("./pages/eshop/admin/Warehouses"));
 const EshopInventory = lazy(() => import("./pages/eshop/admin/Inventory"));
 const EshopOrders = lazy(() => import("./pages/eshop/admin/Orders"));
 const EshopInvoices = lazy(() => import("./pages/eshop/admin/Invoices"));
+const EshopShop = lazy(() => import("./pages/eshop/shop/Shop"));
+const EshopProductDetail = lazy(() => import("./pages/eshop/shop/ProductDetail"));
+const EshopCart = lazy(() => import("./pages/eshop/shop/Cart"));
+const EshopOrderConfirmation = lazy(() => import("./pages/eshop/shop/OrderConfirmation"));
+const EshopMyOrders = lazy(() => import("./pages/eshop/shop/MyOrders"));
 
 const queryClient = new QueryClient();
 const NATIVE_PORTAL_LOGIN_KEY = "sealogg-native-portal-login";
@@ -248,6 +253,11 @@ function AppRoutes() {
 
         {/* e-Skeppshandel module */}
         <Route path="/portal/eshop" element={<ProtectedRoute><EshopHome /></ProtectedRoute>} />
+        <Route path="/portal/eshop/shop" element={<ProtectedRoute><EshopShop /></ProtectedRoute>} />
+        <Route path="/portal/eshop/product/:id" element={<ProtectedRoute><EshopProductDetail /></ProtectedRoute>} />
+        <Route path="/portal/eshop/cart" element={<ProtectedRoute><EshopCart /></ProtectedRoute>} />
+        <Route path="/portal/eshop/order/:id" element={<ProtectedRoute><EshopOrderConfirmation /></ProtectedRoute>} />
+        <Route path="/portal/eshop/orders" element={<ProtectedRoute><EshopMyOrders /></ProtectedRoute>} />
         <Route path="/portal/eshop/admin/products" element={<ProtectedRoute adminOnly><EshopProducts /></ProtectedRoute>} />
         <Route path="/portal/eshop/admin/categories" element={<ProtectedRoute adminOnly><EshopCategories /></ProtectedRoute>} />
         <Route path="/portal/eshop/admin/suppliers" element={<ProtectedRoute adminOnly><EshopSuppliers /></ProtectedRoute>} />
