@@ -209,13 +209,6 @@ export function AppSidebar() {
     { module: 'bookings', href: '/portal/bookings/admin/departures', label: 'Avgångar', icon: Calendar },
     { module: 'bookings', href: '/portal/bookings/admin/fares', label: 'Priser', icon: Car },
     { module: 'bookings', href: '/portal/bookings/admin/settings', label: 'Bokningsinställningar', icon: Settings },
-    { module: 'eshop', href: '/portal/eshop/admin/products', label: 'Produkter', icon: Package },
-    { module: 'eshop', href: '/portal/eshop/admin/categories', label: 'Kategorier', icon: Tag },
-    { module: 'eshop', href: '/portal/eshop/admin/suppliers', label: 'Leverantörer', icon: Users },
-    { module: 'eshop', href: '/portal/eshop/admin/warehouses', label: 'Lager', icon: WarehouseIcon },
-    { module: 'eshop', href: '/portal/eshop/admin/inventory', label: 'Lagersaldo', icon: Boxes },
-    { module: 'eshop', href: '/portal/eshop/admin/orders', label: 'Order', icon: Truck },
-    { module: 'eshop', href: '/portal/eshop/admin/invoices', label: 'Fakturor', icon: Receipt },
   ];
 
   // Filter module-specific items based on active modules
@@ -226,17 +219,13 @@ export function AppSidebar() {
   const bookingsAdminItems = visibleModuleAdminItems
     .filter(i => i.module === 'bookings')
     .map(({ href, label, icon }) => ({ href, label, icon }));
-  const eshopAdminItems = visibleModuleAdminItems
-    .filter(i => i.module === 'eshop')
-    .map(({ href, label, icon }) => ({ href, label, icon }));
   const otherModuleAdminItems = visibleModuleAdminItems
-    .filter(i => i.module !== 'bookings' && i.module !== 'eshop')
+    .filter(i => i.module !== 'bookings')
     .map(({ href, label, icon }) => ({ href, label, icon }));
 
   const vesselAdminItems = [...baseVesselAdminItems, ...otherModuleAdminItems];
 
   const isBookingsAdminActive = bookingsAdminItems.some(i => location.pathname.startsWith(i.href));
-  const isEshopAdminActive = eshopAdminItems.some(i => location.pathname.startsWith(i.href));
 
   const isInVesselSection = location.pathname.startsWith('/portal');
 

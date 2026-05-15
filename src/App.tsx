@@ -259,13 +259,13 @@ function AppRoutes() {
         <Route path="/portal/eshop/cart" element={<ProtectedRoute><EshopCart /></ProtectedRoute>} />
         <Route path="/portal/eshop/order/:id" element={<ProtectedRoute><EshopOrderConfirmation /></ProtectedRoute>} />
         <Route path="/portal/eshop/orders" element={<ProtectedRoute><EshopMyOrders /></ProtectedRoute>} />
-        <Route path="/portal/eshop/admin/products" element={<ProtectedRoute adminOnly><EshopProducts /></ProtectedRoute>} />
-        <Route path="/portal/eshop/admin/categories" element={<ProtectedRoute adminOnly><EshopCategories /></ProtectedRoute>} />
-        <Route path="/portal/eshop/admin/suppliers" element={<ProtectedRoute adminOnly><EshopSuppliers /></ProtectedRoute>} />
-        <Route path="/portal/eshop/admin/warehouses" element={<ProtectedRoute adminOnly><EshopWarehouses /></ProtectedRoute>} />
-        <Route path="/portal/eshop/admin/inventory" element={<ProtectedRoute adminOnly><EshopInventory /></ProtectedRoute>} />
-        <Route path="/portal/eshop/admin/orders" element={<ProtectedRoute adminOnly><EshopOrders /></ProtectedRoute>} />
-        <Route path="/portal/eshop/admin/invoices" element={<ProtectedRoute adminOnly><EshopInvoices /></ProtectedRoute>} />
+        <Route path="/backoffice/eshop/products" element={<EshopProducts />} />
+        <Route path="/backoffice/eshop/categories" element={<EshopCategories />} />
+        <Route path="/backoffice/eshop/suppliers" element={<EshopSuppliers />} />
+        <Route path="/backoffice/eshop/warehouses" element={<EshopWarehouses />} />
+        <Route path="/backoffice/eshop/inventory" element={<EshopInventory />} />
+        <Route path="/backoffice/eshop/orders" element={<EshopOrders />} />
+        <Route path="/backoffice/eshop/invoices" element={<EshopInvoices />} />
 
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
