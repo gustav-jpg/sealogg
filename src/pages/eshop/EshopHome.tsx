@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingCart, Store, ListOrdered } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
 
 const shopTiles = [
   { href: '/portal/eshop/shop', label: 'Butik', icon: Store, desc: 'Bläddra och beställ produkter' },
