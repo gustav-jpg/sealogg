@@ -48,8 +48,16 @@ export default function EshopProductDetail() {
         ) : (
           <Card>
             <CardContent className="p-6 grid gap-6 md:grid-cols-[1fr,1.4fr]">
-              <div className="bg-muted rounded-lg flex items-center justify-center aspect-square">
-                <Package className="h-20 w-20 text-muted-foreground/40" />
+              <div className="bg-muted rounded-lg flex items-center justify-center aspect-square overflow-hidden">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Package className="h-20 w-20 text-muted-foreground/40" />
+                )}
               </div>
               <div className="flex flex-col gap-3">
                 <div>
