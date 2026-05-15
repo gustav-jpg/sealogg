@@ -2031,7 +2031,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
-          organization_id: string
+          organization_id: string | null
           parent_id: string | null
           slug: string
           sort_order: number
@@ -2042,7 +2042,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
-          organization_id: string
+          organization_id?: string | null
           parent_id?: string | null
           slug: string
           sort_order?: number
@@ -2053,7 +2053,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
-          organization_id?: string
+          organization_id?: string | null
           parent_id?: string | null
           slug?: string
           sort_order?: number
@@ -2108,7 +2108,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
-          organization_id: string
+          organization_id: string | null
           params: Json
           postal_prefix: string | null
           price_excl_vat: number
@@ -2121,7 +2121,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          organization_id: string
+          organization_id?: string | null
           params?: Json
           postal_prefix?: string | null
           price_excl_vat?: number
@@ -2134,7 +2134,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          organization_id?: string
+          organization_id?: string | null
           params?: Json
           postal_prefix?: string | null
           price_excl_vat?: number
@@ -2219,7 +2219,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
-          organization_id: string
+          organization_id: string | null
           product_id: string
           qty: number
           reason: string
@@ -2232,7 +2232,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          organization_id: string
+          organization_id?: string | null
           product_id: string
           qty: number
           reason: string
@@ -2245,7 +2245,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          organization_id?: string
+          organization_id?: string | null
           product_id?: string
           qty?: number
           reason?: string
@@ -2745,7 +2745,7 @@ export type Database = {
           lead_time_days: number | null
           length_mm: number | null
           name: string
-          organization_id: string
+          organization_id: string | null
           price_excl_vat: number
           primary_supplier_id: string | null
           purchase_price: number | null
@@ -2772,7 +2772,7 @@ export type Database = {
           lead_time_days?: number | null
           length_mm?: number | null
           name: string
-          organization_id: string
+          organization_id?: string | null
           price_excl_vat?: number
           primary_supplier_id?: string | null
           purchase_price?: number | null
@@ -2799,7 +2799,7 @@ export type Database = {
           lead_time_days?: number | null
           length_mm?: number | null
           name?: string
-          organization_id?: string
+          organization_id?: string | null
           price_excl_vat?: number
           primary_supplier_id?: string | null
           purchase_price?: number | null
@@ -2917,10 +2917,11 @@ export type Database = {
           default_vat_rate: number
           default_warehouse_id: string | null
           free_shipping_threshold: number | null
+          id: string
           invoice_prefix: string
           language: string
           order_prefix: string
-          organization_id: string
+          organization_id: string | null
           payment_terms_days: number
           updated_at: string
         }
@@ -2931,10 +2932,11 @@ export type Database = {
           default_vat_rate?: number
           default_warehouse_id?: string | null
           free_shipping_threshold?: number | null
+          id?: string
           invoice_prefix?: string
           language?: string
           order_prefix?: string
-          organization_id: string
+          organization_id?: string | null
           payment_terms_days?: number
           updated_at?: string
         }
@@ -2945,10 +2947,11 @@ export type Database = {
           default_vat_rate?: number
           default_warehouse_id?: string | null
           free_shipping_threshold?: number | null
+          id?: string
           invoice_prefix?: string
           language?: string
           order_prefix?: string
-          organization_id?: string
+          organization_id?: string | null
           payment_terms_days?: number
           updated_at?: string
         }
@@ -2963,7 +2966,7 @@ export type Database = {
           {
             foreignKeyName: "es_settings_organization_id_fkey"
             columns: ["organization_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -3078,7 +3081,7 @@ export type Database = {
           external_ref: string | null
           id: string
           order_id: string
-          organization_id: string
+          organization_id: string | null
           sent_at: string | null
           status: string
           supplier_id: string
@@ -3089,7 +3092,7 @@ export type Database = {
           external_ref?: string | null
           id?: string
           order_id: string
-          organization_id: string
+          organization_id?: string | null
           sent_at?: string | null
           status?: string
           supplier_id: string
@@ -3100,7 +3103,7 @@ export type Database = {
           external_ref?: string | null
           id?: string
           order_id?: string
-          organization_id?: string
+          organization_id?: string | null
           sent_at?: string | null
           status?: string
           supplier_id?: string
@@ -3134,21 +3137,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          organization_id: string
+          organization_id: string | null
           supplier_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          organization_id: string
+          organization_id?: string | null
           supplier_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          organization_id?: string
+          organization_id?: string | null
           supplier_id?: string
           user_id?: string
         }
@@ -3184,7 +3187,7 @@ export type Database = {
           min_order_value: number
           name: string
           notes: string | null
-          organization_id: string
+          organization_id: string | null
           phone: string | null
           updated_at: string
         }
@@ -3202,7 +3205,7 @@ export type Database = {
           min_order_value?: number
           name: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -3220,7 +3223,7 @@ export type Database = {
           min_order_value?: number
           name?: string
           notes?: string | null
-          organization_id?: string
+          organization_id?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -3242,7 +3245,7 @@ export type Database = {
           is_active: boolean
           is_external: boolean
           name: string
-          organization_id: string
+          organization_id: string | null
           supplier_id: string | null
           updated_at: string
         }
@@ -3253,7 +3256,7 @@ export type Database = {
           is_active?: boolean
           is_external?: boolean
           name: string
-          organization_id: string
+          organization_id?: string | null
           supplier_id?: string | null
           updated_at?: string
         }
@@ -3264,7 +3267,7 @@ export type Database = {
           is_active?: boolean
           is_external?: boolean
           name?: string
-          organization_id?: string
+          organization_id?: string | null
           supplier_id?: string | null
           updated_at?: string
         }
