@@ -1931,6 +1931,1357 @@ export type Database = {
           },
         ]
       }
+      es_cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string
+          id: string
+          product_id: string
+          qty: number
+          variant_id: string | null
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          qty?: number
+          variant_id?: string | null
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          qty?: number
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "es_carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_cart_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "es_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_carts: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          organization_id: string
+          updated_at: string
+          user_id: string
+          vessel_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          updated_at?: string
+          user_id: string
+          vessel_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+          vessel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_carts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_carts_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "es_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_favorites: {
+        Row: {
+          created_at: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_favorites_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_freight_rules: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+          is_active: boolean
+          organization_id: string
+          params: Json
+          postal_prefix: string | null
+          price_excl_vat: number
+          rule_type: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          params?: Json
+          postal_prefix?: string | null
+          price_excl_vat?: number
+          rule_type: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          params?: Json
+          postal_prefix?: string | null
+          price_excl_vat?: number
+          rule_type?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_freight_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_freight_rules_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_inventory_levels: {
+        Row: {
+          on_hand: number
+          product_id: string
+          reorder_level: number
+          reserved: number
+          updated_at: string
+          variant_id: string
+          warehouse_id: string
+          warning_level: number
+        }
+        Insert: {
+          on_hand?: number
+          product_id: string
+          reorder_level?: number
+          reserved?: number
+          updated_at?: string
+          variant_id: string
+          warehouse_id: string
+          warning_level?: number
+        }
+        Update: {
+          on_hand?: number
+          product_id?: string
+          reorder_level?: number
+          reserved?: number
+          updated_at?: string
+          variant_id?: string
+          warehouse_id?: string
+          warning_level?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_inventory_levels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_inventory_levels_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "es_product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_inventory_levels_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "es_warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_inventory_moves: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          product_id: string
+          qty: number
+          reason: string
+          ref_id: string | null
+          ref_table: string | null
+          variant_id: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          product_id: string
+          qty: number
+          reason: string
+          ref_id?: string | null
+          ref_table?: string | null
+          variant_id?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          product_id?: string
+          qty?: number
+          reason?: string
+          ref_id?: string | null
+          ref_table?: string | null
+          variant_id?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_inventory_moves_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_inventory_moves_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_inventory_moves_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "es_product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_inventory_moves_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "es_warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_invoices: {
+        Row: {
+          created_at: string
+          due_at: string | null
+          grand_total: number
+          id: string
+          invoice_number: string
+          issued_at: string
+          order_id: string
+          organization_id: string
+          pdf_url: string | null
+          status: string
+          total_excl_vat: number
+          updated_at: string
+          vat_total: number
+        }
+        Insert: {
+          created_at?: string
+          due_at?: string | null
+          grand_total?: number
+          id?: string
+          invoice_number: string
+          issued_at?: string
+          order_id: string
+          organization_id: string
+          pdf_url?: string | null
+          status?: string
+          total_excl_vat?: number
+          updated_at?: string
+          vat_total?: number
+        }
+        Update: {
+          created_at?: string
+          due_at?: string | null
+          grand_total?: number
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          order_id?: string
+          organization_id?: string
+          pdf_url?: string | null
+          status?: string
+          total_excl_vat?: number
+          updated_at?: string
+          vat_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "es_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_total_excl_vat: number
+          order_id: string
+          product_id: string
+          product_name_snapshot: string
+          qty: number
+          sku_snapshot: string
+          supplier_id: string | null
+          unit_price_excl_vat: number
+          variant_id: string | null
+          vat_rate: number
+          warehouse_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_total_excl_vat: number
+          order_id: string
+          product_id: string
+          product_name_snapshot: string
+          qty: number
+          sku_snapshot: string
+          supplier_id?: string | null
+          unit_price_excl_vat: number
+          variant_id?: string | null
+          vat_rate?: number
+          warehouse_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_total_excl_vat?: number
+          order_id?: string
+          product_id?: string
+          product_name_snapshot?: string
+          qty?: number
+          sku_snapshot?: string
+          supplier_id?: string | null
+          unit_price_excl_vat?: number
+          variant_id?: string | null
+          vat_rate?: number
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "es_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_order_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "es_product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_order_items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "es_warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_orders: {
+        Row: {
+          billing_address: Json | null
+          created_at: string
+          currency: string
+          customer_note: string | null
+          delivery_address: Json | null
+          freight_total: number
+          grand_total: number
+          handling_total: number
+          id: string
+          internal_note: string | null
+          order_number: string
+          ordered_by: string | null
+          organization_id: string
+          status: string
+          sub_total: number
+          updated_at: string
+          vat_total: number
+          vessel_id: string | null
+        }
+        Insert: {
+          billing_address?: Json | null
+          created_at?: string
+          currency?: string
+          customer_note?: string | null
+          delivery_address?: Json | null
+          freight_total?: number
+          grand_total?: number
+          handling_total?: number
+          id?: string
+          internal_note?: string | null
+          order_number: string
+          ordered_by?: string | null
+          organization_id: string
+          status?: string
+          sub_total?: number
+          updated_at?: string
+          vat_total?: number
+          vessel_id?: string | null
+        }
+        Update: {
+          billing_address?: Json | null
+          created_at?: string
+          currency?: string
+          customer_note?: string | null
+          delivery_address?: Json | null
+          freight_total?: number
+          grand_total?: number
+          handling_total?: number
+          id?: string
+          internal_note?: string | null
+          order_number?: string
+          ordered_by?: string | null
+          organization_id?: string
+          status?: string
+          sub_total?: number
+          updated_at?: string
+          vat_total?: number
+          vessel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_orders_vessel_id_fkey"
+            columns: ["vessel_id"]
+            isOneToOne: false
+            referencedRelation: "vessels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_product_bundles: {
+        Row: {
+          child_product_id: string
+          parent_product_id: string
+          qty: number
+        }
+        Insert: {
+          child_product_id: string
+          parent_product_id: string
+          qty?: number
+        }
+        Update: {
+          child_product_id?: string
+          parent_product_id?: string
+          qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_product_bundles_child_product_id_fkey"
+            columns: ["child_product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_product_bundles_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_product_documents: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string | null
+          label: string | null
+          product_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string | null
+          label?: string | null
+          product_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string | null
+          label?: string | null
+          product_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_product_documents_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_product_images: {
+        Row: {
+          alt: string | null
+          created_at: string
+          id: string
+          product_id: string
+          sort_order: number
+          url: string
+        }
+        Insert: {
+          alt?: string | null
+          created_at?: string
+          id?: string
+          product_id: string
+          sort_order?: number
+          url: string
+        }
+        Update: {
+          alt?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          sort_order?: number
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_product_related: {
+        Row: {
+          product_id: string
+          related_product_id: string
+        }
+        Insert: {
+          product_id: string
+          related_product_id: string
+        }
+        Update: {
+          product_id?: string
+          related_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_product_related_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_product_related_related_product_id_fkey"
+            columns: ["related_product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_product_suppliers: {
+        Row: {
+          product_id: string
+          supplier_id: string
+          supplier_lead_time_days: number | null
+          supplier_price: number | null
+          supplier_sku: string | null
+        }
+        Insert: {
+          product_id: string
+          supplier_id: string
+          supplier_lead_time_days?: number | null
+          supplier_price?: number | null
+          supplier_sku?: string | null
+        }
+        Update: {
+          product_id?: string
+          supplier_id?: string
+          supplier_lead_time_days?: number | null
+          supplier_price?: number | null
+          supplier_sku?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_product_suppliers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_product_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_product_variants: {
+        Row: {
+          attributes: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          price_excl_vat: number | null
+          product_id: string
+          purchase_price: number | null
+          sku: string
+          updated_at: string
+        }
+        Insert: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price_excl_vat?: number | null
+          product_id: string
+          purchase_price?: number | null
+          sku: string
+          updated_at?: string
+        }
+        Update: {
+          attributes?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_excl_vat?: number | null
+          product_id?: string
+          purchase_price?: number | null
+          sku?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "es_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_products: {
+        Row: {
+          attributes: Json
+          brand: string | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          dropship: boolean
+          freight_class: string | null
+          height_mm: number | null
+          id: string
+          is_active: boolean
+          lead_time_days: number | null
+          length_mm: number | null
+          name: string
+          organization_id: string
+          price_excl_vat: number
+          primary_supplier_id: string | null
+          purchase_price: number | null
+          recommended_price: number | null
+          sku: string
+          tags: string[]
+          updated_at: string
+          vat_rate: number
+          weight_g: number | null
+          width_mm: number | null
+        }
+        Insert: {
+          attributes?: Json
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          dropship?: boolean
+          freight_class?: string | null
+          height_mm?: number | null
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number | null
+          length_mm?: number | null
+          name: string
+          organization_id: string
+          price_excl_vat?: number
+          primary_supplier_id?: string | null
+          purchase_price?: number | null
+          recommended_price?: number | null
+          sku: string
+          tags?: string[]
+          updated_at?: string
+          vat_rate?: number
+          weight_g?: number | null
+          width_mm?: number | null
+        }
+        Update: {
+          attributes?: Json
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          dropship?: boolean
+          freight_class?: string | null
+          height_mm?: number | null
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number | null
+          length_mm?: number | null
+          name?: string
+          organization_id?: string
+          price_excl_vat?: number
+          primary_supplier_id?: string | null
+          purchase_price?: number | null
+          recommended_price?: number | null
+          sku?: string
+          tags?: string[]
+          updated_at?: string
+          vat_rate?: number
+          weight_g?: number | null
+          width_mm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "es_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_products_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_products_primary_supplier_id_fkey"
+            columns: ["primary_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_return_items: {
+        Row: {
+          id: string
+          order_item_id: string
+          qty: number
+          return_id: string
+        }
+        Insert: {
+          id?: string
+          order_item_id: string
+          qty: number
+          return_id: string
+        }
+        Update: {
+          id?: string
+          order_item_id?: string
+          qty?: number
+          return_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_return_items_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "es_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "es_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_returns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          order_id: string
+          reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id: string
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "es_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_settings: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          currency: string
+          default_vat_rate: number
+          default_warehouse_id: string | null
+          free_shipping_threshold: number | null
+          invoice_prefix: string
+          language: string
+          order_prefix: string
+          organization_id: string
+          payment_terms_days: number
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          currency?: string
+          default_vat_rate?: number
+          default_warehouse_id?: string | null
+          free_shipping_threshold?: number | null
+          invoice_prefix?: string
+          language?: string
+          order_prefix?: string
+          organization_id: string
+          payment_terms_days?: number
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          currency?: string
+          default_vat_rate?: number
+          default_warehouse_id?: string | null
+          free_shipping_threshold?: number | null
+          invoice_prefix?: string
+          language?: string
+          order_prefix?: string
+          organization_id?: string
+          payment_terms_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_settings_default_warehouse_id_fkey"
+            columns: ["default_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "es_warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_shipment_items: {
+        Row: {
+          id: string
+          order_item_id: string
+          qty: number
+          shipment_id: string
+        }
+        Insert: {
+          id?: string
+          order_item_id: string
+          qty: number
+          shipment_id: string
+        }
+        Update: {
+          id?: string
+          order_item_id?: string
+          qty?: number
+          shipment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_shipment_items_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "es_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_shipment_items_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "es_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_shipments: {
+        Row: {
+          carrier: string | null
+          created_at: string
+          delivered_at: string | null
+          freight_excl_vat: number
+          id: string
+          order_id: string
+          shipped_at: string | null
+          status: string
+          supplier_id: string | null
+          tracking_no: string | null
+          updated_at: string
+          warehouse_id: string | null
+        }
+        Insert: {
+          carrier?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          freight_excl_vat?: number
+          id?: string
+          order_id: string
+          shipped_at?: string | null
+          status?: string
+          supplier_id?: string | null
+          tracking_no?: string | null
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Update: {
+          carrier?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          freight_excl_vat?: number
+          id?: string
+          order_id?: string
+          shipped_at?: string | null
+          status?: string
+          supplier_id?: string | null
+          tracking_no?: string | null
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_shipments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "es_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_shipments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_shipments_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "es_warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_supplier_orders: {
+        Row: {
+          created_at: string
+          external_ref: string | null
+          id: string
+          order_id: string
+          organization_id: string
+          sent_at: string | null
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          order_id: string
+          organization_id: string
+          sent_at?: string | null
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          order_id?: string
+          organization_id?: string
+          sent_at?: string | null
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_supplier_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "es_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_supplier_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_supplier_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_supplier_users: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          supplier_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          supplier_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          supplier_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_supplier_users_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_supplier_users_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_suppliers: {
+        Row: {
+          address: Json | null
+          contact_name: string | null
+          created_at: string
+          dropship_default: boolean
+          email: string | null
+          freight_markup_pct: number
+          handling_fee: number
+          id: string
+          is_active: boolean
+          lead_time_days: number
+          min_order_value: number
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: Json | null
+          contact_name?: string | null
+          created_at?: string
+          dropship_default?: boolean
+          email?: string | null
+          freight_markup_pct?: number
+          handling_fee?: number
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number
+          min_order_value?: number
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: Json | null
+          contact_name?: string | null
+          created_at?: string
+          dropship_default?: boolean
+          email?: string | null
+          freight_markup_pct?: number
+          handling_fee?: number
+          id?: string
+          is_active?: boolean
+          lead_time_days?: number
+          min_order_value?: number
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_suppliers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      es_warehouses: {
+        Row: {
+          address: Json | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_external: boolean
+          name: string
+          organization_id: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_external?: boolean
+          name: string
+          organization_id: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_external?: boolean
+          name?: string
+          organization_id?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "es_warehouses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "es_warehouses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "es_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_categories: {
         Row: {
           created_at: string
@@ -4066,6 +5417,10 @@ export type Database = {
           _to_stop_id: string
         }
         Returns: number
+      }
+      es_is_supplier_user: {
+        Args: { _supplier_id: string; _user_id: string }
+        Returns: boolean
       }
       get_page_view_stats: { Args: never; Returns: Json }
       get_profile_name_by_user_id: {
