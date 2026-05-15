@@ -1,6 +1,6 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShoppingCart, Package, Truck, Tag, Warehouse, Users, FileText, Receipt } from 'lucide-react';
+import { ShoppingCart, Package, Truck, Tag, Warehouse, Users, FileText, Receipt, Boxes } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
@@ -9,6 +9,7 @@ const tiles = [
   { href: '/portal/eshop/admin/categories', label: 'Kategorier', icon: Tag },
   { href: '/portal/eshop/admin/suppliers', label: 'Leverantörer', icon: Users },
   { href: '/portal/eshop/admin/warehouses', label: 'Lager', icon: Warehouse },
+  { href: '/portal/eshop/admin/inventory', label: 'Lagersaldo', icon: Boxes },
   { href: '/portal/eshop/admin/orders', label: 'Order', icon: Truck },
   { href: '/portal/eshop/admin/invoices', label: 'Fakturor', icon: Receipt },
 ];
