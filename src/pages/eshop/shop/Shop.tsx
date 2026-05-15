@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Search, Package, Plus } from 'lucide-react';
+import { ShoppingCart, Search, Package, Plus, ListOrdered } from 'lucide-react';
 
 export default function EshopShop() {
   const { selectedOrgId } = useOrganization();
@@ -74,17 +74,25 @@ export default function EshopShop() {
               </p>
             </div>
           </div>
-          <Button asChild variant="outline">
-            <Link to="/portal/eshop/cart">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Varukorg
-              {cart.totals.count > 0 && (
-                <Badge className="ml-2" variant="secondary">
-                  {cart.totals.count}
-                </Badge>
-              )}
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link to="/portal/eshop/cart">
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Varukorg
+                {cart.totals.count > 0 && (
+                  <Badge className="ml-2" variant="secondary">
+                    {cart.totals.count}
+                  </Badge>
+                )}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/portal/eshop/orders">
+                <ListOrdered className="h-4 w-4 mr-2" />
+                Tidigare beställningar
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
