@@ -2740,6 +2740,7 @@ export type Database = {
           freight_class: string | null
           height_mm: number | null
           id: string
+          image_url: string | null
           is_active: boolean
           lead_time_days: number | null
           length_mm: number | null
@@ -2766,6 +2767,7 @@ export type Database = {
           freight_class?: string | null
           height_mm?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           lead_time_days?: number | null
           length_mm?: number | null
@@ -2792,6 +2794,7 @@ export type Database = {
           freight_class?: string | null
           height_mm?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           lead_time_days?: number | null
           length_mm?: number | null
