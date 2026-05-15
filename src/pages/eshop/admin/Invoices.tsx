@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Receipt } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const STATUS_LABEL: Record<string,string> = { draft: 'Utkast', sent: 'Skickad', paid: 'Betald', overdue: 'Förfallen', cancelled: 'Avbruten' };
+const STATUS_COLOR: Record<string,string> = { draft: 'bg-muted text-muted-foreground', sent: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', paid: 'bg-green-500/15 text-green-600 dark:text-green-400', overdue: 'bg-red-500/15 text-red-600 dark:text-red-400', cancelled: 'bg-muted text-muted-foreground line-through' };
 
 export default function EshopInvoices() {
   const { data: rows = [], isLoading } = useQuery({
@@ -32,12 +36,18 @@ export default function EshopInvoices() {
                 <TableHeader><TableRow><TableHead>Nr</TableHead><TableHead>Datum</TableHead><TableHead>Kund</TableHead><TableHead>Förfaller</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Summa</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {rows.map((r: any) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-mono">{r.invoice_number}</TableCell>
+                    <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell className="font-mono">
+                        <Link to={`/backoffice/eshop/invoices/${r.id}`} className="text-primary hover:underline">{r.invoice_number}</Link>
+                      </TableCell>
                       <TableCell>{r.issued_at}</TableCell>
                       <TableCell>{r.organizations?.name || '–'}</TableCell>
                       <TableCell>{r.due_at || '–'}</TableCell>
-                      <TableCell>{r.status}</TableCell>
+                      <TableCell>
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[r.status] || 'bg-muted'}`}>
+                          {STATUS_LABEL[r.status] || r.status}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">{Number(r.grand_total).toFixed(2)} kr</TableCell>
                     </TableRow>
                   ))}

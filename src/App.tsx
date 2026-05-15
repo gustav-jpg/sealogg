@@ -82,6 +82,7 @@ const EshopInventory = lazy(() => import("./pages/eshop/admin/Inventory"));
 const EshopOrders = lazy(() => import("./pages/eshop/admin/Orders"));
 const EshopOrderDetail = lazy(() => import("./pages/eshop/admin/OrderDetail"));
 const EshopInvoices = lazy(() => import("./pages/eshop/admin/Invoices"));
+const EshopInvoiceDetail = lazy(() => import("./pages/eshop/admin/InvoiceDetail"));
 const EshopShop = lazy(() => import("./pages/eshop/shop/Shop"));
 const EshopProductDetail = lazy(() => import("./pages/eshop/shop/ProductDetail"));
 const EshopCart = lazy(() => import("./pages/eshop/shop/Cart"));
@@ -268,6 +269,7 @@ function AppRoutes() {
         <Route path="/backoffice/eshop/orders" element={<EshopOrders />} />
         <Route path="/backoffice/eshop/orders/:id" element={<EshopOrderDetail />} />
         <Route path="/backoffice/eshop/invoices" element={<EshopInvoices />} />
+        <Route path="/backoffice/eshop/invoices/:id" element={<EshopInvoiceDetail />} />
 
         {/* Passenger registration routes */}
         <Route path="/portal/passagerare" element={<ProtectedRoute><PassengerRegistration /></ProtectedRoute>} />
