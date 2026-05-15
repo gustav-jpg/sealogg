@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Truck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function EshopOrders() {
   const { data: rows = [], isLoading } = useQuery({
@@ -32,8 +33,10 @@ export default function EshopOrders() {
                 <TableHeader><TableRow><TableHead>Order</TableHead><TableHead>Datum</TableHead><TableHead>Kund</TableHead><TableHead>Fartyg</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Summa</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {rows.map((r: any) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-mono">{r.order_number}</TableCell>
+                    <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell className="font-mono">
+                        <Link to={`/backoffice/eshop/orders/${r.id}`} className="text-primary hover:underline">{r.order_number}</Link>
+                      </TableCell>
                       <TableCell>{new Date(r.created_at).toLocaleString('sv-SE')}</TableCell>
                       <TableCell>{r.organizations?.name || '–'}</TableCell>
                       <TableCell>{r.vessels?.name || '–'}</TableCell>
