@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Building2, LogOut, LayoutDashboard, Menu, Activity, History, HelpCircle, CreditCard, Bell } from 'lucide-react';
+import { Building2, LogOut, LayoutDashboard, Menu, Activity, History, HelpCircle, CreditCard, Bell, ShoppingCart, Package, Tag, Users, Warehouse as WarehouseIcon, Boxes, Truck, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import sealoggLogo from '@/assets/sealog-logo.png';
 
@@ -72,6 +72,16 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
     { href: '/backoffice/audit-logs', label: 'Systemloggar', icon: Activity },
   ];
 
+  const eshopNavItems = [
+    { href: '/backoffice/eshop/products', label: 'Produkter', icon: Package },
+    { href: '/backoffice/eshop/categories', label: 'Kategorier', icon: Tag },
+    { href: '/backoffice/eshop/suppliers', label: 'Leverantörer', icon: Users },
+    { href: '/backoffice/eshop/warehouses', label: 'Lager', icon: WarehouseIcon },
+    { href: '/backoffice/eshop/inventory', label: 'Lagersaldo', icon: Boxes },
+    { href: '/backoffice/eshop/orders', label: 'Order', icon: Truck },
+    { href: '/backoffice/eshop/invoices', label: 'Fakturor', icon: Receipt },
+  ];
+
   const isActive = (href: string) => {
     if (href === '/backoffice') {
       return location.pathname === '/backoffice';
@@ -104,6 +114,28 @@ export default function BackofficeLayout({ children }: BackofficeLayoutProps) {
             {item.label}
           </Link>
         ))}
+
+        <div className="pt-4 mt-2 border-t">
+          <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+            <ShoppingCart className="h-3 w-3" />
+            e-Skeppshandel
+          </div>
+          {eshopNavItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                isActive(item.href)
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          ))}
+        </div>
       </nav>
 
       <div className="p-4 border-t space-y-2">

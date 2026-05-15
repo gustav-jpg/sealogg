@@ -209,13 +209,6 @@ export function AppSidebar() {
     { module: 'bookings', href: '/portal/bookings/admin/departures', label: 'Avgångar', icon: Calendar },
     { module: 'bookings', href: '/portal/bookings/admin/fares', label: 'Priser', icon: Car },
     { module: 'bookings', href: '/portal/bookings/admin/settings', label: 'Bokningsinställningar', icon: Settings },
-    { module: 'eshop', href: '/portal/eshop/admin/products', label: 'Produkter', icon: Package },
-    { module: 'eshop', href: '/portal/eshop/admin/categories', label: 'Kategorier', icon: Tag },
-    { module: 'eshop', href: '/portal/eshop/admin/suppliers', label: 'Leverantörer', icon: Users },
-    { module: 'eshop', href: '/portal/eshop/admin/warehouses', label: 'Lager', icon: WarehouseIcon },
-    { module: 'eshop', href: '/portal/eshop/admin/inventory', label: 'Lagersaldo', icon: Boxes },
-    { module: 'eshop', href: '/portal/eshop/admin/orders', label: 'Order', icon: Truck },
-    { module: 'eshop', href: '/portal/eshop/admin/invoices', label: 'Fakturor', icon: Receipt },
   ];
 
   // Filter module-specific items based on active modules
@@ -226,17 +219,13 @@ export function AppSidebar() {
   const bookingsAdminItems = visibleModuleAdminItems
     .filter(i => i.module === 'bookings')
     .map(({ href, label, icon }) => ({ href, label, icon }));
-  const eshopAdminItems = visibleModuleAdminItems
-    .filter(i => i.module === 'eshop')
-    .map(({ href, label, icon }) => ({ href, label, icon }));
   const otherModuleAdminItems = visibleModuleAdminItems
-    .filter(i => i.module !== 'bookings' && i.module !== 'eshop')
+    .filter(i => i.module !== 'bookings')
     .map(({ href, label, icon }) => ({ href, label, icon }));
 
   const vesselAdminItems = [...baseVesselAdminItems, ...otherModuleAdminItems];
 
   const isBookingsAdminActive = bookingsAdminItems.some(i => location.pathname.startsWith(i.href));
-  const isEshopAdminActive = eshopAdminItems.some(i => location.pathname.startsWith(i.href));
 
   const isInVesselSection = location.pathname.startsWith('/portal');
 
@@ -409,39 +398,6 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {bookingsAdminItems.map((item) => (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
-                          <Link to={item.href}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        )}
-
-        {/* Eshop admin (collapsible) */}
-        {isAdmin && eshopAdminItems.length > 0 && (
-          <Collapsible defaultOpen={isEshopAdminActive} className="group/eshop-admin">
-            <SidebarGroup>
-              <SidebarGroupLabel asChild>
-                <CollapsibleTrigger className="flex w-full items-center justify-between px-2 text-xs text-muted-foreground hover:text-foreground">
-                  <span className="flex items-center gap-2">
-                    <ShoppingCart className="h-3.5 w-3.5" />
-                    e-Skeppshandel – inställningar
-                  </span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=closed]/eshop-admin:-rotate-90" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {eshopAdminItems.map((item) => (
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
                           <Link to={item.href}>

@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useEshopCart } from '@/hooks/useEshopCart';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +12,6 @@ import { ShoppingCart, Search, Package, Plus, Minus, ListOrdered } from 'lucide-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function EshopShop() {
-  const { selectedOrgId } = useOrganization();
   const cart = useEshopCart();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -26,13 +24,11 @@ export default function EshopShop() {
   };
 
   const { data: categories = [] } = useQuery({
-    queryKey: ['shop_categories', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['shop_categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('es_categories')
         .select('id,name,slug')
-        .eq('organization_id', selectedOrgId!)
         .eq('is_active', true)
         .order('sort_order')
         .order('name');
@@ -42,13 +38,11 @@ export default function EshopShop() {
   });
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['shop_products', selectedOrgId, categoryId],
-    enabled: !!selectedOrgId,
+    queryKey: ['shop_products', categoryId],
     queryFn: async () => {
       let q = supabase
         .from('es_products')
         .select('id,sku,name,description,brand,price_excl_vat,vat_rate,category_id,image_url,es_categories(name)')
-        .eq('organization_id', selectedOrgId!)
         .eq('is_active', true)
         .order('name');
       if (categoryId) q = q.eq('category_id', categoryId);
