@@ -26,13 +26,11 @@ export default function EshopShop() {
   };
 
   const { data: categories = [] } = useQuery({
-    queryKey: ['shop_categories', selectedOrgId],
-    enabled: !!selectedOrgId,
+    queryKey: ['shop_categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('es_categories')
         .select('id,name,slug')
-        .eq('organization_id', selectedOrgId!)
         .eq('is_active', true)
         .order('sort_order')
         .order('name');
@@ -42,13 +40,11 @@ export default function EshopShop() {
   });
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['shop_products', selectedOrgId, categoryId],
-    enabled: !!selectedOrgId,
+    queryKey: ['shop_products', categoryId],
     queryFn: async () => {
       let q = supabase
         .from('es_products')
         .select('id,sku,name,description,brand,price_excl_vat,vat_rate,category_id,image_url,es_categories(name)')
-        .eq('organization_id', selectedOrgId!)
         .eq('is_active', true)
         .order('name');
       if (categoryId) q = q.eq('category_id', categoryId);
