@@ -252,7 +252,8 @@ function AppRoutes() {
         <Route path="/portal/bookings/admin/settings" element={<ProtectedRoute adminOnly><BookingsSettings /></ProtectedRoute>} />
 
         {/* e-Skeppshandel module */}
-        <Route path="/portal/eshop" element={<ProtectedRoute><EshopHome /></ProtectedRoute>} />
+        <Route path="/portal/eshop" element={<ProtectedRoute><EshopShop /></ProtectedRoute>} />
+        <Route path="/portal/eshop/home" element={<ProtectedRoute><EshopHome /></ProtectedRoute>} />
         <Route path="/portal/eshop/shop" element={<ProtectedRoute><EshopShop /></ProtectedRoute>} />
         <Route path="/portal/eshop/product/:id" element={<ProtectedRoute><EshopProductDetail /></ProtectedRoute>} />
         <Route path="/portal/eshop/cart" element={<ProtectedRoute><EshopCart /></ProtectedRoute>} />
